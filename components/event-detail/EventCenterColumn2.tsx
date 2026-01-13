@@ -1,8 +1,9 @@
-'use client';
+
 
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { getTabButtonClassName } from '@/components/shared/styles';
+import CCTVIcon from '@/components/common/CCTVIcon';
 
 interface EventCenterColumn2Props {
   isRightPanelCollapsed: boolean;
@@ -209,7 +210,7 @@ export const EventCenterColumn2: React.FC<EventCenterColumn2Props> = ({
           {/* CCTV 모니터링 */}
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden" style={{ flexBasis: '50%', flexGrow: 1, flexShrink: 1 }}>
             <div className="flex items-center gap-2 text-sm text-white font-semibold mb-3">
-              <Icon icon="mdi:cctv" className="w-4 h-4 text-blue-300" />
+              <CCTVIcon className="w-4 h-4 text-blue-300" />
               CCTV 모니터링
             </div>
             <div className="overflow-y-auto flex-1">
@@ -218,7 +219,7 @@ export const EventCenterColumn2: React.FC<EventCenterColumn2Props> = ({
               }}>
                 {monitoringCCTVs.length === 0 ? (
                   <div className="col-span-4 text-center py-8">
-                    <Icon icon="mdi:cctv-off" className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                    <Icon icon="mdi:video-high-definition-off" className="w-12 h-12 text-gray-600 mx-auto mb-2" />
                     <p className="text-gray-500 text-xs">모니터링 중인 CCTV가 없습니다</p>
                   </div>
                 ) : (

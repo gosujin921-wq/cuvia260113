@@ -1,12 +1,12 @@
-'use client';
+
 
 import { Event } from '@/types';
 import { Icon } from '@iconify/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useNavigate, Link } from 'react-router-dom';
 import { getEventById, generateAIInsight, getAIInsightKeywords } from '@/lib/events-data';
 import { getCCTVIconClassName, getCCTVLabelClassName } from '@/components/shared/styles';
+import CCTVIcon from '@/components/common/CCTVIcon';
 
 interface MapViewProps {
   events: Event[];
@@ -21,7 +21,7 @@ interface MapViewProps {
 }
 
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange }: MapViewProps) => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
   const [selectedRouteType, setSelectedRouteType] = useState<'ai' | 'nearby' | null>(null);
   const [zoomLevel, setZoomLevel] = useState(0); // 0: 축소(클러스터), 1: 확대(개별)
@@ -143,29 +143,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
     'event-30', 'event-31', 'event-32', 'event-33',
   ]);
 
-  const shouldOpenFireStatistics = (query: string) => {
-    const normalized = query
-      .normalize('NFC')
-      .toLowerCase()
-      .replace(/[\s\?\!\.]/g, '');
-
-    const triggers = ['요즘화재가늘었어', '요즘화재늘었어'];
-    return triggers.some((trigger) => normalized.includes(trigger));
-  };
-
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (searchInput.trim()) {
-        const query = searchInput.trim();
-        if (shouldOpenFireStatistics(query)) {
-          router.push('/statistics?focus=fire-trend');
-          return;
-        }
-        router.push(`/statistics?query=${encodeURIComponent(query)}`);
-      } else {
-        router.push('/statistics');
-      }
+      // 검색 기능은 현재 비활성화됨
     }
   };
   const getEventIcon = (type: string) => {
@@ -460,15 +441,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                setShowCCTVName(false);
              }
            }}
-           className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
              showCCTV 
-               ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-               : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a]'
+               ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-2xl shadow-blue-900/50 ring-2 ring-blue-500/30' 
+               : 'bg-gradient-to-br from-[#2a2a2a] via-[#1a1a1a] to-[#0f0f0f] hover:from-[#3a3a3a] hover:via-[#2a2a2a] hover:to-[#1a1a1a] text-gray-300 border-2 border-gray-500/60 hover:border-gray-400 shadow-xl shadow-gray-900/30'
            }`}
            style={{ borderWidth: '1px' }}
            aria-label="CCTV"
          >
-           <Icon icon="mdi:cctv" className="w-5 h-5" />
+           <CCTVIcon className={`w-5 h-5 text-white ${showCCTV ? 'drop-shadow-lg' : ''}`} />
          </button>
          
          {/* CCTV 서브 토글 버튼들 - CCTV가 켜져있을 때만 표시 */}
@@ -570,10 +551,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                   className={`${getCCTVIconClassName('default')} flex items-center justify-center ${item.count > 1 && zoomLevel === 0 ? 'w-auto min-w-[28px]' : ''}`} 
                   style={getCCTVIconBoxStyle(item.count, mapScale, item.count > 1 && zoomLevel === 0, 60)}
                 >
-                  <Icon 
-                    icon="mdi:cctv" 
-                    className="text-gray-400"
-                    width="16px" 
+                  <CCTVIcon 
+                    className="text-gray-400 drop-shadow-lg filter"
+                    width="16px"
                     height="16px"
                   />
                   {/* CCTV 카메라 개수 - 축소 모드에서만 표시 */}
@@ -639,10 +619,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                   }}
                 >
                   <div className={getCCTVIconClassName('default')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
-                    <Icon 
-                      icon="mdi:cctv" 
+                    <CCTVIcon 
                       className="text-gray-400"
-                      width="16px" 
+                      width="16px"
                       height="16px"
                     />
                   </div>
@@ -766,10 +745,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                           transformOrigin: 'center center'
                         }}
                       >
-                        <Icon 
-                          icon="mdi:cctv" 
-                          className="text-red-400" 
-                          width="16px" 
+                        <CCTVIcon 
+                          className="text-red-400"
+                          width="16px"
                           height="16px"
                         />
                         {/* CCTV 카메라 개수 - 축소 모드에서만 표시 */}
@@ -938,7 +916,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                 onClick={(e) => {
                   e.stopPropagation();
                   if (displayEvent.eventId) {
-                    router.push(`/event/${displayEvent.eventId}`);
+                    navigate(`/event/${displayEvent.eventId}`);
                   }
                 }}
                 className="flex-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors"

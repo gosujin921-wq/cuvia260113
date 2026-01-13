@@ -1,15 +1,7 @@
-'use client';
+
 
 import { Icon } from '@iconify/react';
 import { useState, useEffect, useRef, useMemo } from 'react';
-
-// 데이터 타입 정의
-interface CctvConnectionStatus {
-  cameraId: string;
-  name: string;
-  status: 'normal' | 'delay' | 'error';
-  latency: number | null;
-}
 
 interface MonitoringSpot {
   spotId: string;
@@ -67,6 +59,11 @@ interface InfrastructureStatus {
   alertMessage?: string;
 }
 
+/**
+ * 📡 API 연동 필요: CCTV 썸네일 이미지
+ * 현재: 로컬 정적 이미지 사용
+ * 변경: API에서 썸네일 URL 조회 필요
+ */
 const cctvLocalImages = [
   '/cctv_img/001.jpg',
   '/cctv_img/002.jpg',
@@ -75,6 +72,11 @@ const cctvLocalImages = [
   '/cctv_img/005.jpg',
 ];
 
+/**
+ * 📡 API 연동 필요: CCTV 썸네일 생성
+ * 현재: 로컬 이미지 순환
+ * 변경: API에서 실제 썸네일 URL 배열 반환
+ */
 const buildThumbnails = (identifier: string, count = 3) => {
   const seed = identifier
     .split('')
@@ -92,6 +94,17 @@ const RightPanel = () => {
   const [spotThumbnailIndices, setSpotThumbnailIndices] = useState<Record<string, number>>({});
   const [currentPage, setCurrentPage] = useState(0);
   const [areaPage, setAreaPage] = useState(0);
+  /**
+   * ============================================================================
+   * 📡 API 연동 포인트: 센서 데이터 및 상태 정보
+   * ============================================================================
+   * 현재: 더미 데이터 및 로컬 상태 관리
+   * 변경: API 호출로 실시간 데이터 조회 필요
+   * ============================================================================
+   */
+  
+  // 📡 API 연동 필요: 환경 센서 데이터
+  // GET /api/sensors/realtime
   const [sensorValues, setSensorValues] = useState({
     pm25: 38,
     pm10: 72,
@@ -100,13 +113,15 @@ const RightPanel = () => {
     rainfall: 0.3,
     windSpeed: 1.2,
   });
+  
   const [clockTime, setClockTime] = useState<string>('');
   const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
   const [waterLeakageTime, setWaterLeakageTime] = useState<string>('');
   const [powerSupplyTime, setPowerSupplyTime] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
   
-  // 날씨 데이터 (샘플)
+  // 📡 API 연동 필요: 날씨 데이터
+  // GET /api/weather/current
   const weatherData = {
     icon: 'mdi:weather-partly-cloudy',
     high: 25, // 섭씨
@@ -131,7 +146,6 @@ const RightPanel = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 각 지점별 썸네일 롤링 (5초 간격)
   useEffect(() => {
     const interval = setInterval(() => {
       setSpotThumbnailIndices((prev) => {
@@ -148,7 +162,6 @@ const RightPanel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 페이지 자동 순환 (10초 간격)
   useEffect(() => {
     const totalPages = Math.ceil(cctvStatus.monitoringSpots.length / 2);
     if (totalPages <= 1) return;
@@ -159,8 +172,24 @@ const RightPanel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 센서 값 실시간 업데이트 애니메이션 (2초 간격)
+  /**
+   * 📡 API 연동 필요: 환경 센서 데이터 실시간 업데이트
+   * 현재: 더미 데이터 랜덤 업데이트
+   * 변경: WebSocket 또는 Polling으로 실시간 데이터 수신
+   */
   useEffect(() => {
+    // 📡 API 연동 후 아래 코드로 대체:
+    // const fetchSensorData = async () => {
+    //   const response = await fetch('/api/sensors/realtime');
+    //   const data = await response.json();
+    //   setSensorValues(data);
+    //   setLastUpdateTime(new Date().toLocaleTimeString('ko-KR'));
+    // };
+    // fetchSensorData();
+    // const interval = setInterval(fetchSensorData, 2000);
+    // return () => clearInterval(interval);
+    
+    // 현재: 더미 데이터 (개발용)
     const interval = setInterval(() => {
       setSensorValues((prev) => ({
         pm25: Math.max(0, prev.pm25 + (Math.random() - 0.5) * 4),
@@ -174,7 +203,11 @@ const RightPanel = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // 1) CCTV 운영 현황 데이터
+  /**
+   * 📡 API 연동 필요: CCTV 운영 현황 데이터
+   * 현재: 더미 데이터
+   * 변경: GET /api/cctv/status
+   */
   const cctvStatus: CctvStatus = {
     totalRate: 96.1,
     totalCount: 1240,
@@ -336,7 +369,6 @@ const RightPanel = () => {
   const visibleAreas = cctvStatus.areaStatus.slice(areaPage * areasPerPage, areaPage * areasPerPage + areasPerPage);
 
 
-  // CCTV 스트리밍 자동 순환 (5초 간격) + 지역 카드 자동 전환
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentStreamIndex((prev) => {
@@ -353,7 +385,6 @@ const RightPanel = () => {
   }, [totalAreaPages]);
 
 
-  // level을 한글로 변환
   const getLevelText = (level: 'good' | 'normal' | 'bad') => {
     switch (level) {
       case 'good':
@@ -365,7 +396,6 @@ const RightPanel = () => {
     }
   };
 
-  // 센서 값에 따른 level 계산
   const getPm25Level = (value: number): 'good' | 'normal' | 'bad' => {
     if (value <= 15) return 'good';
     if (value <= 35) return 'normal';
@@ -402,7 +432,6 @@ const RightPanel = () => {
     return 'bad';
   };
 
-  // 2) 실시간 환경 센서 모니터링 데이터
   const infrastructureRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -422,14 +451,21 @@ const RightPanel = () => {
     { label: '장애', value: cctvStatus.errorCount, dot: 'bg-red-400', color: 'text-red-400' },
   ];
 
-  const collapsedSensors = [
-    { icon: 'mdi:thermometer', label: '온도', value: `${sensorData.temperature.value.toFixed(0)}°` },
-    { icon: 'mdi:water-percent', label: '습도', value: `${sensorData.humidity.value.toFixed(0)}%` },
-    { icon: 'mdi:weather-windy', label: '풍속', value: `${sensorData.windSpeed.value.toFixed(1)}m/s` },
-  ];
-
-  // 3) 도시 기반시설 운영 상태 데이터
+  /**
+   * 📡 API 연동 필요: 도시 기반시설 운영 상태
+   * 현재: 더미 데이터
+   * 변경: GET /api/infrastructure/status
+   */
   const infrastructureStatus: InfrastructureStatus = useMemo(() => {
+    // 📡 API 연동 후 아래 코드로 대체:
+    // const [infrastructureStatus, setInfrastructureStatus] = useState<InfrastructureStatus | null>(null);
+    // useEffect(() => {
+    //   fetch('/api/infrastructure/status')
+    //     .then(res => res.json())
+    //     .then(data => setInfrastructureStatus(data));
+    // }, []);
+    
+    // 현재: 더미 데이터 (개발용)
     const now = typeof window !== 'undefined' ? new Date().toISOString() : '';
     return {
       waterLeakage: { status: 'error', lastUpdate: now },
@@ -437,11 +473,10 @@ const RightPanel = () => {
       streetLightRate: 92,
       iotSensorRate: 95.5,
       alert: true,
-      alertMessage: '상수도 누수 감지',
+      alertMessage: '상수도 관망 이상 징후',
     };
   }, []);
 
-  // 기반시설 업데이트 시간 포맷팅 (클라이언트에서만)
   useEffect(() => {
     if (!isMounted || typeof window === 'undefined') return;
     
@@ -473,7 +508,6 @@ const RightPanel = () => {
         return 'text-green-400';
       case 'delay':
       case 'warning':
-      case 'normal':
         return 'text-yellow-400';
       case 'error':
       case 'bad':
@@ -491,7 +525,6 @@ const RightPanel = () => {
         return 'mdi:check-circle';
       case 'delay':
       case 'warning':
-      case 'normal':
         return 'mdi:alert-circle';
       case 'error':
       case 'bad':
@@ -558,11 +591,12 @@ const RightPanel = () => {
 
   return (
     <div
-      className={`${isCollapsed ? 'w-20' : 'w-[30rem]'} bg-[#161719] border-l border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
+      className={`${isCollapsed ? 'w-20' : ''} bg-[#161719] border-l border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
       style={{ 
         borderWidth: '1px',
         height: '100%',
         minHeight: 0,
+        width: isCollapsed ? '5rem' : '30rem',
       }}
     >
       <button
@@ -623,11 +657,12 @@ const RightPanel = () => {
         </div>
       ) : (
         <div
-          className="flex-1 overflow-y-auto p-3 pl-10 pr-9 space-y-8"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6"
           ref={scrollContainerRef}
+          style={{ maxWidth: '100%' }}
         >
         {/* 시간 및 날씨 */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#31353a]">
+        <div className="flex items-center justify-between pb-2 mb-4 border-b border-[#31353a]">
           <div className="text-white text-sm font-medium">
             {clockTime || '--:--:--'}
           </div>
@@ -642,33 +677,32 @@ const RightPanel = () => {
         </div>
         
         {/* 1) CCTV 운영 현황 */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between gap-4">
             <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
+            {/* 정상/장애/지연 장비 수 */}
+            <div className="flex items-center gap-x-2 gap-y-2 flex-wrap ml-auto">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
+                <span className="text-green-400 text-xs font-medium">{cctvStatus.normalCount.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
+                <span className="text-red-400 text-xs font-medium">{cctvStatus.errorCount}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0" />
+                <span className="text-gray-400 text-xs whitespace-nowrap">지연</span>
+                <span className="text-yellow-400 text-xs font-medium">{cctvStatus.delayCount}</span>
+              </div>
+            </div>
           </div>
                   
           {/* 전체 요약 데이터 */}
           <div className="space-y-3">
-            {/* 정상/장애/지연 장비 수 (색있는 불릿) */}
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-green-500" style={{ borderRadius: '50%' }} />
-                <span className="text-gray-400 text-xs">정상 장비 수</span>
-                <span className="text-green-400 text-xs font-medium">{cctvStatus.normalCount.toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-red-500" style={{ borderRadius: '50%' }} />
-                <span className="text-gray-400 text-xs">장애 장비 수</span>
-                <span className="text-red-400 text-xs font-medium">{cctvStatus.errorCount}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-yellow-500" style={{ borderRadius: '50%' }} />
-                <span className="text-gray-400 text-xs">지연 발생 장비 수</span>
-                <span className="text-yellow-400 text-xs font-medium">{cctvStatus.delayCount}</span>
-              </div>
-            </div>
-
-          {/* 전체 CCTV 가동률과 총 CCTV 수 (큰 숫자 스코어 스타일) */}
+            {/* 전체 CCTV 가동률과 총 CCTV 수 (큰 숫자 스코어 스타일) */}
             <div className="flex items-center gap-4">
               <div className="flex-1">
                 <div className="text-gray-400 text-xs mb-1 mt-2">전체 CCTV 가동률</div>
@@ -689,26 +723,26 @@ const RightPanel = () => {
           </div>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 min-w-0">
               {visibleAreas.map((area) => (
-                <div key={area.area} className="bg-[#36383B] border border-[#31353a] p-3 space-y-3" style={{ borderWidth: '1px' }}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-white text-sm font-semibold">{area.area}</p>
+                <div key={area.area} className="bg-[#36383B] border border-[#31353a] p-3 space-y-3 min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white text-sm font-semibold truncate">{area.area}</p>
                     </div>
-                    <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-300" />
+                    <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-300 flex-shrink-0" />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <p className="text-gray-200 text-xs font-semibold tracking-tight">장비 작동률</p>
+                  <div className="grid grid-cols-2 gap-2 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">장비 작동률</p>
                       <p className="text-white text-xl font-bold">{area.uptime}%</p>
                       <div className="w-full h-3 bg-[#161719] mt-1">
                         <div className="h-full bg-blue-500" style={{ width: `${area.uptime}%` }} />
                       </div>
                     </div>
-                    <div>
-                      <p className="text-gray-200 text-xs font-semibold tracking-tight">영상 송출률</p>
+                    <div className="min-w-0">
+                      <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">영상 송출률</p>
                       <p className="text-white text-xl font-bold">{area.streamRate}%</p>
                       <div className="w-full h-3 bg-[#161719] mt-1">
                         <div className="h-full bg-blue-500" style={{ width: `${area.streamRate}%` }} />
@@ -716,22 +750,22 @@ const RightPanel = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[0.65rem]">
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-white">지연</span>
-                      <span className="text-yellow-400 ml-3">{area.delay}</span>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[0.65rem] min-w-0">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-white truncate">지연</span>
+                      <span className="text-yellow-400 flex-shrink-0">{area.delay}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-white">장애</span>
-                      <span className="text-red-400 ml-3">{area.error}</span>
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-white truncate">장애</span>
+                      <span className="text-red-400 flex-shrink-0">{area.error}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-white">경고</span>
-                      <span className="text-orange-400 ml-3">{area.warning}</span>
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-white truncate">경고</span>
+                      <span className="text-orange-400 flex-shrink-0">{area.warning}</span>
                     </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-white">정비</span>
-                      <span className="text-purple-400 ml-3">{area.maintenance}</span>
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-white truncate">정비</span>
+                      <span className="text-purple-400 flex-shrink-0">{area.maintenance}</span>
                     </div>
                   </div>
 
@@ -747,16 +781,16 @@ const RightPanel = () => {
 
           {/* 주요 감시 지점별 영상 스트리밍 상태 */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="text-gray-400 text-xs">주요 감시 지점 (자동 순차)</div>
+            <div className="flex items-center justify-between mb-1.5 gap-2">
+              <div className="text-gray-400 text-xs truncate">주요 감시 지점 (자동 순차)</div>
               <button
                 onClick={() => setCurrentPage((prev) => (prev + 1) % Math.max(1, Math.ceil(cctvStatus.monitoringSpots.length / 2)))}
-                className="text-gray-300 text-xs px-2 py-0.5 border border-[#31353a] hover:border-blue-400 transition-colors"
+                className="text-gray-300 text-xs px-2 py-0.5 border border-[#31353a] hover:border-blue-400 transition-colors flex-shrink-0"
               >
                 다음
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 min-w-0">
               {cctvStatus.monitoringSpots.slice(currentPage * 2, (currentPage + 1) * 2).map((spot) => {
                 const currentThumbnailIndex = spotThumbnailIndices[spot.spotId] || 0;
                 const currentThumbnails = spot.thumbnails || [];
@@ -766,12 +800,12 @@ const RightPanel = () => {
                 return (
                   <div
                     key={spot.spotId}
-                    className="p-3 space-y-2 border border-[#31353a]"
+                    className="p-3 space-y-2 border border-[#31353a] min-w-0 overflow-hidden"
                     style={{ borderWidth: '1px' }}
                   >
                       {/* 장소 이름과 LIVE 인디케이터 (우측 정렬) */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-white text-xs font-medium">{spot.spotName}</span>
+                      <div className="flex items-center justify-between gap-2 min-w-0">
+                        <span className="text-white text-xs font-medium truncate">{spot.spotName}</span>
                         <div className="flex items-center gap-1 text-[10px]">
                           {spot.status === 'normal' ? (
                             <span className="px-2 py-0.5 border border-green-400 text-green-400 rounded-full">정상</span>
@@ -820,22 +854,22 @@ const RightPanel = () => {
         </div>
 
         {/* 2) 실시간 환경 센서 모니터링 */}
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 mb-4">
           <div className="flex items-center justify-between">
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
             <span className="text-gray-300 text-xs">
               마지막 업데이트: {lastUpdateTime || '--:--:--'}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2 min-w-0">
             {/* PM2.5 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a]" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1">
-                  <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-400 text-xs">PM2.5</span>
+            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">PM2.5</span>
                 </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[10px]`} style={{ borderRadius: '9999px' }}>
+                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.pm25.level)}
                 </span>
               </div>
@@ -846,13 +880,13 @@ const RightPanel = () => {
             </div>
 
             {/* PM10 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a]" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1">
-                  <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-400 text-xs">PM10</span>
+            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">PM10</span>
                 </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.pm10.level)} text-[10px]`} style={{ borderRadius: '9999px' }}>
+                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.pm10.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.pm10.level)}
                 </span>
               </div>
@@ -863,13 +897,13 @@ const RightPanel = () => {
             </div>
 
             {/* 온도 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a]" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1">
-                  <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-400 text-xs">온도</span>
+            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">온도</span>
                 </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.temperature.level)} text-[10px]`} style={{ borderRadius: '9999px' }}>
+                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.temperature.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.temperature.level)}
                 </span>
               </div>
@@ -880,13 +914,13 @@ const RightPanel = () => {
             </div>
 
             {/* 습도 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a]" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1">
-                  <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-400 text-xs">습도</span>
+            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">습도</span>
                 </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.humidity.level)} text-[10px]`} style={{ borderRadius: '9999px' }}>
+                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.humidity.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.humidity.level)}
                 </span>
               </div>
@@ -897,13 +931,13 @@ const RightPanel = () => {
             </div>
 
             {/* 강수량 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a]" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1">
-                  <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-400 text-xs">강수량</span>
+            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">강수량</span>
                 </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.rainfall.level)} text-[10px]`} style={{ borderRadius: '9999px' }}>
+                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.rainfall.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.rainfall.level)}
                 </span>
               </div>
@@ -914,13 +948,13 @@ const RightPanel = () => {
             </div>
 
             {/* 풍속 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a]" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1">
-                  <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-gray-400 text-xs">풍속</span>
+            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">풍속</span>
                 </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.windSpeed.level)} text-[10px]`} style={{ borderRadius: '9999px' }}>
+                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.windSpeed.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.windSpeed.level)}
                 </span>
               </div>
@@ -933,31 +967,22 @@ const RightPanel = () => {
         </div>
 
         {/* 3) 도시 기반시설 운영 상태 */}
-        <div className="space-y-2.5" ref={infrastructureRef}>
+        <div className="space-y-2.5 mb-4" ref={infrastructureRef}>
           <h3 className="text-white font-semibold text-sm">도시 기반시설 운영 상태</h3>
           
-          {/* 장애 알림 (최상단) */}
-          {infrastructureStatus.alert && infrastructureStatus.alertMessage && (
-            <div className="bg-red-500/20 border border-red-500/50 p-3" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center gap-1.5 text-red-400 text-xs font-medium">
-                <Icon icon="mdi:alert" className="w-4 h-4" />
-                <span>{infrastructureStatus.alertMessage}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-[#36383B] border border-[#31353a] p-3 space-y-1.5" style={{ borderWidth: '1px' }}>
-            {/* 상수도 누수 상태 */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5">
+          {/* 2x2 그리드 레이아웃 */}
+          <div className="grid grid-cols-2 gap-3 min-w-0">
+            {/* 상수도 관망 이상 징후 */}
+            <div className="bg-[#36383B] border border-[#31353a] p-3 space-y-2 min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1.5 min-w-0">
                 <Icon
                   icon={getStatusIcon(infrastructureStatus.waterLeakage.status)}
-                  className={`w-3.5 h-3.5 ${getStatusColor(infrastructureStatus.waterLeakage.status)}`}
+                  className={`w-4 h-4 ${getStatusColor(infrastructureStatus.waterLeakage.status)} flex-shrink-0`}
                 />
-                <span className="text-white">상수도 누수 상태</span>
+                <span className="text-white text-xs truncate">상수도 관망 이상 징후</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className={`px-2 py-0.5 text-xs ${
+              <div className="flex items-center justify-between gap-2">
+                <span className={`px-2 py-0.5 text-xs whitespace-nowrap ${
                   infrastructureStatus.waterLeakage.status === 'normal' 
                     ? 'bg-green-500/20 text-green-400' 
                     : infrastructureStatus.waterLeakage.status === 'warning' 
@@ -965,25 +990,25 @@ const RightPanel = () => {
                       : 'bg-red-500/20 text-red-400'
                 }`} style={{ borderRadius: '9999px' }}>
                   {infrastructureStatus.waterLeakage.status === 'normal' ? '정상' : 
-                   infrastructureStatus.waterLeakage.status === 'warning' ? '경고' : '장애'}
+                   infrastructureStatus.waterLeakage.status === 'warning' ? '경고' : '이상 징후'}
                 </span>
-                <span className="text-gray-300 text-xs" suppressHydrationWarning>
+                <span className="text-gray-300 text-xs whitespace-nowrap flex-shrink-0" suppressHydrationWarning>
                   {isMounted ? (waterLeakageTime || '--:--:--') : '--:--:--'}
                 </span>
               </div>
             </div>
 
-            {/* 전력 공급 상태 */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1.5">
+            {/* 전력 공급 이상 여부 */}
+            <div className="bg-[#36383B] border border-[#31353a] p-3 space-y-2 min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1.5 min-w-0">
                 <Icon
                   icon={getStatusIcon(infrastructureStatus.powerSupply.status)}
-                  className={`w-3.5 h-3.5 ${getStatusColor(infrastructureStatus.powerSupply.status)}`}
+                  className={`w-4 h-4 ${getStatusColor(infrastructureStatus.powerSupply.status)} flex-shrink-0`}
                 />
-                <span className="text-white">전력 공급 상태</span>
+                <span className="text-white text-xs truncate">전력 공급 이상 여부</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className={`px-2 py-0.5 text-xs ${
+              <div className="flex items-center justify-between gap-2">
+                <span className={`px-2 py-0.5 text-xs whitespace-nowrap ${
                   infrastructureStatus.powerSupply.status === 'normal' 
                     ? 'bg-green-500/20 text-green-400' 
                     : infrastructureStatus.powerSupply.status === 'warning' 
@@ -993,22 +1018,38 @@ const RightPanel = () => {
                   {infrastructureStatus.powerSupply.status === 'normal' ? '정상' : 
                    infrastructureStatus.powerSupply.status === 'warning' ? '경고' : '장애'}
                 </span>
-                <span className="text-gray-300 text-xs" suppressHydrationWarning>
+                <span className="text-gray-300 text-xs whitespace-nowrap flex-shrink-0" suppressHydrationWarning>
                   {isMounted ? (powerSupplyTime || '--:--:--') : '--:--:--'}
                 </span>
               </div>
             </div>
 
             {/* 가로등 점등률 */}
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white">가로등 점등률</span>
-              <span className="text-white text-xs">{infrastructureStatus.streetLightRate}%</span>
+            <div className="bg-[#36383B] border border-[#31353a] p-3 space-y-2 min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+                <span className="text-white text-xs truncate">가로등 점등률</span>
+              </div>
+              <div className="space-y-1">
+                <div className="text-white text-xl font-bold">{infrastructureStatus.streetLightRate}%</div>
+                <div className="w-full h-2 bg-[#161719] rounded-full overflow-hidden">
+                  <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${infrastructureStatus.streetLightRate}%` }} />
+                </div>
+              </div>
             </div>
 
             {/* 공공 IoT 센서 가동률 */}
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-white">공공 IoT 센서 가동률</span>
-              <span className="text-white text-xs">{infrastructureStatus.iotSensorRate}%</span>
+            <div className="bg-[#36383B] border border-[#31353a] p-3 space-y-2 min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Icon icon="mdi:chip" className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <span className="text-white text-xs truncate">공공 IoT 센서 가동률</span>
+              </div>
+              <div className="space-y-1">
+                <div className="text-white text-xl font-bold">{infrastructureStatus.iotSensorRate}%</div>
+                <div className="w-full h-2 bg-[#161719] rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-400 rounded-full" style={{ width: `${infrastructureStatus.iotSensorRate}%` }} />
+                </div>
+              </div>
             </div>
           </div>
         </div>

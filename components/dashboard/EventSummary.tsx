@@ -1,5 +1,3 @@
-'use client';
-
 import { EventSummary as EventSummaryType } from '@/types';
 
 interface EventSummaryProps {

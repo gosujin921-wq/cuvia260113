@@ -1,4 +1,4 @@
-'use client';
+
 
 import { ReactNode } from 'react';
 
@@ -8,7 +8,7 @@ interface ScaledLayoutProps {
 
 /**
  * 공통 스케일 레이아웃 컴포넌트
- * 모든 페이지에 0.8배 스케일과 브라우저 해상도에 맞는 높이 조정을 적용
+ * 모든 페이지에 0.85배 스케일과 브라우저 해상도에 맞는 높이 조정을 적용
  */
 export const ScaledLayout = ({ children }: ScaledLayoutProps) => {
   return (
@@ -23,10 +23,10 @@ export const ScaledLayout = ({ children }: ScaledLayoutProps) => {
       <div 
         className="flex flex-col"
         style={{
-          width: '125%',
-          height: '125vh',
-          minHeight: '125vh',
-          transform: 'scale(0.8)',
+          width: '117.65%',
+          height: '117.65vh',
+          minHeight: '117.65vh',
+          transform: 'scale(0.85)',
           transformOrigin: 'top left',
         }}
       >

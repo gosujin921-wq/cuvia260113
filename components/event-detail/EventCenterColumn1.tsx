@@ -1,4 +1,4 @@
-'use client';
+
 
 import React from 'react';
 import { Icon } from '@iconify/react';
@@ -8,6 +8,7 @@ import {
   getCCTVLabelClassName
 } from '@/components/shared/styles';
 import { AdditionalDataNotificationPopup } from './AdditionalDataNotificationPopup';
+import CCTVIcon from '@/components/common/CCTVIcon';
 
 interface EventCenterColumn1Props {
   isRightPanelCollapsed: boolean;
@@ -229,10 +230,9 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
             className={`${getCCTVIconClassName(getCCTVVariant(borderColor))} flex items-center justify-center ${cctvIds.length > 1 ? 'w-auto min-w-[28px]' : ''}`} 
             style={getCCTVIconBoxStyle(cctvIds.length, pinScale)}
           >
-            <Icon 
-              icon="mdi:cctv" 
-              className={iconColor}
-              width="16px" 
+            <CCTVIcon 
+              className={`${iconColor} drop-shadow-lg filter`}
+              width="16px"
               height="16px"
             />
             {/* CCTV 카메라 개수 - 축소 모드에서만 표시 */}
@@ -310,10 +310,9 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
             }}
           >
             <div className={getCCTVIconClassName(getCCTVVariant(borderColor))} style={getCCTVIconBoxStyle(1, pinScale)}>
-              <Icon 
-                icon="mdi:cctv" 
+              <CCTVIcon 
                 className={iconColor}
-                width="16px" 
+                width="16px"
                 height="16px"
               />
             </div>
@@ -427,7 +426,7 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
             style={{ borderWidth: '1px' }}
             aria-label="CCTV"
           >
-            <Icon icon="mdi:cctv" className="w-5 h-5" />
+            <CCTVIcon className="w-5 h-5 text-white" />
           </button>
           
           {/* CCTV 서브 토글 버튼들 - CCTV 온오프와 상관없이 항상 표시 */}
@@ -463,14 +462,13 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
           </button>
         </div>
 
-        {/* 지도 - 박스 밖으로 */}
-        {/* TODO: 지도 이미지 200% 확대 - 나중에 제거 필요 */}
+        {/* 지도 */}
         <div
           className="relative border border-[#31353a] bg-cover bg-center bg-no-repeat transition-transform duration-300"
           style={{
             borderWidth: '1px',
             backgroundImage: 'url(/map_anyang.png)',
-            backgroundSize: '500%', // TODO: 지도 이미지 500% 확대 - 나중에 제거 필요 (원래: 'cover')
+            backgroundSize: 'cover', // 📡 실제 지도 API 연동 시 동적 설정 필요
             height: '100%',
             width: '100%',
             transform: `scale(${mapScale})`,
@@ -523,10 +521,9 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                   className={`${getCCTVIconClassName('default')} flex items-center justify-center ${item.count > 1 ? 'w-auto min-w-[28px]' : ''}`} 
                   style={{ ...getCCTVIconBoxStyle(item.count, pinScale), zIndex: 60 }}
                 >
-                  <Icon 
-                    icon="mdi:cctv" 
+                  <CCTVIcon 
                     className="text-gray-400"
-                    width="16px" 
+                    width="16px"
                     height="16px"
                   />
                   {/* CCTV 카메라 개수 - 축소 모드에서만 표시 */}
@@ -595,11 +592,11 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                     }}
                   >
                     <div className={getCCTVIconClassName('default')} style={{ ...getCCTVIconBoxStyle(1, pinScale), zIndex: 60 }}>
-                      <Icon 
-                        icon="mdi:cctv" 
+                      <img 
+                        src="/icon_cctv.svg" 
+                        alt="CCTV" 
                         className="text-gray-400"
-                        width="16px" 
-                        height="16px"
+                        style={{ width: '16px', height: '16px' }}
                       />
                   </div>
                   {/* CCTV 이름 라벨 */}
@@ -902,10 +899,9 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                   className={`${getCCTVIconClassName('tracking')} flex items-center justify-center ${location5CCTVs.length > 1 ? 'w-auto min-w-[28px]' : ''}`} 
                   style={getCCTVIconBoxStyle(location5CCTVs.length, pinScale)}
                 >
-                  <Icon 
-                    icon="mdi:cctv" 
+                  <CCTVIcon 
                     className="text-red-400" 
-                    width="16px" 
+                    width="16px"
                     height="16px"
                   />
                   {/* CCTV 카메라 개수 - 축소 모드에서만 표시 */}
@@ -957,10 +953,9 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                     }}
                   >
                     <div className={getCCTVIconClassName('tracking')} style={getCCTVIconBoxStyle(1, pinScale)}>
-                      <Icon 
-                        icon="mdi:cctv" 
+                      <CCTVIcon 
                         className="text-red-400" 
-                        width="16px" 
+                        width="16px"
                         height="16px"
                       />
                     </div>
@@ -1024,25 +1019,25 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">
               <div className="w-5 h-5 border-2 border-yellow-500 rounded flex items-center justify-center" style={{ width: '20px', height: '20px' }}>
-                <Icon icon="mdi:cctv" className="text-yellow-400" style={{ width: '14px', height: '14px' }} />
+                <CCTVIcon className="text-yellow-400" width="14px" height="14px" />
               </div>
               <span className="text-gray-300" style={{ fontSize: '14.4px' }}>초기 포착</span>
             </div>
             <div className="flex items-center gap-2.5">
               <div className="w-5 h-5 border-2 border-blue-500 rounded flex items-center justify-center" style={{ width: '20px', height: '20px' }}>
-                <Icon icon="mdi:cctv" className="text-blue-400" style={{ width: '14px', height: '14px' }} />
+                <CCTVIcon className="text-blue-400" width="14px" height="14px" />
               </div>
               <span className="text-gray-300" style={{ fontSize: '14.4px' }}>과거 동선</span>
             </div>
             <div className="flex items-center gap-2.5">
               <div className="w-5 h-5 border-2 border-red-500 rounded flex items-center justify-center" style={{ width: '20px', height: '20px' }}>
-                <Icon icon="mdi:cctv" className="text-red-400" style={{ width: '14px', height: '14px' }} />
+                <CCTVIcon className="text-red-400" width="14px" height="14px" />
               </div>
               <span className="text-gray-300" style={{ fontSize: '14.4px' }}>추적 동선</span>
             </div>
             <div className="flex items-center gap-2.5">
               <div className="w-5 h-5 border-2 border-gray-500 rounded flex items-center justify-center" style={{ width: '20px', height: '20px' }}>
-                <Icon icon="mdi:cctv" className="text-gray-400" style={{ width: '14px', height: '14px' }} />
+                <CCTVIcon className="text-gray-400" width="14px" height="14px" />
               </div>
               <span className="text-gray-300" style={{ fontSize: '14.4px' }}>일반 CCTV</span>
             </div>

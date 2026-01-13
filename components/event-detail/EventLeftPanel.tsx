@@ -1,9 +1,9 @@
-'use client';
+
 
 import React from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import BroadcastControls from '@/components/BroadcastControls';
+import BroadcastControls from '@/components/common/BroadcastControls';
 import { getEventCategory, BaseEvent } from '@/lib/events-data';
 import { EventData, RiskFactor } from './types';
 import { riskLevelMeta } from './constants';

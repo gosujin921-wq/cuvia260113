@@ -1,12 +1,12 @@
-'use client';
+
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Icon } from '@iconify/react';
-import { BroadcastDraftPopup, ClipData } from './event-detail/BroadcastDraftPopup';
+import { BroadcastDraftPopup, ClipData } from '../event-detail/BroadcastDraftPopup';
 
 type PriorityLabel = '긴급' | '경계' | '주의';
 
-export type { ClipData } from './event-detail/BroadcastDraftPopup';
+export type { ClipData } from '../event-detail/BroadcastDraftPopup';
 
 export type BroadcastControlsProps = {
   eventId: string;
@@ -161,24 +161,67 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
     }
   };
 
-  const handleBroadcast = () => {
-    console.info('Broadcast request:', { eventId, message, recipients: selectedRecipients, attachments });
-    setDraftStatus('idle');
-    handleClose();
-    // 전파 성공 알림 표시
-    setBroadcastCount((prev) => prev + 1);
-    
-    const { date, time } = getFormattedDateTime();
-    const recipientLabels = selectedRecipients.map(getRecipientLabel).join(', ');
-    const alertMessage = `전파가 성공적으로 전송되었습니다.\n\n전파 일자: ${date}\n전파 시각: ${time}\n해당 이벤트 전파 횟수: ${broadcastCount + 1}회\n전파 수신: ${recipientLabels}`;
-    
-    alert(alertMessage);
+  /**
+   * 📡 API 연동 필요: 전파 전송
+   * POST /api/broadcast/send
+   */
+  const handleBroadcast = async () => {
+    try {
+      // 📡 API 연동 후 아래 코드 활성화:
+      // const response = await fetch('/api/broadcast/send', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     eventId,
+      //     message,
+      //     recipients: selectedRecipients,
+      //     attachments,
+      //   }),
+      // });
+      // const data = await response.json();
+      
+      // 현재: 더미 처리 (개발용)
+      console.info('Broadcast request:', { eventId, message, recipients: selectedRecipients, attachments });
+      setDraftStatus('idle');
+      handleClose();
+      setBroadcastCount((prev) => prev + 1);
+      
+      const { date, time } = getFormattedDateTime();
+      const recipientLabels = selectedRecipients.map(getRecipientLabel).join(', ');
+      const alertMessage = `전파가 성공적으로 전송되었습니다.\n\n전파 일자: ${date}\n전파 시각: ${time}\n해당 이벤트 전파 횟수: ${broadcastCount + 1}회\n전파 수신: ${recipientLabels}`;
+      
+      alert(alertMessage);
+    } catch (error) {
+      console.error('전파 전송 오류:', error);
+      alert('전파 전송 중 오류가 발생했습니다.');
+    }
   };
 
-  const handleSaveDraft = () => {
-    console.info('Broadcast draft saved:', { eventId, message, recipients: selectedRecipients, attachments });
-    setDraftStatus('drafting');
-    handleClose();
+  /**
+   * 📡 API 연동 필요: 전파 초안 저장
+   * POST /api/broadcast/draft
+   */
+  const handleSaveDraft = async () => {
+    try {
+      // 📡 API 연동 후 아래 코드 활성화:
+      // await fetch('/api/broadcast/draft', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     eventId,
+      //     message,
+      //     recipients: selectedRecipients,
+      //     attachments,
+      //   }),
+      // });
+      
+      // 현재: 더미 처리 (개발용)
+      console.info('Broadcast draft saved:', { eventId, message, recipients: selectedRecipients, attachments });
+      setDraftStatus('drafting');
+      handleClose();
+    } catch (error) {
+      console.error('초안 저장 오류:', error);
+    }
   };
 
   const toggleRecipient = (recipient: string) => {

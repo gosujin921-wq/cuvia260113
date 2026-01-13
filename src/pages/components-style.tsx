@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { 
@@ -104,7 +102,14 @@ export default function ComponentsStylePage() {
     return `${base} ${state}`.trim();
   };
 
-  // 파일 저장 함수
+  /**
+   * ============================================================================
+   * 📡 API 연동 포인트: 스타일 파일 저장
+   * ============================================================================
+   * 현재: /api/styles 엔드포인트 호출 (Next.js API route 필요)
+   * 변경: 실제 백엔드 API로 연동 필요
+   * ============================================================================
+   */
   const handleSave = async () => {
     setIsSaving(true);
     setSaveStatus('idle');
@@ -328,26 +333,28 @@ export const getPTZPresetButtonClassName = (isActive: boolean = false) => {
 };
 `;
 
-      const response = await fetch('/api/styles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: fileContent }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setSaveStatus('success');
-        setTimeout(() => {
-          setSaveStatus('idle');
-          // 페이지 새로고침하여 변경사항 반영
-          window.location.reload();
-        }, 1500);
-      } else {
-        setSaveStatus('error');
-      }
+      // 📡 API 연동 필요: 스타일 파일 저장 API
+      // const response = await fetch('/api/styles', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ content: fileContent }),
+      // });
+      // const data = await response.json();
+      
+      // 현재: API 미구현 상태 (개발용)
+      console.warn('스타일 저장 기능은 API 연동 후 사용 가능합니다.');
+      setSaveStatus('error');
+      
+      // API 연동 후 아래 코드 활성화:
+      // if (data.success) {
+      //   setSaveStatus('success');
+      //   setTimeout(() => {
+      //     setSaveStatus('idle');
+      //     window.location.reload();
+      //   }, 1500);
+      // } else {
+      //   setSaveStatus('error');
+      // }
     } catch (error) {
       console.error('Error saving styles:', error);
       setSaveStatus('error');

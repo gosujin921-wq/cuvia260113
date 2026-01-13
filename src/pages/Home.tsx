@@ -1,20 +1,35 @@
-'use client';
-
 import { useState, useMemo, useEffect } from 'react';
-import EventSummary from '@/components/EventSummary';
-import EventList from '@/components/EventList';
-import MapView from '@/components/MapView';
-import RightPanel from '@/components/RightPanel';
+import { useNavigate } from 'react-router-dom';
+import EventSummary from '@/components/dashboard/EventSummary';
+import EventList from '@/components/dashboard/EventList';
+import MapView from '@/components/dashboard/MapView';
+import RightPanel from '@/components/dashboard/RightPanel';
 import { ScaledLayout } from '@/components/layouts/ScaledLayout';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
 export default function Home() {
+  const navigate = useNavigate();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
   const [mapZoomLevel, setMapZoomLevel] = useState<number>(0);
 
-  // 공통 데이터 사용
+  /**
+   * ============================================================================
+   * 📡 API 연동 포인트: 이벤트 목록 조회
+   * ============================================================================
+   * 현재: 더미 데이터(allEvents) 사용
+   * 변경: API 호출로 대체 필요
+   * 
+   * 예시:
+   * const [events, setEvents] = useState<Event[]>([]);
+   * useEffect(() => {
+   *   fetch('/api/events?status=active')
+   *     .then(res => res.json())
+   *     .then(data => setEvents(data));
+   * }, []);
+   * ============================================================================
+   */
   const events: Event[] = useMemo(() => {
     return allEvents
       .map((event, index) => convertToDashboardEvent(event, index))
@@ -50,6 +65,11 @@ export default function Home() {
   }, []);
 
   const handleEventSelect = (eventId: string) => {
+    const event = events.find((e) => e.id === eventId);
+    if (event?.eventId) {
+      navigate(`/event/${event.eventId}`);
+      return;
+    }
     setSelectedEventId(eventId);
     setHighlightedEventId(eventId);
   };
@@ -59,11 +79,20 @@ export default function Home() {
   };
 
   const handleEventClick = (eventId: string) => {
+    const event = events.find((e) => e.id === eventId);
+    if (event?.eventId) {
+      navigate(`/event/${event.eventId}`);
+      return;
+    }
     setSelectedEventId(eventId);
     setHighlightedEventId(eventId);
   };
 
-  // 숫자 1 키를 누르면 유괴 의심 사건으로 이동
+  /**
+   * 키보드 단축키 핸들러
+   * - 1: 유괴 의심 사건으로 이동 (개발용)
+   * - ESC: 선택 해제
+   */
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       // 입력 필드에 포커스가 있으면 무시

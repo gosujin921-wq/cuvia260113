@@ -1,7 +1,7 @@
-'use client';
+
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { Event } from '@/types';
 import { getEventById, getEventCategory, getAIInsightKeywords, formatEventDateTime } from '@/lib/events-data';
@@ -14,7 +14,7 @@ interface EventListProps {
 }
 
 const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: EventListProps) => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const eventItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const agentPathByDomain: Record<string, string> = {
@@ -276,7 +276,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 }}
                 onClick={() => {
                   if (main.eventId) {
-                    router.push(`/event/${main.eventId}`);
+                    navigate(`/event/${main.eventId}`);
                     return;
                   }
                   onEventSelect?.(main.id);

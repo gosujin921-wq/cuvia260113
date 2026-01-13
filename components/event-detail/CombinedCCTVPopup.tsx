@@ -1,10 +1,11 @@
-'use client';
+
 
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { cctvInfo, cctvThumbnailMap, cctvFovMap, cctvCoordinatesMap, detectedCCTVThumbnails, movementTimeline, cctvLocationGroups } from './constants';
 import { getTabButtonClassName, getSecondaryButtonClassName, getPrimaryButtonClassName, getPTZButtonClassName, getPTZPresetButtonClassName } from '@/components/shared/styles';
 import { PlaybackControls } from './PlaybackControls';
+import CCTVIcon from '@/components/common/CCTVIcon';
 
 interface CombinedCCTVPopupProps {
   isOpen: boolean;
@@ -288,7 +289,7 @@ export const CombinedCCTVPopup = ({
         {/* 헤더 */}
         <div className="flex items-center justify-between p-6 border-b border-[#31353a] flex-shrink-0">
           <div className="flex items-center gap-2 text-base font-semibold text-white">
-            <Icon icon="mdi:cctv" className="w-5 h-5 text-[#50A1FF]" />
+            <CCTVIcon className="w-5 h-5 text-[#50A1FF]" />
             {popupTitle}
           </div>
           <button
@@ -767,7 +768,8 @@ export const CombinedCCTVPopup = ({
                 <button
                   type="button"
                   onClick={() => {
-                    // TODO: 전파하기 기능 구현
+                    // 📡 API 연동 필요: 클립 전파
+                    // POST /api/broadcast/clip
                     console.log('전파하기');
                   }}
                   className={getSecondaryButtonClassName()}
@@ -779,7 +781,8 @@ export const CombinedCCTVPopup = ({
               <button
                 type="button"
                 onClick={() => {
-                  // TODO: CCTV 모니터링 추가 기능 구현
+                  // 📡 API 연동 필요: CCTV 모니터링 추가
+                  // POST /api/cctv/{cctvId}/monitoring/add
                   console.log('CCTV 모니터링 추가');
                 }}
                 className={getSecondaryButtonClassName()}

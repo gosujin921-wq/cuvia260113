@@ -1,6 +1,28 @@
 import type { ProcessingStage, ResolutionCategory, EventType } from '@/types';
 import { MOCK_EVENTS } from './mock-data/events';
 
+/**
+ * ============================================================================
+ * 📡 API 연동 포인트
+ * ============================================================================
+ * 
+ * 현재는 더미 데이터(MOCK_EVENTS)를 사용하고 있습니다.
+ * 실제 API 연동 시 아래 함수들을 수정하세요:
+ * 
+ * 1. allEvents - 이벤트 목록 조회 API
+ * 2. getEventById - 특정 이벤트 조회 API
+ * 3. getEventsByDomain - 도메인별 이벤트 필터링 API
+ * 4. getEventsByStatus - 상태별 이벤트 필터링 API
+ * 5. getEventsByRisk - 위험도별 이벤트 필터링 API
+ * 
+ * 예시:
+ * export const allEvents = async (): Promise<BaseEvent[]> => {
+ *   const response = await fetch('/api/events');
+ *   return response.json();
+ * };
+ * ============================================================================
+ */
+
 // 공통 이벤트 데이터 - 모든 페이지에서 공유
 // 이벤트 ID 규칙: [도메인코드]-[연도월일]-[시퀀스]
 
@@ -127,25 +149,54 @@ const buildResolutionDescription = (category: ResolutionCategory, code: string):
   return `${prefix}에서 "${code}" 조치가 보고되었습니다.`;
 };
 
+/**
+ * 📡 API 연동 필요: 이벤트 목록 조회
+ * 현재: 더미 데이터 사용
+ * 변경: API 호출로 대체 필요
+ * 
+ * @returns {BaseEvent[]} 전체 이벤트 목록
+ */
 export const allEvents: BaseEvent[] = MOCK_EVENTS;
 
-// 도메인별 이벤트 필터링
+/**
+ * 📡 API 연동 필요: 도메인별 이벤트 필터링
+ * 현재: 클라이언트 사이드 필터링
+ * 변경: API 쿼리 파라미터로 필터링하거나 서버 사이드 필터링
+ * 
+ * @param domain - 도메인 코드 ('A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'ALL')
+ * @returns {BaseEvent[]} 필터링된 이벤트 목록
+ */
 export const getEventsByDomain = (domain: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'ALL'): BaseEvent[] => {
   if (domain === 'ALL') return allEvents;
   return allEvents.filter((event) => event.domain === domain);
 };
 
-// 이벤트 ID로 이벤트 찾기
+/**
+ * 📡 API 연동 필요: 이벤트 ID로 이벤트 조회
+ * 현재: 클라이언트 사이드 검색
+ * 변경: API 호출로 대체 필요
+ * 
+ * @param eventId - 이벤트 ID
+ * @returns {BaseEvent | undefined} 조회된 이벤트 또는 undefined
+ */
 export const getEventById = (eventId: string): BaseEvent | undefined => {
   return allEvents.find((event) => event.eventId === eventId || event.id === eventId);
 };
 
-// 상태별 이벤트 필터링
+/**
+ * 📡 API 연동 필요: 상태별 이벤트 필터링
+ * 현재: 클라이언트 사이드 필터링
+ * 변경: API 쿼리 파라미터로 필터링
+ */
 export const getEventsByStatus = (status: BaseEvent['status']): BaseEvent[] => {
   return allEvents.filter((event) => event.status === status);
 };
 
-// 위험도별 이벤트 필터링
+/**
+ * 📡 API 연동 필요: 위험도별 이벤트 필터링
+ * 현재: 클라이언트 사이드 필터링
+ * 변경: API 쿼리 파라미터로 필터링
+ */
 export const getEventsByRisk = (risk: BaseEvent['risk']): BaseEvent[] => {
   return allEvents.filter((event) => event.risk === risk);
 };
@@ -351,7 +402,14 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
   };
 };
 
-// 각 이벤트 타입별 AI Agent 답변 생성
+/**
+ * 📡 API 연동 필요: AI 인사이트 생성
+ * 현재: 로컬 템플릿 기반 생성
+ * 변경: AI API 호출로 대체 필요
+ * 
+ * @param event - 이벤트 데이터
+ * @returns {string} AI 인사이트 텍스트
+ */
 export const generateAIInsight = (event: BaseEvent): string => {
   const { type, title, description, risk, pScore, location, domain, source } = event;
   const riskScore = pScore || 0;
@@ -475,7 +533,11 @@ export const generateAIInsight = (event: BaseEvent): string => {
   return `${title} 이벤트 발생. ${description || ''} ${location}에서 발생한 이벤트로 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 현재 상황을 분석 중이며, 필요시 즉시 대응이 필요합니다.`;
 };
 
-// 사건 완료 시 알림 메시지 생성
+/**
+ * 📡 API 연동 필요: 이벤트 완료 메시지 생성
+ * 현재: 로컬 템플릿 기반 생성
+ * 변경: 서버에서 완료 처리 후 메시지 반환
+ */
 export const generateEventCompletionMessage = (event: BaseEvent, dashboardEvent: ReturnType<typeof convertToDashboardEvent> | null): string => {
   const { type, title, location, domain } = event;
   const resolution = dashboardEvent?.resolution;

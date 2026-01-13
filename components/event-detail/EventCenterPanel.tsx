@@ -1,9 +1,10 @@
-'use client';
+
 
 import React, { useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { ChatMessage, SavedClip } from './types';
 import { chatBlocks, quickCommands, cctvInfo } from './constants';
+import CCTVIcon from '@/components/common/CCTVIcon';
 
 interface EventCenterPanelProps {
   categoryLabel: string;
@@ -71,7 +72,7 @@ export const EventCenterPanel: React.FC<EventCenterPanelProps> = ({
         {/* CCTV 추천 */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
           <div className="flex items-center gap-2 mb-3">
-            <Icon icon="mdi:cctv" className="w-4 h-4 text-blue-600" />
+            <CCTVIcon className="w-4 h-4 text-blue-600" />
             <h4 className="text-gray-900 font-semibold text-sm">CCTV 추천</h4>
           </div>
           <div className="flex flex-wrap gap-2">

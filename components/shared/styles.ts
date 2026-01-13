@@ -110,10 +110,10 @@ export const inputStyles = {
 };
 
 export const cctvIconStyles = {
-  default: "w-7 h-7 bg-[#1a1a1a] border-2 border-gray-500 rounded-lg flex items-center justify-center shadow-xl relative hover:scale-110 transition-transform",
-  active: "w-7 h-7 bg-[#1a1a1a] border-2 border-blue-500 rounded-lg flex items-center justify-center shadow-xl relative hover:scale-110 transition-transform",
-  tracking: "w-7 h-7 bg-[#1a1a1a] border-2 border-red-500 rounded-lg flex items-center justify-center shadow-xl relative hover:scale-110 transition-transform",
-  warning: "w-7 h-7 bg-[#1a1a1a] border-2 border-yellow-500 rounded-lg flex items-center justify-center shadow-xl relative hover:scale-110 transition-transform",
+  default: "w-7 h-7 bg-gradient-to-br from-[#2a2a2a] via-[#1a1a1a] to-[#0f0f0f] border-2 border-gray-500/60 rounded-xl flex items-center justify-center shadow-2xl shadow-gray-900/50 relative hover:scale-110 hover:border-gray-400 hover:shadow-gray-800/70 transition-all duration-300 backdrop-blur-sm",
+  active: "w-7 h-7 bg-gradient-to-br from-blue-600/20 via-[#1a1a1a] to-[#0f0f0f] border-2 border-blue-500 rounded-xl flex items-center justify-center shadow-2xl shadow-blue-900/50 relative hover:scale-110 hover:border-blue-400 hover:shadow-blue-800/70 transition-all duration-300 backdrop-blur-sm ring-2 ring-blue-500/30",
+  tracking: "w-7 h-7 bg-gradient-to-br from-red-600/20 via-[#1a1a1a] to-[#0f0f0f] border-2 border-red-500 rounded-xl flex items-center justify-center shadow-2xl shadow-red-900/50 relative hover:scale-110 hover:border-red-400 hover:shadow-red-800/70 transition-all duration-300 backdrop-blur-sm ring-2 ring-red-500/30 animate-pulse",
+  warning: "w-7 h-7 bg-gradient-to-br from-yellow-600/20 via-[#1a1a1a] to-[#0f0f0f] border-2 border-yellow-500 rounded-xl flex items-center justify-center shadow-2xl shadow-yellow-900/50 relative hover:scale-110 hover:border-yellow-400 hover:shadow-yellow-800/70 transition-all duration-300 backdrop-blur-sm ring-2 ring-yellow-500/30",
 };
 
 export const cctvLabelStyles = {

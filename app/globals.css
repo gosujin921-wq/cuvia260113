@@ -43,7 +43,8 @@ body {
   overflow: hidden;
 }
 
-#__next {
+/* Next.js 루트 요소 (React로 전환 후 사용 안함) */
+/* #__next {
   width: 100vw;
   height: 100vh;
   max-height: 100vh;
@@ -53,7 +54,7 @@ body {
   overflow: hidden;
   margin: 0;
   padding: 0;
-}
+} */
 
 body {
   background: #161719;

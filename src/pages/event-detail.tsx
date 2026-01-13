@@ -1,8 +1,8 @@
-'use client';
+
 
 import React, { useEffect, useRef, useState, useMemo, Suspense } from 'react';
 import { Icon } from '@iconify/react';
-import { useParams } from 'next/navigation';
+import { useParams } from 'react-router-dom';
 import { getEventById, generateAIInsight, generateEventCompletionMessage, domainLabels, convertToDashboardEvent, formatEventDateTime } from '@/lib/events-data';
 import { EventLeftPanel } from '@/components/event-detail/EventLeftPanel';
 import { EventCenterPanel } from '@/components/event-detail/EventCenterPanel';
@@ -21,6 +21,23 @@ const EventDetailPageContent = () => {
   const params = useParams();
   const eventId = params.eventId as string;
   
+  /**
+   * ============================================================================
+   * 📡 API 연동 포인트: 이벤트 상세 정보 조회
+   * ============================================================================
+   * 현재: 더미 데이터에서 조회
+   * 변경: API 호출로 대체 필요
+   * 
+   * 예시:
+   * const [baseEvent, setBaseEvent] = useState<BaseEvent | null>(null);
+   * useEffect(() => {
+   *   if (!eventId) return;
+   *   fetch(`/api/events/${eventId}`)
+   *     .then(res => res.json())
+   *     .then(data => setBaseEvent(data));
+   * }, [eventId]);
+   * ============================================================================
+   */
   const baseEvent = useMemo(() => {
     if (!eventId) return null;
     return getEventById(eventId);
@@ -67,10 +84,20 @@ const EventDetailPageContent = () => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // 클립 재생 초기화
+  /**
+   * 📡 API 연동 필요: CCTV 클립 메타데이터 조회
+   * 현재: 더미 duration (30초)
+   * 변경: API에서 실제 비디오 메타데이터 조회
+   */
   useEffect(() => {
     if (showDetectedCCTVPopup && selectedDetectedCCTV) {
-      setClipDuration(30); // 실제로는 비디오 메타데이터에서 가져와야 함
+      // 📡 API 연동 후:
+      // fetch(`/api/cctv/${selectedDetectedCCTV}/clip/metadata`)
+      //   .then(res => res.json())
+      //   .then(data => setClipDuration(data.duration));
+      
+      // 현재: 더미 데이터
+      setClipDuration(30);
       setClipCurrentTime(0);
       setIsClipPlaying(false);
     }
@@ -159,52 +186,84 @@ const EventDetailPageContent = () => {
     setCurrentCctvIndex(nextIndex);
   };
 
-  // PTZ 제어 핸들러
-  const handlePTZUp = () => {
+  /**
+   * ============================================================================
+   * 📡 API 연동 포인트: PTZ 제어
+   * ============================================================================
+   * CCTV 카메라 PTZ(Pan-Tilt-Zoom) 제어 함수들
+   * 실제 API 연동 시 아래 함수들을 수정하세요.
+   * ============================================================================
+   */
+  
+  const handlePTZUp = async () => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/up
     console.log('PTZ: 위로 이동');
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/up`, { method: 'POST' });
   };
 
-  const handlePTZDown = () => {
+  const handlePTZDown = async () => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/down
     console.log('PTZ: 아래로 이동');
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/down`, { method: 'POST' });
   };
 
-  const handlePTZLeft = () => {
+  const handlePTZLeft = async () => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/left
     console.log('PTZ: 왼쪽으로 이동');
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/left`, { method: 'POST' });
   };
 
-  const handlePTZRight = () => {
+  const handlePTZRight = async () => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/right
     console.log('PTZ: 오른쪽으로 이동');
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/right`, { method: 'POST' });
   };
 
-  const handlePTZCenter = () => {
+  const handlePTZCenter = async () => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/center
     console.log('PTZ: 중앙');
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/center`, { method: 'POST' });
   };
 
-  const handleZoomIn = () => {
+  const handleZoomIn = async () => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/zoom/in
     console.log('PTZ: 줌 인');
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/zoom/in`, { method: 'POST' });
   };
 
-  const handleZoomOut = () => {
+  const handleZoomOut = async () => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/zoom/out
     console.log('PTZ: 줌 아웃');
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/zoom/out`, { method: 'POST' });
   };
 
-  const handlePreset = (preset: number) => {
+  const handlePreset = async (preset: number) => {
+    // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/preset/{preset}
     console.log(`PTZ: 프리셋 ${preset}`);
-    // TODO: 실제 PTZ 제어 API 호출
+    // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/preset/${preset}`, { method: 'POST' });
   };
 
 
+  /**
+   * 📡 API 연동 필요: CCTV 재생 상태 및 클립 관리
+   * 현재: 로컬 상태 관리
+   * 변경: WebSocket 또는 Polling으로 실시간 재생 상태 동기화
+   */
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(332); // 5분 32초
+  const [duration, setDuration] = useState(332); // 📡 API에서 실제 비디오 duration 조회 필요
+  
+  /**
+   * 📡 API 연동 필요: 저장된 클립 목록
+   * 현재: 로컬 상태
+   * 변경: GET /api/events/{eventId}/clips
+   */
   const [savedClips, setSavedClips] = useState<Array<{ id: string; cctvId: string; cctvName: string; timestamp: string; duration: string; frameTimestamp: string; thumbnail: string; status: 'saved' | 'ready' }>>([]);
+  /**
+   * 📡 API 연동 필요: CCTV 모니터링 상태
+   * 현재: 로컬 상태 관리
+   * 변경: GET /api/events/{eventId}/cctv/monitoring
+   */
   const [showTrackingOverlay, setShowTrackingOverlay] = useState(false);
   const [monitoringCCTVs, setMonitoringCCTVs] = useState<string[]>([
     'CCTV-7 (현장)', 
@@ -217,7 +276,7 @@ const EventDetailPageContent = () => {
     'CCTV-8 (서남쪽 90m)',
     'CCTV-13 (동남쪽 110m)',
     'CCTV-16 (북서쪽 130m)',
-  ]); // 모니터링 중인 CCTV 리스트 (초기값: AI 추천 CCTV)
+  ]); // 📡 API에서 AI 추천 CCTV 목록 조회 필요
   const trackingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // CCTV 토글 상태 (localStorage로 공유) - Hydration 에러 방지를 위해 초기값은 항상 false
   const [showCCTV, setShowCCTV] = useState(false);
@@ -237,7 +296,14 @@ const EventDetailPageContent = () => {
   // 맵 확대 상태
   const [zoomLevel, setZoomLevel] = useState(0); // 0: 축소(클러스터), 1: 확대(개별)
 
-  // 프로토타입 초기 상태
+  /**
+   * ============================================================================
+   * 🧪 프로토타입 기능 (개발/데모용)
+   * ============================================================================
+   * 아래 상태들은 프로토타입/데모용 기능입니다.
+   * 실제 API 연동 시 실제 데이터로 대체하거나 제거할 수 있습니다.
+   * ============================================================================
+   */
   const [prototypePin1Visible, setPrototypePin1Visible] = useState(true);
   const [prototypePin2Visible, setPrototypePin2Visible] = useState(false);
   const [prototypePin3Visible, setPrototypePin3Visible] = useState(false);
@@ -365,7 +431,10 @@ const EventDetailPageContent = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [isMounted]);
 
-  // 프로토타입 키보드 이벤트 (q, w, e)
+  /**
+   * 🧪 프로토타입 기능: 키보드 단축키 (q, w, e, r, 0)
+   * 실제 운영 시 제거하거나 실제 기능으로 대체 필요
+   */
   useEffect(() => {
     // 팝업이 열려있으면 키보드 이벤트 무시
     if (showMapCCTVPopup || showDetectedCCTVPopup || showCombinedCCTVPopup || showAdditionalDataPopup || showBroadcastDraftPopup || showCompletionPopup) {
@@ -626,14 +695,19 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
     }
   };
 
-  const handleSendMessage = (messageText?: string) => {
+  /**
+   * ============================================================================
+   * 📡 API 연동 포인트: AI 채팅 메시지 전송
+   * ============================================================================
+   * 현재: 로컬 generateAssistantReply 함수로 응답 생성 (더미)
+   * 변경: AI API 호출로 대체 필요
+   * ============================================================================
+   */
+  const handleSendMessage = async (messageText?: string) => {
     const text = (messageText ?? chatInput).trim();
     if (!text || isResponding) return;
     
-    // 프로토타입: w 단계에서 "시민 신고: 산책로 쪽으로 뛰어감" 전송 시
-    const isWStepMessage = prototypeStep === 'w' && text.includes('산책로');
-    
-    // 전파 초안 확인 단계에서의 긍정 응답 처리 (메시지 버블/추가 답변 없이 모달만 오픈)
+    // 전파 초안 확인 단계에서의 긍정 응답 처리
     const isPositive =
       text === '응' || text === '응.' || text === '네' || text === '네.' || text === '그래' || text === '좋아';
     const lastAssistant = [...chatMessages].reverse().find((msg) => msg.role === 'assistant');
@@ -645,7 +719,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
     ) {
       const now = Date.now();
       if (lastBroadcastConfirmHandledRef.current && now - lastBroadcastConfirmHandledRef.current < 1500) {
-        // 직전에 이미 처리했으면 아무 것도 하지 않음
         setChatInput('');
         return;
       }
@@ -660,50 +733,33 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
 
     addMessage('user', text);
     setChatInput('');
-
     setIsResponding(true);
-    setTimeout(() => {
-      const reply = generateAssistantReply(text);
-      const isCCTV = text.includes('cctv') || text.includes('CCTV') || text.includes('추천');
-      const buttons = isCCTV ? ['CCTV-7 (현장)', 'CCTV-12 (북쪽 50m)', 'CCTV-15 (골목길)', 'CCTV-9 (동쪽 100m)', 'CCTV-11 (서쪽 80m)'] : undefined;
-      addMessage('assistant', reply, buttons, isCCTV);
-      setIsResponding(false);
+
+    try {
+      // 📡 API 연동 필요: POST /api/events/{eventId}/chat
+      // const response = await fetch(`/api/events/${eventId}/chat`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ message: text }),
+      // });
+      // const data = await response.json();
+      // const reply = data.reply;
+      // const buttons = data.buttons;
+      // const isCCTV = data.isCCTVRecommendation;
       
-      // 프로토타입: w 단계에서 메시지 전송 후 처리
-      if (isWStepMessage) {
-        // 재추적 프로그래스바 시작
-        setIsTrackingProgress(true);
-        setTrackingProgress(0);
-        
-        const duration = 2000; // 2초
-        const interval = 50;
-        const increment = 100 / (duration / interval);
-        
-        let currentProgress = 0;
-        const progressInterval = setInterval(() => {
-          currentProgress += increment;
-          if (currentProgress >= 100) {
-            setTrackingProgress(100);
-            clearInterval(progressInterval);
-            
-            // 프로그래스 완료 후 핀2 표시 및 기타 상태 업데이트
-            setTimeout(() => {
-              setPrototypePin2Visible(true);
-              setPrototypePin2Pulse(true);
-              setPrototypePin1Pulse(false);
-              setPrototypeShowRoute1to2(true);
-              setPrototypeMovementTimelineFilter(['유괴 의심 신고 접수', '유괴범과 아동 함께 이동 포착', '시민 신고: 산책로 쪽으로 뛰어감', '용의자가 차량에 아이 태우는 장면 포착']);
-              setPrototypeShowDetectedClips(true); // 3개 클립 표시
-              setPrototypeShowVehicleAnalysis(true);
-              setIsTrackingProgress(false);
-              setTrackingProgress(0);
-            }, 300);
-          } else {
-            setTrackingProgress(currentProgress);
-          }
-        }, interval);
-      }
-    }, 700);
+      // 현재: 더미 응답 (개발용)
+      setTimeout(() => {
+        const reply = generateAssistantReply(text);
+        const isCCTV = text.includes('cctv') || text.includes('CCTV') || text.includes('추천');
+        const buttons = isCCTV ? ['CCTV-7 (현장)', 'CCTV-12 (북쪽 50m)', 'CCTV-15 (골목길)', 'CCTV-9 (동쪽 100m)', 'CCTV-11 (서쪽 80m)'] : undefined;
+        addMessage('assistant', reply, buttons, isCCTV);
+        setIsResponding(false);
+      }, 700);
+    } catch (error) {
+      console.error('AI 응답 오류:', error);
+      addMessage('assistant', '응답을 생성하는 중 오류가 발생했습니다.');
+      setIsResponding(false);
+    }
   };
 
 
@@ -1087,13 +1143,21 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
           // 모니터링 중단 처리
           console.log('모니터링 중단');
           setShowCompletionPopup(false);
-          // TODO: 실제 모니터링 중단 로직 구현
+          // 📡 API 연동 필요: 모니터링 중단
+          // POST /api/cctv/{cctvId}/monitoring/stop
+          // await fetch(`/api/cctv/${cctvId}/monitoring/stop`, { method: 'POST' });
         }}
-        onCreateReport={() => {
-          // 보고서 작성 - AI 에이전트에 전달
+        onCreateReport={async () => {
+          // 📡 API 연동 필요: 보고서 생성
+          // POST /api/events/{eventId}/report
+          // const response = await fetch(`/api/events/${eventId}/report`, {
+          //   method: 'POST',
+          //   body: JSON.stringify({ completionMessage }),
+          // });
+          
+          // 현재: AI 에이전트에 전달 (개발용)
           const reportPrompt = `이 사건에 대한 보고서를 작성해주세요.\n\n${completionMessage}`;
           setChatInput(reportPrompt);
-          // 우측 패널이 접혀있으면 열기
           if (isRightPanelCollapsed) {
             setIsRightPanelCollapsed(false);
           }

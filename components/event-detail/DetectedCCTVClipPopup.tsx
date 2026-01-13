@@ -1,4 +1,4 @@
-'use client';
+
 
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
@@ -391,7 +391,12 @@ export const DetectedCCTVClipPopup = ({
             <button
               type="button"
               onClick={() => {
-                // TODO: 전파하기 기능 구현
+                // 📡 API 연동 필요: 클립 전파
+                // POST /api/broadcast/clip
+                // await fetch('/api/broadcast/clip', {
+                //   method: 'POST',
+                //   body: JSON.stringify({ clipId, cctvId, timestamp }),
+                // });
                 console.log('전파하기');
               }}
               className={getSecondaryButtonClassName()}

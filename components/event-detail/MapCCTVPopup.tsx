@@ -1,9 +1,10 @@
-'use client';
+
 
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { cctvInfo, cctvThumbnailMap, cctvFovMap, cctvCoordinatesMap, movementTimeline, cctvLocationGroups } from './constants';
 import { getSecondaryButtonClassName, getPrimaryButtonClassName, getPTZButtonClassName, getPTZPresetButtonClassName } from '@/components/shared/styles';
+import CCTVIcon from '@/components/common/CCTVIcon';
 
 interface MapCCTVPopupProps {
   isOpen: boolean;
@@ -230,7 +231,7 @@ export const MapCCTVPopup = ({
         {/* 팝업 헤더 */}
         <div className="flex items-center justify-between p-6 border-b border-[#31353a] flex-shrink-0">
           <div className="flex items-center gap-2 text-base font-semibold text-white">
-            <Icon icon="mdi:cctv" className="w-5 h-5 text-[#50A1FF]" />
+            <CCTVIcon className="w-5 h-5 text-[#50A1FF]" />
             {popupTitle}
             {isTracking && (
               <span className="ml-2 px-2 py-0.5 bg-red-600 text-white text-xs font-semibold rounded">
