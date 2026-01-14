@@ -110,7 +110,12 @@ export const EventLeftPanel: React.FC<EventLeftPanelProps> = ({
             {/* AI 인사이트 */}
             <div className="px-3 pt-4 pb-6">
               <div className="flex items-center gap-2 text-sm tracking-tight text-[#50A1FF] mb-2">
-                <Icon icon="mdi:sparkles" className="w-5 h-5 text-[#50A1FF]" />
+                <img 
+                  src="/simbol.svg" 
+                  alt="AI" 
+                  className="w-5 h-5"
+                  style={{ filter: 'brightness(0) saturate(100%) invert(60%) sepia(100%) saturate(2000%) hue-rotate(190deg) brightness(1.1)' }}
+                />
                 <span className="text-[#50A1FF] font-semibold">AI 인사이트</span>
               </div>
               <div className="text-white text-sm leading-relaxed whitespace-pre-wrap px-3 py-2 bg-[#0f1723] border border-[#155DFC]">

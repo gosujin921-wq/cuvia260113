@@ -3,27 +3,27 @@
 import { Event } from '@/types';
 import { Icon } from '@iconify/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { getEventById, generateAIInsight, getAIInsightKeywords } from '@/lib/events-data';
-import { getCCTVIconClassName, getCCTVLabelClassName } from '@/components/shared/styles';
+import { Link } from 'react-router-dom';
+import { getCCTVIconClassName, getCCTVLabelClassName, getPrimaryButtonClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
-import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
+import SituationSummary from './SituationSummary';
+import AIDetectionPopup from './AIDetectionPopup';
 
 interface MapViewProps {
   events: Event[];
   highlightedEventId?: string | null;
   onEventClick?: (eventId: string) => void;
   selectedEventId?: string | null;
+  aiDetectionEventId?: string | null;
   onMapClick?: () => void;
   onEventHover?: (eventId: string | null) => void;
   onToggleGeneralEvents?: () => void;
   externalZoomLevel?: number;
   onZoomLevelChange?: (level: number) => void;
+  onAiDetectionClose?: () => void;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange }: MapViewProps) => {
-  const navigate = useNavigate();
-  const [searchInput, setSearchInput] = useState('');
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0); // 0: 축소(클러스터), 1: 확대(개별)
 
   // CCTV 카메라 개수 포맷팅 헬퍼 함수
@@ -135,7 +135,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
   const containerRef = useRef<HTMLDivElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
   // 일반 이벤트 ID 목록 (event-26부터 event-33)
   const generalEventIds = new Set([
@@ -143,12 +142,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
     'event-30', 'event-31', 'event-32', 'event-33',
   ]);
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      // 검색 기능은 현재 비활성화됨
-    }
-  };
   const getEventIcon = (type: string) => {
     switch (type) {
       case '119-화재':
@@ -191,10 +184,26 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
   const maxPinsPerRing = 6;
 
 
-  const positionsById = useMemo(() => {
+  // 기존 위치를 유지하면서 새 이벤트만 추가하기 위한 상태
+  const [cachedPositions, setCachedPositions] = useState<Record<string, { left: number; top: number }>>({});
+
+  // 새 이벤트의 위치를 계산하고 캐시에 추가
+  useEffect(() => {
     if (!events || events.length === 0) {
-      return {};
+      return;
     }
+
+    // 새로 추가된 이벤트만 필터링 (아직 위치가 없는 이벤트)
+    const newEvents = events.filter(event => !cachedPositions[event.id]);
+    
+    if (newEvents.length === 0) {
+      return;
+    }
+
+    // 기존 이벤트 + 새 이벤트 모두 포함하여 위치 계산
+    const existingEventIds = Object.keys(cachedPositions);
+    const existingEvents = events.filter(e => existingEventIds.includes(e.id));
+    const allEvents = [...existingEvents, ...newEvents];
 
     // 우선순위별로 그룹화
     const eventsByPriority: Record<string, Event[]> = {
@@ -203,17 +212,23 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
       주의: [],
     };
 
-    events.forEach((event) => {
+    allEvents.forEach((event) => {
       if (eventsByPriority[event.priority]) {
         eventsByPriority[event.priority].push(event);
       }
     });
 
-    // 각 우선순위 그룹 내부를 섞기
+    // 각 우선순위 그룹 내부 정렬 (기존 이벤트는 순서 유지, 새 이벤트는 추가)
     Object.keys(eventsByPriority).forEach((priority) => {
-      eventsByPriority[priority] = eventsByPriority[priority].sort(() => {
+      const existingPriorityEvents = eventsByPriority[priority].filter(e => cachedPositions[e.id]);
+      const newPriorityEvents = eventsByPriority[priority].filter(e => !cachedPositions[e.id]);
+      
+      // 새 이벤트만 섞기
+      newPriorityEvents.sort(() => {
         return seededRandom(`${priority}-shuffle`) - 0.5;
       });
+      
+      eventsByPriority[priority] = [...existingPriorityEvents, ...newPriorityEvents];
     });
 
     // 각 우선순위 그룹을 인터리빙하여 골고루 섞기
@@ -239,24 +254,54 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
       rings[ringIndex].push(event);
     });
 
-    const computedPositions: Record<string, { left: number; top: number }> = {};
+    const newPositions: Record<string, { left: number; top: number }> = {};
 
+    // 새 이벤트의 위치만 계산 (기존 이벤트는 스킵)
     rings.forEach((ringEvents, ringIndex) => {
       if (!ringEvents || ringEvents.length === 0) {
         return;
       }
 
+      // 기존 이벤트와 새 이벤트를 분리
+      const existingRingEvents = ringEvents.filter(e => cachedPositions[e.id]);
+      const newRingEvents = ringEvents.filter(e => !cachedPositions[e.id]);
+
+      // 기존 이벤트는 위치를 변경하지 않으므로 새 이벤트만 계산
+      if (newRingEvents.length === 0) {
+        return;
+      }
+
+      // 링의 전체 이벤트 개수를 기반으로 각도 계산
       const radius = baseRadius + (ringIndex * ringGap);
       const angleStep = (Math.PI * 2) / ringEvents.length;
-      const ringAngleOffset = seededRandom(`ring-${ringIndex}`) * angleStep;
+      
+      // 기존 이벤트의 위치를 기반으로 ringAngleOffset 역계산
+      let ringAngleOffset: number;
+      if (existingRingEvents.length > 0) {
+        // 기존 이벤트 중 첫 번째 이벤트의 위치를 기반으로 각도 계산
+        const firstExistingEvent = existingRingEvents[0];
+        const firstPos = cachedPositions[firstExistingEvent.id];
+        const firstIndex = ringEvents.findIndex(e => e.id === firstExistingEvent.id);
+        const dx = firstPos.left - centerX;
+        const dy = firstPos.top - centerY;
+        const firstAngle = Math.atan2(dy, dx);
+        // 첫 번째 이벤트의 각도에서 인덱스 * angleStep을 빼서 오프셋 계산
+        const firstAngleJitter = (seededRandom(`${firstExistingEvent.id}-angle`) - 0.5) * angleStep * 0.4;
+        ringAngleOffset = firstAngle - (firstIndex * angleStep) - firstAngleJitter;
+      } else {
+        // 새 링인 경우 랜덤 오프셋 사용
+        ringAngleOffset = seededRandom(`ring-${ringIndex}`) * angleStep;
+      }
 
-      ringEvents.forEach((event, idx) => {
+      // 새 이벤트의 위치 계산
+      newRingEvents.forEach((event) => {
+        const eventIndex = ringEvents.findIndex(e => e.id === event.id);
         const angleJitter = (seededRandom(`${event.id}-angle`) - 0.5) * angleStep * 0.4;
-        const angle = ringAngleOffset + (idx * angleStep) + angleJitter;
+        const angle = ringAngleOffset + (eventIndex * angleStep) + angleJitter;
         const left = centerX + (radius * Math.cos(angle));
         const top = centerY + (radius * Math.sin(angle));
 
-        computedPositions[event.id] = {
+        newPositions[event.id] = {
           left: clampPercentage(left),
           top: clampPercentage(top),
         };
@@ -264,14 +309,53 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
     });
 
     // 특정 이벤트 핀 위치 교환: event-3(오토바이 도주)와 event-7(주택 2층 연기 발생)
-    if (computedPositions['event-3'] && computedPositions['event-7']) {
-      const tempPosition = computedPositions['event-3'];
-      computedPositions['event-3'] = computedPositions['event-7'];
-      computedPositions['event-7'] = tempPosition;
+    const newEventIds = newEvents.map(e => e.id);
+    if (newEventIds.includes('event-3') && newEventIds.includes('event-7') && newPositions['event-3'] && newPositions['event-7']) {
+      const tempPosition = newPositions['event-3'];
+      newPositions['event-3'] = newPositions['event-7'];
+      newPositions['event-7'] = tempPosition;
     }
 
-    return computedPositions;
-  }, [events]);
+    // 새 위치를 캐시에 추가
+    setCachedPositions(prev => ({ ...prev, ...newPositions }));
+  }, [events.map(e => e.id).join(',')]); // 이벤트 ID 목록이 변경될 때만 실행
+
+  const positionsById = useMemo(() => {
+    // 현재 events에 해당하는 위치만 반환 (캐시에서 가져오기)
+    const result: Record<string, { left: number; top: number }> = {};
+    events.forEach(event => {
+      if (cachedPositions[event.id]) {
+        result[event.id] = cachedPositions[event.id];
+      }
+    });
+    return result;
+  }, [events, cachedPositions]);
+
+  // 선택된 이벤트를 중앙으로 이동시키기 위한 translate 계산
+  const mapTranslate = useMemo(() => {
+    if (zoomLevel === 0 || !selectedEventId) {
+      return { x: 0, y: 0 };
+    }
+    
+    const selectedEvent = events.find(e => e.id === selectedEventId);
+    if (!selectedEvent) {
+      return { x: 0, y: 0 };
+    }
+    
+    const eventPosition = positionsById[selectedEvent.id] || { left: centerX, top: centerY };
+    // CSS transform에서 transform-origin이 center center일 때:
+    // scale(s)를 적용하면 중심점(50%, 50%)을 기준으로 확대됩니다.
+    // 이벤트가 (x, y)에 있을 때, 중심점에서 이벤트까지의 벡터는 (x - 50, y - 50)
+    // scale 후 벡터: (x - 50) * s, (y - 50) * s
+    // scale 후 위치: (50 + (x - 50) * s, 50 + (y - 50) * s)
+    // 중앙(50, 50)으로 이동하려면: (50 - (50 + (x - 50) * s), 50 - (50 + (y - 50) * s))
+    // = (-(x - 50) * s, -(y - 50) * s)
+    // = ((50 - x) * s, (50 - y) * s)
+    const translateX = (50 - eventPosition.left) * mapScale;
+    const translateY = (50 - eventPosition.top) * mapScale;
+    
+    return { x: translateX, y: translateY };
+  }, [zoomLevel, selectedEventId, events, mapScale, positionsById]);
 
   // 핀 위치 계산 - 단순히 퍼센트 위치 유지
   const getEventPosition = (event: Event) => {
@@ -492,9 +576,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
           backgroundSize: 'cover',
           height: '100%',
           width: '100%',
-          transform: `scale(${mapScale}) translateZ(0)`,
+          transform: `scale(${mapScale}) translate(${mapTranslate.x}%, ${mapTranslate.y}%) translateZ(0)`,
           transformOrigin: mapTransformOrigin,
           willChange: 'transform',
+          transition: 'transform 0.5s ease-out',
         }}
       >
         {/* 미세한 딤 오버레이 */}
@@ -593,10 +678,53 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
               </div>
             );
           } else {
-            // 확대 모드: 개별 CCTV 아이콘 표시
+            // 확대 모드: 개별 CCTV 아이콘 표시 - 다양한 각도와 위치로 배치
             return Array.from({ length: item.count }, (_, i) => {
-              const angle = (i / item.count) * 2 * Math.PI;
-              const radius = 2;
+              // 각 CCTV 그룹마다 다른 패턴 사용 (index 기반)
+              const patternSeed = index % 4;
+              let angle: number;
+              let radius: number;
+              let viewAngle: number;
+              
+              // 패턴별로 다양한 배치 방식 적용
+              switch (patternSeed) {
+                case 0: // 원형 배치 (기본)
+                  angle = (i / item.count) * 2 * Math.PI;
+                  radius = 2 + (i % 2) * 0.5; // 거리 다양화
+                  viewAngle = (item.viewAngle + i * 30) % 360;
+                  break;
+                case 1: // 사각형 패턴
+                  const side = Math.floor(i / 4);
+                  const pos = i % 4;
+                  const squareRadius = 1.5 + side * 0.8;
+                  angle = (pos * Math.PI / 2) + (Math.PI / 4);
+                  radius = squareRadius;
+                  viewAngle = (item.viewAngle + pos * 45 + side * 15) % 360;
+                  break;
+                case 2: // 불규칙한 분산
+                  angle = (i / item.count) * 2 * Math.PI + (i % 3) * 0.3;
+                  radius = 1.5 + (i % 3) * 0.7 + Math.sin(i) * 0.5;
+                  viewAngle = (item.viewAngle + i * 40 + (i % 2) * 60) % 360;
+                  break;
+                case 3: // 선형 + 원형 혼합
+                  if (i < 2) {
+                    // 처음 2개는 선형
+                    angle = (i - 0.5) * Math.PI / 3;
+                    radius = 2.5;
+                    viewAngle = (item.viewAngle + i * 90) % 360;
+                  } else {
+                    // 나머지는 원형
+                    angle = ((i - 2) / (item.count - 2)) * 2 * Math.PI;
+                    radius = 1.8 + (i % 2) * 0.6;
+                    viewAngle = (item.viewAngle + (i - 2) * 50) % 360;
+                  }
+                  break;
+                default:
+                  angle = (i / item.count) * 2 * Math.PI;
+                  radius = 2;
+                  viewAngle = item.viewAngle;
+              }
+              
               const offsetLeft = Math.cos(angle) * radius;
               const offsetTop = Math.sin(angle) * radius;
               
@@ -637,7 +765,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                         height: '120px',
                         left: '50%',
                         top: '50%',
-                        transform: `translate(-50%, -50%) rotate(${item.viewAngle}deg)`,
+                        transform: `translate(-50%, -50%) rotate(${viewAngle}deg)`,
                         transformOrigin: 'center center',
                         pointerEvents: 'none',
                         zIndex: 30,
@@ -782,235 +910,22 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
 
       </div>
 
-      {/* 이벤트 팝업 - selectedEventId가 있을 때만 표시 */}
-      {(() => {
-        // selectedEventId가 있을 때만 팝업 표시
-        if (!selectedEventId) return null;
-        
-        const displayEvent = events.find(e => e.id === selectedEventId);
-        
-        if (!displayEvent) return null;
-        
-        // "상가 절도 의심" 이벤트는 팝업 전체 제외
-        const isTheftEvent = displayEvent.title.includes('상가 절도 의심') || displayEvent.title.includes('현금 절취 포착');
-        if (isTheftEvent) return null;
-        
-        return (
-          <div
-            ref={tooltipRef}
-            data-tooltip
-            className="absolute rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-white text-xs shadow-xl"
-            style={{ 
-              width: '420px',
-              maxHeight: '600px',
-              overflowY: 'auto',
-              zIndex: 1000,
-              top: '20px',
-              right: '20px',
-              transform: 'none'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {/* 헤더: 닫기 버튼만 */}
-            <div 
-              className="px-3 py-1.5 border-b border-[#2a2a2a] flex items-center justify-end"
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMapClick?.();
-                }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                }}
-                className="p-1 hover:bg-[#36383B] rounded transition-colors"
-                aria-label="닫기"
-              >
-                <Icon icon="mdi:close" className="w-4 h-4 text-gray-400 hover:text-white" />
-              </button>
-            </div>
+      {/* 상황요약 팝업 */}
+      {selectedEventId && (
+        <SituationSummary
+          event={events.find(e => e.id === selectedEventId) || null}
+          onClose={() => onMapClick?.()}
+        />
+      )}
 
-            {/* 감지된 CCTV 영상 */}
-            <div className="m-3">
-              <div className="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg overflow-hidden relative" style={{ borderWidth: '1px', aspectRatio: '16/9' }}>
-                <video 
-                  src={displayEvent.id ? getRandomCCTVVideo(displayEvent.id) : getRandomCCTVVideo()}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-                {/* Live/Clip 상태 오버레이 */}
-                <div className="absolute top-2 left-2 flex gap-2" style={{ zIndex: 10 }}>
-                  <span className="px-2 py-0.5 bg-red-500/90 text-white text-xs font-semibold rounded flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                    LIVE
-                  </span>
-                  <span className="px-2 py-0.5 bg-blue-500/90 text-white text-xs font-semibold rounded">
-                    CLIP
-                  </span>
-                </div>
-                
-                {/* 플레이 타임라인과 인디케이터 */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3" style={{ zIndex: 10 }}>
-                  {/* 타임라인 */}
-                  <div className="relative w-full h-1 bg-gray-600/50 rounded-full mb-2 cursor-pointer flex items-center">
-                    {/* 재생 진행 바 */}
-                    <div 
-                      className="absolute left-0 top-0 h-full bg-blue-500 rounded-full"
-                      style={{ width: '35%' }}
-                    ></div>
-                    {/* 재생 인디케이터 */}
-                    <div 
-                      className="absolute w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-lg"
-                      style={{ left: '35%', top: '50%', transform: 'translate(-50%, -50%)' }}
-                    ></div>
-                  </div>
-                  {/* 시간 표시 */}
-                  <div className="flex items-center justify-between text-white text-xs">
-                    <span>00:12</span>
-                    <span className="text-gray-400">00:35</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* AI탐지 팝업 */}
+      {aiDetectionEventId && (
+        <AIDetectionPopup
+          event={events.find(e => e.id === aiDetectionEventId) || null}
+          onClose={() => onAiDetectionClose?.()}
+        />
+      )}
 
-            {/* 이벤트 명 */}
-            <div className="px-3 mb-2">
-              <div className="text-white font-semibold text-sm mb-1">{displayEvent.title}</div>
-              <div className="text-gray-400 text-xs">{displayEvent.location.name}</div>
-            </div>
-
-            {/* AI 분석 - AI 인사이트 요약 + 핵심 키워드 */}
-            {(() => {
-              const baseEvent = displayEvent.eventId ? getEventById(displayEvent.eventId) : null;
-              const keywords = baseEvent ? getAIInsightKeywords(baseEvent) : [];
-              const aiInsightText = baseEvent ? generateAIInsight(baseEvent) : null;
-              
-              if (keywords.length === 0 && !aiInsightText) return null;
-              
-              return (
-                <div className="m-3 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4" style={{ borderWidth: '1px' }}>
-                  <div className="flex items-start gap-2 mb-3">
-                    <Icon icon="mdi:robot" className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <h3 className="text-white font-semibold text-sm">AI 분석</h3>
-                  </div>
-                  
-                  {/* AI 인사이트 내용 요약 */}
-                  {aiInsightText && (
-                    <div className="mb-3 text-xs text-white leading-relaxed">
-                      {aiInsightText.split('. ').filter(s => s.trim()).slice(0, 2).map((sentence, idx) => (
-                        <div key={idx} className="text-white mb-1">
-                          {sentence.trim()}{sentence.trim().endsWith('.') ? '' : '.'}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* 핵심 키워드 */}
-                  {keywords.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {keywords.slice(0, 5).map((keyword, idx) => (
-                        <span 
-                          key={idx}
-                          className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded border border-blue-500/30"
-                          style={{ borderWidth: '1px' }}
-                        >
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* 버튼 영역 - 모니터링화면으로 가기 | 바로 전파 */}
-            <div className="p-2 flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (displayEvent.eventId) {
-                    navigate(`/event/${displayEvent.eventId}`);
-                  }
-                }}
-                className="flex-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition-colors"
-              >
-                모니터링화면으로 가기
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const generateAIInsight = () => {
-                    if (displayEvent.type.includes('화재')) {
-                      return '화재 이벤트 발생. 강풍 영향으로 확산 위험이 높으며, 접근 가능한 도로가 제한적입니다. 즉시 소방대 출동이 필요합니다.';
-                    } else if (displayEvent.type.includes('미아') || displayEvent.type.includes('배회')) {
-                      return '실종/배회 이벤트 발생. 마지막 목격 좌표 기준 반경 300m 내에서 배회 행동이 감지되었습니다. 즉시 수색대 출동이 필요합니다.';
-                    } else if (displayEvent.type.includes('약자')) {
-                      return '약자 쓰러짐 이벤트 발생. 강풍·조도·지형 영향으로 긴급도 High입니다. 즉시 구조대 출동이 필요합니다.';
-                    } else if (displayEvent.type.includes('치안') || displayEvent.type.includes('폭행') || displayEvent.type.includes('절도')) {
-                      return '치안 사건 발생. CCTV AI 감지 및 112 신고가 동시에 접수되어 고신뢰도 사건으로 분류되었습니다. 즉시 경찰 출동이 필요합니다.';
-                    }
-                    return `${displayEvent.title} 이벤트 발생. 현재 상황을 분석 중이며, 필요시 즉시 대응이 필요합니다.`;
-                  };
-                  
-                  const aiInsight = generateAIInsight();
-                  const message = `[${displayEvent.location.name}]\n\n${aiInsight}`;
-                  
-                  alert(message);
-                }}
-                className="flex-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
-              >
-                바로 전파
-              </button>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* 플로팅 검색창 */}
-      <div 
-        className="absolute"
-        style={{
-          bottom: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 200,
-          width: '500px',
-        }}
-      >
-        <div
-          className="flex items-center gap-3 bg-white border rounded-full shadow-lg"
-          style={{
-            padding: '12px 16px',
-            borderColor: '#d1d5db',
-            boxShadow: '0 6px 18px rgba(0, 0, 0, 0.25)',
-          }}
-        >
-          <div className="w-10 h-10 rounded-full border border-gray-200 bg-gradient-to-r from-blue-500 via-indigo-500 to-blue-400 flex items-center justify-center animate-[pulse_4s_ease_infinite] shadow-md">
-            <Icon icon="mdi:sparkles" className="w-5 h-5 text-white drop-shadow-md" />
-          </div>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            placeholder="통계를 조회하세요... (예: 요즘 화재가 늘었어?)"
-            className="flex-1 bg-transparent text-[#161719] placeholder-gray-500 focus:outline-none"
-          />
-          {searchInput && (
-            <button
-              onClick={() => setSearchInput('')}
-              className="p-2 hover:bg-[#f3f4f6] rounded-full transition-colors"
-            >
-              <Icon icon="mdi:close" className="w-5 h-5 text-gray-400" />
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Agent Hub 버튼 - 우측 하단 플로팅 버튼 */}
       <div
@@ -1026,7 +941,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
           className="w-14 h-14 rounded-full bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] hover:from-[#8B72F5] hover:to-[#6A4FFA] flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300"
           aria-label="Agent Hub"
         >
-          <Icon icon="mdi:sparkles" className="w-6 h-6 text-white" />
+          <img 
+            src="/simbol.svg" 
+            alt="AI" 
+            className="w-6 h-6"
+            style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+          />
         </Link>
         {/* 툴팁 */}
         <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">

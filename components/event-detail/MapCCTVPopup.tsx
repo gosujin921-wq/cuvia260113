@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
+import { BasePopup } from '@/components/shared/BasePopup';
 import { cctvInfo, cctvThumbnailMap, cctvFovMap, cctvCoordinatesMap, movementTimeline, cctvLocationGroups } from './constants';
-import { getSecondaryButtonClassName, getPrimaryButtonClassName, getPTZButtonClassName, getPTZPresetButtonClassName } from '@/components/shared/styles';
+import { getPrimaryButtonClassName, getSecondaryButtonClassName, getPTZButtonClassName, getPTZPresetButtonClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
@@ -220,36 +221,23 @@ export const MapCCTVPopup = ({
   );
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
-      onClick={onClose}
+    <BasePopup
+      isOpen={isOpen && !!selectedMapCCTV}
+      onClose={onClose}
+      title={
+        <>
+          {popupTitle}
+          {isTracking && (
+            <span className="ml-2 px-2 py-0.5 bg-red-600 text-white text-xs font-semibold rounded">
+              추적중
+            </span>
+          )}
+        </>
+      }
+      titleIcon={<CCTVIcon className="w-5 h-5 text-[#50A1FF]" />}
+      maxWidth="max-w-6xl"
+      maxHeight="120vh"
     >
-      <div
-        className="bg-[#101013] border border-[#31353a] w-full max-w-6xl flex flex-col shadow-lg"
-        style={{ maxHeight: '120vh', height: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 팝업 헤더 */}
-        <div className="flex items-center justify-between p-6 border-b border-[#31353a] flex-shrink-0">
-          <div className="flex items-center gap-2 text-base font-semibold text-white">
-            <CCTVIcon className="w-5 h-5 text-[#50A1FF]" />
-            {popupTitle}
-            {isTracking && (
-              <span className="ml-2 px-2 py-0.5 bg-red-600 text-white text-xs font-semibold rounded">
-                추적중
-              </span>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white focus:outline-none transition-colors"
-            aria-label="CCTV 팝업 닫기"
-          >
-            <Icon icon="mdi:close" className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* 메인 콘텐츠 영역 */}
         {/* 영상 영역 - 2컬럼 */}
         <div className="flex p-4 pb-3">
           {/* 왼쪽: 영상 */}
@@ -508,16 +496,15 @@ export const MapCCTVPopup = ({
         </div>
 
 
-        {/* 하단 버튼 */}
-        <div className="flex justify-between items-center gap-2 p-4 border-t border-[#31353a] flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className={getSecondaryButtonClassName()}
-          >
-            닫기
-          </button>
-          <div className="flex gap-2">
+      <div className="flex justify-between items-center gap-2 p-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className={getSecondaryButtonClassName()}
+        >
+          닫기
+        </button>
+        <div className="flex gap-2">
           {selectedMapCCTV && monitoringCCTVs && (
             <>
               {!monitoringCCTVs.includes(selectedMapCCTV) && handleAddToMonitoring && (
@@ -526,7 +513,7 @@ export const MapCCTVPopup = ({
                   onClick={() => {
                     handleAddToMonitoring(selectedMapCCTV);
                   }}
-                  className={getSecondaryButtonClassName()}
+                  className={getPrimaryButtonClassName()}
                 >
                   CCTV 모니터링 추가
                 </button>
@@ -540,17 +527,16 @@ export const MapCCTVPopup = ({
                       onClose();
                     }
                   }}
-                  className={`${getSecondaryButtonClassName()} text-red-400 hover:text-red-300`}
+                  className={getPrimaryButtonClassName()}
                 >
                   CCTV 모니터링 해제
                 </button>
               )}
             </>
           )}
-          </div>
         </div>
       </div>
-    </div>
+    </BasePopup>
   );
 };
 

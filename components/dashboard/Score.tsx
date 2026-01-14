@@ -1,10 +1,14 @@
 import { EventSummary as EventSummaryType } from '@/types';
 
-interface EventSummaryProps {
+interface ScoreProps {
   summary: EventSummaryType;
 }
 
-const EventSummary = ({ summary }: EventSummaryProps) => {
+/**
+ * 스코어 컴포넌트
+ * 대시보드 이벤트 리스트 패널의 통계 그래프를 표시합니다.
+ */
+const Score = ({ summary }: ScoreProps) => {
   const inProgressRate = summary.total > 0 ? (summary.inProgress / summary.total) * 100 : 0;
   const closedRate = summary.total > 0 ? (summary.closed / summary.total) * 100 : 0;
   // 정확히 100%가 되도록 조정
@@ -52,5 +56,4 @@ const EventSummary = ({ summary }: EventSummaryProps) => {
   );
 };
 
-export default EventSummary;
-
+export default Score;

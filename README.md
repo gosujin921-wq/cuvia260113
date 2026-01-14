@@ -29,23 +29,32 @@ cuvia3/
 │   │   ├── CCTVIcon.tsx         # CCTV 아이콘 컴포넌트
 │   │   └── BroadcastControls.tsx # 전파 제어 컴포넌트
 │   ├── dashboard/                # 대시보드 컴포넌트
-│   │   ├── EventSummary.tsx      # 이벤트 요약
+│   │   ├── Score.tsx             # 스코어 (이벤트 통계 그래프)
+│   │   ├── SituationSummary.tsx  # 상황요약 팝업
+│   │   ├── AIDetectionPopup.tsx  # AI 탐지 팝업
 │   │   ├── EventList.tsx         # 이벤트 목록
 │   │   ├── MapView.tsx           # 지도 뷰
 │   │   └── RightPanel.tsx        # 우측 패널 (CCTV 상태)
 │   ├── event-detail/             # 이벤트 상세 컴포넌트
-│   │   ├── EventLeftPanel.tsx
-│   │   ├── EventCenterPanel.tsx
-│   │   ├── EventCenterColumn1.tsx
-│   │   ├── EventCenterColumn2.tsx
-│   │   ├── DetectedCCTVClipPopup.tsx
-│   │   ├── MapCCTVPopup.tsx
-│   │   ├── CombinedCCTVPopup.tsx
-│   │   └── ...
+│   │   ├── EventLeftPanel.tsx   # 좌측 패널 (이벤트 정보, AI 인사이트)
+│   │   ├── EventCenterColumn1.tsx # 중앙 1열: 지도 뷰 (위치 및 동선)
+│   │   ├── EventCenterColumn2.tsx # 중앙 2열: CCTV 섹션 (모니터링 CCTV, 포착 클립, 행동 요약)
+│   │   ├── AgentPanel.tsx        # 우측 패널: AI Agent 채팅
+│   │   ├── PlaybackControls.tsx  # 재생 제어
+│   │   ├── DetectedCCTVClipPopup.tsx # 포착된 CCTV 클립 팝업
+│   │   ├── MapCCTVPopup.tsx      # 지도 CCTV 팝업
+│   │   ├── CombinedCCTVPopup.tsx # 통합 CCTV 팝업
+│   │   ├── BroadcastDraftPopup.tsx # 전파 초안 팝업
+│   │   ├── AdditionalDataNotificationPopup.tsx # 추가 자료 알림 팝업
+│   │   ├── EventCompletionNotificationPopup.tsx # 사건 종료 알림 팝업
+│   │   ├── constants.ts          # 상수 정의
+│   │   └── types.ts             # 타입 정의
 │   ├── layouts/                  # 레이아웃
 │   │   └── ScaledLayout.tsx
-│   └── shared/                   # 공유 리소스
-│       └── styles.ts
+│   └── shared/                   # 공유 컴포넌트 및 리소스
+│       ├── BasePopup.tsx         # 기본 팝업 컴포넌트 (중앙 모달)
+│       ├── NotificationPopup.tsx  # 알림 팝업 컴포넌트 (우측 하단/중앙)
+│       └── styles.ts             # 공통 스타일 정의
 │
 ├── lib/                          # 라이브러리/유틸리티
 │   ├── events-data.ts            # 이벤트 데이터 관리 (📡 API 연동 필요)
@@ -110,6 +119,22 @@ npm run preview
 - CCTV 운영 현황 모니터링
 - 환경 센서 데이터 실시간 표시
 
+#### 대시보드 동작 방식
+- **초기 화면**: 이벤트가 기본적으로 표시되지 않음 (깔끔한 대시보드)
+- **키보드 단축키**:
+  - `1` 키: 김도연 실종 사건으로 이동 및 상황요약 팝업 표시
+  - `2` 키: 유괴 의심 사건으로 이동 및 AI탐지 팝업 표시
+  - `ESC` 키: 선택 해제 및 줌아웃
+- **애니메이션 시퀀스**:
+  1. 이벤트 표시 및 하이라이트 (즉시)
+  2. 지도 줌인 시작 (300ms 후)
+  3. 선택된 이벤트 핀을 지도 중앙으로 이동 (줌인과 동시)
+  4. 팝업 자동 표시 (줌인 완료 후 800ms)
+- **지도 줌 기능**:
+  - `+/-` 버튼으로 줌 인/아웃
+  - 줌인 시 선택된 이벤트가 자동으로 지도 중앙에 배치됨
+  - CSS transform을 사용한 부드러운 애니메이션
+
 ### 2. 이벤트 상세 페이지 (`/event/:eventId`)
 - 이벤트 상세 정보 및 타임라인
 - CCTV 영상 재생 및 PTZ 제어
@@ -118,7 +143,8 @@ npm run preview
 - 이벤트 완료 처리
 
 ### 3. 스타일 관리 페이지 (`/components-style`)
-- 컴포넌트 스타일 관리 및 수정
+- 공통 컴포넌트 시각적 확인 및 관리
+- BasePopup, NotificationPopup, CCTV 아이콘 등 컴포넌트 스타일 가이드
 
 ## API 연동 가이드
 
@@ -163,6 +189,29 @@ npm run preview
 - **이벤트 핸들러**: `handle` 접두사 사용 (예: `handleClick`, `handleSubmit`)
 - **스타일링**: Tailwind CSS 클래스 사용
 - **타입**: TypeScript 타입 정의 필수
+
+### 최근 개선 사항
+
+#### 대시보드 최적화 (2025-01-14)
+- **초기 화면 개선**: 이벤트가 기본적으로 표시되지 않아 깔끔한 대시보드 제공
+- **키보드 단축키 지원**: 숫자 키로 빠른 이벤트 탐색
+- **애니메이션 개선**: 줌인 애니메이션 완료 후 팝업 자동 표시로 자연스러운 UX
+- **지도 줌 기능**: 줌인 시 선택된 이벤트 핀을 정확히 중앙에 배치하는 알고리즘 개선
+  - CSS transform의 `scale`과 `translate`를 정확히 계산하여 중앙 정렬 구현
+- **코드 리팩토링**:
+  - 중복된 이벤트 핸들러 통합 (`handleEventAction`)
+  - 이벤트 찾기 로직 헬퍼 함수화 (`findEventByCriteria`)
+  - 선택 해제 로직 통합 (`clearSelection`)
+  - 불필요한 변수명 및 주석 정리
+
+### 공통 컴포넌트
+
+프로젝트는 일관된 디자인 시스템을 위해 공통 팝업 컴포넌트를 사용합니다:
+
+- **BasePopup**: 중앙에 표시되는 모달 스타일 팝업 (예: CCTV 모니터링, 클립 상세)
+- **NotificationPopup**: 우측 하단 또는 중앙에 표시되는 알림 스타일 팝업 (예: 추가 자료 알림, 사건 종료 알림)
+
+모든 팝업 컴포넌트는 이 공통 컴포넌트를 기반으로 구현되어 일관된 디자인과 동작을 제공합니다.
 
 ### 프로토타입 기능
 

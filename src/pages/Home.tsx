@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import EventSummary from '@/components/dashboard/EventSummary';
+import Score from '@/components/dashboard/Score';
 import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/MapView';
 import RightPanel from '@/components/dashboard/RightPanel';
@@ -13,6 +13,8 @@ export default function Home() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
   const [mapZoomLevel, setMapZoomLevel] = useState<number>(0);
+  const [aiDetectionEventId, setAiDetectionEventId] = useState<string | null>(null);
+  const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
 
   /**
    * ============================================================================
@@ -30,17 +32,23 @@ export default function Home() {
    * }, []);
    * ============================================================================
    */
-  const events: Event[] = useMemo(() => {
-    const converted = allEvents
+  const allConvertedEvents: Event[] = useMemo(() => {
+    return allEvents
       .map((event, index) => convertToDashboardEvent(event, index))
       .filter((event) => event.processingStage !== '종결');
-    return converted;
   }, []);
 
-  // 이벤트 요약 계산 (처리결과 기준)
+  // 표시할 이벤트만 필터링 (숫자 키를 눌렀을 때만 표시)
+  const events: Event[] = useMemo(() => {
+    if (visibleEventIds.size === 0) {
+      return [];
+    }
+    return allConvertedEvents.filter(event => visibleEventIds.has(event.id));
+  }, [allConvertedEvents, visibleEventIds]);
+
+  // 이벤트 요약 계산 (처리결과 기준) - 모든 이벤트 포함 (종결 포함)
   const eventSummary: EventSummaryType = useMemo(() => {
-    // 모든 이벤트를 변환 (종결 포함)
-    const allConvertedEvents = allEvents.map((event, index) => convertToDashboardEvent(event, index));
+    const allEventsForSummary = allEvents.map((event, index) => convertToDashboardEvent(event, index));
     
     // 진행중: 생성, 선별, 착수, 사실 검증, 추적 · 지원, 전파
     const inProgressStages: Array<'생성' | '선별' | '착수' | '사실 검증' | '추적 · 지원' | '전파'> = [
@@ -51,21 +59,21 @@ export default function Home() {
       '추적 · 지원',
       '전파',
     ];
-    const inProgress = allConvertedEvents.filter((event) =>
+    const inProgress = allEventsForSummary.filter((event) =>
       inProgressStages.includes(event.processingStage as any)
     ).length;
     
-    // 종결: 종결 상태만
-    const closed = allConvertedEvents.filter((event) => event.processingStage === '종결').length;
+    const closed = allEventsForSummary.filter((event) => event.processingStage === '종결').length;
     
     return {
-      total: allConvertedEvents.length,
+      total: allEventsForSummary.length,
       inProgress,
       closed,
     };
   }, []);
 
-  const handleEventSelect = (eventId: string) => {
+  // 이벤트 선택/클릭 핸들러 (통합)
+  const handleEventAction = (eventId: string) => {
     const event = events.find((e) => e.id === eventId);
     if (event?.eventId) {
       navigate(`/event/${event.eventId}`);
@@ -79,54 +87,75 @@ export default function Home() {
     setHighlightedEventId(eventId);
   };
 
-  const handleEventClick = (eventId: string) => {
-    const event = events.find((e) => e.id === eventId);
-    if (event?.eventId) {
-      navigate(`/event/${event.eventId}`);
-      return;
-    }
-    setSelectedEventId(eventId);
-    setHighlightedEventId(eventId);
+  // 이벤트 찾기 헬퍼 함수
+  const findEventByCriteria = (
+    titleKeyword?: string,
+    eventId?: string,
+    id?: string
+  ): Event | undefined => {
+    return allConvertedEvents.find(event => 
+      (titleKeyword && event.title.includes(titleKeyword)) ||
+      (eventId && event.eventId === eventId) ||
+      (id && event.id === id)
+    );
   };
 
-  /**
-   * 키보드 단축키 핸들러
-   * - 1: 유괴 의심 사건으로 이동 (개발용)
-   * - ESC: 선택 해제
-   */
+  // 공통 이벤트 애니메이션 함수
+  // 순서: 1. 이벤트 표시 및 하이라이트 (즉시) → 2. 줌인 시작 (300ms 후) → 3. 팝업 표시 (줌인 완료 후 800ms)
+  const animateToEvent = (eventId: string, callback?: () => void) => {
+    // 1단계: 이벤트 표시 및 하이라이트 (즉시)
+    setVisibleEventIds(prev => new Set([...prev, eventId]));
+    setHighlightedEventId(eventId);
+    
+    // 2단계: 줌인 시작 (300ms 후)
+    setTimeout(() => {
+      setMapZoomLevel(1);
+      
+      // 3단계: 줌인 완료 후 팝업 표시 (300ms + 500ms = 800ms 후)
+      setTimeout(() => {
+        setSelectedEventId(eventId); // 팝업 표시
+        if (callback) {
+          callback();
+        }
+      }, 500); // 줌인 애니메이션 완료 시간
+    }, 300);
+  };
+
+  // 선택 해제 함수
+  const clearSelection = () => {
+    setSelectedEventId(null);
+    setHighlightedEventId(null);
+    setAiDetectionEventId(null);
+    setMapZoomLevel(0);
+  };
+
+  // 키보드 단축키 핸들러
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // 입력 필드에 포커스가 있으면 무시
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
       if (e.key === '1') {
-        // 김도연 실종 사건 찾기
-        const missingEvent = events.find(event => 
-          event.title.includes('김도연') || 
-          (event.eventId && event.eventId === 'A-20260107-004') ||
-          (event.id && event.id === 'A-20260107-004')
-        );
-        
+        const missingEvent = findEventByCriteria('김도연', 'A-20260107-004', 'A-20260107-004');
         if (missingEvent) {
-          setSelectedEventId(missingEvent.id);
-          setHighlightedEventId(missingEvent.id);
-          setMapZoomLevel(1); // 확대
+          animateToEvent(missingEvent.id);
+        }
+      } else if (e.key === '2') {
+        const abductionEvent = findEventByCriteria('유괴 의심', 'A-20251210-003', 'A-20251210-003');
+        if (abductionEvent) {
+          animateToEvent(abductionEvent.id, () => {
+            setAiDetectionEventId(abductionEvent.id);
+          });
         }
       } else if (e.key === 'Escape') {
-        // ESC 키로 선택 해제
-        setSelectedEventId(null);
-        setHighlightedEventId(null);
-        setMapZoomLevel(0);
+        clearSelection();
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [events]);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [allConvertedEvents]);
 
   return (
     <ScaledLayout>
@@ -143,13 +172,13 @@ export default function Home() {
               </div>
             </div>
             <div className="py-3">
-              <EventSummary summary={eventSummary} />
+              <Score summary={eventSummary} />
             </div>
             <div className="flex-1 overflow-hidden">
               <EventList
                 events={events}
                 selectedEventId={selectedEventId || undefined}
-                onEventSelect={handleEventSelect}
+                onEventSelect={handleEventAction}
                 onEventHover={handleEventHover}
               />
             </div>
@@ -159,12 +188,10 @@ export default function Home() {
               events={events}
               highlightedEventId={highlightedEventId}
               selectedEventId={selectedEventId}
-              onEventClick={handleEventClick}
-              onMapClick={() => {
-                setSelectedEventId(null);
-                setHighlightedEventId(null);
-                setMapZoomLevel(0); // 팝업 닫을 때 줌아웃
-              }}
+              aiDetectionEventId={aiDetectionEventId}
+              onEventClick={handleEventAction}
+              onAiDetectionClose={clearSelection}
+              onMapClick={clearSelection}
               externalZoomLevel={mapZoomLevel}
               onZoomLevelChange={setMapZoomLevel}
             />

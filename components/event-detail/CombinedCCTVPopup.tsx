@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
+import { BasePopup } from '@/components/shared/BasePopup';
 import { cctvInfo, cctvThumbnailMap, cctvFovMap, cctvCoordinatesMap, detectedCCTVThumbnails, movementTimeline, cctvLocationGroups } from './constants';
-import { getTabButtonClassName, getSecondaryButtonClassName, getPrimaryButtonClassName, getPTZButtonClassName, getPTZPresetButtonClassName } from '@/components/shared/styles';
+import { getTabButtonClassName, getPrimaryButtonClassName, getSecondaryButtonClassName, getPTZButtonClassName, getPTZPresetButtonClassName } from '@/components/shared/styles';
 import { PlaybackControls } from './PlaybackControls';
 import CCTVIcon from '@/components/common/CCTVIcon';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
@@ -278,32 +279,15 @@ export const CombinedCCTVPopup = ({
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
-      onClick={onClose}
+    <BasePopup
+      isOpen={isOpen && !!selectedCCTV}
+      onClose={onClose}
+      title={popupTitle}
+      titleIcon={<CCTVIcon className="w-5 h-5 text-[#50A1FF]" />}
+      maxWidth="max-w-6xl"
+      maxHeight="120vh"
     >
-      <div
-        className="bg-[#101013] border border-[#31353a] w-full max-w-6xl flex flex-col shadow-lg"
-        style={{ maxHeight: '120vh', height: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between p-6 border-b border-[#31353a] flex-shrink-0">
-          <div className="flex items-center gap-2 text-base font-semibold text-white">
-            <CCTVIcon className="w-5 h-5 text-[#50A1FF]" />
-            {popupTitle}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white focus:outline-none transition-colors"
-            aria-label="팝업 닫기"
-          >
-            <Icon icon="mdi:close" className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* 메인 콘텐츠 영역 */}
-        <div className="flex flex-col min-h-0 flex-1">
+      <div className="flex flex-col min-h-0 flex-1">
           {/* 탭 버튼 */}
           <div className="flex gap-2 p-4 pb-3 flex-shrink-0">
             <button
@@ -403,7 +387,12 @@ export const CombinedCCTVPopup = ({
                   {detected.aiAnalysis && (
                     <div className="bg-[#0f1723] border border-[#155DFC] p-4 rounded">
                       <div className="flex items-center gap-2 mb-2">
-                        <Icon icon="mdi:sparkles" className="w-4 h-4 text-[#50A1FF]" />
+                        <img 
+                          src="/simbol.svg" 
+                          alt="AI" 
+                          className="w-4 h-4"
+                          style={{ filter: 'brightness(0) saturate(100%) invert(60%) sepia(100%) saturate(2000%) hue-rotate(190deg) brightness(1.1)' }}
+                        />
                         <span className="text-[#50A1FF] font-semibold text-sm">AI 해석</span>
                       </div>
                       <p className="text-white text-sm leading-relaxed">{detected.aiAnalysis}</p>
@@ -730,68 +719,66 @@ export const CombinedCCTVPopup = ({
           )}
         </div>
 
-        {/* 하단 버튼 */}
-        <div className="flex justify-between items-center gap-2 p-4 border-t border-[#31353a] flex-shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            className={getSecondaryButtonClassName()}
-          >
-            닫기
-          </button>
-          <div className="flex gap-2">
-            {activeTab === 'clip' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isTrackingBoxDraggable) {
-                      // 추적대상 재선택 완료
-                      if (onTrackingReselectComplete) {
-                        onTrackingReselectComplete();
-                      }
-                      setIsTrackingBoxDraggable(false);
-                      onClose();
-                    } else {
-                      setIsTrackingBoxDraggable(true);
-                      if (onTrackingReselectStart) {
-                        onTrackingReselectStart();
-                      }
-                    }
-                  }}
-                  className={isTrackingBoxDraggable ? getPrimaryButtonClassName() : getSecondaryButtonClassName()}
-                >
-                  {isTrackingBoxDraggable ? '추적대상 재선택 완료' : '추적대상 재추적'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // 📡 API 연동 필요: 클립 전파
-                    // POST /api/broadcast/clip
-                    console.log('전파하기');
-                  }}
-                  className={getSecondaryButtonClassName()}
-                >
-                  전파하기
-                </button>
-              </>
-            ) : (
+      <div className="flex justify-between items-center gap-2 p-4">
+        <button
+          type="button"
+          onClick={onClose}
+          className={getSecondaryButtonClassName()}
+        >
+          닫기
+        </button>
+        <div className="flex gap-2">
+          {activeTab === 'clip' ? (
+            <>
               <button
                 type="button"
                 onClick={() => {
-                  // 📡 API 연동 필요: CCTV 모니터링 추가
-                  // POST /api/cctv/{cctvId}/monitoring/add
-                  console.log('CCTV 모니터링 추가');
+                  if (isTrackingBoxDraggable) {
+                    // 추적대상 재선택 완료
+                    if (onTrackingReselectComplete) {
+                      onTrackingReselectComplete();
+                    }
+                    setIsTrackingBoxDraggable(false);
+                    onClose();
+                  } else {
+                    setIsTrackingBoxDraggable(true);
+                    if (onTrackingReselectStart) {
+                      onTrackingReselectStart();
+                    }
+                  }
                 }}
-                className={getSecondaryButtonClassName()}
+                className={getPrimaryButtonClassName()}
               >
-                CCTV 모니터링 추가
+                {isTrackingBoxDraggable ? '추적대상 재선택 완료' : '추적대상 재추적'}
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={() => {
+                  // 📡 API 연동 필요: 클립 전파
+                  // POST /api/broadcast/clip
+                  console.log('전파하기');
+                }}
+                className={getPrimaryButtonClassName()}
+              >
+                전파하기
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                // 📡 API 연동 필요: CCTV 모니터링 추가
+                // POST /api/cctv/{cctvId}/monitoring/add
+                console.log('CCTV 모니터링 추가');
+              }}
+              className={getPrimaryButtonClassName()}
+            >
+              CCTV 모니터링 추가
+            </button>
+          )}
         </div>
       </div>
-    </div>
+    </BasePopup>
   );
 };
 

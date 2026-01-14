@@ -1,8 +1,8 @@
 
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Icon } from '@iconify/react';
-import { getGradientButtonClassName, getSecondaryButtonClassName } from '@/components/shared/styles';
+import { NotificationPopup } from '@/components/shared/NotificationPopup';
+import { getPrimaryButtonClassName, getSecondaryButtonClassName } from '@/components/shared/styles';
 
 interface EventCompletionNotificationPopupProps {
   isOpen: boolean;
@@ -23,50 +23,14 @@ export const EventCompletionNotificationPopup: React.FC<EventCompletionNotificat
   onStopMonitoring,
   onCreateReport,
 }) => {
-  // ESC 키로 팝업 닫기
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/50"
-      onClick={onClose}
+    <NotificationPopup
+      isOpen={isOpen}
+      onClose={onClose}
+      title="사건 종료 알림"
+      titleIcon={<Icon icon="mdi:check-circle" className="w-5 h-5 text-green-400" />}
+      position="center"
     >
-      <div
-        className="bg-[#1a1a1a] border border-[#31353a] rounded-lg shadow-xl w-[420px] flex flex-col"
-        style={{ borderWidth: '1px' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-      {/* 헤더 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#31353a]" style={{ borderBottomWidth: '1px' }}>
-        <div className="flex items-center gap-2">
-          <Icon icon="mdi:check-circle" className="w-5 h-5 text-green-400" />
-          <h3 className="text-white text-sm font-semibold">사건 종료 알림</h3>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors focus:outline-none"
-          aria-label="닫기"
-        >
-          <Icon icon="mdi:close" className="w-5 h-5" />
-        </button>
-      </div>
-
       {/* 컨텐츠 */}
       <div className="p-4 space-y-3">
         {/* 시간 */}
@@ -88,24 +52,23 @@ export const EventCompletionNotificationPopup: React.FC<EventCompletionNotificat
       </div>
 
       {/* 버튼 영역 - 모니터링 중단(왼쪽), 보고서 작성(오른쪽) */}
-      <div className="flex gap-2 p-4 border-t border-[#31353a]" style={{ borderTopWidth: '1px' }}>
+      <div className="flex gap-2 p-4">
         <button
           onClick={onStopMonitoring}
-          className={`flex-1 ${getSecondaryButtonClassName()}`}
+          className={`flex-1 ${getPrimaryButtonClassName()}`}
         >
           <Icon icon="mdi:stop-circle-outline" className="w-4 h-4" />
           모니터링 중단
         </button>
         <button
           onClick={onCreateReport}
-          className={`flex-1 ${getGradientButtonClassName()}`}
+          className={`flex-1 ${getPrimaryButtonClassName()}`}
         >
           <Icon icon="mdi:file-document-edit-outline" className="w-4 h-4" />
           보고서 작성
         </button>
       </div>
-      </div>
-    </div>
+    </NotificationPopup>
   );
 };
 

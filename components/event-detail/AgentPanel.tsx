@@ -1,12 +1,11 @@
 
-
 import React, { useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { ChatMessage, SavedClip } from './types';
 import { chatBlocks, quickCommands, cctvInfo } from './constants';
 import CCTVIcon from '@/components/common/CCTVIcon';
 
-interface EventCenterPanelProps {
+interface AgentPanelProps {
   categoryLabel: string;
   chatMessages: ChatMessage[];
   chatInput: string;
@@ -19,7 +18,7 @@ interface EventCenterPanelProps {
   handleDeleteClip: (clipId: string) => void;
 }
 
-export const EventCenterPanel: React.FC<EventCenterPanelProps> = ({
+export const AgentPanel: React.FC<AgentPanelProps> = ({
   categoryLabel,
   chatMessages,
   chatInput,
@@ -221,4 +220,3 @@ export const EventCenterPanel: React.FC<EventCenterPanelProps> = ({
     </main>
   );
 };
-

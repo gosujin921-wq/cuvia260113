@@ -82,7 +82,7 @@ export const buttonStyles = {
   secondary: {
     base: "px-4 py-2 text-sm font-semibold transition-colors",
     active: "bg-blue-600 hover:bg-blue-700 text-white",
-    inactive: "bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a]",
+    inactive: "bg-[#101013] hover:bg-[#1a1a1a] text-gray-300 border border-[#31353a]",
   },
   icon: {
     base: "w-10 h-10 flex items-center justify-center transition-colors",
@@ -125,7 +125,7 @@ export const cctvLabelStyles = {
 };
 
 export const timelineTitleStyles = {
-  base: "absolute top-full left-1/2 -translate-x-1/2 px-2 py-0.5 bg-[#1a1a1a] border rounded text-xs shadow-lg z-10 whitespace-normal break-words max-w-[300px] w-fit",
+  base: "absolute top-full left-1/2 -translate-x-1/2 px-2 py-0.5 bg-[#1a1a1a] border rounded text-xs shadow-lg z-10 whitespace-nowrap max-w-[300px] overflow-hidden text-ellipsis",
   default: "border-gray-500",
   active: "border-blue-500",
   tracking: "border-red-500",

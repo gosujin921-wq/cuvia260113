@@ -1,8 +1,9 @@
 
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Icon } from '@iconify/react';
-import { getSecondaryButtonClassName, getPrimaryButtonClassName, getRecipientButtonClassName } from '@/components/shared/styles';
+import { BasePopup } from '@/components/shared/BasePopup';
+import { getPrimaryButtonClassName, getSecondaryButtonClassName, getRecipientButtonClassName } from '@/components/shared/styles';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 export type ClipData = {
@@ -73,24 +74,6 @@ export const BroadcastDraftPopup = ({
   onBroadcast,
   onSaveDraft,
 }: BroadcastDraftPopupProps) => {
-  // ESC 키로 팝업 닫기
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-  if (!isOpen) return null;
-
   const priorityBadgeClass =
     priority === '긴급'
       ? 'bg-red-500/20 text-red-400'
@@ -98,43 +81,17 @@ export const BroadcastDraftPopup = ({
         ? 'bg-yellow-500/20 text-yellow-400'
         : 'bg-blue-500/20 text-blue-400';
 
-  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="전파 모달"
-      onClick={handleOverlayClick}
+    <BasePopup
+      isOpen={isOpen}
+      onClose={onClose}
+      title="전파 초안 작성"
+      titleIcon={<Icon icon="mdi:send" className="w-5 h-5 text-[#50A1FF]" />}
+      maxWidth="max-w-4xl"
+      maxHeight="140vh"
+      ariaLabel="전파 모달"
     >
-      <div
-        className="bg-[#101013] border border-[#31353a] w-full max-w-4xl flex flex-col shadow-lg"
-        style={{ maxHeight: '140vh', height: 'auto' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 팝업 헤더 */}
-        <div className="flex items-center justify-between p-6 border-b border-[#31353a] flex-shrink-0">
-          <div className="flex items-center gap-2 text-base font-semibold text-white">
-            <Icon icon="mdi:send" className="w-5 h-5 text-[#50A1FF]" />
-            전파 초안 작성
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="전파 모달 닫기"
-            className="text-gray-400 hover:text-white focus:outline-none transition-colors"
-          >
-            <Icon icon="mdi:close" className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* 메인 콘텐츠 영역 */}
-        <div className="flex-1 overflow-y-auto p-4">
+      <div className="p-4">
           <div className="space-y-4">
             {/* 이벤트 정보 */}
             <div className="grid grid-cols-2 gap-4">
@@ -235,36 +192,33 @@ export const BroadcastDraftPopup = ({
               )}
             </div>
           </div>
-        </div>
-
-        {/* 푸터 */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4 border-t border-[#31353a] flex-shrink-0">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onBroadcast}
-              className={getPrimaryButtonClassName()}
-            >
-              즉시 전파
-            </button>
-            <button
-              type="button"
-              onClick={onSaveDraft}
-              className={getSecondaryButtonClassName()}
-            >
-              초안 저장
-            </button>
-          </div>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-4">
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={onClose}
-            className={getSecondaryButtonClassName()}
+            onClick={onBroadcast}
+            className={getPrimaryButtonClassName()}
           >
-            닫기
+            즉시 전파
+          </button>
+          <button
+            type="button"
+            onClick={onSaveDraft}
+            className={getPrimaryButtonClassName()}
+          >
+            초안 저장
           </button>
         </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className={getSecondaryButtonClassName()}
+        >
+          닫기
+        </button>
       </div>
-    </div>
+    </BasePopup>
   );
 };
 

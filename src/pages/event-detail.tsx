@@ -5,7 +5,7 @@ import { Icon } from '@iconify/react';
 import { useParams } from 'react-router-dom';
 import { getEventById, generateAIInsight, generateEventCompletionMessage, domainLabels, convertToDashboardEvent, formatEventDateTime } from '@/lib/events-data';
 import { EventLeftPanel } from '@/components/event-detail/EventLeftPanel';
-import { EventCenterPanel } from '@/components/event-detail/EventCenterPanel';
+import { AgentPanel } from '@/components/event-detail/AgentPanel';
 import { EventCenterColumn1 } from '@/components/event-detail/EventCenterColumn1';
 import { EventCenterColumn2 } from '@/components/event-detail/EventCenterColumn2';
 import { DetectedCCTVClipPopup } from '@/components/event-detail/DetectedCCTVClipPopup';
@@ -1051,7 +1051,7 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
                 <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 scale-75" />
                               </button>
               <div className="flex-1 overflow-y-auto">
-                <EventCenterPanel
+                <AgentPanel
                   categoryLabel={categoryLabel}
                   chatMessages={chatMessages}
                   chatInput={chatInput}
