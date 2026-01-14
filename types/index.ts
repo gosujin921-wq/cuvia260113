@@ -1,4 +1,4 @@
-export type EventPriority = '긴급' | '경계' | '주의';
+export type EventPriority = '긴급' | '경계' | '주의' | '일반';
 export type EventStatus = 'NEW' | 'MONITORING' | 'RESOLVED' | 'EVIDENCE';
 export type EventType =
   | '119-화재'

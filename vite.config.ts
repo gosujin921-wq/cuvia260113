@@ -10,8 +10,14 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3002,
     open: true,
+    hmr: {
+      overlay: false, // HMR 에러 오버레이 비활성화
+    },
+  },
+  css: {
+    devSourcemap: false, // CSS 소스맵 비활성화로 분석 오류 방지
   },
   build: {
     outDir: 'dist',

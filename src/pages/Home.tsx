@@ -31,9 +31,10 @@ export default function Home() {
    * ============================================================================
    */
   const events: Event[] = useMemo(() => {
-    return allEvents
+    const converted = allEvents
       .map((event, index) => convertToDashboardEvent(event, index))
       .filter((event) => event.processingStage !== '종결');
+    return converted;
   }, []);
 
   // 이벤트 요약 계산 (처리결과 기준)
@@ -101,15 +102,16 @@ export default function Home() {
       }
       
       if (e.key === '1') {
-        // 유괴 의심 사건 찾기
-        const abductionEvent = events.find(event => 
-          event.title.includes('유괴 의심') || 
-          (event.eventId && event.eventId === 'A-20251210-003')
+        // 김도연 실종 사건 찾기
+        const missingEvent = events.find(event => 
+          event.title.includes('김도연') || 
+          (event.eventId && event.eventId === 'A-20260107-004') ||
+          (event.id && event.id === 'A-20260107-004')
         );
         
-        if (abductionEvent) {
-          setSelectedEventId(abductionEvent.id);
-          setHighlightedEventId(abductionEvent.id);
+        if (missingEvent) {
+          setSelectedEventId(missingEvent.id);
+          setHighlightedEventId(missingEvent.id);
           setMapZoomLevel(1); // 확대
         }
       } else if (e.key === 'Escape') {
@@ -161,6 +163,7 @@ export default function Home() {
               onMapClick={() => {
                 setSelectedEventId(null);
                 setHighlightedEventId(null);
+                setMapZoomLevel(0); // 팝업 닫을 때 줌아웃
               }}
               externalZoomLevel={mapZoomLevel}
               onZoomLevelChange={setMapZoomLevel}

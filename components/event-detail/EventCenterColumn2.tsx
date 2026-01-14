@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { getTabButtonClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 interface EventCenterColumn2Props {
   isRightPanelCollapsed: boolean;
@@ -178,14 +179,13 @@ export const EventCenterColumn2: React.FC<EventCenterColumn2Props> = ({
                       }}
                     >
                       <div className="relative aspect-video bg-black">
-                        <img
-                          src={detected.thumbnail}
-                          alt={detected.cctvName}
+                        <video
+                          src={getRandomCCTVVideo(detected.cctvId)}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = cctvThumbnailMap[detected.cctvId] || '/cctv_img/001.jpg';
-                          }}
                         />
                       {/* 정확도 라벨 */}
                       <div className="absolute top-2 right-2 px-2 py-1 bg-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold rounded">
@@ -240,14 +240,13 @@ export const EventCenterColumn2: React.FC<EventCenterColumn2Props> = ({
                         }}
                       >
                         <div className="relative aspect-video bg-black">
-                          <img
-                            src={cctvThumbnailMap[cctv.id] || '/cctv_img/001.jpg'}
-                            alt={cctv.name}
+                          <video
+                            src={getRandomCCTVVideo(cctv.id)}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = '/cctv_img/001.jpg';
-                            }}
                           />
                           <button
                             className="absolute top-1 right-1 w-5 h-5 bg-black/70 hover:bg-black/90 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

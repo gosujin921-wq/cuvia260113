@@ -2,6 +2,7 @@
 
 import { Icon } from '@iconify/react';
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 interface MonitoringSpot {
   spotId: string;
@@ -820,16 +821,17 @@ const RightPanel = () => {
                       {/* Spot ID */}
                       <div className="text-gray-400 text-xs">SPOT-{spot.spotId.padStart(3, '0')}</div>
 
-                      {/* CCTV 썸네일 */}
-                      {currentThumbnail && (
-                        <div className="w-full h-24 overflow-hidden rounded-sm">
-                          <img
-                            src={currentThumbnail}
-                            alt={`${spot.spotName} CCTV`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
+                      {/* CCTV 비디오 */}
+                      <div className="w-full h-24 overflow-hidden rounded-sm bg-black">
+                        <video
+                          src={getRandomCCTVVideo(spot.spotId)}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
 
                       {/* 타임스탬프와 FPS (같은 줄, 양끝 정렬) */}
                       <div className="flex items-center justify-between">

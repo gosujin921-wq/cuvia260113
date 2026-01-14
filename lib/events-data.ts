@@ -35,7 +35,7 @@ export interface BaseEvent {
   location: string;
   description?: string;
   source?: string;
-  risk: 'HIGH' | 'MEDIUM' | 'LOW';
+  risk: '긴급' | '경계' | '주의' | '일반';
   status: 'URGENT' | 'ACTIVE' | 'NEW' | 'IN_PROGRESS' | 'CLOSED';
   pScore?: number;
   domain: 'A' | 'B' | 'C' | 'D' | 'E' | 'F'; // 도메인 코드
@@ -217,10 +217,10 @@ export const getEventCategory = (event: BaseEvent): string => {
   return domainLabels[event.domain];
 };
 
-// 좌표 생성 (안양시 기준)
+// 좌표 생성 (부천시 기준)
 const generateCoordinates = (index: number): [number, number] => {
-  const baseLat = 37.3925;
-  const baseLng = 126.9529;
+  const baseLat = 37.5034; // 부천시 위도
+  const baseLng = 126.7660; // 부천시 경도
   const offset = index * 0.001;
   return [baseLat + offset, baseLng + offset];
 };
@@ -300,12 +300,6 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
     }
   }
 
-  const priorityMap: Record<string, '긴급' | '경계' | '주의'> = {
-    HIGH: '긴급',
-    MEDIUM: '경계',
-    LOW: '주의',
-  };
-
   const statusMap: Record<string, 'NEW' | 'MONITORING' | 'RESOLVED' | 'EVIDENCE'> = {
     URGENT: 'MONITORING',
     ACTIVE: 'MONITORING',
@@ -319,30 +313,34 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
   if (event.eventId === 'A-20241124-003') {
     processingStage = '착수';
   }
+  // 새로 추가한 실종자 이벤트는 '생성' 단계로 설정
+  if (event.id === 'A-20260107-004' || event.eventId === 'A-20260107-004') {
+    processingStage = '생성';
+  }
   const resolutionCategory = resolutionCategoryMap[normalizedType] || '112';
   const resolutionOptions = resolutionCodeMap[resolutionCategory];
   const resolutionCode = pickDeterministicValue(resolutionOptions, event.id, 'resolution');
   const resolutionDescription = buildResolutionDescription(resolutionCategory, resolutionCode);
 
-  // 특정 이벤트 우선순위 강제 설정
-  let finalPriority: '긴급' | '경계' | '주의' = priorityMap[event.risk];
+  // 위험도를 우선순위로 사용 (risk 값이 바로 priority)
+  let finalPriority: '긴급' | '경계' | '주의' | '일반' = event.risk;
   
   // "유괴 의심 신고, 아동 납치 추정" 이벤트는 항상 긴급
   if (event.title.includes('유괴 의심') && event.title.includes('아동 납치')) {
     finalPriority = '긴급';
   }
-  // 우선순위별 개수 조정: 긴급 < 경계 < 주의 순서로
+  // 우선순위별 개수 조정: 긴급 < 경계 < 주의 < 일반 순서로
   // 일부 이벤트의 우선순위를 재조정하여 개수 균형 맞추기
-  const eventPriorityOverrides: Record<string, '긴급' | '경계' | '주의'> = {
-    // 긴급 (5개) - 가장 적게
-    'event-1': '긴급', // 흉기 소지 남성 위협 행동
-    'event-3': '긴급', // 유괴 의심 신고, 아동 납치 추정
+  const eventPriorityOverrides: Record<string, '긴급' | '경계' | '주의' | '일반'> = {
+    // 긴급 (6개) - 가장 적게
+    'A-20241124-001': '긴급', // 흉기 소지 남성 위협 행동
+    'A-20251210-003': '긴급', // 유괴 의심 신고, 아동 납치 추정
     'event-5': '긴급', // 8세 남아 실종
     'event-6': '긴급', // 흉기 소지 위험 행동
     'event-7': '긴급', // 주택 2층 연기 발생
+    'A-20260107-004': '긴급', // 김도연(남, 22세, 장애) 실종 신고
     
     // 경계 (9개) - 중간
-    'event-2': '경계', // 상가 절도 의심
     'event-8': '경계', // 산림 인접 연기 발생
     'event-10': '경계', // 보행 중 갑자기 쓰러짐
     'event-12': '경계', // 치매 노인 보호구역 이탈
@@ -443,7 +441,7 @@ export const generateAIInsight = (event: BaseEvent): string => {
     if (type.includes('화재') || type.includes('연기')) {
       return `화재 발생. ${description || title}. ${location}에서 화재가 발생했습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 강풍 영향으로 확산 위험이 높으며, 접근 가능한 도로가 제한적입니다. 주민 대피가 진행 중이며, 즉시 소방대 출동이 필요합니다. CCTV-03, CCTV-07이 주요 관제 지점입니다.`;
     } else if (type.includes('교통사고')) {
-      return `교통사고 발생. ${description || title}. ${location}에서 다중 추돌 사고가 발생했습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 부상자 ${risk === 'HIGH' ? '다수' : '2명'} 발생, 즉시 소방대 및 구급대 출동이 필요합니다. 도로 통제 및 응급처치가 진행 중입니다.`;
+      return `교통사고 발생. ${description || title}. ${location}에서 다중 추돌 사고가 발생했습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 부상자 ${risk === '긴급' ? '다수' : '2명'} 발생, 즉시 소방대 및 구급대 출동이 필요합니다. 도로 통제 및 응급처치가 진행 중입니다.`;
     } else if (type.includes('쓰러짐')) {
       return `쓰러짐 응급 상황. ${description || title}. ${location}에서 쓰러짐이 발생했습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 보행 중 갑자기 쓰러진 것으로 보이며, 즉시 구급대 출동이 필요합니다. 응급처치 및 병원 이송이 진행 중입니다.`;
     } else if (type.includes('폭발') || type.includes('가스')) {
@@ -498,7 +496,7 @@ export const generateAIInsight = (event: BaseEvent): string => {
     if (type.includes('산불')) {
       return `산불 경보. ${description || title}. ${location} 인근에서 산불 의심 상황이 감지되었습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 연기 발생 및 산불 가능성이 확인되었습니다. 즉시 소방대 및 산림청 출동이 필요하며, 주변 주민 대피가 필요할 수 있습니다.`;
     } else if (type.includes('호우') || type.includes('침수')) {
-      return `호우(침수) 경보. ${description || title}. 안양시 전역에 집중 호우 경보가 발령되었습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 시간당 50mm 이상 강우가 예상되며, 침수 및 도로 통제가 필요할 수 있습니다. 즉시 대비 조치가 필요합니다.`;
+      return `호우(침수) 경보. ${description || title}. 부천시 전역에 집중 호우 경보가 발령되었습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 시간당 50mm 이상 강우가 예상되며, 침수 및 도로 통제가 필요할 수 있습니다. 즉시 대비 조치가 필요합니다.`;
     } else if (type.includes('지진')) {
       return `지진 경보. ${description || title}. ${location}에서 지진이 감지되었습니다. 위험도 ${risk} (위험도 수치: ${riskScore}%)입니다. 즉시 안전 확인 및 대피 조치가 필요합니다.`;
     } else if (type.includes('교통 마비')) {

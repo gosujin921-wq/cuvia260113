@@ -5,6 +5,7 @@ import { Icon } from '@iconify/react';
 import { cctvInfo, cctvThumbnailMap, cctvFovMap, cctvCoordinatesMap, detectedCCTVThumbnails, movementTimeline, cctvLocationGroups } from './constants';
 import { getSecondaryButtonClassName, getPrimaryButtonClassName } from '@/components/shared/styles';
 import { PlaybackControls } from './PlaybackControls';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 interface DetectedCCTVClipPopupProps {
   isOpen: boolean;
@@ -167,14 +168,13 @@ export const DetectedCCTVClipPopup = ({
           {/* 왼쪽: 영상 */}
           <div className="flex-1 pr-4">
             <div className="w-full aspect-video relative overflow-hidden rounded bg-black">
-              <img
-                src={detected.thumbnail}
-                alt={detected.cctvName}
+              <video
+                src={getRandomCCTVVideo(detected.cctvId)}
+                autoPlay
+                loop
+                muted
+                playsInline
                 className="absolute inset-0 w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = cctvThumbnailMap[detected.cctvId] || '/cctv_img/001.jpg';
-                }}
               />
               {/* 추적 영역 표시 */}
               <div 

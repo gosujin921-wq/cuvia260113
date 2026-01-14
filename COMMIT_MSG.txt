@@ -1,13 +1,22 @@
-refactor: Next.js에서 Vite + React로 프레임워크 마이그레이션
+feat: CCTV 썸네일 비디오 자동재생 및 UI 개선
 
-- Next.js 앱 라우터 구조를 Vite 기반 React SPA로 전환
-- app/ 디렉토리 제거 및 src/ 디렉토리 구조로 재구성
-- 컴포넌트 구조 재구성 (common/, dashboard/ 디렉토리 추가)
-- Next.js 관련 설정 파일 제거 (next.config.ts)
-- Vite 설정 파일 및 index.html 추가
-- package.json 의존성 업데이트 (Next.js 제거, Vite 추가)
-- tsconfig.json 설정 업데이트
-- 컴포넌트 스타일 및 레이아웃 수정
-- 이벤트 데이터 및 모의 데이터 업데이트
+- CCTV 썸네일을 정적 이미지에서 비디오로 전환
+  - public/cctv_img의 mov 파일을 랜덤으로 섞어서 사용
+  - 모든 CCTV 썸네일 위치에 자동 재생 비디오 적용
+  - CCTV ID 기반 일관된 랜덤 비디오 선택 유틸 함수 추가
 
-BREAKING CHANGE: Next.js 앱 라우터에서 Vite 기반 SPA로 전환되어 라우팅 구조가 변경됨
+- 대시보드 맵뷰 개선
+  - 상황요약 팝업 닫을 때 자동 줌아웃 기능 추가
+  - 회색 핀 배경색을 더 연하게 변경 (#4a4a4a 계열)
+  - 이벤트 핀 아이콘을 CCTV에서 위치 아이콘(mdi:map-marker)으로 변경
+  - 그레이 핀 기본 표시 설정 (showCCTV 초기값 true)
+
+- 사용하지 않는 파일 및 코드 정리
+  - map1.svg, map2.svg 관련 코드 제거
+  - next.svg 더미 파일 제거
+  - 불필요한 정적 이미지 파일 정리
+
+- Vite 설정 업데이트
+  - 개발 서버 포트를 3002로 변경
+  - HMR 에러 오버레이 비활성화
+  - CSS 소스맵 비활성화로 분석 오류 방지

@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { getSecondaryButtonClassName, getPrimaryButtonClassName, getRecipientButtonClassName } from '@/components/shared/styles';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 export type ClipData = {
   id: string;
@@ -204,14 +205,13 @@ export const BroadcastDraftPopup = ({
                         <Icon icon="mdi:close" className="w-4 h-4" />
                       </button>
                       <div className="relative h-24 bg-gray-200 overflow-hidden">
-                        <img 
-                          src={attachment.thumbnail} 
-                          alt={`${attachment.cctvId} 썸네일`} 
+                        <video 
+                          src={getRandomCCTVVideo(attachment.cctvId)}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
                           className="absolute inset-0 w-full h-full object-cover" 
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/cctv_img/001.jpg';
-                          }}
                         />
                         <span className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded">
                           {attachment.frameTimestamp}

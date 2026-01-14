@@ -7,6 +7,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { getEventById, generateAIInsight, getAIInsightKeywords } from '@/lib/events-data';
 import { getCCTVIconClassName, getCCTVLabelClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 interface MapViewProps {
   events: Event[];
@@ -23,7 +24,6 @@ interface MapViewProps {
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange }: MapViewProps) => {
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
-  const [selectedRouteType, setSelectedRouteType] = useState<'ai' | 'nearby' | null>(null);
   const [zoomLevel, setZoomLevel] = useState(0); // 0: 축소(클러스터), 1: 확대(개별)
 
   // CCTV 카메라 개수 포맷팅 헬퍼 함수
@@ -60,9 +60,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
   // CCTV 토글 상태 (localStorage로 공유)
   // Hydration 오류 방지를 위해 초기값은 항상 false로 설정하고, useEffect에서 localStorage 읽기
   // 대시보드에서는 초기 진입시 CCTV 토글이 켜진 상태가 디폴트
-  const [showCCTV, setShowCCTV] = useState(false);
-  const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(false);
-  const [showCCTVName, setShowCCTVName] = useState(false);
+  const [showCCTV, setShowCCTV] = useState(true);
+  const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
+  const [showCCTVName, setShowCCTVName] = useState(true);
 
   // localStorage에서 초기값 읽기 (클라이언트에서만)
   // 대시보드에서는 localStorage에 값이 없으면 기본값으로 true 설정
@@ -351,12 +351,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
   }, [selectedEventId, events, fireStations, policeStations, positionsById]);
 
 
-  // 선택된 이벤트가 변경되면 경로 타입 초기화
-  useEffect(() => {
-    if (!selectedEventId) {
-      setSelectedRouteType(null);
-    }
-  }, [selectedEventId]);
 
 
   return (
@@ -491,15 +485,16 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
 
       {/* 지도 - 박스 밖으로 */}
       <div
-        className="relative border border-[#31353a] bg-cover bg-center bg-no-repeat transition-transform duration-300"
+        className="relative border border-[#31353a] bg-cover bg-center bg-no-repeat transition-transform duration-700 ease-out"
         style={{
           borderWidth: '1px',
           backgroundImage: 'url(/map_anyang.png)',
           backgroundSize: 'cover',
           height: '100%',
           width: '100%',
-          transform: `scale(${mapScale})`,
+          transform: `scale(${mapScale}) translateZ(0)`,
           transformOrigin: mapTransformOrigin,
+          willChange: 'transform',
         }}
       >
         {/* 미세한 딤 오버레이 */}
@@ -552,7 +547,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                   style={getCCTVIconBoxStyle(item.count, mapScale, item.count > 1 && zoomLevel === 0, 60)}
                 >
                   <CCTVIcon 
-                    className="text-gray-400 drop-shadow-lg filter"
+                    className="!text-gray-400 drop-shadow-lg filter"
+                    style={{ color: '#9ca3af' }}
                     width="16px"
                     height="16px"
                   />
@@ -620,7 +616,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                 >
                   <div className={getCCTVIconClassName('default')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
                     <CCTVIcon 
-                      className="text-gray-400"
+                      className="!text-gray-400"
+                      style={{ color: '#9ca3af' }}
                       width="16px"
                       height="16px"
                     />
@@ -663,22 +660,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
         })}
 
 
-        {/* SVG 오버레이 - map1.svg, map2.svg */}
-        {selectedRouteType && (() => {
-          const displayEvent = selectedEventId 
-            ? events.find(e => e.id === selectedEventId)
-            : events[0];
-          if (!displayEvent) return null;
-          return (
-            <div className="absolute inset-0" style={{ zIndex: 3 }}>
-              <img 
-                src={selectedRouteType === 'ai' ? '/map2.svg' : '/map1.svg'} 
-                alt="Map Overlay" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          );
-        })()}
 
         {/* 이벤트 핀들 - 추적 CCTV 아이콘으로 표시 */}
         <div className="absolute inset-0" style={{ zIndex: 100, width: '100%', height: '100%', pointerEvents: 'none' }}>
@@ -703,13 +684,46 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                 {/* 펄스 애니메이션 (여러 레이어) - 선택된 이벤트에만 표시, "상가 절도 의심, 현금 절취 포착" 제외 */}
                 {isSelected && !event.title.includes('상가 절도 의심') && !event.title.includes('현금 절취 포착') && (
                   <>
-                    <div className="absolute animate-circle-pulse" style={{ width: '120px', height: '120px', zIndex: 80, animationDelay: '0s' }}>
+                    <div 
+                      className="absolute animate-circle-pulse" 
+                      style={{ 
+                        width: '120px', 
+                        height: '120px', 
+                        zIndex: 80, 
+                        animationDelay: '0s',
+                        transform: 'translateZ(0) scale(0.8)',
+                        willChange: 'transform, opacity',
+                        opacity: 1
+                      }}
+                    >
                       <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.5)' }}></div>
                     </div>
-                    <div className="absolute animate-circle-pulse" style={{ width: '120px', height: '120px', zIndex: 79, animationDelay: '0.3s' }}>
+                    <div 
+                      className="absolute animate-circle-pulse" 
+                      style={{ 
+                        width: '120px', 
+                        height: '120px', 
+                        zIndex: 79, 
+                        animationDelay: '0.2s',
+                        transform: 'translateZ(0) scale(0.8)',
+                        willChange: 'transform, opacity',
+                        opacity: 1
+                      }}
+                    >
                       <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.4)' }}></div>
                     </div>
-                    <div className="absolute animate-circle-pulse" style={{ width: '120px', height: '120px', zIndex: 78, animationDelay: '0.6s' }}>
+                    <div 
+                      className="absolute animate-circle-pulse" 
+                      style={{ 
+                        width: '120px', 
+                        height: '120px', 
+                        zIndex: 78, 
+                        animationDelay: '0.4s',
+                        transform: 'translateZ(0) scale(0.8)',
+                        willChange: 'transform, opacity',
+                        opacity: 1
+                      }}
+                    >
                       <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.3)' }}></div>
                     </div>
                   </>
@@ -745,12 +759,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
                           transformOrigin: 'center center'
                         }}
                       >
-                        <CCTVIcon 
+                        <Icon 
+                          icon="mdi:map-marker"
                           className="text-red-400"
                           width="16px"
                           height="16px"
                         />
-                        {/* CCTV 카메라 개수 - 축소 모드에서만 표시 */}
+                        {/* 이벤트 개수 - 축소 모드에서만 표시 */}
                         {hasMultiple && (
                           <span className="text-xs font-semibold text-red-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
                             {formatCCTVCount(clusterCount)}
@@ -767,12 +782,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
 
       </div>
 
-      {/* 이벤트 팝업 - 항상 중앙 패널(맵 영역) 우측 상단에 고정 표시 */}
+      {/* 이벤트 팝업 - selectedEventId가 있을 때만 표시 */}
       {(() => {
-        // selectedEventId가 있으면 해당 이벤트, 없으면 첫 번째 이벤트 사용
-        const displayEvent = selectedEventId 
-          ? events.find(e => e.id === selectedEventId)
-          : events[0];
+        // selectedEventId가 있을 때만 팝업 표시
+        if (!selectedEventId) return null;
+        
+        const displayEvent = events.find(e => e.id === selectedEventId);
         
         if (!displayEvent) return null;
         
@@ -820,9 +835,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, on
             {/* 감지된 CCTV 영상 */}
             <div className="m-3">
               <div className="w-full bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg overflow-hidden relative" style={{ borderWidth: '1px', aspectRatio: '16/9' }}>
-                <img 
-                  src="/cctv_img/001.jpg" 
-                  alt="감지된 CCTV 영상" 
+                <video 
+                  src={displayEvent.id ? getRandomCCTVVideo(displayEvent.id) : getRandomCCTVVideo()}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
                   className="w-full h-full object-cover"
                 />
                 {/* Live/Clip 상태 오버레이 */}

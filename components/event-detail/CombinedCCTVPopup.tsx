@@ -6,6 +6,7 @@ import { cctvInfo, cctvThumbnailMap, cctvFovMap, cctvCoordinatesMap, detectedCCT
 import { getTabButtonClassName, getSecondaryButtonClassName, getPrimaryButtonClassName, getPTZButtonClassName, getPTZPresetButtonClassName } from '@/components/shared/styles';
 import { PlaybackControls } from './PlaybackControls';
 import CCTVIcon from '@/components/common/CCTVIcon';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 interface CombinedCCTVPopupProps {
   isOpen: boolean;
@@ -326,14 +327,13 @@ export const CombinedCCTVPopup = ({
               {/* 왼쪽: 영상 */}
               <div className="flex-1 pr-4">
                 <div className="w-full aspect-video relative overflow-hidden rounded bg-black">
-                  <img
-                    src={detected.thumbnail}
-                    alt={detected.cctvName}
+                  <video
+                    src={getRandomCCTVVideo(detected.cctvId)}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                     className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = cctvThumbnailMap[detected.cctvId] || '/cctv_img/001.jpg';
-                    }}
                   />
                   {/* 추적 영역 표시 */}
                   <div 
@@ -514,14 +514,13 @@ export const CombinedCCTVPopup = ({
               {/* 왼쪽: 영상 */}
               <div className="flex-1 pr-4">
                 <div className="w-full aspect-video relative overflow-hidden rounded bg-black">
-                  <img
-                    src={cctvThumbnailMap[selectedCCTV] || '/cctv_img/001.jpg'}
-                    alt={`${selectedCCTV} 라이브`}
+                  <video
+                    src={getRandomCCTVVideo(selectedCCTV || undefined)}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                     className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/cctv_img/001.jpg';
-                    }}
                   />
                   {/* LIVE 오버레이 */}
                   <div className="absolute top-3 left-3 px-3 py-1.5 bg-red-600 text-white text-xs font-semibold flex items-center gap-1.5 rounded-full z-10">
@@ -559,14 +558,13 @@ export const CombinedCCTVPopup = ({
                               : 'border-[#31353a] hover:border-blue-500/50'
                           }`}
                         >
-                          <img
-                            src={cctvThumbnailMap[cctvId] || '/cctv_img/001.jpg'}
-                            alt={cctvId}
+                          <video
+                            src={getRandomCCTVVideo(cctvId)}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = '/cctv_img/001.jpg';
-                            }}
                           />
                           <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1">
                             <div className="text-white text-xs font-semibold truncate" title={cctvId}>
