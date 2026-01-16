@@ -38,11 +38,16 @@ const AgentHubPage = () => {
   }, [chatInput]);
 
   const handleSendMessage = async (messageText?: string) => {
-    const text = (messageText ?? chatInput).trim();
+    // textarea의 현재 값을 직접 읽어옴
+    const currentValue = messageText ?? (textareaRef.current?.value || chatInput);
+    const text = currentValue.trim();
     if (!text) return;
 
     // 입력창 초기화
     setChatInput('');
+    if (textareaRef.current) {
+      textareaRef.current.value = '';
+    }
     
     // 검색 시 agent-chat 페이지로 이동 (쿼리 파라미터 사용)
     navigate(`/agent-chat?q=${encodeURIComponent(text)}`);
