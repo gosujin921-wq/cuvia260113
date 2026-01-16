@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ScaledLayout } from '@/components/layouts/ScaledLayout';
 import { ChatMessage } from '@/components/event-detail/types';
 import { BasePopup } from '@/components/shared/BasePopup';
@@ -12,6 +12,7 @@ const AgentHubPage = () => {
   const [showToolPopup, setShowToolPopup] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -30,6 +31,9 @@ const AgentHubPage = () => {
       const maxHeight = lineHeight * 4;
       const newHeight = Math.min(scrollHeight, maxHeight);
       textareaRef.current.style.height = `${newHeight}px`;
+      
+      // 높이가 초기 높이보다 크면 확장된 상태로 간주
+      setIsInputExpanded(newHeight > lineHeight);
     }
   }, [chatInput]);
 
@@ -37,6 +41,9 @@ const AgentHubPage = () => {
     const text = (messageText ?? chatInput).trim();
     if (!text) return;
 
+    // 입력창 초기화
+    setChatInput('');
+    
     // 검색 시 agent-chat 페이지로 이동 (쿼리 파라미터 사용)
     navigate(`/agent-chat?q=${encodeURIComponent(text)}`);
   };
@@ -161,13 +168,13 @@ const AgentHubPage = () => {
             <div className="flex-1 flex flex-col relative z-10">
               {/* 상단: 로고와 Agent (대시보드와 동일한 위치) */}
               <div className="py-4 px-3 flex items-center gap-2.5">
-                <div className="w-24 h-5 flex items-center justify-start">
+                <Link to="/" className="w-24 h-5 flex items-center justify-start">
                   <img 
                     src="/logo.svg" 
                     alt="CUVIA Logo" 
                     className="h-5 w-auto object-contain"
                   />
-                </div>
+                </Link>
                 <span className="text-xl font-semibold text-gray-400 tracking-tight">Agent</span>
               </div>
               
@@ -181,7 +188,13 @@ const AgentHubPage = () => {
                   가 적절한 정보와 화면으로 안내합니다.
                 </p>
                 <div className="w-full">
-                  <div className="relative flex items-center gap-3 rounded-2xl px-4 py-3 agent-hub-chat-input" style={{ isolation: 'isolate' }}>
+                  <div 
+                    className={`relative flex items-center gap-3 px-4 py-3 agent-hub-chat-input transition-all duration-300`}
+                    style={{ 
+                      isolation: 'isolate',
+                      borderRadius: isInputExpanded ? '1rem' : '9999px',
+                    }}
+                  >
                     <button
                       onClick={() => setShowToolPopup(true)}
                       className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors relative z-10"
@@ -209,6 +222,28 @@ const AgentHubPage = () => {
                       }}
                       rows={1}
                     />
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSendMessage();
+                      }}
+                      disabled={!chatInput.trim()}
+                      className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all relative z-10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+                      style={{
+                        background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+                        pointerEvents: 'auto',
+                      }}
+                      aria-label="검색"
+                      type="button"
+                    >
+                      <img
+                        src="/simbol.svg"
+                        alt="검색"
+                        className="w-5 h-5 pointer-events-none"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+                      />
+                    </button>
                   </div>
                 </div>
 
@@ -331,7 +366,13 @@ const AgentHubPage = () => {
             /* 입력 영역 (메시지가 있을 때 하단 고정) */
             <div className="bg-white flex-shrink-0 relative z-10">
               <div className="p-4 max-w-[800px] mx-auto w-full">
-                <div className="relative flex items-center gap-3 rounded-2xl px-4 py-3 agent-hub-chat-input" style={{ isolation: 'isolate' }}>
+                <div 
+                  className={`relative flex items-center gap-3 px-4 py-3 agent-hub-chat-input transition-all duration-300`}
+                  style={{ 
+                    isolation: 'isolate',
+                    borderRadius: isInputExpanded ? '1rem' : '9999px',
+                  }}
+                >
                   <button
                     onClick={() => setShowToolPopup(true)}
                     className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors relative z-10"
@@ -359,6 +400,28 @@ const AgentHubPage = () => {
                     }}
                     rows={1}
                   />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSendMessage();
+                    }}
+                    disabled={!chatInput.trim()}
+                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all relative z-10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+                    style={{
+                      background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+                      pointerEvents: 'auto',
+                    }}
+                    aria-label="검색"
+                    type="button"
+                  >
+                    <img
+                      src="/simbol.svg"
+                      alt="검색"
+                      className="w-5 h-5 pointer-events-none"
+                      style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+                    />
+                  </button>
                 </div>
               </div>
             </div>

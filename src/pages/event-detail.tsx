@@ -1013,7 +1013,10 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
         {isRightPanelCollapsed && (
           <button
             onClick={() => setIsRightPanelCollapsed(false)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300 z-50"
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300 z-50"
+            style={{
+              background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+            }}
             aria-label="우측 패널 펼치기"
           >
             <Icon icon="mdi:sparkles" className="w-6 h-6" />

@@ -480,11 +480,16 @@ const AgentChatPage = () => {
               {/* 대화 로그 */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-gray-700 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] flex items-center justify-center text-white">
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                    style={{
+                      background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+                    }}
+                  >
                     <img
                       src="/simbol.svg"
                       alt="AI"
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                       style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
                     />
                   </div>
@@ -566,6 +571,22 @@ const AgentChatPage = () => {
                   }}
                   rows={1}
                 />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim()}
+                  className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
+                  style={{
+                    background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+                  }}
+                  aria-label="검색"
+                >
+                  <img
+                    src="/simbol.svg"
+                    alt="검색"
+                    className="w-5 h-5"
+                    style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+                  />
+                </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 CUVIA Agent는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.

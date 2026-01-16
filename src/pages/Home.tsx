@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Score from '@/components/dashboard/Score';
 import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/MapView';
@@ -162,13 +162,13 @@ export default function Home() {
         <div className="flex flex-1 overflow-hidden relative" style={{ minHeight: 0, height: '100%' }}>
           <div className="flex flex-col flex-shrink-0 border-r border-[#31353a] pl-4 pr-5" style={{ width: '370px' }}>
             <div className="py-4 px-3">
-              <div className="w-24 h-5 flex items-center justify-start">
+              <Link to="/" className="w-24 h-5 flex items-center justify-start">
                 <img 
                   src="/logo.svg" 
                   alt="CUVIA Logo" 
                   className="h-5 w-auto object-contain"
                 />
-              </div>
+              </Link>
             </div>
             <div className="py-3">
               <Score summary={eventSummary} />

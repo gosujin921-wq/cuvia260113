@@ -98,7 +98,12 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         {/* 대화 로그 */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-gray-700 text-sm">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] flex items-center justify-center text-white">
+            <div 
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+              style={{
+                background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+              }}
+            >
               <img 
                 src="/simbol.svg" 
                 alt="AI" 

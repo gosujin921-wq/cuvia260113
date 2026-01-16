@@ -432,7 +432,6 @@ input[type="range"].slider::-moz-range-thumb {
 .agent-hub-chat-input {
   position: relative;
   background: rgb(249, 250, 251);
-  border-radius: 1rem;
   isolation: isolate;
 }
 
@@ -440,9 +439,9 @@ input[type="range"].slider::-moz-range-thumb {
   content: '';
   position: absolute;
   inset: -3px;
-  border-radius: 1rem;
+  border-radius: inherit;
   background: conic-gradient(from 0deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  animation: agent-hub-gradient-flow 18s cubic-bezier(0.2, 0, 0.2, 1) infinite;
+  animation: agent-hub-gradient-flow 6s cubic-bezier(0.2, 0, 0.2, 1) infinite;
   opacity: 0.5;
   z-index: 0;
   pointer-events: none;

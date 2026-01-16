@@ -936,9 +936,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           zIndex: 200,
         }}
       >
-        <Link
+        <a
           href="/agent-hub"
-          className="w-14 h-14 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] hover:from-[#ff8566] hover:to-[#ff8566] flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
+          style={{
+            background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+            boxShadow: '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)';
+          }}
           aria-label="Agent Hub"
         >
           <img 
@@ -947,7 +959,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             className="w-6 h-6"
             style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
           />
-        </Link>
+        </a>
         {/* 툴팁 */}
         <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">
           Agent Hub 이동
