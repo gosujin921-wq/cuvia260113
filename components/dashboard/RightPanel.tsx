@@ -448,8 +448,8 @@ const RightPanel = () => {
 
   const collapsedIndicators = [
     { label: '정상', value: cctvStatus.normalCount, dot: 'bg-green-400', color: 'text-green-400' },
-    { label: '지연', value: cctvStatus.delayCount, dot: 'bg-yellow-400', color: 'text-yellow-400' },
     { label: '장애', value: cctvStatus.errorCount, dot: 'bg-red-400', color: 'text-red-400' },
+    { label: '지연', value: cctvStatus.delayCount, dot: 'bg-yellow-400', color: 'text-yellow-400' },
   ];
 
   /**
@@ -658,7 +658,7 @@ const RightPanel = () => {
         </div>
       ) : (
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-6"
+          className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 pb-4 pl-6 space-y-6"
           ref={scrollContainerRef}
           style={{ maxWidth: '100%' }}
         >
@@ -743,7 +743,7 @@ const RightPanel = () => {
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">영상 송출률</p>
+                      <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">영상 수신율</p>
                       <p className="text-white text-xl font-bold">{area.streamRate}%</p>
                       <div className="w-full h-3 bg-[#161719] mt-1">
                         <div className="h-full bg-blue-500" style={{ width: `${area.streamRate}%` }} />
@@ -753,16 +753,16 @@ const RightPanel = () => {
 
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[0.65rem] min-w-0">
                     <div className="flex items-center justify-between gap-2 min-w-0">
-                      <span className="text-white truncate">지연</span>
-                      <span className="text-yellow-400 flex-shrink-0">{area.delay}</span>
+                      <span className="text-white truncate">경고</span>
+                      <span className="text-orange-400 flex-shrink-0">{area.warning}</span>
                     </div>
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <span className="text-white truncate">장애</span>
                       <span className="text-red-400 flex-shrink-0">{area.error}</span>
                     </div>
                     <div className="flex items-center justify-between gap-2 min-w-0">
-                      <span className="text-white truncate">경고</span>
-                      <span className="text-orange-400 flex-shrink-0">{area.warning}</span>
+                      <span className="text-white truncate">지연</span>
+                      <span className="text-yellow-400 flex-shrink-0">{area.delay}</span>
                     </div>
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <span className="text-white truncate">정비</span>
@@ -801,11 +801,10 @@ const RightPanel = () => {
                 return (
                   <div
                     key={spot.spotId}
-                    className="p-3 space-y-2 border border-[#31353a] min-w-0 overflow-hidden"
-                    style={{ borderWidth: '1px' }}
+                    className="min-w-0 overflow-hidden"
                   >
                       {/* 장소 이름과 LIVE 인디케이터 (우측 정렬) */}
-                      <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center justify-between gap-2 min-w-0 mb-1.5">
                         <span className="text-white text-xs font-medium truncate">{spot.spotName}</span>
                         <div className="flex items-center gap-1 text-[10px]">
                           {spot.status === 'normal' ? (
@@ -817,9 +816,6 @@ const RightPanel = () => {
                           )}
                         </div>
                       </div>
-
-                      {/* Spot ID */}
-                      <div className="text-gray-400 text-xs">SPOT-{spot.spotId.padStart(3, '0')}</div>
 
                       {/* CCTV 비디오 */}
                       <div className="w-full h-24 overflow-hidden rounded-sm bg-black">
@@ -865,7 +861,7 @@ const RightPanel = () => {
           </div>
           <div className="grid grid-cols-3 gap-2 min-w-0">
             {/* PM2.5 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+            <div className="p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
               <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
                 <div className="flex items-center gap-1 min-w-0">
                   <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -882,7 +878,7 @@ const RightPanel = () => {
             </div>
 
             {/* PM10 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+            <div className="p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
               <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
                 <div className="flex items-center gap-1 min-w-0">
                   <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -899,15 +895,10 @@ const RightPanel = () => {
             </div>
 
             {/* 온도 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
-                <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">온도</span>
-                </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.temperature.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.temperature.level)}
-                </span>
+            <div className="p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1 min-w-0 mb-1.5">
+                <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">온도</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.temperature.value.toFixed(1)}
@@ -916,15 +907,10 @@ const RightPanel = () => {
             </div>
 
             {/* 습도 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
-                <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">습도</span>
-                </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.humidity.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.humidity.level)}
-                </span>
+            <div className="p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1 min-w-0 mb-1.5">
+                <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">습도</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.humidity.value.toFixed(1)}
@@ -933,32 +919,23 @@ const RightPanel = () => {
             </div>
 
             {/* 강수량 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
-                <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">강수량</span>
-                </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.rainfall.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.rainfall.level)}
-                </span>
+            <div className="p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1 min-w-0 mb-1.5">
+                <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">강수량</span>
               </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
+              <div className="text-white text-sm font-semibold transition-all duration-300 mx-auto">
                 {sensorData.rainfall.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">mm</span>
+                <span className="text-gray-400 text-[10px] ml-0.5">mm</span>
+                <span className="text-gray-400 text-[10px] ml-1">(누적 강수량)</span>
               </div>
             </div>
 
             {/* 풍속 */}
-            <div className="bg-[#36383B] p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
-              <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
-                <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">풍속</span>
-                </div>
-                <span className={`px-2 py-0.5 border ${getLevelColor(sensorData.windSpeed.level)} text-[10px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.windSpeed.level)}
-                </span>
+            <div className="p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+              <div className="flex items-center gap-1 min-w-0 mb-1.5">
+                <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">풍속</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.windSpeed.value.toFixed(1)}
@@ -1034,8 +1011,8 @@ const RightPanel = () => {
               </div>
               <div className="space-y-1">
                 <div className="text-white text-xl font-bold">{infrastructureStatus.streetLightRate}%</div>
-                <div className="w-full h-2 bg-[#161719] rounded-full overflow-hidden">
-                  <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${infrastructureStatus.streetLightRate}%` }} />
+                <div className="w-full h-3 bg-[#161719] overflow-hidden">
+                  <div className="h-full bg-yellow-400" style={{ width: `${infrastructureStatus.streetLightRate}%` }} />
                 </div>
               </div>
             </div>
@@ -1048,8 +1025,8 @@ const RightPanel = () => {
               </div>
               <div className="space-y-1">
                 <div className="text-white text-xl font-bold">{infrastructureStatus.iotSensorRate}%</div>
-                <div className="w-full h-2 bg-[#161719] rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-400 rounded-full" style={{ width: `${infrastructureStatus.iotSensorRate}%` }} />
+                <div className="w-full h-3 bg-[#161719] overflow-hidden">
+                  <div className="h-full bg-blue-400" style={{ width: `${infrastructureStatus.iotSensorRate}%` }} />
                 </div>
               </div>
             </div>

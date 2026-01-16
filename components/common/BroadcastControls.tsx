@@ -16,7 +16,6 @@ export type BroadcastControlsProps = {
   receivedAt: string;
   priority: PriorityLabel;
   aiSummary: string;
-  riskSummary: string;
   onAddClipsRef?: React.MutableRefObject<((clips: ClipData[]) => void) | null>;
   onOpenModalRef?: React.MutableRefObject<(() => void) | null>;
   onModalStateChange?: (isOpen: boolean) => void;
@@ -46,7 +45,6 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
   receivedAt,
   priority,
   aiSummary,
-  riskSummary,
   onAddClipsRef,
   onOpenModalRef,
   onModalStateChange,
@@ -61,7 +59,6 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
   }, [isModalOpen, onModalStateChange]);
   const defaultMessage = useMemo(() => {
     const safeSummary = aiSummary?.trim() || '';
-    const safeRisk = riskSummary?.trim() || '';
 
     return [
       '【이벤트 기본 정보】',
@@ -70,9 +67,6 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
       `- 접수시간: ${receivedAt}`,
       `- 위치: ${location}`,
       `- 신고기관: ${source}`,
-      '',
-      '【위험 요인 분석】',
-      safeRisk ? `- ${safeRisk}` : '- 현재 이벤트의 위험 요인과 위험도, 우선 대응 우선순위를 요약합니다.',
       '',
       '【인물/행동 분석】',
       safeSummary
@@ -89,7 +83,7 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
     ]
       .filter(Boolean)
       .join('\n');
-  }, [aiSummary, riskSummary, eventTitle, priority, receivedAt, location, source]);
+  }, [aiSummary, eventTitle, priority, receivedAt, location, source]);
   const [message, setMessage] = useState(defaultMessage);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>(['경찰', '소방']);
   const [attachments, setAttachments] = useState<Attachment[]>(defaultAttachments);
@@ -284,7 +278,6 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
         receivedAt={receivedAt}
         priority={priority}
         aiSummary={aiSummary}
-        riskSummary={riskSummary}
         message={message}
         setMessage={setMessage}
         selectedRecipients={selectedRecipients}

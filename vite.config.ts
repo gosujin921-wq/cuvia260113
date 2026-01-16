@@ -10,9 +10,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3002,
+    port: 3000,
     open: true,
     hmr: {
+      port: 3001,
       overlay: false, // HMR 에러 오버레이 비활성화
     },
   },

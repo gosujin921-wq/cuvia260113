@@ -12,7 +12,7 @@ import { DetectedCCTVClipPopup } from '@/components/event-detail/DetectedCCTVCli
 import { MapCCTVPopup } from '@/components/event-detail/MapCCTVPopup';
 import { CombinedCCTVPopup } from '@/components/event-detail/CombinedCCTVPopup';
 import { EventCompletionNotificationPopup } from '@/components/event-detail/EventCompletionNotificationPopup';
-import { EventData, RiskFactor, ChatMessage, SavedClip } from '@/components/event-detail/types';
+import { EventData, ChatMessage, SavedClip } from '@/components/event-detail/types';
 import { behaviorHighlights, movementTimeline, cctvInfo, cctvThumbnailMap, cctvFovMap, detectedCCTVThumbnails } from '@/components/event-detail/constants';
 import { ScaledLayout } from '@/components/layouts/ScaledLayout';
 
@@ -53,10 +53,10 @@ const EventDetailPageContent = () => {
       location: baseEvent.location,
       description: baseEvent.description || '',
       source: baseEvent.source || '112 신고',
-      pScore: baseEvent.pScore || 0,
       risk: baseEvent.risk,
-      status: baseEvent.status === 'URGENT' ? 'URGENT' : baseEvent.status === 'ACTIVE' ? 'ACTIVE' : baseEvent.status === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'NEW',
+      status: baseEvent.status,
       domain: baseEvent.domain,
+      broadcastHistory: baseEvent.broadcastHistory,
     };
   }, [baseEvent]);
 
@@ -589,7 +589,6 @@ const EventDetailPageContent = () => {
     
     const title = event.title;
     const location = event.location;
-    const pScore = event.pScore;
     const eventType = event.type;
     
     // 각 명령에 맞는 구체적인 답변 생성
@@ -601,7 +600,7 @@ const EventDetailPageContent = () => {
 • 발생 시간: ${event.time}
 • 발생 위치: ${location}
 • 사건 유형: ${eventType}
-• 현재 위험도: ${event.risk} (위험도 수치: ${pScore}%)
+• 현재 위험도: ${event.risk}
 
 **상황 요약**
 ${insight}`;
@@ -653,15 +652,13 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
 **대응 조치**
 • 즉시 현장 출동 필요
 • CCTV 집중 모니터링`;
-    } else if (prompt.includes('위험도') || prompt.includes('재계산')) {
+    } else if (prompt.includes('위험도') || prompt.includes('재평가')) {
       return `⚠️ 위험도 재평가 결과
 
-**기존 위험도**
-• 위험도 수치: ${pScore}%
+**현재 위험도**
 • 위험도 등급: ${event.risk}
 
-**재계산 결과**
-• 새로운 위험도 수치: ${pScore + 2}%
+**재평가 결과**
 • 위험도 등급: ${event.risk} (유지)`;
     } else if (prompt.includes('유사') || prompt.includes('사건')) {
       return `🔍 유사 사건 검색 결과
@@ -868,48 +865,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
     return compact.slice(0, 220).trimEnd() + '…';
   }, [aiSummary]);
   
-  const detailStats = [
-    { label: '위험도', value: event.risk },
-    { label: '위험도 수치', value: `${event.pScore}%` },
-    { label: '진행 상태', value: event.status },
-    { label: '신고 기관', value: event.source },
-    { label: '발생 시간', value: event.time },
-  ].filter((item) => item.value);
-
-  const buildRiskFactors = (event: EventData, base: ReturnType<typeof getEventById>) => {
-    const factors: RiskFactor[] = [];
-    
-    // 이벤트 ID 기반 구체적인 위험 요인 분석
-    if (event.id.includes('003') || (event.type.includes('유괴') || event.type.includes('납치'))) {
-      factors.push(
-        { label: '사건 성격', value: '아동 유괴 의심', reason: '아동 납치 가능성, 즉시 대응 필요', level: 'high' },
-        { label: 'CCTV 포착', value: '유괴범과 아동 함께 이동 확인', reason: '인접 CCTV에서 유괴범과 아동이 함께 이동하는 장면 포착', level: 'strong' },
-        { label: '도주 수단', value: '차량 이용', reason: '용의자가 차량에 아이를 태우는 장면 포착, 차량 도주 추적 중', level: 'high' },
-        { label: '시민 신고', value: '산책로 쪽으로 뛰어감', reason: '다른 시민의 추가 신고로 이동 경로 확인', level: 'medium' },
-      );
-    } else if (event.type.includes('폭행') || event.type.includes('상해') || event.id.includes('001')) {
-      factors.push(
-        { label: '행동 패턴', value: '폭행 지속 2분 15초', reason: '타격+발차기 반복, 피해자 방어 불가', level: 'high' },
-        { label: '도주 방향', value: '북쪽 골목', reason: '출입 제한 구역으로 추적 난이도 상승', level: 'medium' },
-        { label: '연관 CCTV', value: 'CCTV-7·12·15', reason: '연속 포착으로 확증 높음', level: 'medium' },
-        { label: '피해자 상태', value: '부상 의심', reason: '피해자 쓰러짐 감지', level: 'high' },
-      );
-    } else {
-      factors.push(
-        { label: '위험도', value: event.risk, reason: '도메인 규정상 즉시 대응 등급', level: event.risk === 'HIGH' ? 'high' : 'medium' },
-        { label: '위험도 수치', value: `${event.pScore}%`, reason: 'AI 추정 위험도 산식 결과', level: event.pScore >= 80 ? 'high' : 'medium' },
-        { label: '시간대', value: event.time, reason: '야간/심야 여부 반영', level: 'medium' },
-      );
-    }
-    return factors;
-  };
-
-  const riskFactors = useMemo(() => buildRiskFactors(event, baseEvent), [event, baseEvent]);
-  const priorityScore = Math.round(event.pScore ?? 0);
-  const confidenceScore = Math.round(dashboardEvent?.confidence ?? event.pScore ?? 0);
-  const riskReasonSummary = riskFactors.length
-    ? riskFactors.map((factor) => `${factor.label}: ${factor.reason}`).join(' · ')
-    : '위험 요인 정보가 충분하지 않습니다.';
 
   return (
     <ScaledLayout>
@@ -921,10 +876,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
           baseEvent={baseEvent}
           priority={priority}
           aiSummary={aiSummary}
-          riskFactors={riskFactors}
-          priorityScore={priorityScore}
-          confidenceScore={confidenceScore}
-          riskReasonSummary={riskReasonSummary}
           formattedDateTime={formattedDateTime}
           normalizedSource={normalizedSource}
           dashboardEvent={dashboardEvent}

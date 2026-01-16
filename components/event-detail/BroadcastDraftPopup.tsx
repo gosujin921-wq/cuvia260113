@@ -40,7 +40,6 @@ interface BroadcastDraftPopupProps {
   receivedAt: string;
   priority: PriorityLabel;
   aiSummary: string;
-  riskSummary: string;
   message: string;
   setMessage: (message: string) => void;
   selectedRecipients: string[];
@@ -63,7 +62,6 @@ export const BroadcastDraftPopup = ({
   receivedAt,
   priority,
   aiSummary,
-  riskSummary,
   message,
   setMessage,
   selectedRecipients,

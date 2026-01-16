@@ -6,19 +6,13 @@ export interface EventData {
   location: string;
   description: string;
   source: string;
-  pScore: number;
   risk: 'HIGH' | 'MEDIUM' | 'LOW';
-  status: 'URGENT' | 'ACTIVE' | 'NEW' | 'IN_PROGRESS';
+  status: '진행중' | '종결' | '오탐';
   domain: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
-}
-
-export type RiskLevel = 'high' | 'medium' | 'low' | 'strong';
-
-export interface RiskFactor {
-  label: string;
-  value: string;
-  reason: string;
-  level: RiskLevel;
+  broadcastHistory?: {
+    count: number;
+    lastBroadcastTime?: string;
+  };
 }
 
 export interface ChatMessage {

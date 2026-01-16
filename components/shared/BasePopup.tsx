@@ -66,22 +66,36 @@ export const BasePopup: React.FC<BasePopupProps> = ({
       onClick={handleOverlayClick}
     >
       <div
-        className={`bg-[#101013] border border-[#31353a] w-full ${maxWidth} flex flex-col shadow-lg ${
-          containerClassName || ''
-        }`}
+        className={`w-full ${maxWidth} flex flex-col shadow-lg ${
+          containerClassName?.includes('bg-white')
+            ? 'bg-white border border-gray-200'
+            : 'bg-[#101013] border border-[#31353a]'
+        } ${containerClassName || ''}`}
         style={{ maxHeight, height: 'auto' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}
-        <div className="flex items-center justify-between p-6 border-b border-[#31353a] flex-shrink-0">
-          <div className="flex items-center gap-2 text-base font-semibold text-white">
+        <div className={`flex items-center justify-between p-6 border-b flex-shrink-0 ${
+          containerClassName?.includes('bg-white') 
+            ? 'border-gray-200' 
+            : 'border-[#31353a]'
+        }`}>
+          <div className={`flex items-center gap-2 text-base font-semibold ${
+            containerClassName?.includes('bg-white') 
+              ? 'text-gray-900' 
+              : 'text-white'
+          }`}>
             {titleIcon}
             {title}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white focus:outline-none transition-colors"
+            className={`focus:outline-none transition-colors ${
+              containerClassName?.includes('bg-white')
+                ? 'text-gray-400 hover:text-gray-900'
+                : 'text-gray-400 hover:text-white'
+            }`}
             aria-label="팝업 닫기"
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
@@ -93,7 +107,11 @@ export const BasePopup: React.FC<BasePopupProps> = ({
 
         {/* 푸터 */}
         {footer && (
-          <div className="flex-shrink-0 border-t border-[#31353a]">{footer}</div>
+          <div className={`flex-shrink-0 border-t ${
+            containerClassName?.includes('bg-white')
+              ? 'border-gray-200'
+              : 'border-[#31353a]'
+          }`}>{footer}</div>
         )}
       </div>
     </div>

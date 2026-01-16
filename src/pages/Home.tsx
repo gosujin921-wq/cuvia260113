@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Score from '@/components/dashboard/Score';
 import EventList from '@/components/dashboard/EventList';
@@ -87,22 +87,10 @@ export default function Home() {
     setHighlightedEventId(eventId);
   };
 
-  // 이벤트 찾기 헬퍼 함수
-  const findEventByCriteria = (
-    titleKeyword?: string,
-    eventId?: string,
-    id?: string
-  ): Event | undefined => {
-    return allConvertedEvents.find(event => 
-      (titleKeyword && event.title.includes(titleKeyword)) ||
-      (eventId && event.eventId === eventId) ||
-      (id && event.id === id)
-    );
-  };
-
   // 공통 이벤트 애니메이션 함수
   // 순서: 1. 이벤트 표시 및 하이라이트 (즉시) → 2. 줌인 시작 (300ms 후) → 3. 팝업 표시 (줌인 완료 후 800ms)
-  const animateToEvent = (eventId: string, callback?: () => void) => {
+  const animateToEvent = useCallback((event: Event, callback?: () => void) => {
+    const eventId = event.id;
     // 1단계: 이벤트 표시 및 하이라이트 (즉시)
     setVisibleEventIds(prev => new Set([...prev, eventId]));
     setHighlightedEventId(eventId);
@@ -119,7 +107,7 @@ export default function Home() {
         }
       }, 500); // 줌인 애니메이션 완료 시간
     }, 300);
-  };
+  }, []);
 
   // 선택 해제 함수
   const clearSelection = () => {
@@ -137,16 +125,27 @@ export default function Home() {
       }
       
       if (e.key === '1') {
-        const missingEvent = findEventByCriteria('김도연', 'A-20260107-004', 'A-20260107-004');
+        const missingEvent = allConvertedEvents.find(event => 
+          event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+        );
         if (missingEvent) {
-          animateToEvent(missingEvent.id);
+          animateToEvent(missingEvent);
         }
       } else if (e.key === '2') {
-        const abductionEvent = findEventByCriteria('유괴 의심', 'A-20251210-003', 'A-20251210-003');
+        const abductionEvent = allConvertedEvents.find(event => 
+          event.eventId === 'A-20251210-003' || event.id === 'A-20251210-003'
+        );
         if (abductionEvent) {
-          animateToEvent(abductionEvent.id, () => {
+          animateToEvent(abductionEvent, () => {
             setAiDetectionEventId(abductionEvent.id);
           });
+        }
+      } else if (e.key === '3') {
+        const assaultEvent = allConvertedEvents.find(event => 
+          event.eventId === 'A-20241124-001' || event.id === 'A-20241124-001'
+        );
+        if (assaultEvent) {
+          animateToEvent(assaultEvent);
         }
       } else if (e.key === 'Escape') {
         clearSelection();
@@ -155,7 +154,7 @@ export default function Home() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [allConvertedEvents]);
+  }, [allConvertedEvents, animateToEvent]);
 
   return (
     <ScaledLayout>

@@ -39,19 +39,8 @@ export interface Event {
     name: string;
     coordinates: [number, number];
   };
-  confidence?: number;
   description?: string;
-  relatedEvents?: string[];
-  isMain?: boolean;
   evidenceEvents?: string[];
-  nearbyResources?: {
-    fireStations?: Array<{
-      id: string;
-      name: string;
-      distance: number;
-      coordinates: [number, number];
-    }>;
-  };
   processingStage: ProcessingStage;
   resolution: EventResolution;
 }

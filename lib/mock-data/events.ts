@@ -106,20 +106,20 @@ interface BaseEvent {
   
   /**
    * 이벤트 상태
-   * - URGENT: 긴급 (즉시 대응 필요)
-   * - ACTIVE: 활성 (진행 중)
-   * - NEW: 신규 (새로 발생)
-   * - IN_PROGRESS: 처리 중
-   * - CLOSED: 종결 (처리 완료)
+   * - 진행중: 현재 진행 중인 이벤트
+   * - 종결: 처리 완료된 이벤트
+   * - 오탐: 오탐으로 판단된 이벤트
    */
-  status: 'URGENT' | 'ACTIVE' | 'NEW' | 'IN_PROGRESS' | 'CLOSED';
+  status: '진행중' | '종결' | '오탐';
   
   /**
-   * 위험도 점수 (0-100, 선택적)
-   * AI나 시스템이 계산한 위험도 수치
-   * 높을수록 위험도가 높음
+   * 전파 이력
+   * 전파를 보낸 횟수와 마지막 전파 시간
    */
-  pScore?: number;
+  broadcastHistory?: {
+    count: number;
+    lastBroadcastTime?: string; // ISO 8601 형식 또는 'YYYY-MM-DD HH:mm:ss'
+  };
   
   /**
    * 도메인 코드 (이벤트 카테고리)
@@ -156,9 +156,12 @@ export const MOCK_EVENTS: BaseEvent[] = [
     description: '112 신고자 "흉기 든 남성이 위협 중"',
     source: '안양112센터',
     risk: '긴급',
-    status: 'URGENT',
-    pScore: 92,
+    status: '진행중',
     domain: 'A',
+    broadcastHistory: {
+      count: 2,
+      lastBroadcastTime: '2024-11-24 18:45:30',
+    },
   },
   
   {
@@ -171,9 +174,12 @@ export const MOCK_EVENTS: BaseEvent[] = [
     description: '112 신고: 검은 후드티 남성이 파란 가방 멘 아이를 억지로 끌고 갔다',
     source: '부천112센터',
     risk: '긴급',
-    status: 'URGENT',
-    pScore: 95,
+    status: '진행중',
     domain: 'A',
+    broadcastHistory: {
+      count: 1,
+      lastBroadcastTime: '2024-12-10 15:25:15',
+    },
   },
   
   {
@@ -186,9 +192,11 @@ export const MOCK_EVENTS: BaseEvent[] = [
     description: '경찰청 신고 접수: 2026-01-07 오전 9시 30분경 원미구 부천로 245번길 일원에서 행방불명. 176cm/65kg, 마름, 계란형, 흑색 짧은 머리, 회색 상의에 청바지. 경찰청으로부터 신고내용 접수, 사건 발생지점 및 실종자 특징정보 전달.',
     source: '경찰청',
     risk: '긴급',
-    status: 'URGENT',
-    pScore: 88,
+    status: '진행중',
     domain: 'A',
+    broadcastHistory: {
+      count: 0,
+    },
   },
 ];
 

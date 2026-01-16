@@ -5,18 +5,13 @@ import { Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import BroadcastControls from '@/components/common/BroadcastControls';
 import { getEventCategory, BaseEvent } from '@/lib/events-data';
-import { EventData, RiskFactor } from './types';
-import { riskLevelMeta } from './constants';
+import { EventData } from './types';
 
 interface EventLeftPanelProps {
   event: EventData;
   baseEvent: BaseEvent;
   priority: '긴급' | '경계' | '주의';
   aiSummary: string;
-  riskFactors: RiskFactor[];
-  priorityScore: number;
-  confidenceScore: number;
-  riskReasonSummary: string;
   formattedDateTime: string;
   normalizedSource: string;
   dashboardEvent: ReturnType<typeof import('@/lib/events-data').convertToDashboardEvent> | null;
@@ -30,10 +25,6 @@ export const EventLeftPanel: React.FC<EventLeftPanelProps> = ({
   baseEvent,
   priority,
   aiSummary,
-  riskFactors,
-  priorityScore,
-  confidenceScore,
-  riskReasonSummary,
   formattedDateTime,
   normalizedSource,
   dashboardEvent,
@@ -122,7 +113,7 @@ export const EventLeftPanel: React.FC<EventLeftPanelProps> = ({
                 {aiSummary}
               </div>
             </div>
-            <div className="px-3 pb-6">
+              <div className="px-3 pb-6">
               <BroadcastControls
                 eventId={event.id}
                 eventTitle={event.title}
@@ -131,7 +122,6 @@ export const EventLeftPanel: React.FC<EventLeftPanelProps> = ({
                 receivedAt={formattedDateTime}
                 priority={priority}
                 aiSummary={aiSummary}
-                riskSummary={riskReasonSummary}
                 onAddClipsRef={onAddClipsRef}
                 onOpenModalRef={onOpenModalRef}
                 onModalStateChange={onModalStateChange}
@@ -151,55 +141,25 @@ export const EventLeftPanel: React.FC<EventLeftPanelProps> = ({
                 <span className="text-gray-400">위치</span>
                 <span className="text-right ml-4 font-semibold">{event.location}</span>
               </div>
-              {dashboardEvent && (
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">이벤트 상태</span>
-                  <span className="font-semibold">{dashboardEvent.processingStage}</span>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-400">이벤트 상태</span>
+                <span className="font-semibold">{event.status}</span>
+              </div>
+              {event.broadcastHistory && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-400">전파 횟수</span>
+                    <span className="font-semibold">{event.broadcastHistory.count}회</span>
+                  </div>
+                  {event.broadcastHistory.lastBroadcastTime && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400">마지막 전파 시간</span>
+                      <span className="font-semibold">{event.broadcastHistory.lastBroadcastTime}</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
-            {/* 위험 요인 분석 */}
-            {riskFactors.length > 0 && (
-              <div className="px-3 space-y-3 mt-6 pb-6">
-                <div className="flex items-center gap-2 text-sm text-white font-semibold">
-                  <Icon icon="mdi:alert" className="w-4 h-4 text-red-300" />
-                  위험 요인 분석
-                </div>
-                <div className="space-y-2">
-                  {riskFactors.map((factor) => (
-                    <div
-                      key={factor.label}
-                      className="flex items-center justify-between px-4 py-4 border-b border-[#2a2d36] last:border-b-0 bg-[#36383B] text-sm"
-                    >
-                      <div className="text-white font-semibold">{factor.label}</div>
-                      <div className="flex items-center gap-3 justify-end text-right text-sm">
-                        <span className="text-white font-semibold">{factor.value}</span>
-                        <Icon
-                          icon={riskLevelMeta[factor.level].icon}
-                          className={`w-5 h-5 ${riskLevelMeta[factor.level].color}`}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  <div className="pt-4 space-y-2 text-sm text-gray-100 bg-[#36383B] px-3 py-3">
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-gray-300">우선순위 점수</span>
-                      <span className="text-white font-semibold">{priorityScore}점</span>
-                    </div>
-                    <div className="flex items-center justify-between px-1">
-                      <span className="text-gray-300">신뢰도</span>
-                      <span className="text-white font-semibold">{confidenceScore}%</span>
-                    </div>
-                    <div className="px-1">
-                      <span className="text-gray-300 text-xs">이유</span>
-                      <p className="text-gray-100 text-sm leading-relaxed mt-1">
-                        {riskReasonSummary}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
