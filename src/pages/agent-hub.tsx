@@ -33,28 +33,9 @@ const AgentHubPage = () => {
     }
   }, [chatInput]);
 
-  const addMessage = (role: 'assistant' | 'user', content: string) => {
-    const timestamp = new Date().toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
-    const newMessage: ChatMessage = {
-      id: `${role}-${Date.now()}`,
-      role,
-      content,
-      timestamp,
-    };
-    setMessages((prev) => [...prev, newMessage]);
-  };
-
-  const generateAssistantReply = (prompt: string) => {
-    return `"${prompt}"에 대한 응답입니다. Agent Hub에서 다양한 기능을 사용할 수 있습니다.`;
-  };
-
   const handleSendMessage = async (messageText?: string) => {
     const text = (messageText ?? chatInput).trim();
-    if (!text || isResponding) return;
+    if (!text) return;
 
     // 검색 시 agent-chat 페이지로 이동 (쿼리 파라미터 사용)
     navigate(`/agent-chat?q=${encodeURIComponent(text)}`);
@@ -68,7 +49,6 @@ const AgentHubPage = () => {
   };
 
   const handleFileUpload = () => {
-    console.log('파일 업로드:', selectedFiles);
     setShowToolPopup(false);
     setSelectedFiles([]);
   };
@@ -78,9 +58,65 @@ const AgentHubPage = () => {
   };
 
   return (
-    <ScaledLayout>
-      <div className="flex flex-1 overflow-hidden bg-white min-h-0 h-full">
-        <main className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden h-full relative">
+    <ScaledLayout noScale>
+      <div className="flex flex-1 overflow-hidden min-h-0 h-full relative" style={{ background: 'linear-gradient(to bottom, #ffffff, #fafafa)' }}>
+        {/* 애니메이션 백그라운드 그라데이션 */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
+          {/* 오렌지 그라데이션 원 1 */}
+          <div 
+            className="absolute rounded-full agent-hub-gradient-1"
+            style={{
+              width: '600px',
+              height: '600px',
+              background: 'radial-gradient(circle, rgba(255, 133, 102, 0.8) 0%, rgba(255, 133, 102, 0.5) 30%, rgba(255, 133, 102, 0.2) 50%, transparent 70%)',
+              filter: 'blur(120px)',
+              opacity: 0.4,
+              top: '-10%',
+              left: '-10%',
+            }}
+          />
+          {/* 파란색 그라데이션 원 1 */}
+          <div 
+            className="absolute rounded-full agent-hub-gradient-2"
+            style={{
+              width: '500px',
+              height: '500px',
+              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.5) 30%, rgba(37, 99, 235, 0.2) 50%, transparent 70%)',
+              filter: 'blur(100px)',
+              opacity: 0.4,
+              top: '20%',
+              right: '-5%',
+            }}
+          />
+          {/* 오렌지 그라데이션 원 2 */}
+          <div 
+            className="absolute rounded-full agent-hub-gradient-3"
+            style={{
+              width: '550px',
+              height: '550px',
+              background: 'radial-gradient(circle, rgba(255, 133, 102, 0.7) 0%, rgba(255, 133, 102, 0.4) 30%, rgba(255, 133, 102, 0.15) 50%, transparent 70%)',
+              filter: 'blur(110px)',
+              opacity: 0.35,
+              bottom: '10%',
+              left: '15%',
+            }}
+          />
+          {/* 파란색 그라데이션 원 2 */}
+          <div 
+            className="absolute rounded-full agent-hub-gradient-4"
+            style={{
+              width: '450px',
+              height: '450px',
+              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, rgba(37, 99, 235, 0.4) 30%, rgba(37, 99, 235, 0.15) 50%, transparent 70%)',
+              filter: 'blur(90px)',
+              opacity: 0.35,
+              bottom: '-5%',
+              right: '10%',
+            }}
+          />
+        </div>
+        
+        <main className="flex-1 flex flex-col min-w-0 bg-transparent overflow-hidden h-full relative" style={{ zIndex: 10 }}>
           {/* Chat Content */}
           {messages.length > 0 && (
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
@@ -93,12 +129,12 @@ const AgentHubPage = () => {
                         <div
                           className={`${
                             message.role === 'user'
-                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border text-sm bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] text-white border-transparent'
+                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border text-sm bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent'
                               : 'w-full text-gray-900 text-sm'
                           }`}
                         >
                           <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                          <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-purple-100' : 'text-gray-500'}`}>
+                          <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
                             {message.timestamp}
                           </div>
                         </div>
@@ -122,7 +158,7 @@ const AgentHubPage = () => {
 
           {/* 중앙 입력 영역 (메시지가 없을 때) */}
           {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col relative z-10">
               {/* 상단: 로고와 Agent (대시보드와 동일한 위치) */}
               <div className="py-4 px-3 flex items-center gap-2.5">
                 <div className="w-24 h-5 flex items-center justify-start">
@@ -139,39 +175,40 @@ const AgentHubPage = () => {
               <div className="flex-1 flex flex-col items-center justify-center max-w-[800px] mx-auto w-full">
                 <p className="text-3xl font-medium text-gray-900 text-center mb-8 leading-relaxed w-full" style={{ fontSize: '27px' }}>
                   자연어로 질문하면{' '}
-                  <span className="bg-gradient-to-r from-[#7C62F0] to-[#5A3FEA] bg-clip-text text-transparent font-semibold">
+                  <span className="bg-gradient-to-r from-[#ff8566] to-[#ff8566] bg-clip-text text-transparent font-semibold">
                     CUVIA Agent
                   </span>
                   가 적절한 정보와 화면으로 안내합니다.
                 </p>
                 <div className="w-full">
-                  <div className="relative flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
-                  <button
-                    onClick={() => setShowToolPopup(true)}
-                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
-                    aria-label="도구 열기"
-                  >
-                    <Icon icon="mdi:plus" className="w-5 h-5" />
-                  </button>
-                  <textarea
-                    ref={textareaRef}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    placeholder="자연어로 질문하세요. (예:오늘 접수된 실종 신고 보여줘)"
-                    className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none overflow-hidden"
-                    style={{
-                      minHeight: '24px',
-                      maxHeight: '96px',
-                      lineHeight: '24px',
-                    }}
-                    rows={1}
-                  />
+                  <div className="relative flex items-center gap-3 rounded-2xl px-4 py-3 agent-hub-chat-input" style={{ isolation: 'isolate' }}>
+                    <button
+                      onClick={() => setShowToolPopup(true)}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors relative z-10"
+                      aria-label="도구 열기"
+                    >
+                      <Icon icon="mdi:plus" className="w-5 h-5" />
+                    </button>
+                    <textarea
+                      ref={textareaRef}
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder="자연어로 질문하세요. (예:오늘 접수된 실종 신고 보여줘)"
+                      className="flex-1 bg-transparent border-none text-gray-900 placeholder-gray-500 focus:outline-none resize-none overflow-hidden relative z-10"
+                      style={{
+                        minHeight: '24px',
+                        maxHeight: '96px',
+                        lineHeight: '24px',
+                        fontSize: '16px',
+                      }}
+                      rows={1}
+                    />
                   </div>
                 </div>
 
@@ -198,7 +235,7 @@ const AgentHubPage = () => {
                             자연어로 통계 데이터를 조회하고 시각화합니다.
                           </p>
                           <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-xs text-gray-700">
+                            <p className="text-sm text-gray-700">
                               예시: <span className="text-gray-900 font-medium">&quot;8월 화재 통계&quot;</span>, <span className="text-gray-900 font-medium">&quot;서초구 상위 5 이벤트&quot;</span>
                             </p>
                           </div>
@@ -225,7 +262,7 @@ const AgentHubPage = () => {
                             특정 지역이나 시설물의 위치로 지도를 이동합니다.
                           </p>
                           <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-xs text-gray-700">
+                            <p className="text-sm text-gray-700">
                               예시: <span className="text-gray-900 font-medium">&quot;서초구 지도&quot;</span>, <span className="text-gray-900 font-medium">&quot;강남역 CCTV&quot;</span>
                             </p>
                           </div>
@@ -252,7 +289,7 @@ const AgentHubPage = () => {
                             원하는 메뉴나 설정 화면으로 바로 이동합니다.
                           </p>
                           <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-xs text-gray-700">
+                            <p className="text-sm text-gray-700">
                               예시: <span className="text-gray-900 font-medium">&quot;CCTV 설정 이동&quot;</span>, <span className="text-gray-900 font-medium">&quot;이벤트 관리&quot;</span>
                             </p>
                           </div>
@@ -279,7 +316,7 @@ const AgentHubPage = () => {
                             과거 이벤트 발생 이력을 검색합니다.
                           </p>
                           <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-xs text-gray-700">
+                            <p className="text-sm text-gray-700">
                               예시: <span className="text-gray-900 font-medium">&quot;지난달 침수 이력&quot;</span>, <span className="text-gray-900 font-medium">&quot;9월 이벤트 기록&quot;</span>
                             </p>
                           </div>
@@ -292,12 +329,12 @@ const AgentHubPage = () => {
             </div>
           ) : (
             /* 입력 영역 (메시지가 있을 때 하단 고정) */
-            <div className="bg-white flex-shrink-0">
+            <div className="bg-white flex-shrink-0 relative z-10">
               <div className="p-4 max-w-[800px] mx-auto w-full">
-                <div className="relative flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
+                <div className="relative flex items-center gap-3 rounded-2xl px-4 py-3 agent-hub-chat-input" style={{ isolation: 'isolate' }}>
                   <button
                     onClick={() => setShowToolPopup(true)}
-                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors relative z-10"
                     aria-label="도구 열기"
                   >
                     <Icon icon="mdi:plus" className="w-5 h-5" />
@@ -313,11 +350,12 @@ const AgentHubPage = () => {
                       }
                     }}
                     placeholder="자연어로 질문하세요. (예:오늘 접수된 실종 신고 보여줘)"
-                    className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none overflow-hidden"
+                    className="flex-1 bg-transparent border-none text-gray-900 placeholder-gray-500 focus:outline-none resize-none overflow-hidden relative z-10"
                     style={{
                       minHeight: '24px',
                       maxHeight: '96px',
                       lineHeight: '24px',
+                      fontSize: '16px',
                     }}
                     rows={1}
                   />
@@ -398,7 +436,7 @@ const AgentHubPage = () => {
                   </button>
                   <button
                     onClick={handleFileUpload}
-                    className="flex-1 px-4 py-2 bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] hover:from-[#8B72F5] hover:to-[#6A4FFA] text-white rounded-lg text-sm transition-colors"
+                    className="flex-1 px-4 py-2 bg-gradient-to-br from-[#ff8566] to-[#ff8566] hover:from-[#ff8566] hover:to-[#ff8566] text-white rounded-lg text-sm transition-colors"
                   >
                     업로드
                   </button>

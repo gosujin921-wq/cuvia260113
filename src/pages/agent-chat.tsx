@@ -55,7 +55,6 @@ const AgentChatPage = () => {
   const [isResponding, setIsResponding] = useState(false);
   const [showToolPopup, setShowToolPopup] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -212,7 +211,6 @@ const AgentChatPage = () => {
         setIsResponding(false);
       }, 700);
     } catch (error) {
-      console.error('AI 응답 오류:', error);
       addMessage('assistant', '응답을 생성하는 중 오류가 발생했습니다.');
       setIsResponding(false);
     }
@@ -226,7 +224,6 @@ const AgentChatPage = () => {
   };
 
   const handleFileUpload = () => {
-    console.log('파일 업로드:', selectedFiles);
     setShowToolPopup(false);
     setSelectedFiles([]);
   };
@@ -274,12 +271,10 @@ const AgentChatPage = () => {
     setProjects((prev) => [newProject, ...prev]);
   };
 
-  const filteredChatSessions = chatSessions.filter((chat) =>
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredChatSessions = chatSessions;
 
   return (
-    <ScaledLayout>
+    <ScaledLayout noScale>
       <div className="flex flex-1 overflow-hidden bg-white agent-chat-page min-h-0 h-full">
         {/* 좌측 패널 */}
         <aside
@@ -485,7 +480,7 @@ const AgentChatPage = () => {
               {/* 대화 로그 */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-gray-700 text-sm">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] flex items-center justify-center text-white">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] flex items-center justify-center text-white">
                     <img
                       src="/simbol.svg"
                       alt="AI"
@@ -502,12 +497,12 @@ const AgentChatPage = () => {
                         <div
                           className={`${
                             message.role === 'user'
-                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border text-sm bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] text-white border-transparent'
+                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border text-sm bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent'
                               : 'w-full text-gray-900 text-sm'
                           }`}
                         >
                           <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                          <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-purple-100' : 'text-gray-500'}`}>
+                          <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
                             {message.timestamp}
                           </div>
                         </div>
@@ -650,7 +645,7 @@ const AgentChatPage = () => {
                   </button>
                   <button
                     onClick={handleFileUpload}
-                    className="flex-1 px-4 py-2 bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] hover:from-[#8B72F5] hover:to-[#6A4FFA] text-white rounded-lg text-sm transition-colors"
+                    className="flex-1 px-4 py-2 bg-gradient-to-br from-[#ff8566] to-[#ff8566] hover:from-[#ff8566] hover:to-[#ff8566] text-white rounded-lg text-sm transition-colors"
                   >
                     업로드
                   </button>

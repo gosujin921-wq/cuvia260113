@@ -41,11 +41,11 @@ export const colorPalette = {
       base: 'green-600',
       dark: 'green-700',
     },
-    purple: {
-      light: 'purple-400',
-      base: 'purple-500',
-      dark: 'purple-600',
-      darker: 'purple-700',
+    orange: {
+      light: 'orange-400',
+      base: 'orange-500',
+      dark: 'orange-600',
+      darker: 'orange-700',
     },
     indigo: {
       base: 'indigo-600',
@@ -91,7 +91,7 @@ export const buttonStyles = {
   },
   gradient: {
     base: "px-4 py-2 text-sm font-semibold transition-all flex items-center justify-center gap-2",
-    style: "bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] hover:from-[#8B72F5] hover:to-[#6A4FFA] text-white shadow-lg hover:shadow-xl",
+    style: "bg-gradient-to-br from-[#ff8566] to-[#ff8566] hover:from-[#ff8566] hover:to-[#ff8566] text-white shadow-lg hover:shadow-xl",
   },
   recipient: {
     base: "px-3 py-1.5 text-sm font-medium transition-colors rounded",
@@ -134,7 +134,7 @@ export const timelineTitleStyles = {
 
 export const cctvBadgeStyles = {
   base: "absolute -top-[18px] -right-[18px] w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-lg border-2 z-20",
-  default: "bg-purple-500/90 border-purple-400",
+  default: "bg-orange-500/90 border-orange-400",
   tracking: "bg-blue-500/90 border-blue-400",
 };
 

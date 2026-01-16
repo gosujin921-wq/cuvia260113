@@ -555,7 +555,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                }}
                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
                  showCCTVName 
-                   ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                   ? 'bg-orange-600 hover:bg-orange-700 text-white' 
                    : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a]'
                }`}
                style={{ borderWidth: '1px' }}
@@ -938,7 +938,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       >
         <Link
           href="/agent-hub"
-          className="w-14 h-14 rounded-full bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] hover:from-[#8B72F5] hover:to-[#6A4FFA] flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          className="w-14 h-14 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] hover:from-[#ff8566] hover:to-[#ff8566] flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300"
           aria-label="Agent Hub"
         >
           <img 

@@ -197,49 +197,41 @@ const EventDetailPageContent = () => {
   
   const handlePTZUp = async () => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/up
-    console.log('PTZ: 위로 이동');
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/up`, { method: 'POST' });
   };
 
   const handlePTZDown = async () => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/down
-    console.log('PTZ: 아래로 이동');
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/down`, { method: 'POST' });
   };
 
   const handlePTZLeft = async () => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/left
-    console.log('PTZ: 왼쪽으로 이동');
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/left`, { method: 'POST' });
   };
 
   const handlePTZRight = async () => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/right
-    console.log('PTZ: 오른쪽으로 이동');
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/right`, { method: 'POST' });
   };
 
   const handlePTZCenter = async () => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/center
-    console.log('PTZ: 중앙');
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/center`, { method: 'POST' });
   };
 
   const handleZoomIn = async () => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/zoom/in
-    console.log('PTZ: 줌 인');
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/zoom/in`, { method: 'POST' });
   };
 
   const handleZoomOut = async () => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/zoom/out
-    console.log('PTZ: 줌 아웃');
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/zoom/out`, { method: 'POST' });
   };
 
   const handlePreset = async (preset: number) => {
     // 📡 API 연동 필요: POST /api/cctv/{cctvId}/ptz/preset/{preset}
-    console.log(`PTZ: 프리셋 ${preset}`);
     // await fetch(`/api/cctv/${selectedMapCCTV}/ptz/preset/${preset}`, { method: 'POST' });
   };
 
@@ -833,8 +825,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
           const message = generateEventCompletionMessage(baseEvent, dashboardEvent);
           setCompletionMessage(message);
           setShowCompletionPopup(true);
-        } else {
-          console.log('baseEvent가 없습니다.');
         }
       }
     };
@@ -1023,7 +1013,7 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
         {isRightPanelCollapsed && (
           <button
             onClick={() => setIsRightPanelCollapsed(false)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300 z-50"
+            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all duration-300 z-50"
             aria-label="우측 패널 펼치기"
           >
             <Icon icon="mdi:sparkles" className="w-6 h-6" />
@@ -1092,7 +1082,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
         onClose={() => setShowCompletionPopup(false)}
         onStopMonitoring={() => {
           // 모니터링 중단 처리
-          console.log('모니터링 중단');
           setShowCompletionPopup(false);
           // 📡 API 연동 필요: 모니터링 중단
           // POST /api/cctv/{cctvId}/monitoring/stop

@@ -143,7 +143,7 @@ export const DetectedCCTVClipPopup = ({
       isOpen={isOpen && !!selectedDetectedCCTV && !!detected}
       onClose={onClose}
       title="포착된 CCTV 클립"
-      titleIcon={<Icon icon="mdi:video-stabilization" className="w-5 h-5 text-purple-400" />}
+      titleIcon={<Icon icon="mdi:video-stabilization" className="w-5 h-5 text-orange-400" />}
       maxWidth="max-w-6xl"
       maxHeight="120vh"
     >
@@ -207,7 +207,7 @@ export const DetectedCCTVClipPopup = ({
                 </div>
               </div>
               {/* Clip 상태 표시 - LIVE처럼 */}
-              <div className="absolute top-3 left-3 px-3 py-1.5 bg-purple-600 text-white text-xs font-semibold flex items-center gap-1.5 rounded-full z-10">
+              <div className="absolute top-3 left-3 px-3 py-1.5 bg-orange-600 text-white text-xs font-semibold flex items-center gap-1.5 rounded-full z-10">
                 <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                 <Icon icon="mdi:circle" className="w-2 h-2" />
                 Clip
@@ -237,7 +237,7 @@ export const DetectedCCTVClipPopup = ({
                       />
                       <span className="text-[#50A1FF] font-semibold text-sm">AI 해석</span>
                     </div>
-                    <span className="text-purple-400 text-xs font-semibold">정확도 {detected.confidence}%</span>
+                    <span className="text-orange-400 text-xs font-semibold">정확도 {detected.confidence}%</span>
                   </div>
                   <p className="text-white text-sm leading-relaxed">{detected.aiAnalysis}</p>
                 </div>
@@ -251,7 +251,7 @@ export const DetectedCCTVClipPopup = ({
                       <Icon icon="mdi:alert-circle" className="w-4 h-4 text-yellow-400" />
                       <span className="text-yellow-400 font-semibold text-sm">용의자 의심 이유</span>
                     </div>
-                    <span className="text-purple-400 text-xs font-semibold">정확도 {detected.confidence}%</span>
+                    <span className="text-orange-400 text-xs font-semibold">정확도 {detected.confidence}%</span>
                   </div>
                   <p className="text-gray-300 text-sm leading-relaxed">{detected.suspectReason}</p>
                 </div>
@@ -265,7 +265,7 @@ export const DetectedCCTVClipPopup = ({
                       <Icon icon="mdi:information" className="w-4 h-4 text-blue-400" />
                       <span className="text-blue-400 font-semibold text-sm">상황 설명</span>
                     </div>
-                    <span className="text-purple-400 text-xs font-semibold">정확도 {detected.confidence}%</span>
+                    <span className="text-orange-400 text-xs font-semibold">정확도 {detected.confidence}%</span>
                   </div>
                   <p className="text-gray-300 text-sm leading-relaxed">{detected.situation}</p>
                 </div>
@@ -385,7 +385,6 @@ export const DetectedCCTVClipPopup = ({
               //   method: 'POST',
               //   body: JSON.stringify({ clipId, cctvId, timestamp }),
               // });
-              console.log('전파하기');
             }}
             className={getPrimaryButtonClassName()}
           >

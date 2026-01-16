@@ -61,7 +61,7 @@ const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) =
           {/* AI 사건요약 */}
           <div className="rounded-xl border border-[#31353a] bg-[#0f0f0f] p-4" style={{ borderWidth: '1px' }}>
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] flex items-center justify-center flex-shrink-0">
                 <img
                   src="/simbol.svg"
                   alt="AI"

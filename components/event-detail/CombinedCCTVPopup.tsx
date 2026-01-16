@@ -366,7 +366,7 @@ export const CombinedCCTVPopup = ({
                     </div>
                   </div>
                   {/* Clip 상태 표시 - LIVE처럼 */}
-                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-purple-600 text-white text-xs font-semibold flex items-center gap-1.5 rounded-full z-10">
+                  <div className="absolute top-3 left-3 px-3 py-1.5 bg-orange-600 text-white text-xs font-semibold flex items-center gap-1.5 rounded-full z-10">
                     <span className="w-2 h-2 bg-white rounded-full animate-pulse"></span>
                     <Icon icon="mdi:circle" className="w-2 h-2" />
                     Clip
@@ -756,7 +756,6 @@ export const CombinedCCTVPopup = ({
                 onClick={() => {
                   // 📡 API 연동 필요: 클립 전파
                   // POST /api/broadcast/clip
-                  console.log('전파하기');
                 }}
                 className={getPrimaryButtonClassName()}
               >
@@ -769,7 +768,6 @@ export const CombinedCCTVPopup = ({
               onClick={() => {
                 // 📡 API 연동 필요: CCTV 모니터링 추가
                 // POST /api/cctv/{cctvId}/monitoring/add
-                console.log('CCTV 모니터링 추가');
               }}
               className={getPrimaryButtonClassName()}
             >

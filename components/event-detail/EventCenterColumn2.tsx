@@ -153,7 +153,7 @@ export const EventCenterColumn2: React.FC<EventCenterColumn2Props> = ({
           {/* 포착된 CCTV 클립 */}
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden" style={{ flexBasis: '50%', flexGrow: 1, flexShrink: 1 }}>
             <div className="flex items-center gap-2 text-sm text-white font-semibold mb-3">
-              <Icon icon="mdi:video-stabilization" className="w-4 h-4 text-purple-300" />
+              <Icon icon="mdi:video-stabilization" className="w-4 h-4 text-orange-300" />
               포착된 CCTV 클립
             </div>
             <div className="overflow-y-auto flex-1">
@@ -171,7 +171,7 @@ export const EventCenterColumn2: React.FC<EventCenterColumn2Props> = ({
                   {detectedCCTVThumbnails.map((detected) => (
                     <div
                       key={detected.id}
-                      className="bg-[#0f0f0f] border border-[#31353a] rounded-lg overflow-hidden cursor-pointer hover:border-purple-500 transition-colors"
+                      className="bg-[#0f0f0f] border border-[#31353a] rounded-lg overflow-hidden cursor-pointer hover:border-orange-500 transition-colors"
                       style={{ borderWidth: '1px' }}
                       onClick={() => {
                         setSelectedDetectedCCTV(detected.cctvId);
@@ -188,7 +188,7 @@ export const EventCenterColumn2: React.FC<EventCenterColumn2Props> = ({
                           className="w-full h-full object-cover"
                         />
                       {/* 정확도 라벨 */}
-                      <div className="absolute top-2 right-2 px-2 py-1 bg-purple-600/90 backdrop-blur-sm text-white text-xs font-semibold rounded">
+                      <div className="absolute top-2 right-2 px-2 py-1 bg-orange-600/90 backdrop-blur-sm text-white text-xs font-semibold rounded">
                         정확도 {prototypeDetectedClipConfidence[detected.cctvId] || detected.confidence}%
                       </div>
                       </div>

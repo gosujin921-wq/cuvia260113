@@ -98,7 +98,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         {/* 대화 로그 */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-gray-700 text-sm">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ff8566] to-[#ff8566] flex items-center justify-center text-white">
               <img 
                 src="/simbol.svg" 
                 alt="AI" 
@@ -117,13 +117,13 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                   <div
                     className={`max-w-[70%] px-4 py-2 rounded-2xl border text-sm ${
                       message.role === 'user'
-                        ? 'bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] text-white border-transparent'
+                        ? 'bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent'
                         : 'bg-gray-100 text-gray-900 border-gray-200'
                     }`}
                     style={{ borderWidth: '1px' }}
                   >
                     <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                    <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-purple-100' : 'text-gray-500'}`}>
+                    <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
                       {message.timestamp}
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
             className={`px-4 py-2 rounded-full text-sm transition-colors flex-shrink-0 flex items-center justify-center gap-2 ${
               isResponding 
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                : 'bg-gradient-to-br from-[#7C62F0] to-[#5A3FEA] hover:from-[#8B72F5] hover:to-[#6A4FFA] text-white'
+                : 'bg-gradient-to-br from-[#ff8566] to-[#ff8566] hover:from-[#ff8566] hover:to-[#ff8566] text-white'
             }`}
           >
             <img 

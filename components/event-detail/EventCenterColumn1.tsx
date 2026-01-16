@@ -452,7 +452,7 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
             }}
             className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
               showCCTVName 
-                ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                ? 'bg-orange-600 hover:bg-orange-700 text-white' 
                 : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a]'
             }`}
             style={{ borderWidth: '1px' }}

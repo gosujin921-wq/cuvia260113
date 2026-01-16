@@ -766,7 +766,7 @@ const RightPanel = () => {
                     </div>
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <span className="text-white truncate">정비</span>
-                      <span className="text-purple-400 flex-shrink-0">{area.maintenance}</span>
+                      <span className="text-orange-400 flex-shrink-0">{area.maintenance}</span>
                     </div>
                   </div>
 

@@ -236,3 +236,225 @@ input[type="range"].slider::-moz-range-thumb {
 .agent-chat-page .text-xs {
   font-size: 12.8px !important;
 }
+
+/* Agent Hub 백그라운드 그라데이션 애니메이션 */
+@keyframes agent-hub-float1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(60px, -80px) scale(1.15);
+  }
+  66% {
+    transform: translate(-40px, 60px) scale(0.85);
+  }
+}
+
+@keyframes agent-hub-float2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-70px, 50px) scale(0.9);
+  }
+  66% {
+    transform: translate(50px, -60px) scale(1.1);
+  }
+}
+
+@keyframes agent-hub-float3 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(80px, 40px) scale(1.12);
+  }
+  66% {
+    transform: translate(-50px, -70px) scale(0.88);
+  }
+}
+
+@keyframes agent-hub-float4 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-60px, -50px) scale(0.96);
+  }
+  66% {
+    transform: translate(70px, 80px) scale(1.04);
+  }
+}
+
+.agent-hub-gradient-1 {
+  animation: agent-hub-float1 15s ease-in-out infinite;
+}
+
+.agent-hub-gradient-2 {
+  animation: agent-hub-float2 18s ease-in-out infinite;
+}
+
+.agent-hub-gradient-3 {
+  animation: agent-hub-float3 20s ease-in-out infinite;
+}
+
+.agent-hub-gradient-4 {
+  animation: agent-hub-float4 16s ease-in-out infinite;
+}
+
+/* Agent Hub 채팅창 그라데이션 보더 애니메이션 */
+@keyframes agent-hub-gradient-flow {
+  0% {
+    background: conic-gradient(from 0deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  2.5% {
+    background: conic-gradient(from 9deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  5% {
+    background: conic-gradient(from 18deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  7.5% {
+    background: conic-gradient(from 27deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  10% {
+    background: conic-gradient(from 36deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  12.5% {
+    background: conic-gradient(from 45deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  15% {
+    background: conic-gradient(from 54deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  17.5% {
+    background: conic-gradient(from 63deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  20% {
+    background: conic-gradient(from 72deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  22.5% {
+    background: conic-gradient(from 81deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  25% {
+    background: conic-gradient(from 90deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  27.5% {
+    background: conic-gradient(from 99deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  30% {
+    background: conic-gradient(from 108deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  32.5% {
+    background: conic-gradient(from 117deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  35% {
+    background: conic-gradient(from 126deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  37.5% {
+    background: conic-gradient(from 135deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  40% {
+    background: conic-gradient(from 144deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  42.5% {
+    background: conic-gradient(from 153deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  45% {
+    background: conic-gradient(from 162deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  47.5% {
+    background: conic-gradient(from 171deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  50% {
+    background: conic-gradient(from 180deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  52.5% {
+    background: conic-gradient(from 189deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  55% {
+    background: conic-gradient(from 198deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  57.5% {
+    background: conic-gradient(from 207deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  60% {
+    background: conic-gradient(from 216deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  62.5% {
+    background: conic-gradient(from 225deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  65% {
+    background: conic-gradient(from 234deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  67.5% {
+    background: conic-gradient(from 243deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  70% {
+    background: conic-gradient(from 252deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  72.5% {
+    background: conic-gradient(from 261deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  75% {
+    background: conic-gradient(from 270deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  77.5% {
+    background: conic-gradient(from 279deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  80% {
+    background: conic-gradient(from 288deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  82.5% {
+    background: conic-gradient(from 297deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  85% {
+    background: conic-gradient(from 306deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  87.5% {
+    background: conic-gradient(from 315deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  90% {
+    background: conic-gradient(from 324deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  92.5% {
+    background: conic-gradient(from 333deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  95% {
+    background: conic-gradient(from 342deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  97.5% {
+    background: conic-gradient(from 351deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+  100% {
+    background: conic-gradient(from 360deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  }
+}
+
+.agent-hub-chat-input {
+  position: relative;
+  background: rgb(249, 250, 251);
+  border-radius: 1rem;
+  isolation: isolate;
+}
+
+.agent-hub-chat-input::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 1rem;
+  background: conic-gradient(from 0deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
+  animation: agent-hub-gradient-flow 18s cubic-bezier(0.2, 0, 0.2, 1) infinite;
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 3px;
+}
+
+.agent-hub-chat-input > * {
+  position: relative;
+  z-index: 1;
+}

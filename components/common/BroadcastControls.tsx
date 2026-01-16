@@ -210,7 +210,6 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
       // });
       
       // 현재: 더미 처리 (개발용)
-      console.info('Broadcast draft saved:', { eventId, message, recipients: selectedRecipients, attachments });
       setDraftStatus('drafting');
       handleClose();
     } catch (error) {
