@@ -271,7 +271,6 @@ const AgentChatPage = () => {
     setProjects((prev) => [newProject, ...prev]);
   };
 
-  const filteredChatSessions = chatSessions;
 
   return (
     <ScaledLayout noScale>
@@ -424,7 +423,7 @@ const AgentChatPage = () => {
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">채팅</span>
                   </div>
                   <div className="space-y-0.5">
-                    {filteredChatSessions.map((chat) => (
+                    {chatSessions.map((chat) => (
                       <div
                         key={chat.id}
                         className={`w-full flex items-center justify-between px-4 py-2 rounded-lg transition-all group ${
@@ -510,7 +509,7 @@ const AgentChatPage = () => {
           <header className="border-b border-gray-200 bg-white px-6 flex-shrink-0 relative" style={{ paddingTop: '20px', paddingBottom: '20px' }}>
             <div className="flex items-center justify-center">
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-semibold text-gray-900">{currentChat?.title || 'CUVIA Agent'}</h1>
+                <h1 className="text-base font-semibold text-gray-900">{currentChat?.title || 'CUVIA Link'}</h1>
                 <button className="flex items-center text-gray-500 hover:text-gray-700 transition-colors">
                   <Icon icon="mdi:chevron-down" className="w-5 h-5" />
                 </button>
@@ -588,13 +587,19 @@ const AgentChatPage = () => {
                         <div
                           className={`${
                             message.role === 'user'
-                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent'
+                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border border-transparent'
                               : 'w-full text-gray-900'
                           }`}
-                          style={{ fontSize: '15px' }}
+                          style={{ 
+                            fontSize: '15px',
+                            ...(message.role === 'user' ? {
+                              background: 'rgba(255, 133, 102, 0.2)',
+                              color: '#1f2937'
+                            } : {})
+                          }}
                         >
                           <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                          <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
+                          <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-gray-600' : 'text-gray-500'}`}>
                             {message.timestamp}
                           </div>
                         </div>
@@ -676,7 +681,7 @@ const AgentChatPage = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                CUVIA Agent는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+                CUVIA Link는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
               </p>
             </div>
           </div>

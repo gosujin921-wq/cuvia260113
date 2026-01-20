@@ -2,26 +2,25 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ScaledLayout } from '@/components/layouts/ScaledLayout';
-import { ChatMessage } from '@/components/event-detail/types';
 import { BasePopup } from '@/components/shared/BasePopup';
 
 const AgentHubPage = () => {
   const navigate = useNavigate();
   const [chatInput, setChatInput] = useState('');
-  const [isResponding, setIsResponding] = useState(false);
   const [showToolPopup, setShowToolPopup] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const isComposingRef = useRef(false);
+  const pendingEnterRef = useRef(false);
 
-  useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [messages, isResponding]);
+  const recommendedSearches = [
+    '8월 화재 통계',
+    '서초구 지도',
+    'CCTV 설정 이동',
+    '지난달 침수 이력',
+  ];
+
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -38,8 +37,15 @@ const AgentHubPage = () => {
   }, [chatInput]);
 
   const handleSendMessage = async (messageText?: string) => {
-    // textarea의 현재 값을 직접 읽어옴
-    const currentValue = messageText ?? (textareaRef.current?.value || chatInput);
+    // textarea의 현재 값을 직접 읽어옴 (우선순위: messageText > textareaRef.current.value > chatInput)
+    let currentValue = messageText;
+    if (!currentValue && textareaRef.current) {
+      currentValue = textareaRef.current.value;
+    }
+    if (!currentValue) {
+      currentValue = chatInput;
+    }
+    
     const text = currentValue.trim();
     if (!text) return;
 
@@ -129,48 +135,8 @@ const AgentHubPage = () => {
         </div>
         
         <main className="flex-1 flex flex-col min-w-0 bg-transparent overflow-hidden h-full relative" style={{ zIndex: 10 }}>
-          {/* Chat Content */}
-          {messages.length > 0 && (
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
-              <div className="p-6 space-y-8 max-w-[800px] mx-auto w-full">
-                {/* 대화 로그 */}
-                <div className="space-y-3">
-                  {messages.map((message) => (
-                    <div key={message.id} className="space-y-2">
-                      <div className={`flex ${message.role === 'user' ? 'justify-end' : ''}`}>
-                        <div
-                          className={`${
-                            message.role === 'user'
-                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border text-sm bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent'
-                              : 'w-full text-gray-900 text-sm'
-                          }`}
-                        >
-                          <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                          <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
-                            {message.timestamp}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {isResponding && (
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-                    </div>
-                  )}
-                </div>
-
-                {/* 스크롤 앵커 */}
-                <div ref={bottomRef} className="h-[75px]" />
-              </div>
-            </div>
-          )}
-
-          {/* 중앙 입력 영역 (메시지가 없을 때) */}
-          {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col relative z-10">
+          {/* 중앙 입력 영역 */}
+          <div className="flex-1 flex flex-col relative z-10">
               {/* 상단: 로고와 Agent (대시보드와 동일한 위치) */}
               <div className="py-4 px-3 flex items-center gap-2.5">
                 <Link to="/" className="w-24 h-5 flex items-center justify-start">
@@ -188,16 +154,17 @@ const AgentHubPage = () => {
                 <p className="text-3xl font-medium text-gray-900 text-center mb-8 leading-relaxed w-full" style={{ fontSize: '27px' }}>
                   자연어로 질문하면{' '}
                   <span className="bg-gradient-to-r from-[#ff8566] to-[#ff8566] bg-clip-text text-transparent font-semibold">
-                    CUVIA Agent
+                    CUVIA Link
                   </span>
                   가 적절한 정보와 화면으로 안내합니다.
                 </p>
                 <div className="w-full">
                   <div 
-                    className={`relative flex items-center gap-3 px-4 py-3 agent-hub-chat-input transition-all duration-300`}
+                    className="relative flex items-center gap-3 px-4 py-3 agent-hub-chat-input"
                     style={{ 
                       isolation: 'isolate',
                       borderRadius: isInputExpanded ? '1rem' : '9999px',
+                      transition: 'border-radius 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
                     }}
                   >
                     <button
@@ -210,11 +177,49 @@ const AgentHubPage = () => {
                     <textarea
                       ref={textareaRef}
                       value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setChatInput(newValue);
+                        // 엔터 키가 대기 중이고 조합이 완료되었으면 메시지 전송
+                        if (pendingEnterRef.current && !isComposingRef.current) {
+                          pendingEnterRef.current = false;
+                          const textToSend = newValue.trim();
+                          if (textToSend) {
+                            handleSendMessage(textToSend);
+                          }
+                        }
+                      }}
+                      onCompositionStart={() => {
+                        isComposingRef.current = true;
+                      }}
+                      onCompositionEnd={(e) => {
+                        isComposingRef.current = false;
+                        // 조합이 끝난 후 최신 값으로 업데이트
+                        const newValue = (e.target as HTMLTextAreaElement).value;
+                        setChatInput(newValue);
+                        // 엔터 키가 대기 중이면 메시지 전송
+                        if (pendingEnterRef.current) {
+                          pendingEnterRef.current = false;
+                          const textToSend = newValue.trim();
+                          if (textToSend) {
+                            handleSendMessage(textToSend);
+                          }
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
-                          handleSendMessage();
+                          // 조합 중이면 조합 완료를 기다림
+                          if (isComposingRef.current) {
+                            pendingEnterRef.current = true;
+                            return;
+                          }
+                          // 조합이 완료되었으면 즉시 전송
+                          const target = e.target as HTMLTextAreaElement;
+                          const fullText = target.value.trim();
+                          if (fullText) {
+                            handleSendMessage(fullText);
+                          }
                         }
                       }}
                       placeholder="자연어로 질문하세요. (예:오늘 접수된 실종 신고 보여줘)"
@@ -231,7 +236,9 @@ const AgentHubPage = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        handleSendMessage();
+                        // 버튼 클릭 시점에 textarea의 현재 값을 직접 읽어서 전달
+                        const currentText = textareaRef.current?.value || chatInput;
+                        handleSendMessage(currentText);
                       }}
                       disabled={!chatInput.trim()}
                       className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all relative z-10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
@@ -252,6 +259,28 @@ const AgentHubPage = () => {
                   </div>
                 </div>
 
+                {/* 추천 검색어 */}
+                <div className="w-full mt-4">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-sm text-gray-600 font-medium">추천 검색어</span>
+                    <div className="h-4 w-px bg-gray-300"></div>
+                    <div className="flex flex-wrap gap-2">
+                      {recommendedSearches.map((search, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setChatInput(search);
+                            textareaRef.current?.focus();
+                          }}
+                          className="px-4 py-1.5 bg-white border border-gray-300 rounded-full text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                        >
+                          {search}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 {/* 지원 기능 섹션 */}
                 <div className="w-full mt-8">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">지원 기능</h3>
@@ -266,11 +295,11 @@ const AgentHubPage = () => {
                       className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
                           <Icon icon="mdi:chart-line" className="w-6 h-6 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1.5">통계 조회</h4>
+                          <h4 className="font-semibold text-gray-900 mb-1">통계 조회</h4>
                           <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                             자연어로 통계 데이터를 조회하고 시각화합니다.
                           </p>
@@ -293,11 +322,11 @@ const AgentHubPage = () => {
                       className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
                           <Icon icon="mdi:map" className="w-6 h-6 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1.5">지도 이동</h4>
+                          <h4 className="font-semibold text-gray-900 mb-1">지도 이동</h4>
                           <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                             특정 지역이나 시설물의 위치로 지도를 이동합니다.
                           </p>
@@ -320,11 +349,11 @@ const AgentHubPage = () => {
                       className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
                           <Icon icon="mdi:menu" className="w-6 h-6 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1.5">메뉴 이동</h4>
+                          <h4 className="font-semibold text-gray-900 mb-1">메뉴 이동</h4>
                           <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                             원하는 메뉴나 설정 화면으로 바로 이동합니다.
                           </p>
@@ -347,11 +376,11 @@ const AgentHubPage = () => {
                       className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
                           <Icon icon="mdi:history" className="w-6 h-6 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1.5">이벤트 이력</h4>
+                          <h4 className="font-semibold text-gray-900 mb-1">이벤트 이력</h4>
                           <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                             과거 이벤트 발생 이력을 검색합니다.
                           </p>
@@ -367,70 +396,6 @@ const AgentHubPage = () => {
                 </div>
               </div>
             </div>
-          ) : (
-            /* 입력 영역 (메시지가 있을 때 하단 고정) */
-            <div className="bg-white flex-shrink-0 relative z-10">
-              <div className="p-4 max-w-[800px] mx-auto w-full">
-                <div 
-                  className={`relative flex items-center gap-3 px-4 py-3 agent-hub-chat-input transition-all duration-300`}
-                  style={{ 
-                    isolation: 'isolate',
-                    borderRadius: isInputExpanded ? '1rem' : '9999px',
-                  }}
-                >
-                  <button
-                    onClick={() => setShowToolPopup(true)}
-                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors relative z-10"
-                    aria-label="도구 열기"
-                  >
-                    <Icon icon="mdi:plus" className="w-5 h-5" />
-                  </button>
-                  <textarea
-                    ref={textareaRef}
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    placeholder="자연어로 질문하세요. (예:오늘 접수된 실종 신고 보여줘)"
-                    className="flex-1 bg-transparent border-none text-gray-900 placeholder-gray-500 focus:outline-none resize-none overflow-hidden relative z-10"
-                    style={{
-                      minHeight: '24px',
-                      maxHeight: '96px',
-                      lineHeight: '24px',
-                      fontSize: '16px',
-                    }}
-                    rows={1}
-                  />
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleSendMessage();
-                    }}
-                    disabled={!chatInput.trim()}
-                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all relative z-10 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-                    style={{
-                      background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
-                      pointerEvents: 'auto',
-                    }}
-                    aria-label="검색"
-                    type="button"
-                  >
-                    <img
-                      src="/simbol.svg"
-                      alt="검색"
-                      className="w-5 h-5 pointer-events-none"
-                      style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* 도구 팝업 */}
           <BasePopup
