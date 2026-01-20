@@ -278,12 +278,71 @@ const AgentChatPage = () => {
       <div className="flex flex-1 overflow-hidden bg-white agent-chat-page min-h-0 h-full">
         {/* 좌측 패널 */}
         <aside
-          className={`bg-gray-50 border-r border-gray-200 flex flex-col overflow-hidden transition-all duration-300 flex-shrink-0 ${
+          className={`border-r border-gray-200 flex flex-col overflow-hidden transition-all duration-300 flex-shrink-0 relative ${
             isLeftPanelOpen ? 'w-64' : 'w-16'
           }`}
+          style={{ 
+            background: 'linear-gradient(to bottom, #ffffff, #fafafa)',
+            zIndex: 10 
+          }}
         >
+          {/* 애니메이션 백그라운드 그라데이션 */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
+            {/* 오렌지 그라데이션 원 1 */}
+            <div 
+              className="absolute rounded-full agent-hub-gradient-1"
+              style={{
+                width: '600px',
+                height: '600px',
+                background: 'radial-gradient(circle, rgba(255, 133, 102, 0.8) 0%, rgba(255, 133, 102, 0.5) 30%, rgba(255, 133, 102, 0.2) 50%, transparent 70%)',
+                filter: 'blur(120px)',
+                opacity: 0.4,
+                top: '-10%',
+                left: '-10%',
+              }}
+            />
+            {/* 파란색 그라데이션 원 1 */}
+            <div 
+              className="absolute rounded-full agent-hub-gradient-2"
+              style={{
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(37, 99, 235, 0.5) 30%, rgba(37, 99, 235, 0.2) 50%, transparent 70%)',
+                filter: 'blur(100px)',
+                opacity: 0.4,
+                top: '20%',
+                right: '-5%',
+              }}
+            />
+            {/* 오렌지 그라데이션 원 2 */}
+            <div 
+              className="absolute rounded-full agent-hub-gradient-3"
+              style={{
+                width: '550px',
+                height: '550px',
+                background: 'radial-gradient(circle, rgba(255, 133, 102, 0.7) 0%, rgba(255, 133, 102, 0.4) 30%, rgba(255, 133, 102, 0.15) 50%, transparent 70%)',
+                filter: 'blur(110px)',
+                opacity: 0.35,
+                bottom: '10%',
+                left: '15%',
+              }}
+            />
+            {/* 파란색 그라데이션 원 2 */}
+            <div 
+              className="absolute rounded-full agent-hub-gradient-4"
+              style={{
+                width: '450px',
+                height: '450px',
+                background: 'radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, rgba(37, 99, 235, 0.4) 30%, rgba(37, 99, 235, 0.15) 50%, transparent 70%)',
+                filter: 'blur(90px)',
+                opacity: 0.35,
+                bottom: '-5%',
+                right: '10%',
+              }}
+            />
+          </div>
           {/* 접기/펼치기 아이콘 */}
-          <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gray-50">
+          <div className="flex items-center justify-between p-3 border-b border-gray-200 flex-shrink-0 bg-gray-50/80 relative" style={{ zIndex: 2 }}>
             <button
               onClick={() => setIsLeftPanelOpen(!isLeftPanelOpen)}
               className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
@@ -305,16 +364,16 @@ const AgentChatPage = () => {
           </div>
 
           {isLeftPanelOpen ? (
-            <div className="flex flex-col h-full flex-1 min-h-0">
+            <div className="flex flex-col h-full flex-1 min-h-0 relative" style={{ zIndex: 2 }}>
               {/* 새 채팅 */}
               <div className="px-6 py-2 border-b border-gray-200 flex-shrink-0">
                 <button
                   onClick={handleNewChat}
-                  className="w-full flex items-center justify-between py-2 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors group"
+                  className="w-full flex items-center justify-between py-2 text-gray-700 hover:bg-white/50 rounded-lg transition-colors group"
                 >
                   <div className="flex items-center gap-2">
                     <Icon icon="mdi:square-edit-outline" className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium">새 채팅</span>
+                    <span className="font-medium" style={{ fontSize: '15px' }}>새 채팅</span>
                   </div>
                 </button>
               </div>
@@ -329,20 +388,32 @@ const AgentChatPage = () => {
                   </div>
                   <button
                     onClick={handleNewProject}
-                    className="w-full flex items-center gap-2 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+                    className="w-full flex items-center gap-2 py-1.5 text-gray-700 hover:bg-white/50 rounded-lg transition-colors mb-1"
                   >
                     <Icon icon="mdi:folder-plus-outline" className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm">새 프로젝트</span>
+                    <span style={{ fontSize: '15px' }}>새 프로젝트</span>
                   </button>
                   <div className="space-y-0.5">
                     {projects.map((project) => (
-                      <button
+                      <div
                         key={project.id}
-                        className="w-full flex items-center gap-2 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        className="w-full flex items-center justify-between py-1.5 text-gray-700 hover:bg-white/50 rounded-lg transition-colors group"
                       >
-                        <Icon icon="mdi:folder-outline" className="w-5 h-5 text-gray-500" />
-                        <span className="text-sm">{project.name}</span>
-                      </button>
+                        <button className="flex items-center gap-2 flex-1 min-w-0 text-left">
+                          <Icon icon="mdi:folder-outline" className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                          <span className="truncate" style={{ fontSize: '15px' }}>{project.name}</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // 프로젝트 메뉴 기능 (나중에 구현)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pl-1.5 pt-1.5 pb-1.5 pr-0 hover:bg-white/70 rounded"
+                          aria-label="프로젝트 메뉴"
+                        >
+                          <Icon icon="mdi:dots-vertical" className="w-4 h-4 text-gray-500" />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -354,17 +425,32 @@ const AgentChatPage = () => {
                   </div>
                   <div className="space-y-0.5">
                     {filteredChatSessions.map((chat) => (
-                      <button
+                      <div
                         key={chat.id}
-                        onClick={() => handleSelectChat(chat.id)}
-                        className={`w-full text-left px-4 py-2 rounded-lg text-sm transition-all ${
+                        className={`w-full flex items-center justify-between px-4 py-2 rounded-lg transition-all group ${
                           currentChatId === chat.id
-                            ? 'bg-gray-200 text-gray-900'
-                            : 'text-gray-700 hover:bg-gray-50'
+                            ? 'bg-white/50 text-gray-900'
+                            : 'text-gray-700 hover:bg-white/50'
                         }`}
+                        style={{ fontSize: '15px' }}
                       >
-                        <span className="block truncate">{chat.title}</span>
-                      </button>
+                        <button
+                          onClick={() => handleSelectChat(chat.id)}
+                          className="flex-1 min-w-0 text-left"
+                        >
+                          <span className="block truncate">{chat.title}</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // 채팅 메뉴 기능 (나중에 구현)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pl-1.5 pt-1.5 pb-1.5 pr-0 hover:bg-white/70 rounded"
+                          aria-label="채팅 메뉴"
+                        >
+                          <Icon icon="mdi:dots-vertical" className="w-4 h-4 text-gray-500" />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -373,13 +459,13 @@ const AgentChatPage = () => {
               {/* 하단 네비게이션 */}
               <div className="border-t border-gray-200 flex-shrink-0">
                 <div className="px-6 py-2 space-y-1">
-                  <button className="w-full flex items-center gap-2 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                  <button className="w-full flex items-center gap-2 py-1.5 text-gray-700 hover:bg-white/50 rounded-lg transition-colors">
                     <Icon icon="mdi:history" className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm">활동</span>
+                    <span style={{ fontSize: '15px' }}>활동</span>
                   </button>
-                  <button className="w-full flex items-center gap-2 py-1.5 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors">
+                  <button className="w-full flex items-center gap-2 py-1.5 text-gray-700 hover:bg-white/50 rounded-lg transition-colors">
                     <Icon icon="mdi:cog-outline" className="w-5 h-5 text-gray-500" />
-                    <span className="text-sm">설정 및 도움말</span>
+                    <span style={{ fontSize: '15px' }}>설정 및 도움말</span>
                   </button>
                 </div>
                 <div className="px-6 py-2 border-t border-gray-200">
@@ -419,25 +505,25 @@ const AgentChatPage = () => {
           )}
         </aside>
 
-        <main className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden h-full relative">
+        <main className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden h-full">
           {/* Header */}
-          <header className="border-b border-gray-200 bg-white px-6 py-3 flex-shrink-0 h-[65px]">
-            <div className="flex items-center justify-between">
+          <header className="border-b border-gray-200 bg-white px-6 flex-shrink-0 relative" style={{ paddingTop: '20px', paddingBottom: '20px' }}>
+            <div className="flex items-center justify-center">
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-semibold text-gray-900">CUVIA Agent</h1>
+                <h1 className="text-base font-semibold text-gray-900">{currentChat?.title || 'CUVIA Agent'}</h1>
                 <button className="flex items-center text-gray-500 hover:text-gray-700 transition-colors">
                   <Icon icon="mdi:chevron-down" className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors">
-                  <Icon icon="mdi:share-variant-outline" className="w-5 h-5" />
-                  <span className="text-sm">공유하기</span>
-                </button>
-                <button className="flex items-center text-gray-500 hover:text-gray-700 transition-colors">
-                  <Icon icon="mdi:dots-vertical" className="w-5 h-5" />
-                </button>
-              </div>
+            </div>
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-4">
+              <button className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors">
+                <Icon icon="mdi:share-variant-outline" className="w-5 h-5" />
+                <span className="text-sm">공유하기</span>
+              </button>
+              <button className="flex items-center text-gray-500 hover:text-gray-700 transition-colors">
+                <Icon icon="mdi:dots-vertical" className="w-5 h-5" />
+              </button>
             </div>
           </header>
 
@@ -452,7 +538,7 @@ const AgentChatPage = () => {
                       <Icon icon={block.icon} className="w-5 h-5 text-blue-600" />
                       <h4 className="text-gray-900 font-semibold text-sm">{block.title}</h4>
                     </div>
-                    <p className="text-gray-700 text-sm leading-relaxed">{block.content}</p>
+                    <p className="text-gray-700 leading-relaxed" style={{ fontSize: '15px' }}>{block.content}</p>
                   </div>
                 ))}
               </div>
@@ -502,9 +588,10 @@ const AgentChatPage = () => {
                         <div
                           className={`${
                             message.role === 'user'
-                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border text-sm bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent'
-                              : 'w-full text-gray-900 text-sm'
+                              ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent'
+                              : 'w-full text-gray-900'
                           }`}
+                          style={{ fontSize: '15px' }}
                         >
                           <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
                           <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
