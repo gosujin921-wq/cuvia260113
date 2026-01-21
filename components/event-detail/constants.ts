@@ -1,4 +1,4 @@
-import { RiskLevel } from './types';
+export type RiskLevel = 'strong' | 'high' | 'medium' | 'low';
 
 export const riskLevelMeta: Record<RiskLevel, { icon: string; color: string }> = {
   strong: { icon: 'mdi:alert', color: 'text-red-400' },

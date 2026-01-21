@@ -45,6 +45,13 @@ const EventDetailPageContent = () => {
 
   const event: EventData | null = useMemo(() => {
     if (!baseEvent) return null;
+    // 한글 risk를 영어로 매핑
+    const riskMap: Record<string, 'HIGH' | 'MEDIUM' | 'LOW'> = {
+      '긴급': 'HIGH',
+      '경계': 'MEDIUM',
+      '주의': 'LOW',
+      '일반': 'LOW',
+    };
     return {
       id: baseEvent.eventId,
       type: baseEvent.type,
@@ -53,7 +60,7 @@ const EventDetailPageContent = () => {
       location: baseEvent.location,
       description: baseEvent.description || '',
       source: baseEvent.source || '112 신고',
-      risk: baseEvent.risk,
+      risk: riskMap[baseEvent.risk] || 'LOW',
       status: baseEvent.status,
       domain: baseEvent.domain,
       broadcastHistory: baseEvent.broadcastHistory,
