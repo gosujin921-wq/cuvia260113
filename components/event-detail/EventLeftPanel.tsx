@@ -52,7 +52,7 @@ export const EventLeftPanel: React.FC<EventLeftPanelProps> = ({
         </Link>
       </div>
       <div className="flex-1 overflow-hidden min-h-0">
-        <div className="w-full bg-[#161719] flex flex-col h-full overflow-y-auto">
+        <div className="w-full bg-[#091326] flex flex-col h-full overflow-y-auto">
           {/* 이벤트 헤더 정보 - 대시보드 이벤트 카드 스타일 */}
           <div className="px-3 pt-3 pb-4 border-b border-[#31353a]" style={{ paddingLeft: '14px' }}>
             {/* 2. 유형 / 카테고리 */}

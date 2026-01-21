@@ -157,7 +157,7 @@ export default function Home() {
 
   return (
     <div
-      className="flex flex-col bg-[#161719] overflow-hidden"
+      className="flex flex-col bg-[#091326] overflow-hidden"
       style={{ width: '100vw', height: '100vh' }}
     >
       <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0, height: '100%' }}>

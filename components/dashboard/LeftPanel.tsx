@@ -595,8 +595,8 @@ const LeftPanel = () => {
     const seedBase = typeof window !== 'undefined' ? new Date().toISOString().slice(0, 10) : 'static';
     // 더 부드러운 곡선 + 충분한 셰이프를 위해 30분 간격 포인트 사용 (48개)
     const hours = Array.from({ length: 48 }, (_, index) => index * 0.5); // 0 ~ 23.5시 (30분 간격)
-    const maxValue = 40;
-    const minValue = 4;
+    const maxValue = 800;
+    const minValue = 0;
     const range = maxValue - minValue;
 
     return hours.map((hour) => {
@@ -610,7 +610,7 @@ const LeftPanel = () => {
       const noise = (noiseSeed / 100 - 0.5) * 0.04; // 노이즈는 더 줄여서 형태만 살짝 깨주는 정도
 
       const shaped = baseWave + noise; // -1 ~ 1 근처의 파형
-      const value = minValue + (range / 2) + shaped * (range / 2); // 0~40 안에서 굴곡만 더 강하게
+      const value = minValue + (range / 2) + shaped * (range / 2); // 0~800 안에서 굴곡만 더 강하게
 
       return {
         hour: hour % 1 === 0 ? hour.toString().padStart(2, '0') : '', // 정수 시간만 라벨로 사용
@@ -649,7 +649,7 @@ const LeftPanel = () => {
     const value = Number(payload?.value);
     if (Number.isNaN(value)) return null;
 
-    const isTop = value === 40;
+    const isTop = value === 800;
 
     return (
       <g transform={`translate(${x},${y})`}>
@@ -742,7 +742,7 @@ const LeftPanel = () => {
 
   return (
     <div
-      className={`${isCollapsed ? 'w-20' : ''} bg-[#161719] border-r border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
+      className={`${isCollapsed ? 'w-20' : ''} bg-[#091326] border-r border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
       style={{ 
         borderWidth: '1px',
         height: '100%',
@@ -920,11 +920,11 @@ const LeftPanel = () => {
                       tickMargin={8}
                     />
                     <YAxis
-                      domain={[0, 40]}
+                      domain={[0, 800]}
                       tick={renderTrendYAxisTick}
                       tickLine={false}
                       axisLine={{ stroke: '#2f3540', strokeWidth: 1 }}
-                      ticks={[0, 10, 20, 30, 40]}
+                      ticks={[0, 200, 400, 600, 800]}
                       width={40}
                       allowDecimals={false}
                     />
@@ -1009,14 +1009,14 @@ const LeftPanel = () => {
                       <div className="min-w-0">
                         <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">장비 작동률</p>
                         <p className="text-white text-xl font-bold">{area.uptime}%</p>
-                        <div className="w-full h-3 bg-[#161719] mt-1">
+                        <div className="w-full h-3 bg-[#091326] mt-1">
                           <div className="h-full bg-blue-500" style={{ width: `${area.uptime}%` }} />
                         </div>
                       </div>
                       <div className="min-w-0">
                         <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">영상 수신율</p>
                         <p className="text-white text-xl font-bold">{area.streamRate}%</p>
-                        <div className="w-full h-3 bg-[#161719] mt-1">
+                        <div className="w-full h-3 bg-[#091326] mt-1">
                           <div className="h-full bg-blue-500" style={{ width: `${area.streamRate}%` }} />
                         </div>
                       </div>

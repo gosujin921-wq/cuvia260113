@@ -46,7 +46,7 @@ export default function ComponentsStylePage() {
   ];
 
   return (
-    <div className="h-screen overflow-y-auto bg-[#161719] text-white">
+    <div className="h-screen overflow-y-auto bg-[#091326] text-white">
       <div className="container mx-auto px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">컴포넌트 스타일 가이드</h1>

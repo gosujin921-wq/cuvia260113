@@ -15,8 +15,8 @@ interface ScaledLayoutProps {
 export const ScaledLayout = ({ children, noScale = false }: ScaledLayoutProps) => {
   if (noScale) {
     return (
-      <div 
-        className="flex flex-col bg-[#161719] overflow-hidden relative"
+      <div
+        className="flex flex-col bg-[#091326] overflow-hidden relative"
         style={{
           width: '100vw',
           height: '100vh',
@@ -31,8 +31,8 @@ export const ScaledLayout = ({ children, noScale = false }: ScaledLayoutProps) =
   }
 
   return (
-    <div 
-      className="flex flex-col bg-[#161719] overflow-hidden relative"
+    <div
+      className="flex flex-col bg-[#091326] overflow-hidden relative"
       style={{
         width: '100vw',
         height: '100vh',

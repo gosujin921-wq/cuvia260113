@@ -8,6 +8,8 @@ import { getCCTVIconClassName, getCCTVLabelClassName, getPrimaryButtonClassName 
 import CCTVIcon from '@/components/common/CCTVIcon';
 import SituationSummary from './SituationSummary';
 import AIDetectionPopup from './AIDetectionPopup';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface MapViewProps {
   events: Event[];
@@ -57,6 +59,118 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   // 줌 레벨에 따른 지도 스케일 계산
   const mapScale = zoomLevel === 0 ? 1 : 1.5; // 확대 시 1.5배
   const mapTransformOrigin = 'center center'; // 확대 기준점
+
+  // MapTiler 맵 초기화
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: 'https://api.maptiler.com/maps/019bdf7d-b868-75ba-b003-3005177ff4fa/style.json?key=WPWmpNf4y5nzKDA7mQXe',
+      center: [126.7830, 37.5044], // 부천 좌표
+      zoom: 15,
+      pitch: 60, // 3D 기울기 (0~60도)
+      bearing: -17.6, // 회전 각도
+      attributionControl: false,
+      interactive: false, // 기존 인터랙션 로직 유지
+    });
+
+    // 맵 로드 후 3D 건물 활성화
+    map.on('load', () => {
+      const style = map.getStyle();
+      if (!style || !style.layers) return;
+
+      // 모든 레이어 확인
+      const layers = style.layers;
+      console.log('Map layers:', layers.map((l: any) => ({ id: l.id, type: l.type, source: l.source })));
+
+      // 건물 레이어 찾기 (더 넓은 범위로 검색)
+      layers.forEach((layer: any) => {
+        const layerId = layer.id.toLowerCase();
+        const isBuildingLayer = 
+          layerId.includes('building') || 
+          layerId.includes('건물') ||
+          layerId.includes('extrusion') ||
+          (layer.type === 'fill-extrusion');
+        
+        if (isBuildingLayer) {
+          console.log('Processing building layer:', layer.id, layer.type);
+          
+          try {
+            if (layer.type === 'fill-extrusion') {
+              // 이미 fill-extrusion이면 높이 속성만 설정 (컬러는 API 원본 유지)
+              if (map.getLayer(layer.id)) {
+                map.setPaintProperty(layer.id, 'fill-extrusion-height', [
+                  'case',
+                  ['has', 'height'],
+                  ['*', ['to-number', ['get', 'height']], 1],
+                  ['has', 'render_height'],
+                  ['*', ['to-number', ['get', 'render_height']], 1],
+                  ['has', 'building:levels'],
+                  ['*', ['to-number', ['get', 'building:levels']], 3],
+                  15 // 기본 높이 (미터)
+                ]);
+                map.setPaintProperty(layer.id, 'fill-extrusion-base', [
+                  'case',
+                  ['has', 'min_height'],
+                  ['to-number', ['get', 'min_height']],
+                  0
+                ]);
+                // 컬러는 API 원본 그대로 유지 (설정하지 않음)
+              }
+            } else if (layer.type === 'fill' && layer.source) {
+              // fill 타입을 fill-extrusion으로 변환
+              const sourceId = layer.source;
+              const sourceLayer = layer['source-layer'];
+              
+              if (map.getSource(sourceId)) {
+                // 기존 레이어 제거
+                if (map.getLayer(layer.id)) {
+                  map.removeLayer(layer.id);
+                }
+                
+                // fill-extrusion 레이어 추가 (컬러는 API 원본 유지)
+                map.addLayer({
+                  id: `${layer.id}-3d`,
+                  type: 'fill-extrusion',
+                  source: sourceId,
+                  'source-layer': sourceLayer,
+                  paint: {
+                    // fill-extrusion-color는 설정하지 않아 API 원본 컬러 사용
+                    'fill-extrusion-height': [
+                      'case',
+                      ['has', 'height'],
+                      ['*', ['to-number', ['get', 'height']], 1],
+                      ['has', 'building:levels'],
+                      ['*', ['to-number', ['get', 'building:levels']], 3],
+                      15
+                    ],
+                    'fill-extrusion-base': [
+                      'case',
+                      ['has', 'min_height'],
+                      ['to-number', ['get', 'min_height']],
+                      0
+                    ],
+                    // opacity도 원본 유지 (설정하지 않음)
+                  },
+                  filter: layer.filter || ['has', 'height'],
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('건물 레이어 설정 실패:', layer.id, e);
+          }
+        }
+      });
+    });
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
   // CCTV 토글 상태 (localStorage로 공유)
   // Hydration 오류 방지를 위해 초기값은 항상 false로 설정하고, useEffect에서 localStorage 읽기
   // 대시보드에서는 초기 진입시 CCTV 토글이 켜진 상태가 디폴트
@@ -135,6 +249,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
 
   // 일반 이벤트 ID 목록 (event-26부터 event-33)
   const generalEventIds = new Set([
@@ -569,11 +685,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
       {/* 지도 - 박스 밖으로 */}
       <div
-        className="relative border border-[#31353a] bg-cover bg-center bg-no-repeat transition-transform duration-700 ease-out"
+        className="relative border border-[#31353a] transition-transform duration-700 ease-out"
         style={{
           borderWidth: '1px',
-          backgroundImage: 'url(/maptest.png)',
-          backgroundSize: 'cover',
           height: '100%',
           width: '100%',
           transform: `scale(${mapScale}) translate(${mapTranslate.x}%, ${mapTranslate.y}%) translateZ(0)`,
@@ -582,6 +696,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           transition: 'transform 0.5s ease-out',
         }}
       >
+        <div
+          ref={mapContainerRef}
+          className="absolute inset-0 w-full h-full"
+          style={{ zIndex: 1 }}
+        />
         {/* 미세한 딤 오버레이 */}
         <div 
           className="absolute inset-0 bg-black/5" 

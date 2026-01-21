@@ -212,7 +212,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
   }, [selectedEventId, onEventHover]);
 
   return (
-    <div className="w-full bg-[#161719] flex flex-col h-full overflow-y-auto">
+    <div className="w-full bg-[#091326] flex flex-col h-full overflow-y-auto">
       <div className="border-t border-b border-[#31353a]">
         <div className="flex items-center justify-center gap-2" style={{ paddingTop: '14px' }}>
           {tabs.map((tab, index) => {
@@ -371,7 +371,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                       onClick={() => onEventSelect?.(evt.id)}
                       onMouseEnter={() => onEventHover?.(evt.id)}
                       onMouseLeave={() => onEventHover?.(null)}
-                      className="p-2 border border-cyan-500/30 bg-[#36383B] cursor-pointer hover:bg-[#161719] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-200 rounded-lg"
+                      className="p-2 border border-cyan-500/30 bg-[#36383B] cursor-pointer hover:bg-[#091326] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-200 rounded-lg"
                       style={{ borderWidth: '1px' }}
                     >
                       <div className="flex items-center gap-2">

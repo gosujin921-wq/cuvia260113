@@ -784,7 +784,7 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
 
   if (!event || !baseEvent) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#161719]">
+      <div className="flex items-center justify-center h-screen bg-[#091326]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-gray-400 text-sm">이벤트를 불러오는 중...</p>
@@ -882,7 +882,7 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
         />
 
         {/* Center Panel - 2컬럼 레이아웃 */}
-        <main className="flex-1 bg-[#161719] flex flex-col overflow-hidden border-l border-r border-[#31353a]" style={{ borderLeftWidth: '1px', borderRightWidth: '1px', borderTopWidth: '0', borderBottomWidth: '0', minHeight: 0, width: '100%', height: '100%', alignSelf: 'stretch' }}>
+        <main className="flex-1 bg-[#091326] flex flex-col overflow-hidden border-l border-r border-[#31353a]" style={{ borderLeftWidth: '1px', borderRightWidth: '1px', borderTopWidth: '0', borderBottomWidth: '0', minHeight: 0, width: '100%', height: '100%', alignSelf: 'stretch' }}>
           <div className="flex-1 overflow-hidden" style={{ minHeight: 0 }}>
             <div className="flex gap-6" style={{ minHeight: 0, width: '100%', height: '100%' }}>
               {/* 1열: 위치 및 동선 - 우측 패널이 펼쳐졌을 때 더 넓게 */}
@@ -1151,7 +1151,7 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
 export default function EventDetailPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center h-screen bg-[#161719]">
+      <div className="flex items-center justify-center h-screen bg-[#091326]">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
           <p className="text-gray-400 text-sm">로딩 중...</p>
