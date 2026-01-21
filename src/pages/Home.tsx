@@ -3,8 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Score from '@/components/dashboard/Score';
 import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/MapView';
-import RightPanel from '@/components/dashboard/RightPanel';
-import { ScaledLayout } from '@/components/layouts/ScaledLayout';
+import LeftPanel from '@/components/dashboard/LeftPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
@@ -157,10 +156,29 @@ export default function Home() {
   }, [allConvertedEvents, animateToEvent]);
 
   return (
-    <ScaledLayout>
+    <div
+      className="flex flex-col bg-[#161719] overflow-hidden"
+      style={{ width: '100vw', height: '100vh' }}
+    >
       <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0, height: '100%' }}>
         <div className="flex flex-1 overflow-hidden relative" style={{ minHeight: 0, height: '100%' }}>
-          <div className="flex flex-col flex-shrink-0 border-r border-[#31353a] pl-4 pr-5" style={{ width: '370px' }}>
+          {/* 좌측: LeftPanel (운영 패널) */}
+          <LeftPanel />
+          <div className="flex-1 relative" style={{ minHeight: 0, width: '100%', height: '100%' }}>
+            <MapView
+              events={events}
+              highlightedEventId={highlightedEventId}
+              selectedEventId={selectedEventId}
+              aiDetectionEventId={aiDetectionEventId}
+              onEventClick={handleEventAction}
+              onAiDetectionClose={clearSelection}
+              onMapClick={clearSelection}
+              externalZoomLevel={mapZoomLevel}
+              onZoomLevelChange={setMapZoomLevel}
+            />
+          </div>
+          {/* 우측: 이벤트 리스트 패널 */}
+          <div className="flex flex-col flex-shrink-0 border-l border-[#31353a] pl-4 pr-5" style={{ width: '370px' }}>
             <div className="py-4 px-3">
               <Link to="/" className="w-24 h-5 flex items-center justify-start">
                 <img 
@@ -182,23 +200,8 @@ export default function Home() {
               />
             </div>
           </div>
-          <div className="flex-1 relative" style={{ minHeight: 0, width: '100%', height: '100%' }}>
-            <MapView
-              events={events}
-              highlightedEventId={highlightedEventId}
-              selectedEventId={selectedEventId}
-              aiDetectionEventId={aiDetectionEventId}
-              onEventClick={handleEventAction}
-              onAiDetectionClose={clearSelection}
-              onMapClick={clearSelection}
-              externalZoomLevel={mapZoomLevel}
-              onZoomLevelChange={setMapZoomLevel}
-            />
-          </div>
-          {/* 우측: RightPanel */}
-          <RightPanel />
         </div>
       </div>
-    </ScaledLayout>
+    </div>
   );
 }

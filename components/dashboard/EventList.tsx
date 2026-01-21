@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { Event } from '@/types';
+import { Event, EventPriority } from '@/types';
 import { getEventById, getEventCategory, getAIInsightKeywords, formatEventDateTime } from '@/lib/events-data';
 
 interface EventListProps {
@@ -41,8 +41,8 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
     if (!aIsTopPriority && bIsTopPriority) return 1;
     
     // 우선순위 순서
-    const priorityOrder = { 긴급: 3, 경계: 2, 주의: 1 };
-    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+    const priorityOrder: Record<EventPriority, number> = { 긴급: 3, 경계: 2, 주의: 1, 일반: 0 };
+    const priorityDiff = (priorityOrder[b.priority] ?? 0) - (priorityOrder[a.priority] ?? 0);
     if (priorityDiff !== 0) return priorityDiff;
     
     // 최신순 (timestamp 숫자로 변환)
@@ -285,8 +285,8 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 onMouseLeave={() => onEventHover?.(null)}
                 className={`w-full text-left border-b pt-3 pb-3 pr-3 transition-all duration-200 ${
                   isSelected
-                    ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30'
-                    : 'bg-transparent border-[#2f3136] shadow-[0_4px_14px_-8px_rgba(0,0,0,0.8)] hover:bg-[#24272d] hover:border-[#4f7cff] hover:shadow-[0_6px_18px_-6px_rgba(79,124,255,0.35)]'
+                    ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30 rounded-xl'
+                    : 'bg-transparent border-[#2f3136] shadow-[0_4px_14px_-8px_rgba(0,0,0,0.8)] hover:bg-[#24272d] hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4),0_0_40px_rgba(34,211,238,0.2)] rounded-xl'
                 }`}
                 style={{ paddingLeft: '14px' }}
               >
@@ -371,7 +371,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                       onClick={() => onEventSelect?.(evt.id)}
                       onMouseEnter={() => onEventHover?.(evt.id)}
                       onMouseLeave={() => onEventHover?.(null)}
-                      className="p-2 border border-[#31353a] bg-[#36383B] cursor-pointer hover:bg-[#161719] transition-colors"
+                      className="p-2 border border-cyan-500/30 bg-[#36383B] cursor-pointer hover:bg-[#161719] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-200 rounded-lg"
                       style={{ borderWidth: '1px' }}
                     >
                       <div className="flex items-center gap-2">

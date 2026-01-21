@@ -34,7 +34,7 @@ cuvia3/
 │   │   ├── AIDetectionPopup.tsx  # AI 탐지 팝업
 │   │   ├── EventList.tsx         # 이벤트 목록
 │   │   ├── MapView.tsx           # 지도 뷰
-│   │   └── RightPanel.tsx        # 우측 패널 (CCTV 상태)
+│   │   └── LeftPanel.tsx         # 좌측 패널 (CCTV 상태)
 │   ├── event-detail/             # 이벤트 상세 컴포넌트
 │   │   ├── EventLeftPanel.tsx   # 좌측 패널 (이벤트 정보, AI 인사이트)
 │   │   ├── EventCenterColumn1.tsx # 중앙 1열: 지도 뷰 (위치 및 동선)

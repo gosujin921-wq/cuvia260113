@@ -111,7 +111,7 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
                 style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
               />
             </div>
-            <span className="text-gray-900">{categoryLabel} Agent</span>
+            <span className="text-gray-900">CUVIA Agent</span>
           </div>
           <div className="space-y-3">
             {chatMessages.map((message) => (
@@ -168,58 +168,58 @@ export const AgentPanel: React.FC<AgentPanelProps> = ({
         <div ref={bottomRef} style={{ height: '75px' }} />
       </div>
 
-      {/* 빠른 명령 + 자연어 입력 */}
-      <div className="border-t border-gray-200 bg-white p-4 flex-shrink-0" style={{ borderWidth: '1px' }}>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {quickCommands.map((cmd) => (
+      {/* 입력 영역 */}
+      <div className="bg-white flex-shrink-0">
+        <div className="p-4">
+          <div className="relative flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
             <button
-              key={cmd}
-              onClick={() => handleSendMessage(cmd)}
-              className="px-3 py-1.5 rounded-full text-xs text-gray-700 transition-colors border border-gray-300 bg-gray-50 hover:bg-gray-100"
-              style={{ borderWidth: '1px' }}
+              onClick={() => {
+                // 도구 팝업 (나중에 구현)
+              }}
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors self-center"
+              aria-label="도구 열기"
             >
-              {cmd}
+              <Icon icon="mdi:plus" className="w-5 h-5" />
             </button>
-          ))}
-        </div>
-        <div className="flex items-end gap-3">
-          <textarea
-            ref={textareaRef}
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSendMessage();
-              }
-            }}
-            placeholder="자연어로 질문하세요... (예:관련 CCTV 더 추천해줘.)"
-            className="flex-1 bg-gray-50 border border-gray-300 rounded-2xl px-4 py-3 text-gray-900 text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:bg-white resize-none overflow-hidden"
-            style={{ 
-              borderWidth: '1px',
-              minHeight: '48px',
-              maxHeight: '96px',
-              lineHeight: '24px'
-            }}
-            rows={1}
-          />
-          <button
-            onClick={() => handleSendMessage()}
-            disabled={isResponding}
-            className={`px-4 py-2 rounded-full text-sm transition-colors flex-shrink-0 flex items-center justify-center gap-2 ${
-              isResponding 
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                : 'bg-gradient-to-br from-[#ff8566] to-[#ff8566] hover:from-[#ff8566] hover:to-[#ff8566] text-white'
-            }`}
-          >
-            <img 
-              src="/simbol.svg" 
-              alt="AI" 
-              className="w-4 h-4"
-              style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+            <textarea
+              ref={textareaRef}
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              placeholder="CUVIA에게 물어보기"
+              className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none overflow-hidden self-center"
+              style={{
+                minHeight: '24px',
+                maxHeight: '96px',
+                lineHeight: '24px',
+              }}
+              rows={1}
             />
-            전송
-          </button>
+            <button
+              onClick={() => handleSendMessage()}
+              disabled={!chatInput.trim() || isResponding}
+              className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 self-center"
+              style={{
+                background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+              }}
+              aria-label="검색"
+            >
+              <img
+                src="/simbol.svg"
+                alt="검색"
+                className="w-5 h-5"
+                style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+              />
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            CUVIA Agent는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+          </p>
         </div>
       </div>
     </main>

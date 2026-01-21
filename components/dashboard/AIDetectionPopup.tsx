@@ -29,7 +29,7 @@ const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) =
   const aiInsightText = baseEvent ? generateAIInsight(baseEvent) : null;
 
   const handleBroadcast = () => {
-    const generateAIInsight = () => {
+    const generateBroadcastInsight = () => {
       if (event.type.includes('화재')) {
         return '화재 이벤트 발생. 강풍 영향으로 확산 위험이 높으며, 접근 가능한 도로가 제한적입니다. 즉시 소방대 출동이 필요합니다.';
       } else if (event.type.includes('미아') || event.type.includes('배회')) {
@@ -42,7 +42,7 @@ const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) =
       return `${event.title} 이벤트 발생. 현재 상황을 분석 중이며, 필요시 즉시 대응이 필요합니다.`;
     };
     
-    const aiInsight = generateAIInsight();
+    const aiInsight = generateBroadcastInsight();
     const message = `[${event.location.name}]\n\n${aiInsight}`;
     
     alert(message);
@@ -51,7 +51,7 @@ const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) =
   return (
     <div className="absolute top-5 right-5 z-[1000]">
       <div
-        className="bg-[#101013] border border-[#31353a] shadow-xl w-[420px] max-h-[600px] overflow-y-auto flex flex-col"
+        className="bg-[#101013] border border-cyan-500/40 shadow-[0_0_30px_rgba(34,211,238,0.3),0_0_60px_rgba(34,211,238,0.15)] w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-2xl"
         style={{ borderWidth: '1px' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -77,7 +77,7 @@ const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) =
         <div className="flex-1 overflow-y-auto">
           {/* 감지된 CCTV 영상 */}
           <div className="p-4">
-          <div className="w-full bg-[#0f0f0f] border border-[#31353a] rounded-lg overflow-hidden relative" style={{ borderWidth: '1px', aspectRatio: '16/9' }}>
+          <div className="w-full bg-[#0f0f0f] border border-cyan-500/30 rounded-xl overflow-hidden relative shadow-[0_0_20px_rgba(34,211,238,0.2)]" style={{ borderWidth: '1px', aspectRatio: '16/9' }}>
           <video 
             src={event.id ? getRandomCCTVVideo(event.id) : getRandomCCTVVideo()}
             autoPlay
@@ -130,7 +130,7 @@ const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) =
           {/* AI 분석 - AI 인사이트 요약 + 핵심 키워드 */}
           {keywords.length > 0 || aiInsightText ? (
             <div className="px-4 mb-4">
-              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+              <div className="bg-blue-500/10 border border-cyan-500/40 rounded-xl p-4 shadow-[0_0_20px_rgba(34,211,238,0.25)]" style={{ borderWidth: '1px' }}>
                 <div className="flex items-start gap-2 mb-3">
                   <img 
                     src="/simbol.svg" 

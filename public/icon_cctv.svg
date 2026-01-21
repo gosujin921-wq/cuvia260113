@@ -8,14 +8,11 @@
       }
 
       .st1 {
-        stroke-width: 1.5px;
-      }
-
-      .st1, .st2 {
         stroke: #000;
+        stroke-width: 1.72px;
       }
 
-      .st3 {
+      .st2 {
         clip-path: url(#clippath);
       }
     </style>
@@ -23,12 +20,21 @@
       <rect class="st0" y="1.5" width="16" height="13"/>
     </clipPath>
   </defs>
-  <g class="st3">
+  <g class="st2">
     <g>
-      <path class="st2" d="M14.64,5.56l-2.55,3.52-7.5-2.93,1.62-4,8.44,3.41Z" shape-rendering="crispEdges"/>
-      <path class="st2" d="M14.81,6.96l-.8,1.97-1.82-.73,1.32-1.83,1.29.6Z" shape-rendering="crispEdges"/>
-      <rect class="st2" x="1.19" y="8.93" width="1.85" height="4.71" shape-rendering="crispEdges"/>
-      <path class="st1" d="M8.3,7.48l-1.38,3.81h-3.38"/>
+      <g shape-rendering="crispEdges">
+        <polygon points="4.66 5.57 6.09 2.04 14.57 5.46 12.33 8.56 4.66 5.57"/>
+        <path d="M6.41,2.79l7.27,2.94-1.55,2.14-6.71-2.62.99-2.46M5.77,1.29l-1.86,4.6,8.62,3.37,2.93-4.05h.01L5.77,1.29h0Z"/>
+      </g>
+      <g shape-rendering="crispEdges">
+        <polygon points="13.54 7.99 14.35 6.86 14.91 7.12 14.42 8.34 13.54 7.99"/>
+        <polygon points="14.16 6.14 12.65 8.25 14.74 9.08 15.66 6.82 15.65 6.83 14.16 6.14 14.16 6.14"/>
+      </g>
+      <g shape-rendering="crispEdges">
+        <rect x=".57" y="9.66" width=".98" height="4.26"/>
+        <polygon points="2.13 9.08 0 9.08 0 14.5 2.13 14.5 2.13 9.08 2.13 9.08"/>
+      </g>
+      <path class="st1" d="M8.17,7.42l-1.59,4.38H2.13"/>
     </g>
   </g>
 </svg>

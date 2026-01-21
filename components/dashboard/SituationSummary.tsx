@@ -34,7 +34,7 @@ const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) =
   return (
     <div className="absolute top-5 right-5 z-[1000]">
       <div
-        className="bg-[#101013] border border-[#31353a] shadow-xl w-[420px] max-h-[600px] overflow-y-auto flex flex-col"
+        className="bg-[#101013] border border-cyan-500/40 shadow-[0_0_30px_rgba(34,211,238,0.3),0_0_60px_rgba(34,211,238,0.15)] w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-2xl"
         style={{ borderWidth: '1px' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -59,7 +59,7 @@ const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) =
         {/* 컨텐츠 */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* AI 사건요약 */}
-          <div className="rounded-xl border border-[#31353a] bg-[#0f0f0f] p-4" style={{ borderWidth: '1px' }}>
+          <div className="rounded-xl border border-cyan-500/30 bg-[#0f0f0f] p-4 shadow-[0_0_20px_rgba(34,211,238,0.2)] hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-all duration-300" style={{ borderWidth: '1px' }}>
             <div className="flex items-start gap-3">
               <div 
                 className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"

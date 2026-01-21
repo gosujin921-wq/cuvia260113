@@ -10,9 +10,9 @@
     <div className="flex flex-1 flex-col overflow-hidden">
       <EventSummary summary={eventSummary} />  // 이벤트 요약
       <div className="flex flex-1 overflow-hidden relative">
-        <EventList />  // 좌측 이벤트 리스트
+        <RightPanel /> // 좌측 패널
         <MapView />    // 중앙 지도
-        <RightPanel /> // 우측 패널
+        <EventList />  // 우측 이벤트 리스트
       </div>
     </div>
   </div>
@@ -24,9 +24,9 @@
 - 좌측: 로고
 - 우측: Agent Hub 버튼, 위치/날씨, 알림, 프로필/시간
 
-### components/RightPanel.tsx
-- 우측 고정 패널 (w-96)
-- border-l로 왼쪽 테두리
+### components/LeftPanel.tsx
+- 좌측 고정 패널 (w-96)
+- border-r로 오른쪽 테두리
 
 ## 변경할 구조
 

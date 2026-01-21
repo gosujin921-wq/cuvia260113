@@ -478,7 +478,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
              setZoomLevel(prev => Math.min(prev + 1, 1));
            }}
            disabled={zoomLevel >= 1}
-           className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed"
+           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
            style={{ borderWidth: '1px' }}
            aria-label="확대"
          >
@@ -490,7 +490,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
              setZoomLevel(prev => Math.max(prev - 1, 0));
            }}
            disabled={zoomLevel <= 0}
-           className="w-10 h-10 rounded-lg flex items-center justify-center transition-colors bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a] disabled:opacity-50 disabled:cursor-not-allowed"
+           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
            style={{ borderWidth: '1px' }}
            aria-label="축소"
          >
@@ -519,11 +519,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                setShowCCTVName(false);
              }
            }}
-           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-             showCCTV 
-               ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-2xl shadow-blue-900/50 ring-2 ring-blue-500/30' 
-               : 'bg-gradient-to-br from-[#2a2a2a] via-[#1a1a1a] to-[#0f0f0f] hover:from-[#3a3a3a] hover:via-[#2a2a2a] hover:to-[#1a1a1a] text-gray-300 border-2 border-gray-500/60 hover:border-gray-400 shadow-xl shadow-gray-900/30'
-           }`}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            showCCTV 
+              ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6),0_0_40px_rgba(59,130,246,0.3)] ring-2 ring-blue-500/30' 
+              : 'bg-gradient-to-br from-[#2a2a2a] via-[#1a1a1a] to-[#0f0f0f] hover:from-[#3a3a3a] hover:via-[#2a2a2a] hover:to-[#1a1a1a] text-gray-300 border-2 border-cyan-500/40 hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.5),0_0_40px_rgba(34,211,238,0.2)]'
+          }`}
            style={{ borderWidth: '1px' }}
            aria-label="CCTV"
          >
@@ -538,11 +538,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                  e.stopPropagation();
                  setShowCCTVViewAngle(prev => !prev);
                }}
-               className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                 showCCTVViewAngle 
-                   ? 'bg-green-600 hover:bg-green-700 text-white' 
-                   : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a]'
-               }`}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                showCCTVViewAngle 
+                  ? 'bg-green-600 hover:bg-green-700 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]' 
+                  : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)]'
+              }`}
                style={{ borderWidth: '1px' }}
                aria-label="시야각 켜기"
              >
@@ -553,11 +553,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                  e.stopPropagation();
                  setShowCCTVName(prev => !prev);
                }}
-               className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                 showCCTVName 
-                   ? 'bg-orange-600 hover:bg-orange-700 text-white' 
-                   : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-[#2a2a2a]'
-               }`}
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                showCCTVName 
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
+                  : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-cyan-500/30 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.4)]'
+              }`}
                style={{ borderWidth: '1px' }}
                aria-label="CCTV 명 켜기"
              >
@@ -572,7 +572,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         className="relative border border-[#31353a] bg-cover bg-center bg-no-repeat transition-transform duration-700 ease-out"
         style={{
           borderWidth: '1px',
-          backgroundImage: 'url(/map_anyang.png)',
+          backgroundImage: 'url(/maptest.png)',
           backgroundSize: 'cover',
           height: '100%',
           width: '100%',
