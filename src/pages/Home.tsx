@@ -14,6 +14,7 @@ export default function Home() {
   const [mapZoomLevel, setMapZoomLevel] = useState<number>(0);
   const [aiDetectionEventId, setAiDetectionEventId] = useState<string | null>(null);
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
+  const [hideControls, setHideControls] = useState<boolean>(false);
 
   /**
    * ============================================================================
@@ -253,6 +254,7 @@ export default function Home() {
     setHighlightedEventId(null);
     setAiDetectionEventId(null);
     setMapZoomLevel(0);
+    setHideControls(false);
   };
 
   // 키보드 단축키 핸들러
@@ -267,6 +269,7 @@ export default function Home() {
           event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
         );
         if (missingEvent) {
+          setHideControls(true);
           animateToEvent(missingEvent);
         }
       } else if (e.key === '2') {
@@ -274,6 +277,7 @@ export default function Home() {
           event.eventId === 'A-20251210-003' || event.id === 'A-20251210-003'
         );
         if (abductionEvent) {
+          setHideControls(true);
           animateToEvent(abductionEvent, () => {
             setAiDetectionEventId(abductionEvent.id);
           });
@@ -283,10 +287,12 @@ export default function Home() {
           event.eventId === 'A-20241124-001' || event.id === 'A-20241124-001'
         );
         if (assaultEvent) {
+          setHideControls(true);
           animateToEvent(assaultEvent);
         }
       } else if (e.key === 'Escape') {
         clearSelection();
+        setHideControls(false);
       }
     };
 
@@ -314,6 +320,7 @@ export default function Home() {
               onMapClick={clearSelection}
               externalZoomLevel={mapZoomLevel}
               onZoomLevelChange={setMapZoomLevel}
+              hideControls={hideControls}
             />
           </div>
           {/* 우측: 이벤트 리스트 패널 */}

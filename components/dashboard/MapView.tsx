@@ -16,6 +16,7 @@ import {
   generateViewAnglePath,
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 interface MapViewProps {
   events: Event[];
@@ -29,13 +30,15 @@ interface MapViewProps {
   externalZoomLevel?: number;
   onZoomLevelChange?: (level: number) => void;
   onAiDetectionClose?: () => void;
+  hideControls?: boolean;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
   const [showCCTV, setShowCCTV] = useState(true);
+  const [currentCCTVIndex, setCurrentCCTVIndex] = useState(0);
   const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
   const [showCCTVName, setShowCCTVName] = useState(true);
   const [is3DMode, setIs3DMode] = useState(true);
@@ -140,6 +143,27 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   useEffect(() => {
     onZoomLevelChange?.(zoomLevel);
   }, [zoomLevel, onZoomLevelChange]);
+
+  useEffect(() => {
+    if (!showCCTV) return;
+    
+    const interval = setInterval(() => {
+      setCurrentCCTVIndex((prev) => prev + 1);
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [showCCTV]);
+
+  useEffect(() => {
+    if (!showCCTV) return;
+    
+    if (currentCCTVIndex >= 8) {
+      const timer = setTimeout(() => {
+        setCurrentCCTVIndex(0);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentCCTVIndex, showCCTV]);
 
   const prevZoomLevelRef = useRef(zoomLevel);
   const animationFrameRef = useRef<number | null>(null);
@@ -764,8 +788,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }}
     >
        <div 
-         className="absolute top-4 left-4 flex flex-col gap-2" 
-         style={{ zIndex: 250 }}
+         className="absolute top-4 left-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+         style={{ 
+           zIndex: 250,
+           transform: hideControls ? 'translateX(-200px)' : 'translateX(0)',
+           opacity: hideControls ? 0 : 1,
+         }}
          onClick={(e) => e.stopPropagation()}
        >
          <button
@@ -848,10 +876,32 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
 
        <div 
-         className="absolute bottom-4 left-4 flex flex-col-reverse gap-2" 
-         style={{ zIndex: 250 }}
+         className="absolute left-4 top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+         style={{ 
+           zIndex: 250,
+           transform: hideControls ? 'translateX(-200px) translateY(-50%)' : 'translateX(0) translateY(-50%)',
+           opacity: hideControls ? 0 : 1,
+         }}
          onClick={(e) => e.stopPropagation()}
        >
+         {showCCTV && (
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               setShowCCTVName(prev => !prev);
+             }}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              showCCTVName 
+                ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
+                : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-blue-500/30 hover:border-blue-400 hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]'
+            }`}
+             style={{ borderWidth: '1px' }}
+             aria-label="CCTV 명 켜기"
+           >
+             <Icon icon="mdi:label" className="w-5 h-5" />
+           </button>
+         )}
+         
          <button
            onClick={(e) => {
              e.stopPropagation();
@@ -877,38 +927,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          </button>
          
          {showCCTV && (
-           <>
-             <button
-               onClick={(e) => {
-                 e.stopPropagation();
-                 setShowCCTVName(prev => !prev);
-               }}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                showCCTVName 
-                  ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
-                  : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-blue-500/30 hover:border-blue-400 hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]'
-              }`}
-               style={{ borderWidth: '1px' }}
-               aria-label="CCTV 명 켜기"
-             >
-               <Icon icon="mdi:label" className="w-5 h-5" />
-             </button>
-             <button
-               onClick={(e) => {
-                 e.stopPropagation();
-                 setShowCCTVViewAngle(prev => !prev);
-               }}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                showCCTVViewAngle 
-                  ? 'bg-green-600 hover:bg-green-700 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]' 
-                  : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-blue-500/30 hover:border-blue-400 hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]'
-              }`}
-               style={{ borderWidth: '1px' }}
-               aria-label="시야각 켜기"
-             >
-               <Icon icon="mdi:angle-acute" className="w-5 h-5" />
-             </button>
-           </>
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               setShowCCTVViewAngle(prev => !prev);
+             }}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              showCCTVViewAngle 
+                ? 'bg-green-600 hover:bg-green-700 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]' 
+                : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border border-blue-500/30 hover:border-blue-400 hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]'
+            }`}
+             style={{ borderWidth: '1px' }}
+             aria-label="시야각 켜기"
+           >
+             <Icon icon="mdi:angle-acute" className="w-5 h-5" />
+           </button>
          )}
        </div>
 
@@ -1471,13 +1504,71 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       )}
 
 
+      {/* 하단 CCTV 비디오 플레이어 - 1줄에 4개, 무한 롤링 */}
+      {showCCTV && (() => {
+        const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4', 'CCTV-V-5', 'CCTV-V-6', 'CCTV-V-7', 'CCTV-V-8'];
+        const duplicatedList = [...cctvList, ...cctvList, ...cctvList];
+        const itemWidth = 200;
+        const gap = 12;
+        const padding = 12;
+        const totalItemWidth = itemWidth + gap;
+        const baseOffset = cctvList.length * totalItemWidth;
+        const currentOffset = baseOffset + (currentCCTVIndex * totalItemWidth);
+        
+        return (
+          <div
+            className="absolute bottom-0 left-0 right-0 transition-all duration-500 ease-in-out"
+            style={{ 
+              zIndex: 200,
+              transform: hideControls ? 'translateY(136px)' : 'translateY(0)',
+              opacity: hideControls ? 0 : 1,
+            }}
+          >
+            <div className="bg-[#242a34] border-t border-[#31353a] rounded-t-lg" style={{ height: '136px', width: '100%', overflow: 'hidden' }}>
+              <div 
+                className="flex items-center h-full transition-transform duration-500 ease-in-out"
+                style={{ 
+                  gap: `${gap}px`,
+                  padding: `${padding}px`,
+                  transform: `translateX(-${currentOffset}px)`,
+                }}
+              >
+                {duplicatedList.map((cctvId, index) => (
+                  <div
+                    key={`bottom-cctv-${index}-${cctvId}`}
+                    className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0"
+                    style={{ width: `${itemWidth}px`, height: '100%' }}
+                  >
+                    <video
+                      src={getRandomCCTVVideo(cctvId)}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-0.5">
+                      <div className="text-white text-[10px] font-semibold truncate" title={cctvId}>
+                        {cctvId}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+
       {/* Agent Hub 버튼 - 우측 하단 플로팅 버튼 */}
       <div
         className="absolute group"
         style={{
-          bottom: '24px',
+          bottom: (showCCTV && !hideControls) ? '152px' : '24px',
           right: '24px',
           zIndex: 200,
+          transition: 'bottom 0.3s ease-in-out',
         }}
       >
         <a

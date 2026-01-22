@@ -413,7 +413,7 @@ const LeftPanel = () => {
       // state에도 저장 (비동기)
       setPreviousHeatmapData(currentDataCopy);
       // 그 다음 offset 변경 및 애니메이션 트리거
-      setHeatmapAreaOffset((prev) => (prev + 6) % allHeatmapAreas.length);
+      setHeatmapAreaOffset((prev) => (prev + 7) % allHeatmapAreas.length);
       setHeatmapAnimationKey((prev) => prev + 1);
     }, 5000);
     return () => clearInterval(interval);
@@ -717,7 +717,7 @@ const LeftPanel = () => {
   const heatmapAreas = useMemo(() => {
     const startIndex = heatmapAreaOffset % allHeatmapAreas.length;
     const result: string[] = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 7; i++) {
       const index = (startIndex + i) % allHeatmapAreas.length;
       result.push(allHeatmapAreas[index]);
     }
@@ -852,12 +852,12 @@ const LeftPanel = () => {
         </div>
       ) : (
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-4 pl-6 pr-6 space-y-3"
+          className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pl-6 pr-6 flex flex-col"
           ref={scrollContainerRef}
-          style={{ maxWidth: '100%' }}
+          style={{ maxWidth: '100%', paddingBottom: '16px' }}
         >
         {/* 상단 헤더: 좌측 로고, 우측 날씨 + 시간 */}
-        <div className="flex items-center justify-between pb-2 mb-4 border-b border-[#31353a]">
+        <div className="flex items-center justify-between pb-2 mb-4 border-b border-[#31353a]" style={{ flexShrink: 0 }}>
           {/* 좌측: 패널 로고 */}
           <div className="flex items-center gap-2">
             <img
@@ -884,7 +884,7 @@ const LeftPanel = () => {
         </div>
 
         {/* CCTV 운영 현황 (상세 카드) */}
-        <div className="space-y-3 mb-4">
+        <div className="space-y-3 mb-4" style={{ flexShrink: 0 }}>
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
             {/* 정상/장애/지연 장비 수 */}
@@ -998,7 +998,7 @@ const LeftPanel = () => {
         </div>
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
-        <div className="pt-0" style={{ marginBottom: '-12px' }}>
+        <div className="pt-0" style={{ marginBottom: '-12px', flexShrink: 0 }}>
           <div className="flex items-center" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
           </div>
@@ -1088,7 +1088,7 @@ const LeftPanel = () => {
 
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
-        <div className="mb-4" style={{ marginBottom: 'calc(1rem - 12px)' }}>
+        <div style={{ flexShrink: 0 }}>
           <div className="flex items-center justify-between gap-4" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white font-semibold text-sm">지역별 이벤트 발생 건 수</h3>
             <div className="flex items-center gap-4 text-[12px] text-gray-200">
@@ -1249,7 +1249,7 @@ const LeftPanel = () => {
                           (시)
                         </>
                       ) : (
-                        `${slot.label}시`
+                        slot.label
                       )}
                     </div>
                   );
@@ -1260,7 +1260,7 @@ const LeftPanel = () => {
         </div>
 
         {/* 2) 실시간 환경 센서 모니터링 */}
-        <div className="mb-4">
+        <div style={{ marginTop: 'auto', marginBottom: 0, flexShrink: 0 }}>
           <div className="flex items-center justify-between" style={{ paddingTop: '12px', paddingBottom: '12px', marginBottom: '0' }}>
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
             <span className="text-gray-300 text-xs">

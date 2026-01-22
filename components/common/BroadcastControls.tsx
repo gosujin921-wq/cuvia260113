@@ -184,6 +184,7 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
       
       alert(alertMessage);
     } catch (error) {
+      console.error('전파 전송 오류:', error);
       alert('전파 전송 중 오류가 발생했습니다.');
     }
   };
@@ -205,7 +206,7 @@ const BroadcastControls: React.FC<BroadcastControlsProps> = ({
       //     attachments,
       //   }),
       // });
-      
+      // 현재: 더미 처리 (개발용)
       setDraftStatus('drafting');
       handleClose();
     } catch (error) {
