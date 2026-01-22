@@ -54,6 +54,7 @@ export interface AgentMessage {
 
 export interface EventSummary {
   total: number;
+  pending: number;
   inProgress: number;
   closed: number;
 }

@@ -787,7 +787,7 @@ const LeftPanel = () => {
 
   return (
     <div
-      className={`${isCollapsed ? 'w-20' : ''} bg-[#0a0e14] border-r border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
+      className={`${isCollapsed ? 'w-20' : ''} bg-[#242a34] border-r border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
       style={{ 
         borderWidth: '1px',
         height: '100%',
@@ -936,7 +936,7 @@ const LeftPanel = () => {
               {visibleAreas.map((area, areaIndex) => (
                 <div
                   key={`${area.area}-${areaPage}`}
-                  className="bg-[#1f1f1f] px-3 py-2 space-y-3 min-w-0 overflow-hidden rounded-lg"
+                  className="bg-[#393a42] px-3 py-2 space-y-3 min-w-0 overflow-hidden rounded-lg"
                 >
                   <div className="flex items-start justify-between gap-2 min-w-0">
                     <div className="min-w-0 flex-1">
@@ -949,7 +949,7 @@ const LeftPanel = () => {
                     <div className="min-w-0">
                       <p className="text-gray-400 text-xs font-semibold tracking-tight truncate">장비 작동률</p>
                       <p className="text-white text-xl">{area.uptime}%</p>
-                      <div className="w-full h-3 bg-[#3a3a3a] mt-1 rounded-full overflow-hidden">
+                      <div className="w-full h-3 bg-[#1a1a1a] mt-1 rounded-full overflow-hidden">
                         <div 
                           className="h-full rounded-full progress-bar-fill"
                           style={{ 
@@ -964,7 +964,7 @@ const LeftPanel = () => {
                     <div className="min-w-0">
                       <p className="text-gray-400 text-xs font-semibold tracking-tight truncate">영상 수신율</p>
                       <p className="text-white text-xl">{area.streamRate}%</p>
-                      <div className="w-full h-3 bg-[#3a3a3a] mt-1 rounded-full overflow-hidden">
+                      <div className="w-full h-3 bg-[#1a1a1a] mt-1 rounded-full overflow-hidden">
                         <div 
                           className="h-full rounded-full progress-bar-fill"
                           style={{ 
@@ -1000,10 +1000,10 @@ const LeftPanel = () => {
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
         <div className="mb-0 pt-0">
-          <div className="flex items-center justify-between" style={{ paddingTop: '12px', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '0', marginBottom: '0' }}>
+          <div className="flex items-center" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
           </div>
-          <div className="overflow-hidden" style={{ padding: '12px', marginTop: '0' }}>
+          <div className="overflow-hidden" style={{ paddingTop: '12px', paddingBottom: '12px', marginTop: '0' }}>
             <div className="flex justify-end">
               <div className="relative h-40 w-[418px] rounded-xl overflow-visible">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1044,12 +1044,12 @@ const LeftPanel = () => {
                         />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="1.5 2" stroke="#1f2933" opacity={0.5} />
+                    <CartesianGrid strokeDasharray="1.5 2" stroke="rgba(107, 114, 128, 0.3)" opacity={1} />
                     <XAxis
                       dataKey="hour"
                       tick={renderTrendXAxisTick}
                       tickLine={false}
-                      axisLine={{ stroke: '#2f3540', strokeWidth: 1 }}
+                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
                       interval={3}
                       tickMargin={8}
                     />
@@ -1057,7 +1057,7 @@ const LeftPanel = () => {
                       domain={[0, 800]}
                       tick={renderTrendYAxisTick}
                       tickLine={false}
-                      axisLine={{ stroke: '#2f3540', strokeWidth: 1 }}
+                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
                       ticks={[0, 200, 400, 600, 800]}
                       width={40}
                       allowDecimals={false}
@@ -1153,14 +1153,14 @@ const LeftPanel = () => {
                       <div className="min-w-0">
                         <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">장비 작동률</p>
                         <p className="text-white text-xl font-bold">{area.uptime}%</p>
-                        <div className="w-full h-3 bg-[#091326] mt-1">
+                        <div className="w-full h-3 bg-[#1a1a1a] mt-1">
                           <div className="h-full bg-blue-500" style={{ width: `${area.uptime}%` }} />
                         </div>
                       </div>
                       <div className="min-w-0">
                         <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">영상 수신율</p>
                         <p className="text-white text-xl font-bold">{area.streamRate}%</p>
-                        <div className="w-full h-3 bg-[#091326] mt-1">
+                        <div className="w-full h-3 bg-[#1a1a1a] mt-1">
                           <div className="h-full bg-blue-500" style={{ width: `${area.streamRate}%` }} />
                         </div>
                       </div>
@@ -1198,7 +1198,7 @@ const LeftPanel = () => {
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
         <div className="mb-4">
-          <div className="flex items-center justify-between gap-4" style={{ paddingTop: '12px', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '0', marginBottom: '0' }}>
+          <div className="flex items-center justify-between gap-4" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white font-semibold text-sm">지역별 이벤트 발생 건 수</h3>
             <div className="flex items-center gap-4 text-[12px] text-gray-200">
               <div className="flex items-center gap-2">
@@ -1220,7 +1220,7 @@ const LeftPanel = () => {
             </div>
           </div>
 
-          <div className="overflow-hidden" style={{ padding: '12px', marginTop: '0' }}>
+          <div className="overflow-hidden" style={{ paddingTop: '12px', paddingBottom: '12px', marginTop: '0' }}>
             {/* 그리드 */}
             <div className="space-y-1 relative">
               {heatmapAreas.map((area, index) => {
@@ -1347,11 +1347,22 @@ const LeftPanel = () => {
             <div className="flex items-center gap-0 mt-2">
               <div className="w-10" />
               <div className="grid grid-cols-12 gap-1 flex-1 min-w-0">
-                {heatmapTimeSlots.map((slot) => (
-                  <div key={slot.key} className="text-[12px] text-gray-400 text-center select-none">
-                    {slot.label}시
-                  </div>
-                ))}
+                {heatmapTimeSlots.map((slot, index) => {
+                  const isLast = index === heatmapTimeSlots.length - 1;
+                  return (
+                    <div key={slot.key} className="text-[12px] text-gray-400 text-center select-none">
+                      {isLast ? (
+                        <>
+                          {slot.label}
+                          <br />
+                          (시)
+                        </>
+                      ) : (
+                        `${slot.label}시`
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1359,7 +1370,7 @@ const LeftPanel = () => {
 
         {/* 2) 실시간 환경 센서 모니터링 */}
         <div className="mb-4">
-          <div className="flex items-center justify-between" style={{ paddingTop: '12px', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '0', marginBottom: '0' }}>
+          <div className="flex items-center justify-between" style={{ paddingTop: '12px', paddingBottom: '12px', marginBottom: '0' }}>
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
             <span className="text-gray-300 text-xs">
               마지막 업데이트: {lastUpdateTime || '--:--:--'}
@@ -1367,7 +1378,7 @@ const LeftPanel = () => {
           </div>
           <div className="grid grid-cols-3 gap-2 min-w-0" style={{ marginTop: '0' }}>
             {/* PM2.5 */}
-            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
                 <div className="flex items-center gap-1 min-w-0">
                   <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -1384,7 +1395,7 @@ const LeftPanel = () => {
             </div>
 
             {/* PM10 */}
-            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
                 <div className="flex items-center gap-1 min-w-0">
                   <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -1401,7 +1412,7 @@ const LeftPanel = () => {
             </div>
 
             {/* 온도 */}
-            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0 mb-1.5">
                 <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">온도</span>
@@ -1413,7 +1424,7 @@ const LeftPanel = () => {
             </div>
 
             {/* 습도 */}
-            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0 mb-1.5">
                 <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">습도</span>
@@ -1425,7 +1436,7 @@ const LeftPanel = () => {
             </div>
 
             {/* 강수량 */}
-            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0 mb-1.5">
                 <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">강수량</span>
@@ -1438,7 +1449,7 @@ const LeftPanel = () => {
             </div>
 
             {/* 풍속 */}
-            <div className="p-3 border border-[#31353a] min-w-0 overflow-hidden" style={{ borderWidth: '1px' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0 mb-1.5">
                 <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">풍속</span>

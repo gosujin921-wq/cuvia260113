@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import Score from '@/components/dashboard/Score';
+import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
@@ -49,10 +49,14 @@ export default function Home() {
   const eventSummary: EventSummaryType = useMemo(() => {
     const allEventsForSummary = allEvents.map((event, index) => convertToDashboardEvent(event, index));
     
-    // 진행중: 생성, 선별, 착수, 사실 검증, 추적 · 지원, 전파
-    const inProgressStages: Array<'생성' | '선별' | '착수' | '사실 검증' | '추적 · 지원' | '전파'> = [
-      '생성',
-      '선별',
+    // 대기: 생성, 선별
+    const pendingStages: Array<'생성' | '선별'> = ['생성', '선별'];
+    const pending = allEventsForSummary.filter((event) =>
+      pendingStages.includes(event.processingStage as any)
+    ).length;
+    
+    // 진행중: 착수, 사실 검증, 추적 · 지원, 전파
+    const inProgressStages: Array<'착수' | '사실 검증' | '추적 · 지원' | '전파'> = [
       '착수',
       '사실 검증',
       '추적 · 지원',
@@ -66,6 +70,7 @@ export default function Home() {
     
     return {
       total: allEventsForSummary.length,
+      pending,
       inProgress,
       closed,
     };
@@ -178,9 +183,54 @@ export default function Home() {
             />
           </div>
           {/* 우측: 이벤트 리스트 패널 */}
-          <div className="flex flex-col flex-shrink-0 border-l border-[#31353a] pl-4 pr-5" style={{ width: '370px' }}>
+          <div className="flex flex-col flex-shrink-0 border-l border-[#31353a] pl-4 pr-5 bg-[#242a34]" style={{ width: '370px' }}>
             <div className="py-3">
-              <Score summary={eventSummary} />
+              {/* 스코어 카드 */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  {
+                    title: '전체',
+                    value: eventSummary.total,
+                    icon: 'mdi:chart-box',
+                    color: 'text-blue-400',
+                  },
+                  {
+                    title: '대기',
+                    value: eventSummary.pending || 0,
+                    icon: 'mdi:clock-outline',
+                    color: 'text-yellow-400',
+                  },
+                  {
+                    title: '진행중',
+                    value: eventSummary.inProgress,
+                    icon: 'mdi:progress-clock',
+                    color: 'text-blue-400',
+                  },
+                  {
+                    title: '종결',
+                    value: eventSummary.closed,
+                    icon: 'mdi:check-circle',
+                    color: 'text-green-400',
+                  },
+                ].map((card) => (
+                  <div
+                    key={card.title}
+                    className="bg-[#393a42] p-3 rounded-lg flex items-start justify-between relative"
+                  >
+                    {/* 타이틀과 숫자 */}
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-gray-400 text-xs font-medium">{card.title}</span>
+                      <div className="text-white text-2xl font-bold">
+                        {card.value.toLocaleString()}
+                      </div>
+                    </div>
+                    {/* 아이콘 */}
+                    <div className="bg-[#393a42] rounded flex-shrink-0">
+                      <Icon icon={card.icon} className={`w-6 h-6 ${card.color}`} />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="flex-1 overflow-hidden">
               <EventList
