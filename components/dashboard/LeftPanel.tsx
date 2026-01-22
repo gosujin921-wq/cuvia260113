@@ -596,7 +596,7 @@ const LeftPanel = () => {
       case 'fog':
         return 'text-gray-400';
       case 'rain':
-        return 'text-cyan-400';
+        return 'text-blue-400';
       default:
         return 'text-green-400';
     }
@@ -999,7 +999,7 @@ const LeftPanel = () => {
         </div>
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
-        <div className="mb-0 pt-0">
+        <div className="pt-0" style={{ marginBottom: '-12px' }}>
           <div className="flex items-center" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
           </div>
@@ -1197,7 +1197,7 @@ const LeftPanel = () => {
         )}
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
-        <div className="mb-4">
+        <div className="mb-4" style={{ marginBottom: 'calc(1rem - 12px)' }}>
           <div className="flex items-center justify-between gap-4" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white font-semibold text-sm">지역별 이벤트 발생 건 수</h3>
             <div className="flex items-center gap-4 text-[12px] text-gray-200">

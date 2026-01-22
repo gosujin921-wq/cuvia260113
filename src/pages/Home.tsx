@@ -37,6 +37,130 @@ export default function Home() {
       .filter((event) => event.processingStage !== '종결');
   }, []);
 
+  // 가상 이벤트 데이터 (레이아웃 확인용)
+  const mockEvents: Event[] = useMemo(() => {
+    const now = new Date();
+    const formatTime = (hours: number, minutes: number) => {
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    };
+    
+    return [
+      // 일반 5개
+      {
+        id: 'mock-1',
+        type: '112-치안',
+        title: '주차장 소음 신고',
+        priority: '일반',
+        status: 'NEW',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
+        location: { name: '관양동 주차장', coordinates: [126.98, 37.42] },
+        processingStage: '생성',
+        resolution: { category: '112', code: '001', description: '' },
+      },
+      {
+        id: 'mock-2',
+        type: '약자',
+        title: '노인 낙상 신고',
+        priority: '일반',
+        status: 'NEW',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
+        location: { name: '부천시 중앙공원', coordinates: [126.99, 37.43] },
+        processingStage: '선별',
+        resolution: { category: '약자', code: '002', description: '' },
+      },
+      {
+        id: 'mock-3',
+        type: '112-치안',
+        title: '횡단보도 신호 위반',
+        priority: '일반',
+        status: 'MONITORING',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
+        location: { name: '관양동 사거리', coordinates: [126.97, 37.41] },
+        processingStage: '착수',
+        resolution: { category: '112', code: '003', description: '' },
+      },
+      {
+        id: 'mock-4',
+        type: 'AI-배회',
+        title: '의심 행동 탐지',
+        priority: '일반',
+        status: 'NEW',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 45)),
+        location: { name: '부천역 인근', coordinates: [126.96, 37.40] },
+        processingStage: '생성',
+        resolution: { category: 'AI', code: '004', description: '' },
+      },
+      {
+        id: 'mock-5',
+        type: '112-치안',
+        title: '교통 혼잡 신고',
+        priority: '일반',
+        status: 'MONITORING',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
+        location: { name: '송내대로', coordinates: [126.95, 37.39] },
+        processingStage: '선별',
+        resolution: { category: '112', code: '005', description: '' },
+      },
+      // 주의 3개
+      {
+        id: 'mock-6',
+        type: '112-미아',
+        title: '아동 미아 신고',
+        priority: '주의',
+        status: 'MONITORING',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
+        location: { name: '관양초등학교 앞', coordinates: [126.98, 37.42] },
+        processingStage: '착수',
+        resolution: { category: '112', code: '006', description: '' },
+      },
+      {
+        id: 'mock-7',
+        type: '119-구조',
+        title: '교통사고 신고',
+        priority: '주의',
+        status: 'NEW',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
+        location: { name: '부천시청 앞', coordinates: [126.99, 37.43] },
+        processingStage: '생성',
+        resolution: { category: '119', code: '007', description: '' },
+      },
+      {
+        id: 'mock-8',
+        type: '112-치안',
+        title: '싸움 신고',
+        priority: '주의',
+        status: 'MONITORING',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 30)),
+        location: { name: '송내역 인근', coordinates: [126.97, 37.41] },
+        processingStage: '착수',
+        resolution: { category: '112', code: '008', description: '' },
+      },
+      // 경계 2개
+      {
+        id: 'mock-9',
+        type: '119-화재',
+        title: '작은 불꽃 발견',
+        priority: '경계',
+        status: 'MONITORING',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
+        location: { name: '부천시 아파트 단지', coordinates: [126.96, 37.40] },
+        processingStage: '착수',
+        resolution: { category: '119', code: '009', description: '' },
+      },
+      {
+        id: 'mock-10',
+        type: '112-치안',
+        title: '절도 의심 신고',
+        priority: '경계',
+        status: 'NEW',
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
+        location: { name: '관양동 상가', coordinates: [126.95, 37.39] },
+        processingStage: '선별',
+        resolution: { category: '112', code: '010', description: '' },
+      },
+    ];
+  }, []);
+
   // 표시할 이벤트만 필터링 (숫자 키를 눌렀을 때만 표시)
   const events: Event[] = useMemo(() => {
     if (visibleEventIds.size === 0) {
@@ -44,6 +168,16 @@ export default function Home() {
     }
     return allConvertedEvents.filter(event => visibleEventIds.has(event.id));
   }, [allConvertedEvents, visibleEventIds]);
+
+  // 이벤트 리스트용 이벤트 (가상 이벤트 포함)
+  const eventsForList: Event[] = useMemo(() => {
+    // 가상 이벤트는 항상 표시
+    const visibleRealEvents = visibleEventIds.size > 0
+      ? allConvertedEvents.filter(event => visibleEventIds.has(event.id))
+      : [];
+    
+    return [...mockEvents, ...visibleRealEvents];
+  }, [allConvertedEvents, visibleEventIds, mockEvents]);
 
   // 이벤트 요약 계산 (처리결과 기준) - 모든 이벤트 포함 (종결 포함)
   const eventSummary: EventSummaryType = useMemo(() => {
@@ -234,7 +368,7 @@ export default function Home() {
             </div>
             <div className="flex-1 overflow-hidden">
               <EventList
-                events={events}
+                events={eventsForList}
                 selectedEventId={selectedEventId || undefined}
                 onEventSelect={handleEventAction}
                 onEventHover={handleEventHover}

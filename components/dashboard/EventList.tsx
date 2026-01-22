@@ -212,7 +212,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
   }, [selectedEventId, onEventHover]);
 
   return (
-    <div className="w-full bg-[#0a0e14] flex flex-col h-full overflow-y-auto">
+    <div className="w-full flex flex-col h-full overflow-y-auto">
       <div className="border-t border-b border-[#31353a]">
         <div className="flex items-center justify-center gap-2" style={{ paddingTop: '14px' }}>
           {tabs.map((tab, index) => {
@@ -275,6 +275,11 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                   eventItemRefs.current[main.id] = el;
                 }}
                 onClick={() => {
+                  // 가상 이벤트(mock-)는 클릭해도 상세 페이지로 이동하지 않음
+                  if (main.id.startsWith('mock-')) {
+                    onEventSelect?.(main.id);
+                    return;
+                  }
                   if (main.eventId) {
                     navigate(`/event/${main.eventId}`);
                     return;
@@ -286,7 +291,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 className={`w-full text-left border-b pt-3 pb-3 pr-3 transition-all duration-200 ${
                   isSelected
                     ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30'
-                    : 'bg-transparent border-[#2f3136] shadow-[0_4px_14px_-8px_rgba(0,0,0,0.8)] hover:bg-[#24272d] hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4),0_0_40px_rgba(34,211,238,0.2)]'
+                    : 'bg-transparent border-[#2f3136] shadow-[0_4px_14px_-8px_rgba(0,0,0,0.8)] hover:bg-[#24272d] hover:border-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.4),0_0_40px_rgba(59,130,246,0.2)]'
                 }`}
                 style={{ paddingLeft: '14px' }}
               >
@@ -309,47 +314,82 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                     })()}
                   </div>
                   {main.priority === '긴급' && (
-                    <span className="w-2 h-2 rounded-full border-2 border-red-400 inline-block" style={{ borderWidth: '3px' }} />
+                    <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full">
+                      긴급
+                    </span>
                   )}
                   {main.priority === '경계' && (
-                    <span className="w-2 h-2 rounded-full border-2 border-yellow-400 inline-block" style={{ borderWidth: '3px' }} />
+                    <span className="px-2 py-0.5 bg-yellow-500 text-gray-900 text-[10px] font-semibold rounded-full">
+                      경계
+                    </span>
                   )}
                   {main.priority === '주의' && generalEventIds.has(main.id) && (
-                    <span className="w-2 h-2 rounded-full border-2 border-gray-400 inline-block" style={{ borderWidth: '3px' }} />
+                    <span className="px-2 py-0.5 bg-gray-500 text-white text-[10px] font-semibold rounded-full">
+                      일반
+                    </span>
                   )}
                   {main.priority === '주의' && !generalEventIds.has(main.id) && (
-                    <span className="w-2 h-2 rounded-full border-2 border-blue-400 inline-block" style={{ borderWidth: '3px' }} />
+                    <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-semibold rounded-full">
+                      주의
+                    </span>
+                  )}
+                  {main.priority === '일반' && (
+                    <span className="px-2 py-0.5 bg-gray-500 text-white text-[10px] font-semibold rounded-full">
+                      일반
+                    </span>
                   )}
                 </div>
 
                 {/* 2. 유형 */}
                 <div className="flex items-center gap-2 mb-2">
-                  {main.eventId && (() => {
-                    const baseEvent = getEventById(main.eventId);
-                    if (!baseEvent) return null;
-                    return (
-                      <span className={`px-2 py-0.5 rounded text-xs ${
-                        baseEvent.domain === 'A'
-                          ? baseEvent.type.includes('폭행') || baseEvent.type.includes('상해')
-                            ? 'bg-red-500/20 text-red-400'
-                            : baseEvent.type.includes('절도') || baseEvent.type.includes('강도')
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : baseEvent.type.includes('차량도주') || baseEvent.type.includes('추적')
-                                ? 'bg-orange-500/20 text-orange-400'
-                                : 'bg-blue-500/20 text-blue-400'
-                          : baseEvent.domain === 'B'
-                            ? 'bg-red-500/20 text-red-400'
-                            : baseEvent.domain === 'C'
-                              ? 'bg-orange-500/20 text-orange-400'
-                              : baseEvent.domain === 'D'
-                                ? 'bg-green-500/20 text-green-400'
-                                : baseEvent.domain === 'E'
+                  {(() => {
+                    if (main.eventId) {
+                      const baseEvent = getEventById(main.eventId);
+                      if (!baseEvent) return null;
+                      return (
+                        <span className={`px-2 py-0.5 rounded text-xs ${
+                          baseEvent.domain === 'A'
+                            ? baseEvent.type.includes('폭행') || baseEvent.type.includes('상해')
+                              ? 'bg-red-500/20 text-red-400'
+                              : baseEvent.type.includes('절도') || baseEvent.type.includes('강도')
+                                ? 'bg-yellow-500/20 text-yellow-400'
+                                : baseEvent.type.includes('차량도주') || baseEvent.type.includes('추적')
                                   ? 'bg-orange-500/20 text-orange-400'
-                                  : 'bg-gray-500/20 text-gray-400'
-                      }`}>
-                        {baseEvent.type}
-                      </span>
-                    );
+                                  : 'bg-blue-500/20 text-blue-400'
+                            : baseEvent.domain === 'B'
+                              ? 'bg-red-500/20 text-red-400'
+                              : baseEvent.domain === 'C'
+                                ? 'bg-orange-500/20 text-orange-400'
+                                : baseEvent.domain === 'D'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : baseEvent.domain === 'E'
+                                    ? 'bg-orange-500/20 text-orange-400'
+                                    : 'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {baseEvent.type}
+                        </span>
+                      );
+                    } else {
+                      // 가상 이벤트: type을 직접 표시
+                      const getTypeColor = (type: string) => {
+                        if (type.includes('화재') || type.includes('구조')) {
+                          return 'bg-red-500/20 text-red-400';
+                        } else if (type.includes('미아') || type.includes('치안')) {
+                          return 'bg-blue-500/20 text-blue-400';
+                        } else if (type.includes('약자')) {
+                          return 'bg-orange-500/20 text-orange-400';
+                        } else if (type.includes('AI')) {
+                          return 'bg-green-500/20 text-green-400';
+                        } else {
+                          return 'bg-gray-500/20 text-gray-400';
+                        }
+                      };
+                      return (
+                        <span className={`px-2 py-0.5 rounded text-xs ${getTypeColor(main.type)}`}>
+                          {main.type}
+                        </span>
+                      );
+                    }
                   })()}
                 </div>
 
@@ -371,7 +411,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                       onClick={() => onEventSelect?.(evt.id)}
                       onMouseEnter={() => onEventHover?.(evt.id)}
                       onMouseLeave={() => onEventHover?.(null)}
-                      className="p-2 border border-cyan-500/30 bg-[#36383B] cursor-pointer hover:bg-[#091326] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-200"
+                      className="p-2 border border-blue-500/30 bg-[#36383B] cursor-pointer hover:bg-[#091326] hover:border-blue-400 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all duration-200"
                       style={{ borderWidth: '1px' }}
                     >
                       <div className="flex items-center gap-2">
