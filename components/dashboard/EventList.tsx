@@ -291,7 +291,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 className={`w-full text-left border-b pt-3 pb-3 pr-3 transition-all duration-200 ${
                   isSelected
                     ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30'
-                    : 'bg-transparent border-[#2f3136] shadow-[0_4px_14px_-8px_rgba(0,0,0,0.8)] hover:bg-[#24272d] hover:border-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.4),0_0_40px_rgba(59,130,246,0.2)]'
+                    : 'bg-transparent border-[#2f3136] hover:bg-[#24272d] hover:border-blue-400'
                 }`}
                 style={{ paddingLeft: '14px' }}
               >
@@ -411,7 +411,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                       onClick={() => onEventSelect?.(evt.id)}
                       onMouseEnter={() => onEventHover?.(evt.id)}
                       onMouseLeave={() => onEventHover?.(null)}
-                      className="p-2 border border-blue-500/30 bg-[#36383B] cursor-pointer hover:bg-[#091326] hover:border-blue-400 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all duration-200"
+                      className="p-2 border border-blue-500/30 bg-[#36383B] cursor-pointer hover:bg-[#091326] hover:border-blue-400 transition-all duration-200"
                       style={{ borderWidth: '1px' }}
                     >
                       <div className="flex items-center gap-2">

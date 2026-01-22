@@ -351,9 +351,9 @@ const AgentChatPage = () => {
             </button>
             {isLeftPanelOpen && (
               <button
-                onClick={() => {
-                  // 검색 기능 (나중에 구현)
-                }}
+                  onClick={() => {
+                    // 검색 기능
+                  }}
                 className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
                 aria-label="검색"
               >
@@ -405,7 +405,7 @@ const AgentChatPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            // 프로젝트 메뉴 기능 (나중에 구현)
+                            // 프로젝트 메뉴 기능
                           }}
                           className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pl-1.5 pt-1.5 pb-1.5 pr-0 hover:bg-white/70 rounded"
                           aria-label="프로젝트 메뉴"
@@ -442,7 +442,7 @@ const AgentChatPage = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            // 채팅 메뉴 기능 (나중에 구현)
+                            // 채팅 메뉴 기능
                           }}
                           className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 pl-1.5 pt-1.5 pb-1.5 pr-0 hover:bg-white/70 rounded"
                           aria-label="채팅 메뉴"

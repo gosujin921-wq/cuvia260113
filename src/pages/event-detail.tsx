@@ -103,7 +103,6 @@ const EventDetailPageContent = () => {
       //   .then(res => res.json())
       //   .then(data => setClipDuration(data.duration));
       
-      // 현재: 더미 데이터
       setClipDuration(30);
       setClipCurrentTime(0);
       setIsClipPlaying(false);
@@ -295,14 +294,6 @@ const EventDetailPageContent = () => {
   // 맵 확대 상태
   const [zoomLevel, setZoomLevel] = useState(0); // 0: 축소(클러스터), 1: 확대(개별)
 
-  /**
-   * ============================================================================
-   * 🧪 프로토타입 기능 (개발/데모용)
-   * ============================================================================
-   * 아래 상태들은 프로토타입/데모용 기능입니다.
-   * 실제 API 연동 시 실제 데이터로 대체하거나 제거할 수 있습니다.
-   * ============================================================================
-   */
   const [prototypePin1Visible, setPrototypePin1Visible] = useState(true);
   const [prototypePin2Visible, setPrototypePin2Visible] = useState(false);
   const [prototypePin3Visible, setPrototypePin3Visible] = useState(false);
@@ -359,7 +350,6 @@ const EventDetailPageContent = () => {
         
         // 4. 프로그레스 완료 후 처리
         setTimeout(() => {
-          // 프로토타입: 합본 모니터링 팝업에서 재추적 시 CCTV 클립 정확도 변경
           if (showCombinedCCTVPopup) {
             setPrototypeDetectedClipConfidence(prev => ({
               ...prev,
@@ -430,10 +420,7 @@ const EventDetailPageContent = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [isMounted]);
 
-  /**
-   * 🧪 프로토타입 기능: 키보드 단축키 (q, w, e, r, 0)
-   * 실제 운영 시 제거하거나 실제 기능으로 대체 필요
-   */
+  // 키보드 단축키 (q, w, e, r, 0)
   useEffect(() => {
     // 팝업이 열려있으면 키보드 이벤트 무시
     if (showMapCCTVPopup || showDetectedCCTVPopup || showCombinedCCTVPopup || showAdditionalDataPopup || showBroadcastDraftPopup || showCompletionPopup) {
@@ -743,7 +730,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
       // const buttons = data.buttons;
       // const isCCTV = data.isCCTVRecommendation;
       
-      // 현재: 더미 응답 (개발용)
       setTimeout(() => {
         const reply = generateAssistantReply(text);
         const isCCTV = text.includes('cctv') || text.includes('CCTV') || text.includes('추천');
@@ -752,7 +738,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
         setIsResponding(false);
       }, 700);
     } catch (error) {
-      console.error('AI 응답 오류:', error);
       addMessage('assistant', '응답을 생성하는 중 오류가 발생했습니다.');
       setIsResponding(false);
     }
@@ -811,34 +796,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
     }
   }, [dashboardEvent, baseEvent, showCompletionPopup]);
 
-  // 키보드 9 누르면 사건 완료 팝업 표시 (나중에 삭제할 기능 - 테스트용)
-  useEffect(() => {
-    // 팝업이 열려있으면 키보드 이벤트 무시
-    if (showMapCCTVPopup || showDetectedCCTVPopup || showCombinedCCTVPopup || showAdditionalDataPopup || showBroadcastDraftPopup || showCompletionPopup) {
-      return;
-    }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 입력 필드에 포커스가 있으면 무시
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      if (e.key === '9') {
-        e.preventDefault();
-        e.stopPropagation();
-        // 사건 완료 팝업 표시 (테스트용)
-        if (baseEvent) {
-          const message = generateEventCompletionMessage(baseEvent, dashboardEvent);
-          setCompletionMessage(message);
-          setShowCompletionPopup(true);
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown, true);
-    return () => document.removeEventListener('keydown', handleKeyDown, true);
-  }, [showMapCCTVPopup, showDetectedCCTVPopup, showCombinedCCTVPopup, showAdditionalDataPopup, showBroadcastDraftPopup, showCompletionPopup, baseEvent, dashboardEvent]);
   
   // 우선순위 매핑 (risk -> priority)
   const priorityMap: Record<string, '긴급' | '경계' | '주의'> = {
@@ -1105,7 +1062,6 @@ ${event.description || '112 신고 접수 - 사건 발생.'}
           //   body: JSON.stringify({ completionMessage }),
           // });
           
-          // 현재: AI 에이전트에 전달 (개발용)
           const reportPrompt = `이 사건에 대한 보고서를 작성해주세요.\n\n${completionMessage}`;
           setChatInput(reportPrompt);
           if (isRightPanelCollapsed) {

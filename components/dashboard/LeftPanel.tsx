@@ -193,7 +193,6 @@ const LeftPanel = () => {
     // const interval = setInterval(fetchSensorData, 2000);
     // return () => clearInterval(interval);
     
-    // 현재: 더미 데이터 (개발용)
     const interval = setInterval(() => {
       setSensorValues((prev) => ({
         pm25: Math.max(0, prev.pm25 + (Math.random() - 0.5) * 4),
@@ -878,7 +877,7 @@ const LeftPanel = () => {
                 <span className="text-gray-400 text-xs">{weatherData.low}°</span>
               </div>
             </div>
-            <div className="text-white text-sm font-medium">
+            <div className="text-white text-sm font-medium whitespace-nowrap min-w-[90px] text-right">
               {clockTime || '--:--:--'}
             </div>
           </div>
@@ -1005,7 +1004,7 @@ const LeftPanel = () => {
           </div>
           <div className="overflow-hidden" style={{ paddingTop: '12px', paddingBottom: '12px', marginTop: '0' }}>
             <div className="flex justify-end">
-              <div className="relative h-40 w-[418px] rounded-xl overflow-visible">
+              <div className="relative h-40 w-[434px] rounded-xl overflow-visible">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
                     data={trendData}
@@ -1087,114 +1086,6 @@ const LeftPanel = () => {
           
         </div>
 
-        {/* 1) CCTV 운영 현황 상세 (그래프/지역별 카드 잠시 비노출) */}
-        {false && (
-          <div className="space-y-3 mb-4">
-            <div className="flex items-center justify-between gap-4">
-              <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
-              {/* 정상/장애/지연 장비 수 */}
-              <div className="flex items-center gap-x-2 gap-y-2 flex-wrap ml-auto">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium">{cctvStatus.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium">{cctvStatus.errorCount}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">지연</span>
-                  <span className="text-yellow-400 text-xs font-medium">{cctvStatus.delayCount}</span>
-                </div>
-              </div>
-            </div>
-                    
-            {/* 전체 요약 데이터 */}
-            <div className="space-y-3">
-              {/* 전체 CCTV 가동률과 총 CCTV 수 (큰 숫자 스코어 스타일) */}
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="text-gray-400 text-xs mb-1 mt-2">전체 CCTV 가동률</div>
-                  <div className="text-white text-2xl font-bold">
-                    {cctvStatus.totalRate}
-                    <span className="text-xl">%</span>
-                  </div>
-                </div>
-                <div className="w-px h-12 bg-[#31353a]" />
-                <div className="flex-1">
-                  <div className="text-gray-400 text-xs mb-1 mt-2">총 CCTV 수</div>
-                  <div className="text-white text-2xl font-bold">
-                    {cctvStatus.totalCount.toLocaleString()}
-                    <span className="text-xl">대</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 지역별 CCTV 운영 현황 카드 (막대 그래프 포함) */}
-            <div className="space-y-4 mt-3">
-              <div className="grid grid-cols-2 gap-3 min-w-0">
-                {visibleAreas.map((area) => (
-                  <div
-                    key={area.area}
-                    className="p-3 space-y-3 min-w-0 overflow-hidden"
-                  >
-                    <div className="flex items-start justify-between gap-2 min-w-0">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-white text-sm font-semibold truncate">{area.area}</p>
-                      </div>
-                      <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-300 flex-shrink-0" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 min-w-0">
-                      <div className="min-w-0">
-                        <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">장비 작동률</p>
-                        <p className="text-white text-xl font-bold">{area.uptime}%</p>
-                        <div className="w-full h-3 bg-[#1a1a1a] mt-1">
-                          <div className="h-full bg-blue-500" style={{ width: `${area.uptime}%` }} />
-                        </div>
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-gray-200 text-xs font-semibold tracking-tight truncate">영상 수신율</p>
-                        <p className="text-white text-xl font-bold">{area.streamRate}%</p>
-                        <div className="w-full h-3 bg-[#1a1a1a] mt-1">
-                          <div className="h-full bg-blue-500" style={{ width: `${area.streamRate}%` }} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[0.65rem] min-w-0">
-                      <div className="flex items-center justify-between gap-2 min-w-0">
-                        <span className="text-white truncate">경고</span>
-                        <span className="text-orange-400 flex-shrink-0">{area.warning}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 min-w-0">
-                        <span className="text-white truncate">장애</span>
-                        <span className="text-red-400 flex-shrink-0">{area.error}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 min-w-0">
-                        <span className="text-white truncate">지연</span>
-                        <span className="text-yellow-400 flex-shrink-0">{area.delay}</span>
-                      </div>
-                      <div className="flex items-center justify-between gap-2 min-w-0">
-                        <span className="text-white truncate">정비</span>
-                        <span className="text-orange-400 flex-shrink-0">{area.maintenance}</span>
-                      </div>
-                    </div>
-
-                    <div className="px-3 py-2">
-                      <p className="text-gray-200 text-xs font-semibold">CCTV 총 수량</p>
-                      <p className="text-white text-lg font-semibold">{area.total.toLocaleString()}대</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
         <div className="mb-4" style={{ marginBottom: 'calc(1rem - 12px)' }}>
