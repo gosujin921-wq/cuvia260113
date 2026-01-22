@@ -10,6 +10,12 @@ import SituationSummary from './SituationSummary';
 import AIDetectionPopup from './AIDetectionPopup';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { 
+  getCCTVViewAngle as getCCTVViewAngleUtil, 
+  getCCTVDirection,
+  generateViewAnglePath,
+  getCCTVConfigMap
+} from '@/lib/cctv-view-angle-utils';
 
 interface MapViewProps {
   events: Event[];
@@ -26,14 +32,93 @@ interface MapViewProps {
 }
 
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose }: MapViewProps) => {
-  const [zoomLevel, setZoomLevel] = useState(0); // 0: 축소(클러스터), 1: 확대(개별)
+  const [zoomLevel, setZoomLevel] = useState(0);
+  const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
+  const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
+  const [showCCTV, setShowCCTV] = useState(true);
+  const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
+  const [showCCTVName, setShowCCTVName] = useState(true);
 
-  // CCTV 카메라 개수 포맷팅 헬퍼 함수
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const configMap = getCCTVConfigMap();
+      const defaultAngles: Record<string, number> = {};
+      Object.keys(configMap).forEach(cctvId => {
+        defaultAngles[cctvId] = configMap[cctvId].viewAngle;
+      });
+      
+      const saved = localStorage.getItem('cctv-view-angles');
+      if (saved) {
+        try {
+          const savedAngles = JSON.parse(saved);
+          setCctvViewAngles({ ...defaultAngles, ...savedAngles });
+        } catch (e) {
+          console.warn('Failed to load CCTV view angles:', e);
+          setCctvViewAngles(defaultAngles);
+        }
+      } else {
+        setCctvViewAngles(defaultAngles);
+      }
+
+      const handleViewAngleChange = (e: CustomEvent) => {
+        const { cctvId, viewAngle, cctvIds, all } = e.detail;
+        if (all) {
+          const newAngles: Record<string, number> = {};
+          Object.keys(configMap).forEach(id => {
+            newAngles[id] = viewAngle;
+          });
+          setCctvViewAngles(newAngles);
+        } else if (cctvIds) {
+          setCctvViewAngles(prev => {
+            const updated = { ...prev };
+            cctvIds.forEach((id: string) => {
+              updated[id] = viewAngle;
+            });
+            return updated;
+          });
+        } else if (cctvId) {
+          setCctvViewAngles(prev => ({
+            ...prev,
+            [cctvId]: viewAngle
+          }));
+        }
+      };
+
+      window.addEventListener('cctv-view-angle-changed', handleViewAngleChange as EventListener);
+      return () => {
+        window.removeEventListener('cctv-view-angle-changed', handleViewAngleChange as EventListener);
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && Object.keys(cctvViewAngles).length > 0) {
+      localStorage.setItem('cctv-view-angles', JSON.stringify(cctvViewAngles));
+    }
+  }, [cctvViewAngles]);
+
+  const getCCTVDirection = (cctvId: string, defaultDirection: number): number => {
+    return defaultDirection;
+  };
+
+  const getCCTVViewAngle = (cctvId: string, defaultViewAngle: number): number => {
+    if (cctvViewAngles[cctvId] !== undefined) {
+      return cctvViewAngles[cctvId];
+    }
+    return getCCTVViewAngleUtil(cctvId, defaultViewAngle);
+  };
+
+  const setCCTVViewAngle = (cctvId: string, viewAngle: number) => {
+    setCctvViewAngles(prev => ({
+      ...prev,
+      [cctvId]: Math.max(0, Math.min(180, viewAngle))
+    }));
+  };
+
   const formatCCTVCount = (count: number): string => {
     return count > 999 ? '999+' : count.toString();
   };
 
-  // CCTV 아이콘 박스 스타일 생성 헬퍼 함수
   const getCCTVIconBoxStyle = (count: number, scale: number, hasMultiple: boolean, zIndex: number = 110) => {
     return {
       zIndex,
@@ -44,23 +129,104 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     };
   };
   
-  // 외부에서 줌 레벨 제어
   useEffect(() => {
     if (externalZoomLevel !== undefined) {
       setZoomLevel(externalZoomLevel);
     }
   }, [externalZoomLevel]);
   
-  // 줌 레벨 변경 시 부모에게 알림
   useEffect(() => {
     onZoomLevelChange?.(zoomLevel);
   }, [zoomLevel, onZoomLevelChange]);
-  
-  // 줌 레벨에 따른 지도 스케일 계산
-  const mapScale = zoomLevel === 0 ? 1 : 1.5; // 확대 시 1.5배
-  const mapTransformOrigin = 'center center'; // 확대 기준점
 
-  // MapTiler 맵 초기화
+  const prevZoomLevelRef = useRef(zoomLevel);
+  const animationFrameRef = useRef<number | null>(null);
+  
+  useEffect(() => {
+    if (zoomLevel > 0 && prevZoomLevelRef.current === 0 && showCCTV) {
+      const targetAngles: Record<string, number> = {};
+      const startAngles: Record<string, number> = {};
+      
+      const cctvPositions = [
+        { left: 10, top: 20, count: 1, viewAngle: 45 },
+        { left: 25, top: 15, count: 3, viewAngle: 90 },
+        { left: 35, top: 30, count: 1, viewAngle: 135 },
+        { left: 55, top: 25, count: 2, viewAngle: 180 },
+        { left: 70, top: 20, count: 1, viewAngle: 225 },
+        { left: 85, top: 30, count: 4, viewAngle: 270 },
+        { left: 20, top: 50, count: 2, viewAngle: 45 },
+        { left: 40, top: 55, count: 1, viewAngle: 90 },
+        { left: 60, top: 50, count: 3, viewAngle: 135 },
+        { left: 80, top: 55, count: 1, viewAngle: 180 },
+        { left: 15, top: 75, count: 2, viewAngle: 225 },
+        { left: 30, top: 70, count: 1, viewAngle: 270 },
+        { left: 50, top: 75, count: 5, viewAngle: 45 },
+        { left: 70, top: 70, count: 2, viewAngle: 90 },
+        { left: 90, top: 75, count: 1, viewAngle: 135 },
+        { left: 10, top: 90, count: 1, viewAngle: 180 },
+        { left: 25, top: 95, count: 3, viewAngle: 225 },
+        { left: 45, top: 90, count: 2, viewAngle: 270 },
+        { left: 65, top: 95, count: 1, viewAngle: 45 },
+        { left: 85, top: 90, count: 4, viewAngle: 90 },
+      ];
+      
+      cctvPositions.forEach((item, index) => {
+        const cctvId = `cctv-${index}`;
+        const baseViewAngle = cctvViewAngles[cctvId] ?? getCCTVViewAngleUtil(cctvId, 90);
+        const minViewAngle = 90;
+        const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
+        const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
+        const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
+        const finalViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+        targetAngles[cctvId] = finalViewAngle;
+        startAngles[cctvId] = 0;
+      });
+      
+      setAnimatingViewAngles(startAngles);
+      
+      const duration = 600;
+      const startTime = performance.now();
+      
+      const animate = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+        
+        const newAngles: Record<string, number> = {};
+        Object.keys(targetAngles).forEach(cctvId => {
+          newAngles[cctvId] = targetAngles[cctvId] * easedProgress;
+        });
+        
+        setAnimatingViewAngles(newAngles);
+        
+        if (progress < 1) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        } else {
+          setAnimatingViewAngles(targetAngles);
+          animationFrameRef.current = null;
+        }
+      };
+      
+      animationFrameRef.current = requestAnimationFrame(animate);
+      prevZoomLevelRef.current = zoomLevel;
+      
+      return () => {
+        if (animationFrameRef.current !== null) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      };
+    } else if (zoomLevel === 0) {
+      setAnimatingViewAngles({});
+      prevZoomLevelRef.current = zoomLevel;
+    } else {
+      prevZoomLevelRef.current = zoomLevel;
+    }
+  }, [zoomLevel, showCCTV, cctvViewAngles]);
+  
+  const mapScale = zoomLevel === 0 ? 1 : 1.5;
+  const mapTransformOrigin = 'center center';
+
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -171,13 +337,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       mapRef.current = null;
     };
   }, []);
-  // CCTV 토글 상태 (localStorage로 공유)
-  // Hydration 오류 방지를 위해 초기값은 항상 false로 설정하고, useEffect에서 localStorage 읽기
-  // 대시보드에서는 초기 진입시 CCTV 토글이 켜진 상태가 디폴트
-  const [showCCTV, setShowCCTV] = useState(true);
-  const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
-  const [showCCTVName, setShowCCTVName] = useState(true);
-
+  
   // localStorage에서 초기값 읽기 (클라이언트에서만)
   // 대시보드에서는 localStorage에 값이 없으면 기본값으로 true 설정
   useEffect(() => {
@@ -212,7 +372,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, []);
 
-  // localStorage 동기화
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cctv-show-cctv', showCCTV.toString());
@@ -231,7 +390,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, [showCCTVName]);
 
-  // localStorage 변경 감지 (다른 탭/페이지에서 변경 시)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -614,23 +772,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          </button>
        </div>
 
-       {/* CCTV 토글 버튼 - +/- 버튼 아래에 그룹핑 */}
-       <div 
-         className="absolute top-4 left-4 flex flex-col gap-2" 
-         style={{ zIndex: 250, marginTop: '100px' }}
-         onClick={(e) => e.stopPropagation()}
-       >
+
+         <div 
+           className="absolute top-4 left-4 flex flex-col gap-2" 
+           style={{ zIndex: 250, marginTop: '100px' }}
+           onClick={(e) => e.stopPropagation()}
+         >
          <button
            onClick={(e) => {
              e.stopPropagation();
              const newValue = !showCCTV;
              setShowCCTV(newValue);
-             // CCTV를 켜면 화각과 라벨도 자동으로 켜기
              if (newValue) {
                setShowCCTVViewAngle(true);
                setShowCCTVName(true);
              } else {
-               // CCTV를 끄면 화각과 라벨도 함께 끄기
                setShowCCTVViewAngle(false);
                setShowCCTVName(false);
              }
@@ -646,7 +802,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            <CCTVIcon className={`w-5 h-5 text-white ${showCCTV ? 'drop-shadow-lg' : ''}`} />
          </button>
          
-         {/* CCTV 서브 토글 버튼들 - CCTV가 켜져있을 때만 표시 */}
          {showCCTV && (
            <>
              <button
@@ -701,11 +856,29 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           className="absolute inset-0 w-full h-full"
           style={{ zIndex: 1 }}
         />
-        {/* 미세한 딤 오버레이 */}
         <div 
           className="absolute inset-0 bg-black/5" 
           style={{ zIndex: 2 }}
         ></div>
+        
+        {/* 화각 펼쳐지는 애니메이션 스타일 */}
+        <style>{`
+          @keyframes viewAngleExpand {
+            0% {
+              opacity: 0;
+              transform: translate(-50%, -50%) rotate(var(--direction, 0deg)) scale(0.3);
+            }
+            100% {
+              opacity: 1;
+              transform: translate(-50%, -50%) rotate(var(--direction, 0deg)) scale(1);
+            }
+          }
+          
+          .view-angle-expand {
+            animation: viewAngleExpand 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            animation-delay: var(--animation-delay, 0ms);
+          }
+        `}</style>
         {/* 가상 CCTV 아이콘들 - 그레이 컬러 */}
         {showCCTV && [
           { left: 10, top: 20, count: 1, viewAngle: 45 },
@@ -742,9 +915,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   transform: 'translate(-50%, -50%)', 
                   zIndex: 50 
                 }}
-                onClick={() => {
-                  // 나중에 모달 띄울 예정
-                }}
+                  onClick={() => {}}
               >
                 <div 
                   className={`${getCCTVIconClassName('light')} flex items-center justify-center ${item.count > 1 && zoomLevel === 0 ? 'w-auto min-w-[28px]' : ''}`} 
@@ -763,37 +934,56 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     </span>
                   )}
                 </div>
-                {/* CCTV 이름 라벨 */}
                 {showCCTVName && (
                   <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
                     {cctvName}
                   </div>
                 )}
-                {/* 시야각 표시 */}
-                {showCCTVViewAngle && (
-                  <div 
-                    className="absolute"
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -50%) rotate(${item.viewAngle}deg)`,
-                      transformOrigin: 'center center',
-                      pointerEvents: 'none',
-                      zIndex: 30,
-                    }}
-                  >
-                    <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
-                      <path
-                        d="M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z"
-                        fill="rgba(156, 163, 175, 0.2)"
-                        stroke="rgba(156, 163, 175, 0.6)"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  </div>
-                )}
+                {showCCTVViewAngle && (() => {
+                  const cctvId = `cctv-${index}`;
+                  const direction = getCCTVDirection(cctvId, item.viewAngle);
+                  
+                  if (zoomLevel === 0) {
+                    return null;
+                  }
+                  
+                  const baseViewAngle = getCCTVViewAngle(cctvId, 90);
+                  const minViewAngle = 90;
+                  const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
+                  const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
+                  const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
+                  const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+                  const currentViewAngle = animatingViewAngles[cctvId] ?? targetViewAngle;
+                  const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
+                  
+                  return (
+                    <div 
+                      className="absolute"
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        left: '50%',
+                        top: '50%',
+                        transform: `translate(-50%, -50%) rotate(${direction}deg)`,
+                        transformOrigin: 'center center',
+                        pointerEvents: 'none',
+                        zIndex: 30,
+                      }}
+                    >
+                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+                        <path
+                          d={pathData}
+                          fill="rgba(156, 163, 175, 0.2)"
+                          stroke="rgba(156, 163, 175, 0.6)"
+                          strokeWidth="2"
+                          style={{
+                            transition: 'd 0.016s ease-out',
+                          }}
+                        />
+                      </svg>
+                    </div>
+                  );
+                })()}
               </div>
             );
           } else {
@@ -847,6 +1037,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               const offsetLeft = Math.cos(angle) * radius;
               const offsetTop = Math.sin(angle) * radius;
               
+              // 확대 모드에서도 방향과 화각 분리
+              const baseCctvId = `cctv-${index}`;
+              const baseDirection = getCCTVDirection(baseCctvId, item.viewAngle);
+              const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
+              const finalDirection = (baseDirection + (viewAngle - item.viewAngle)) % 360;
+              
               return (
                 <div
                   key={`virtual-cctv-${index}-${i}`}
@@ -857,9 +1053,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     transform: 'translate(-50%, -50%)', 
                     zIndex: 50 
                   }}
-                  onClick={() => {
-                    // 나중에 모달 띄울 예정
-                  }}
+                  onClick={() => {}}
                 >
                   <div className={getCCTVIconClassName('light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
                     <CCTVIcon 
@@ -869,37 +1063,56 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                       height="16px"
                     />
                   </div>
-                  {/* CCTV 이름 라벨 */}
                   {showCCTVName && (
                     <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
                       CCTV-V-{index + 1}-{i + 1}
                     </div>
                   )}
-                  {/* 시야각 표시 */}
-                  {showCCTVViewAngle && (
-                    <div 
-                      className="absolute"
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        left: '50%',
-                        top: '50%',
-                        transform: `translate(-50%, -50%) rotate(${viewAngle}deg)`,
-                        transformOrigin: 'center center',
-                        pointerEvents: 'none',
-                        zIndex: 30,
-                      }}
-                    >
-                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
-                        <path
-                          d="M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z"
-                          fill="rgba(156, 163, 175, 0.2)"
-                          stroke="rgba(156, 163, 175, 0.6)"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </div>
-                  )}
+                  {showCCTVViewAngle && (() => {
+                    const cctvId = `cctv-${index}-${i}`;
+                    const direction = finalDirection;
+                    
+                    if (zoomLevel === 0) {
+                      return null;
+                    }
+                    
+                    const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
+                    const minViewAngle = 90;
+                    const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
+                    const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
+                    const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
+                    const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+                    const currentViewAngle = animatingViewAngles[baseCctvId] ?? targetViewAngle;
+                    const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
+                    
+                    return (
+                      <div 
+                        className="absolute"
+                        style={{
+                          width: '120px',
+                          height: '120px',
+                          left: '50%',
+                          top: '50%',
+                          transform: `translate(-50%, -50%) rotate(${direction}deg)`,
+                          transformOrigin: 'center center',
+                          pointerEvents: 'none',
+                          zIndex: 30,
+                        }}
+                      >
+                        <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+                          <path
+                            d={pathData}
+                            fill="rgba(156, 163, 175, 0.2)"
+                            stroke="rgba(156, 163, 175, 0.6)"
+                            strokeWidth="2"
+                            style={{
+                              transition: 'd 0.016s ease-out',
+                            }}
+                          />
+                        </svg>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             });

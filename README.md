@@ -4,12 +4,14 @@ React + Vite 기반의 통합 관제 시스템 대시보드입니다.
 
 ## 기술 스택
 
-- **React** 19.2.0
+- **React** 19.2.0**
 - **Vite** 6.0.5
 - **React Router Dom** 7.1.3
 - **TypeScript** 5.x
 - **Tailwind CSS** 4.x
 - **Iconify React** - 아이콘 라이브러리
+- **MapLibre GL** - 지도 라이브러리
+- **Recharts** - 차트 라이브러리
 
 ## 프로젝트 구조
 
@@ -22,6 +24,8 @@ cuvia3/
 │   └── pages/                    # 페이지 컴포넌트
 │       ├── Home.tsx              # 메인 대시보드
 │       ├── event-detail.tsx      # 이벤트 상세 페이지
+│       ├── agent-chat.tsx        # Agent Chat 페이지
+│       ├── agent-hub.tsx         # Agent Hub 페이지
 │       └── components-style.tsx  # 스타일 관리 페이지
 │
 ├── components/                   # 컴포넌트
@@ -34,11 +38,12 @@ cuvia3/
 │   │   ├── AIDetectionPopup.tsx  # AI 탐지 팝업
 │   │   ├── EventList.tsx         # 이벤트 목록
 │   │   ├── MapView.tsx           # 지도 뷰
-│   │   └── LeftPanel.tsx         # 좌측 패널 (CCTV 상태)
+│   │   └── LeftPanel.tsx         # 좌측 패널 (CCTV 상태, 센서 데이터)
 │   ├── event-detail/             # 이벤트 상세 컴포넌트
 │   │   ├── EventLeftPanel.tsx   # 좌측 패널 (이벤트 정보, AI 인사이트)
 │   │   ├── EventCenterColumn1.tsx # 중앙 1열: 지도 뷰 (위치 및 동선)
 │   │   ├── EventCenterColumn2.tsx # 중앙 2열: CCTV 섹션 (모니터링 CCTV, 포착 클립, 행동 요약)
+│   │   ├── EventCenterPanel.tsx   # 중앙 패널 통합 컴포넌트
 │   │   ├── AgentPanel.tsx        # 우측 패널: AI Agent 채팅
 │   │   ├── PlaybackControls.tsx  # 재생 제어
 │   │   ├── DetectedCCTVClipPopup.tsx # 포착된 CCTV 클립 팝업
@@ -50,7 +55,7 @@ cuvia3/
 │   │   ├── constants.ts          # 상수 정의
 │   │   └── types.ts             # 타입 정의
 │   ├── layouts/                  # 레이아웃
-│   │   └── ScaledLayout.tsx
+│   │   └── ScaledLayout.tsx      # 스케일 조정 레이아웃
 │   └── shared/                   # 공유 컴포넌트 및 리소스
 │       ├── BasePopup.tsx         # 기본 팝업 컴포넌트 (중앙 모달)
 │       ├── NotificationPopup.tsx  # 알림 팝업 컴포넌트 (우측 하단/중앙)
@@ -58,6 +63,8 @@ cuvia3/
 │
 ├── lib/                          # 라이브러리/유틸리티
 │   ├── events-data.ts            # 이벤트 데이터 관리 (📡 API 연동 필요)
+│   ├── cctv-video-utils.ts       # CCTV 비디오 유틸리티
+│   ├── cctv-view-angle-utils.ts  # CCTV 시야각 유틸리티
 │   └── mock-data/                # 🧪 더미 데이터 (개발용)
 │       └── events.ts
 │
@@ -71,6 +78,7 @@ cuvia3/
 ├── public/                       # 공개 정적 파일
 │   ├── logo.svg
 │   ├── icon_cctv.svg
+│   ├── simbol.svg
 │   └── map_anyang.png
 │
 ├── index.html                    # HTML 엔트리
@@ -93,7 +101,7 @@ npm install
 npm run dev
 ```
 
-개발 서버가 [http://localhost:3000](http://localhost:3000)에서 실행됩니다.
+개발 서버가 [http://localhost:5173](http://localhost:5173)에서 실행됩니다.
 
 ### 빌드
 
@@ -111,19 +119,24 @@ npm run preview
 
 빌드된 프로덕션 버전을 미리볼 수 있습니다.
 
-## 주요 기능
+## 페이지 설명
 
 ### 1. 메인 대시보드 (`/`)
-- 이벤트 목록 및 요약
-- 지도 기반 이벤트 시각화
-- CCTV 운영 현황 모니터링
-- 환경 센서 데이터 실시간 표시
+
+**Home.tsx** - 통합 관제 시스템의 메인 화면입니다.
+
+#### 주요 기능
+- **이벤트 목록 및 요약**: 우측 패널에 이벤트 목록과 통계 그래프 표시
+- **지도 기반 이벤트 시각화**: MapLibre GL을 사용한 인터랙티브 지도
+- **CCTV 운영 현황 모니터링**: 좌측 패널에서 CCTV 상태 및 센서 데이터 실시간 표시
+- **키보드 단축키 지원**: 숫자 키로 빠른 이벤트 탐색
 
 #### 대시보드 동작 방식
 - **초기 화면**: 이벤트가 기본적으로 표시되지 않음 (깔끔한 대시보드)
 - **키보드 단축키**:
   - `1` 키: 김도연 실종 사건으로 이동 및 상황요약 팝업 표시
   - `2` 키: 유괴 의심 사건으로 이동 및 AI탐지 팝업 표시
+  - `3` 키: 폭행 사건으로 이동
   - `ESC` 키: 선택 해제 및 줌아웃
 - **애니메이션 시퀀스**:
   1. 이벤트 표시 및 하이라이트 (즉시)
@@ -135,16 +148,215 @@ npm run preview
   - 줌인 시 선택된 이벤트가 자동으로 지도 중앙에 배치됨
   - CSS transform을 사용한 부드러운 애니메이션
 
-### 2. 이벤트 상세 페이지 (`/event/:eventId`)
-- 이벤트 상세 정보 및 타임라인
-- CCTV 영상 재생 및 PTZ 제어
-- AI 에이전트 채팅
-- 전파 초안 작성 및 전송
-- 이벤트 완료 처리
+#### 컴포넌트 구성
+- **LeftPanel**: CCTV 운영 현황, 센서 데이터, 모니터링 스팟
+- **MapView**: 지도 뷰, 이벤트 핀, CCTV 아이콘 및 시야각 표시
+- **Score**: 이벤트 통계 그래프 (진행중/종결)
+- **EventList**: 이벤트 목록 및 필터링
+- **SituationSummary**: 상황요약 팝업
+- **AIDetectionPopup**: AI 탐지 팝업
 
-### 3. 스타일 관리 페이지 (`/components-style`)
-- 공통 컴포넌트 시각적 확인 및 관리
-- BasePopup, NotificationPopup, CCTV 아이콘 등 컴포넌트 스타일 가이드
+### 2. 이벤트 상세 페이지 (`/event/:eventId`)
+
+**event-detail.tsx** - 특정 이벤트의 상세 정보를 확인하고 관리하는 페이지입니다.
+
+#### 주요 기능
+- **이벤트 상세 정보**: 좌측 패널에 이벤트 기본 정보, AI 인사이트, 처리 단계 표시
+- **위치 및 동선**: 중앙 1열에서 지도 기반 위치 추적 및 동선 시각화
+- **CCTV 모니터링**: 중앙 2열에서 CCTV 영상 재생, 포착 클립, 행동 요약
+- **AI 에이전트 채팅**: 우측 패널에서 AI와 대화하며 사건 분석 및 대응 전략 수립
+- **전파 초안 작성**: 클립 영상을 포함한 전파 초안 작성 및 전송
+- **이벤트 완료 처리**: 사건 종료 시 알림 팝업 및 보고서 생성
+
+#### 레이아웃 구조
+- **좌측 패널 (EventLeftPanel)**: 이벤트 정보, AI 인사이트, 전파 제어
+- **중앙 1열 (EventCenterColumn1)**: 지도 뷰, 위치 핀, 동선, CCTV 클러스터
+- **중앙 2열 (EventCenterColumn2)**: 모니터링 CCTV, 포착 클립, 행동 요약, 이동 타임라인
+- **우측 패널 (AgentPanel)**: AI Agent 채팅 인터페이스
+
+#### 주요 컴포넌트
+- **EventLeftPanel**: 이벤트 기본 정보, AI 인사이트, 전파 초안 버튼
+- **EventCenterColumn1**: 지도 뷰, CCTV 토글, 위치 핀, 동선 표시
+- **EventCenterColumn2**: CCTV 섹션 (드래그로 높이 조절 가능), 포착 클립, 행동 요약
+- **AgentPanel**: AI 채팅 인터페이스, 저장된 클립 관리
+- **DetectedCCTVClipPopup**: 포착된 CCTV 클립 상세 보기 및 재생
+- **MapCCTVPopup**: 지도에서 CCTV 클릭 시 모니터링 팝업
+- **CombinedCCTVPopup**: 과거 포착 아이콘 클릭 시 통합 CCTV 팝업
+- **BroadcastDraftPopup**: 전파 초안 작성 및 전송
+- **AdditionalDataNotificationPopup**: 추가 자료 알림 팝업
+- **EventCompletionNotificationPopup**: 사건 종료 알림 팝업
+
+#### 키보드 단축키 (프로토타입)
+- `q`: 유괴범과 아동 함께 이동 포착 시나리오
+- `w`: 추가 자료 알림 팝업 표시
+- `e`: 차량 탑승 지점 포착 시나리오
+- `r`: 현재 위치 추적 중 시나리오
+- `9`: 사건 완료 팝업 표시 (테스트용)
+
+### 3. Agent Chat 페이지 (`/agent-chat`)
+
+**agent-chat.tsx** - AI Agent와의 대화형 인터페이스입니다.
+
+#### 주요 기능
+- **채팅 세션 관리**: 프로젝트 및 채팅 세션 생성 및 관리
+- **자연어 질의응답**: CUVIA Link와 자연어로 대화
+- **파일 업로드**: 도구 팝업을 통한 파일 업로드
+- **CCTV 추천**: AI가 추천하는 CCTV 목록 표시
+- **쿼리 파라미터 지원**: URL 쿼리 파라미터로 초기 메시지 전달
+
+#### 레이아웃 구조
+- **좌측 패널**: 프로젝트 및 채팅 세션 목록, 접기/펼치기 가능
+- **중앙 영역**: 채팅 메시지 표시, AI 블록, CCTV 추천
+- **하단 입력 영역**: 메시지 입력 및 전송
+
+#### 주요 기능
+- 채팅 세션별 메시지 히스토리 관리
+- 초기 쿼리 파라미터 처리 (`?q=질문내용`)
+- 파일 업로드 및 관리
+- AI 블록 표시 (기능 소개)
+- CCTV 추천 버튼
+
+### 4. Agent Hub 페이지 (`/agent-hub`)
+
+**agent-hub.tsx** - Agent Chat의 진입점이 되는 홈 화면입니다.
+
+#### 주요 기능
+- **자연어 검색**: 중앙 입력창에서 자연어로 질문 입력
+- **추천 검색어**: 자주 사용하는 검색어 빠른 선택
+- **지원 기능 소개**: 통계 조회, 지도 이동, 메뉴 이동, 이벤트 이력 등 기능 안내
+- **파일 업로드**: 도구 팝업을 통한 파일 업로드
+
+#### 레이아웃 구조
+- **상단**: 로고 및 네비게이션
+- **중앙**: 검색 입력창 및 지원 기능 카드
+- **하단**: 추천 검색어
+
+#### 주요 기능
+- 자연어 입력 후 Agent Chat 페이지로 이동
+- 입력창 확장 애니메이션 (여러 줄 입력 시)
+- 한글 입력 조합 처리
+- 지원 기능 예시 제공
+
+### 5. 컴포넌트 스타일 가이드 (`/components-style`)
+
+**components-style.tsx** - 공통 컴포넌트의 시각적 가이드 및 스타일 확인 페이지입니다.
+
+#### 주요 기능
+- **팝업 컴포넌트**: BasePopup, NotificationPopup 예시 및 사용법
+- **버튼 스타일**: Primary, Secondary, Icon 버튼
+- **PTZ 버튼**: CCTV PTZ 제어 버튼 스타일
+- **카드/박스**: 기본 카드 스타일
+- **입력 필드**: 기본 입력 필드 스타일
+- **CCTV 아이콘**: 다양한 CCTV 아이콘 타입 (default, light, active, tracking, warning)
+- **컬러 팔레트**: 배경 및 텍스트 컬러 가이드
+- **폰트**: 폰트 사이즈 및 웨이트 가이드
+
+#### 섹션
+- 팝업
+- 버튼
+- PTZ 버튼
+- 카드/박스
+- 입력 필드
+- CCTV 아이콘
+- 컬러 팔레트
+- 폰트
+
+## 컴포넌트 설명
+
+### 공통 컴포넌트 (`components/common/`)
+
+#### CCTVIcon.tsx
+CCTV 아이콘 SVG 컴포넌트입니다. 다양한 크기와 색상으로 사용 가능합니다.
+
+#### BroadcastControls.tsx
+전파 제어 컴포넌트입니다. 전파 초안 작성 및 전송 기능을 제공합니다.
+
+### 대시보드 컴포넌트 (`components/dashboard/`)
+
+#### LeftPanel.tsx
+좌측 운영 패널입니다. CCTV 운영 현황, 센서 데이터, 모니터링 스팟을 표시합니다.
+- CCTV 상태 통계 (정상/지연/오류)
+- 지역별 CCTV 현황
+- 환경 센서 데이터 (PM2.5, PM10, 온도, 습도, 강수량, 풍속)
+- 모니터링 스팟 (자동 시퀀스 지원)
+
+#### MapView.tsx
+지도 뷰 컴포넌트입니다. MapLibre GL을 사용하여 이벤트와 CCTV를 시각화합니다.
+- 이벤트 핀 표시 및 하이라이트
+- CCTV 아이콘 및 시야각 표시
+- 줌 인/아웃 기능
+- 이벤트 클릭 시 상세 페이지 이동
+- CCTV 클릭 시 모니터링 팝업
+
+#### Score.tsx
+이벤트 통계 그래프 컴포넌트입니다. Recharts를 사용하여 진행중/종결 이벤트 수를 시각화합니다.
+
+#### EventList.tsx
+이벤트 목록 컴포넌트입니다. 이벤트 목록을 표시하고 필터링 기능을 제공합니다.
+
+#### SituationSummary.tsx
+상황요약 팝업 컴포넌트입니다. 이벤트의 상황 요약 정보를 표시합니다.
+
+#### AIDetectionPopup.tsx
+AI 탐지 팝업 컴포넌트입니다. AI가 탐지한 이벤트 정보를 표시합니다.
+
+### 이벤트 상세 컴포넌트 (`components/event-detail/`)
+
+#### EventLeftPanel.tsx
+이벤트 상세 페이지의 좌측 패널입니다. 이벤트 기본 정보, AI 인사이트, 전파 제어를 표시합니다.
+
+#### EventCenterColumn1.tsx
+이벤트 상세 페이지의 중앙 1열입니다. 지도 뷰, 위치 핀, 동선, CCTV 클러스터를 표시합니다.
+
+#### EventCenterColumn2.tsx
+이벤트 상세 페이지의 중앙 2열입니다. CCTV 섹션, 포착 클립, 행동 요약, 이동 타임라인을 표시합니다.
+
+#### AgentPanel.tsx
+AI Agent 채팅 패널입니다. AI와의 대화 인터페이스와 저장된 클립 관리를 제공합니다.
+
+#### PlaybackControls.tsx
+비디오 재생 제어 컴포넌트입니다. 재생, 일시정지, 시간 이동 기능을 제공합니다.
+
+#### DetectedCCTVClipPopup.tsx
+포착된 CCTV 클립 상세 팝업입니다. 클립 재생 및 추적대상 재선택 기능을 제공합니다.
+
+#### MapCCTVPopup.tsx
+지도 CCTV 모니터링 팝업입니다. CCTV 영상 재생 및 PTZ 제어 기능을 제공합니다.
+
+#### CombinedCCTVPopup.tsx
+통합 CCTV 팝업입니다. 같은 위치의 여러 CCTV를 순환하며 볼 수 있습니다.
+
+#### BroadcastDraftPopup.tsx
+전파 초안 팝업입니다. 클립 영상을 포함한 전파 초안을 작성하고 전송할 수 있습니다.
+
+#### AdditionalDataNotificationPopup.tsx
+추가 자료 알림 팝업입니다. 추가 자료가 도착했을 때 알림을 표시합니다.
+
+#### EventCompletionNotificationPopup.tsx
+사건 종료 알림 팝업입니다. 사건이 종료되었을 때 알림을 표시하고 보고서 생성을 제공합니다.
+
+### 공유 컴포넌트 (`components/shared/`)
+
+#### BasePopup.tsx
+기본 팝업 컴포넌트입니다. 중앙 정렬 모달 스타일의 팝업을 제공합니다.
+- ESC 키로 닫기
+- 오버레이 클릭으로 닫기
+- 헤더, 컨텐츠, 푸터 구조
+- maxWidth, maxHeight 커스터마이징 가능
+
+#### NotificationPopup.tsx
+알림 팝업 컴포넌트입니다. 우측 하단 또는 중앙에 표시되는 알림 스타일 팝업을 제공합니다.
+- 위치: bottom-right (우측 하단) 또는 center (중앙)
+- 작은 크기 (기본: w-[420px])
+- rounded-lg 스타일
+
+#### styles.ts
+공통 스타일 정의 파일입니다. 버튼, 카드, 입력 필드 등의 스타일 함수를 제공합니다.
+
+### 레이아웃 컴포넌트 (`components/layouts/`)
+
+#### ScaledLayout.tsx
+스케일 조정 레이아웃 컴포넌트입니다. 화면 크기에 따라 레이아웃을 조정합니다.
 
 ## API 연동 가이드
 
@@ -189,22 +401,9 @@ npm run preview
 - **이벤트 핸들러**: `handle` 접두사 사용 (예: `handleClick`, `handleSubmit`)
 - **스타일링**: Tailwind CSS 클래스 사용
 - **타입**: TypeScript 타입 정의 필수
+- **Early Return**: 가능한 경우 early return 사용
 
-### 최근 개선 사항
-
-#### 대시보드 최적화 (2025-01-14)
-- **초기 화면 개선**: 이벤트가 기본적으로 표시되지 않아 깔끔한 대시보드 제공
-- **키보드 단축키 지원**: 숫자 키로 빠른 이벤트 탐색
-- **애니메이션 개선**: 줌인 애니메이션 완료 후 팝업 자동 표시로 자연스러운 UX
-- **지도 줌 기능**: 줌인 시 선택된 이벤트 핀을 정확히 중앙에 배치하는 알고리즘 개선
-  - CSS transform의 `scale`과 `translate`를 정확히 계산하여 중앙 정렬 구현
-- **코드 리팩토링**:
-  - 중복된 이벤트 핸들러 통합 (`handleEventAction`)
-  - 이벤트 찾기 로직 헬퍼 함수화 (`findEventByCriteria`)
-  - 선택 해제 로직 통합 (`clearSelection`)
-  - 불필요한 변수명 및 주석 정리
-
-### 공통 컴포넌트
+### 공통 컴포넌트 사용
 
 프로젝트는 일관된 디자인 시스템을 위해 공통 팝업 컴포넌트를 사용합니다:
 
