@@ -1,8 +1,8 @@
 import Dashboard from '@/components/dashboard/Dashboard';
 import { getScenarioConfig } from '@/lib/dashboard/scenarios';
 
-export default function Home() {
-  // 시나리오 1: 투망감시
+export default function Demo() {
+  // 시나리오: 투망감시
   const scenarioConfig = getScenarioConfig('surveillance');
 
   return <Dashboard scenarioConfig={scenarioConfig} />;

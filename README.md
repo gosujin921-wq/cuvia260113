@@ -22,7 +22,9 @@ cuvia3/
 │   ├── main.tsx                  # 엔트리 포인트
 │   ├── vite-env.d.ts            # Vite 타입 정의
 │   └── pages/                    # 페이지 컴포넌트
-│       ├── Home.tsx              # 메인 대시보드
+│       ├── Home.tsx              # 메인 대시보드 (surveillance 시나리오)
+│       ├── prototype/            # 프로토타입 페이지
+│       │   └── demo.tsx          # 데모 페이지 (surveillance 시나리오)
 │       ├── event-detail.tsx      # 이벤트 상세 페이지
 │       ├── agent-chat.tsx        # Agent Chat 페이지
 │       ├── agent-hub.tsx         # Agent Hub 페이지
@@ -33,15 +35,20 @@ cuvia3/
 │   │   ├── CCTVIcon.tsx         # CCTV 아이콘 컴포넌트
 │   │   └── BroadcastControls.tsx # 전파 제어 컴포넌트
 │   ├── dashboard/                # 대시보드 컴포넌트
-│   │   ├── SituationSummary.tsx  # 상황요약 팝업
+│   │   ├── Dashboard.tsx         # 메인 대시보드 컴포넌트
+│   │   ├── MapView.tsx           # 지도 뷰 (백그라운드)
+│   │   ├── MapCCTVControls.tsx  # 맵 컨트롤 및 CCTV 컨트롤 버튼
+│   │   ├── CCTVVideoPanel.tsx   # 하단 CCTV 비디오 플레이어
+│   │   ├── LeftPanel.tsx         # 좌측 패널 (운영 현황)
+│   │   ├── EventList.tsx         # 우측 패널 (이벤트 목록)
+│   │   ├── SituationSummary.tsx # 상황요약 팝업
 │   │   ├── AIDetectionPopup.tsx  # AI 탐지 팝업
-│   │   ├── EventList.tsx         # 이벤트 목록
-│   │   ├── MapView.tsx           # 지도 뷰
-│   │   └── LeftPanel.tsx         # 좌측 패널 (CCTV 상태, 센서 데이터)
+│   │   ├── MainDriftnetPopup.tsx # 메인 투망 팝업
+│   │   └── EventDetailPopup.tsx  # 이벤트 상세 팝업 (공통)
 │   ├── event-detail/             # 이벤트 상세 컴포넌트
 │   │   ├── EventLeftPanel.tsx   # 좌측 패널 (이벤트 정보, AI 인사이트)
 │   │   ├── EventCenterColumn1.tsx # 중앙 1열: 지도 뷰 (위치 및 동선)
-│   │   ├── EventCenterColumn2.tsx # 중앙 2열: CCTV 섹션 (모니터링 CCTV, 포착 클립, 행동 요약)
+│   │   ├── EventCenterColumn2.tsx # 중앙 2열: CCTV 섹션
 │   │   ├── EventCenterPanel.tsx   # 중앙 패널 통합 컴포넌트
 │   │   ├── AgentPanel.tsx        # 우측 패널: AI Agent 채팅
 │   │   ├── PlaybackControls.tsx  # 재생 제어
@@ -64,6 +71,10 @@ cuvia3/
 │   ├── events-data.ts            # 이벤트 데이터 관리
 │   ├── cctv-video-utils.ts       # CCTV 비디오 유틸리티
 │   ├── cctv-view-angle-utils.ts  # CCTV 시야각 유틸리티
+│   ├── dashboard/                # 대시보드 관련 설정
+│   │   ├── scenarios.ts          # 시나리오 설정 (surveillance, demo)
+│   │   ├── keyboard-shortcuts.ts # 키보드 단축키 매핑
+│   │   └── keyboard-handler.ts   # 키보드 이벤트 처리 로직
 │   └── mock-data/                # 더미 데이터
 │       └── events.ts
 │
@@ -122,40 +133,52 @@ npm run preview
 
 ### 1. 메인 대시보드 (`/`)
 
-**Home.tsx** - 통합 관제 시스템의 메인 화면입니다.
+**Home.tsx** - 통합 관제 시스템의 메인 화면입니다. `surveillance` 시나리오를 사용합니다.
 
 #### 주요 기능
 - **이벤트 목록 및 통계**: 우측 패널에 이벤트 목록과 통계 카드 (전체, 대기, 진행중, 종결)
 - **지도 기반 이벤트 시각화**: MapLibre GL을 사용한 인터랙티브 지도
 - **CCTV 운영 현황 모니터링**: 좌측 패널에서 CCTV 상태 및 센서 데이터 실시간 표시
 - **키보드 단축키 지원**: 숫자 키로 빠른 이벤트 탐색
+- **맵 컨트롤**: 확대/축소, 2D/3D 모드 전환, 회전 버튼
+- **CCTV 컨트롤**: CCTV 토글, CCTV 이름 표시, CCTV 화각 표시 버튼
+- **하단 CCTV 비디오 플레이어**: CCTV 영상 자동 롤링 재생
 
 #### 레이아웃 구조
 - **좌측 패널 (LeftPanel)**: CCTV 운영 현황, 환경 센서 데이터
-- **중앙 영역 (MapView)**: 지도 뷰, 이벤트 핀, CCTV 아이콘
+- **중앙 영역 (MapView)**: 지도 뷰 (백그라운드), 맵 컨트롤 버튼, CCTV 컨트롤 버튼
 - **우측 패널**: 이벤트 통계 카드 (2x2 그리드), 이벤트 목록
+- **하단**: CCTV 비디오 플레이어
 
-#### 대시보드 동작 방식
-- **초기 화면**: 이벤트가 기본적으로 표시되지 않음
-- **키보드 단축키**:
-  - `1` 키: 김도연 실종 사건으로 이동 및 상황요약 팝업 표시
-  - `2` 키: 유괴 의심 사건으로 이동 및 AI탐지 팝업 표시
-  - `3` 키: 폭행 사건으로 이동
-  - `ESC` 키: 선택 해제 및 줌아웃
-- **애니메이션 시퀀스**:
-  1. 이벤트 표시 및 하이라이트 (즉시)
-  2. 지도 줌인 시작 (300ms 후)
-  3. 선택된 이벤트 핀을 지도 중앙으로 이동 (줌인과 동시)
-  4. 팝업 자동 표시 (줌인 완료 후 800ms)
+#### 키보드 단축키
+- `1` 키: 김도연 실종 사건으로 이동 및 상황요약 팝업 표시
+- `2` 키: 유괴 의심 사건으로 이동 및 메인투망 팝업 표시 (패널 사라지는 애니메이션 포함)
+- `3` 키: 폭행 사건으로 이동
+- `ESC` 키: 선택 해제 및 줌아웃
+
+#### 애니메이션 시퀀스
+1. 이벤트 표시 및 하이라이트 (즉시)
+2. 지도 줌인 시작 (300ms 후)
+3. 선택된 이벤트 핀을 지도 중앙으로 이동 (줌인과 동시)
+4. 펄스 애니메이션 실행
+5. 팝업 자동 표시 (줌인 완료 후 800ms)
 
 #### 컴포넌트 구성
+- **Dashboard**: 메인 레이아웃 및 상태 관리
+- **MapView**: 지도 뷰 (백그라운드 레이어)
+- **MapCCTVControls**: 맵 컨트롤 및 CCTV 컨트롤 버튼
+- **CCTVVideoPanel**: 하단 CCTV 비디오 플레이어
 - **LeftPanel**: CCTV 운영 현황, 센서 데이터, 모니터링 스팟, 시간대 이벤트 차트, 지역별 이벤트 히트맵
-- **MapView**: 지도 뷰, 이벤트 핀, CCTV 아이콘 및 시야각 표시, 줌 컨트롤
 - **EventList**: 이벤트 목록 및 필터링 (전체, 긴급, 경계, 주의, 일반)
 - **SituationSummary**: 상황요약 팝업
 - **AIDetectionPopup**: AI 탐지 팝업
+- **MainDriftnetPopup**: 메인 투망 팝업 (EventDetailPopup 기반)
 
-### 2. 이벤트 상세 페이지 (`/event/:eventId`)
+### 2. 프로토타입 데모 페이지 (`/prototype/demo`)
+
+**demo.tsx** - `surveillance` 시나리오를 사용하는 데모 페이지입니다.
+
+### 3. 이벤트 상세 페이지 (`/event/:eventId`)
 
 **event-detail.tsx** - 특정 이벤트의 상세 정보를 확인하고 관리하는 페이지입니다.
 
@@ -170,7 +193,7 @@ npm run preview
 #### 레이아웃 구조
 - **좌측 패널 (EventLeftPanel)**: 이벤트 정보, AI 인사이트, 전파 제어
 - **중앙 1열 (EventCenterColumn1)**: 지도 뷰, 위치 핀, 동선, CCTV 클러스터
-- **중앙 2열 (EventCenterColumn2)**: 모니터링 CCTV, 포착 클립, 행동 요약, 이동 타임라인
+- **중앙 2열 (EventCenterColumn2)**: CCTV 섹션, 포착 클립, 행동 요약, 이동 타임라인
 - **우측 패널 (AgentPanel)**: AI Agent 채팅 인터페이스 (접기/펼치기 가능)
 
 #### 주요 컴포넌트
@@ -191,7 +214,7 @@ npm run preview
 - `e`: 차량 탑승 지점 포착 시나리오
 - `r`: 현재 위치 추적 중 시나리오
 
-### 3. Agent Chat 페이지 (`/agent-chat`)
+### 4. Agent Chat 페이지 (`/agent-chat`)
 
 **agent-chat.tsx** - AI Agent와의 대화형 인터페이스입니다.
 
@@ -207,7 +230,7 @@ npm run preview
 - **중앙 영역**: 채팅 메시지 표시, AI 블록, CCTV 추천
 - **하단 입력 영역**: 메시지 입력 및 전송
 
-### 4. Agent Hub 페이지 (`/agent-hub`)
+### 5. Agent Hub 페이지 (`/agent-hub`)
 
 **agent-hub.tsx** - Agent Chat의 진입점이 되는 홈 화면입니다.
 
@@ -222,7 +245,7 @@ npm run preview
 - **중앙**: 검색 입력창 및 지원 기능 카드
 - **하단**: 추천 검색어
 
-### 5. 컴포넌트 스타일 가이드 (`/components-style`)
+### 6. 컴포넌트 스타일 가이드 (`/components-style`)
 
 **components-style.tsx** - 공통 컴포넌트의 시각적 가이드 및 스타일 확인 페이지입니다.
 
@@ -238,15 +261,36 @@ npm run preview
 
 ## 컴포넌트 설명
 
-### 공통 컴포넌트 (`components/common/`)
-
-#### CCTVIcon.tsx
-CCTV 아이콘 SVG 컴포넌트입니다. 다양한 크기와 색상으로 사용 가능합니다.
-
-#### BroadcastControls.tsx
-전파 제어 컴포넌트입니다. 전파 초안 작성 및 전송 기능을 제공합니다.
-
 ### 대시보드 컴포넌트 (`components/dashboard/`)
+
+#### Dashboard.tsx
+메인 대시보드 컴포넌트입니다. 전체 레이아웃과 상태를 관리합니다.
+- 시나리오 기반 설정 지원 (`surveillance`, `demo`)
+- 키보드 단축키 처리
+- 이벤트 애니메이션 관리
+- 팝업 상태 관리
+
+#### MapView.tsx
+지도 뷰 컴포넌트입니다. MapLibre GL을 사용하여 이벤트와 CCTV를 시각화합니다.
+- 이벤트 핀 표시 및 하이라이트
+- CCTV 아이콘 및 시야각 표시
+- 줌 인/아웃 기능
+- 이벤트 클릭 시 상세 페이지 이동
+- 상태를 부모 컴포넌트에 노출 (`onStateChange` prop)
+
+#### MapCCTVControls.tsx
+맵 컨트롤 및 CCTV 컨트롤 버튼 컴포넌트입니다.
+- 맵 확대/축소 버튼
+- 2D/3D 모드 전환 버튼
+- 회전 버튼 (3D 모드일 때)
+- CCTV 토글 버튼
+- CCTV 이름 표시 토글
+- CCTV 화각 표시 토글
+
+#### CCTVVideoPanel.tsx
+하단 CCTV 비디오 플레이어 컴포넌트입니다.
+- CCTV 영상 자동 롤링 재생
+- 1줄에 4개 표시, 무한 스크롤
 
 #### LeftPanel.tsx
 좌측 운영 패널입니다. CCTV 운영 현황, 센서 데이터, 모니터링 스팟을 표시합니다.
@@ -255,14 +299,6 @@ CCTV 아이콘 SVG 컴포넌트입니다. 다양한 크기와 색상으로 사�
 - 환경 센서 데이터 (PM2.5, PM10, 온도, 습도, 강수량, 풍속)
 - 시간대 이벤트 차트 (Recharts AreaChart)
 - 지역별 이벤트 발생 건수 히트맵
-
-#### MapView.tsx
-지도 뷰 컴포넌트입니다. MapLibre GL을 사용하여 이벤트와 CCTV를 시각화합니다.
-- 이벤트 핀 표시 및 하이라이트
-- CCTV 아이콘 및 시야각 표시
-- 줌 인/아웃 기능
-- 이벤트 클릭 시 상세 페이지 이동
-- CCTV 클릭 시 모니터링 팝업
 
 #### EventList.tsx
 이벤트 목록 컴포넌트입니다. 이벤트 목록을 표시하고 필터링 기능을 제공합니다.
@@ -276,6 +312,24 @@ CCTV 아이콘 SVG 컴포넌트입니다. 다양한 크기와 색상으로 사�
 
 #### AIDetectionPopup.tsx
 AI 탐지 팝업 컴포넌트입니다. AI가 탐지한 이벤트 정보를 표시합니다.
+
+#### MainDriftnetPopup.tsx
+메인 투망 팝업 컴포넌트입니다. `EventDetailPopup`을 기반으로 구현되었습니다.
+
+#### EventDetailPopup.tsx
+이벤트 상세 팝업 컴포넌트입니다. 공통 팝업 컴포넌트로 여러 팝업에서 재사용됩니다.
+- CCTV 영상 재생
+- AI 분석 정보 표시
+- 모니터링화면 이동 버튼
+- 바로 전파 버튼
+
+### 공통 컴포넌트 (`components/common/`)
+
+#### CCTVIcon.tsx
+CCTV 아이콘 SVG 컴포넌트입니다. 다양한 크기와 색상으로 사용 가능합니다.
+
+#### BroadcastControls.tsx
+전파 제어 컴포넌트입니다. 전파 초안 작성 및 전송 기능을 제공합니다.
 
 ### 이벤트 상세 컴포넌트 (`components/event-detail/`)
 
@@ -335,6 +389,38 @@ AI Agent 채팅 패널입니다. AI와의 대화 인터페이스와 저장된 �
 #### ScaledLayout.tsx
 스케일 조정 레이아웃 컴포넌트입니다. 화면 크기에 따라 레이아웃을 조정합니다.
 
+## 라이브러리 및 유틸리티
+
+### 대시보드 설정 (`lib/dashboard/`)
+
+#### scenarios.ts
+시나리오 설정 파일입니다. 각 시나리오별 기능 설정을 관리합니다.
+- `surveillance`: 투망감시 시나리오
+- `demo`: 데모 시나리오
+
+#### keyboard-shortcuts.ts
+키보드 단축키 매핑 설정 파일입니다. 시나리오별로 다른 키보드 단축키를 정의할 수 있습니다.
+- 키보드 단축키 액션 타입 정의
+- 시나리오별 키보드 단축키 매핑
+- 공통 키보드 단축키 설정
+
+#### keyboard-handler.ts
+키보드 이벤트 처리 로직 파일입니다. 키보드 단축키를 눌렀을 때 실행되는 애니메이션과 상태 변경 로직을 관리합니다.
+- 키보드 이벤트 핸들러 생성 함수
+- 이벤트 애니메이션 처리
+- 특수 키 처리 (2번 키: 메인투망 팝업, Escape: 선택 해제)
+
+### 유틸리티 (`lib/`)
+
+#### events-data.ts
+이벤트 데이터 관리 파일입니다. 이벤트 데이터 변환 및 조회 함수를 제공합니다.
+
+#### cctv-video-utils.ts
+CCTV 비디오 유틸리티 파일입니다. CCTV 비디오 URL 생성 함수를 제공합니다.
+
+#### cctv-view-angle-utils.ts
+CCTV 시야각 유틸리티 파일입니다. CCTV 시야각 계산 및 시각화 함수를 제공합니다.
+
 ## API 연동 가이드
 
 현재 프로젝트는 더미 데이터를 사용하고 있으며, 모든 API 연동 포인트는 `📡 API 연동 필요` 주석으로 명확히 표시되어 있습니다.
@@ -386,8 +472,18 @@ AI Agent 채팅 패널입니다. AI와의 대화 인터페이스와 저장된 �
 
 - **BasePopup**: 중앙에 표시되는 모달 스타일 팝업 (예: CCTV 모니터링, 클립 상세)
 - **NotificationPopup**: 우측 하단 또는 중앙에 표시되는 알림 스타일 팝업 (예: 추가 자료 알림, 사건 종료 알림)
+- **EventDetailPopup**: 이벤트 상세 팝업 (공통 컴포넌트, 여러 팝업에서 재사용)
 
 모든 팝업 컴포넌트는 이 공통 컴포넌트를 기반으로 구현되어 일관된 디자인과 동작을 제공합니다.
+
+### 키보드 단축키 관리
+
+키보드 단축키는 별도 파일로 관리됩니다:
+
+- **keyboard-shortcuts.ts**: 키보드 단축키 매핑 설정
+- **keyboard-handler.ts**: 키보드 이벤트 처리 로직
+
+시나리오별로 다른 키보드 단축키를 정의할 수 있으며, 키보드 이벤트 처리 로직은 재사용 가능한 함수로 분리되어 있습니다.
 
 ### 더미 데이터
 
@@ -395,7 +491,7 @@ AI Agent 채팅 패널입니다. AI와의 대화 인터페이스와 저장된 �
 
 ### 가상 이벤트
 
-메인 대시보드의 이벤트 리스트에는 레이아웃 확인용 가상 이벤트 10개가 포함되어 있습니다. 이는 `Home.tsx`의 `mockEvents`에서 관리되며, 실제 API 연동 시 제거하거나 실제 데이터로 대체할 수 있습니다.
+메인 대시보드의 이벤트 리스트에는 레이아웃 확인용 가상 이벤트 10개가 포함되어 있습니다. 이는 `Dashboard.tsx`의 `mockEvents`에서 관리되며, 실제 API 연동 시 제거하거나 실제 데이터로 대체할 수 있습니다.
 
 ## 환경 변수
 
