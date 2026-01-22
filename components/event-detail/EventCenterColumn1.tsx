@@ -257,30 +257,39 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
             {timelineTitle}
           </div>
           {/* 시야각 표시 */}
-          {showCCTVViewAngle && (
-            <div 
-              className="absolute"
-              style={{
-                width: '120px',
-                height: '120px',
-                left: '50%',
-                top: '50%',
-                transform: `translate(-50%, -50%) rotate(${viewAngleRotation}deg)`,
-                transformOrigin: 'center center',
-                pointerEvents: 'none',
-                zIndex: 50,
-              }}
-            >
-              <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
-                <path
-                  d="M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z"
-                  fill="rgba(59, 130, 246, 0.2)"
-                  stroke="rgba(59, 130, 246, 0.6)"
-                  strokeWidth="2"
-                />
-              </svg>
-            </div>
-          )}
+          {showCCTVViewAngle && (() => {
+            // 확대 모드일 때 각도를 더 넓게 (형태는 동일, 각도만 증가)
+            const isZoomed = currentZoomLevel > 0;
+            // 기본: 중심(60,60)에서 위(60,10)로 가서 오른쪽(110,60)으로 약 90도
+            // 확대: 각도를 더 넓게 펼치기 위해 끝점을 더 오른쪽 아래로
+            const endX = isZoomed ? 130 : 110;
+            const endY = isZoomed ? 75 : 60;
+            
+            return (
+              <div 
+                className="absolute"
+                style={{
+                  width: '120px',
+                  height: '120px',
+                  left: '50%',
+                  top: '50%',
+                    transform: `translate(-50%, -50%) rotate(${viewAngleRotation}deg)`,
+                  transformOrigin: 'center center',
+                  pointerEvents: 'none',
+                  zIndex: 50,
+                }}
+              >
+                <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
+                  <path
+                    d={`M 60 60 L 60 10 A 50 50 0 0 1 ${endX} ${endY} Z`}
+                    fill="rgba(59, 130, 246, 0.2)"
+                    stroke="rgba(59, 130, 246, 0.6)"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
+            );
+          })()}
         </div>
       );
     } else {
@@ -292,8 +301,8 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
         const offsetLeft = Math.cos(angle) * radius;
         const offsetTop = Math.sin(angle) * radius;
         
-        // 각 CCTV마다 다른 시야각 회전값 적용 (0도부터 시작해서 각도별로 분산)
-        const individualViewAngle = viewAngleRotation + (index * 45); // 각 CCTV마다 45도씩 회전
+        // 각 CCTV마다 시야각 회전값 적용 (원래 설정값 그대로 사용)
+        const individualViewAngle = viewAngleRotation;
         
         return (
           <div
@@ -331,30 +340,39 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
               {timelineTitle}
             </div>
             {/* 시야각 표시 */}
-            {showCCTVViewAngle && (
-              <div 
-                className="absolute"
-                style={{
-                  width: '120px',
-                  height: '120px',
-                  left: '50%',
-                  top: '50%',
-                  transform: `translate(-50%, -50%) rotate(${individualViewAngle}deg)`,
-                  transformOrigin: 'center center',
-                  pointerEvents: 'none',
-                  zIndex: 50,
-                }}
-              >
-                <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
-                  <path
-                    d="M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z"
-                    fill="rgba(59, 130, 246, 0.2)"
-                    stroke="rgba(59, 130, 246, 0.6)"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </div>
-            )}
+            {showCCTVViewAngle && (() => {
+              // 확대 모드일 때 각도를 더 넓게 (형태는 동일, 각도만 증가)
+              const isZoomed = currentZoomLevel > 0;
+              // 기본: 중심(60,60)에서 위(60,10)로 가서 오른쪽(110,60)으로 약 90도
+              // 확대: 각도를 더 넓게 펼치기 위해 끝점을 더 오른쪽 아래로
+              const endX = isZoomed ? 130 : 110;
+              const endY = isZoomed ? 75 : 60;
+              
+              return (
+                <div 
+                  className="absolute"
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    left: '50%',
+                    top: '50%',
+                    transform: `translate(-50%, -50%) rotate(${individualViewAngle}deg)`,
+                    transformOrigin: 'center center',
+                    pointerEvents: 'none',
+                    zIndex: 50,
+                  }}
+                >
+                  <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
+                    <path
+                      d={`M 60 60 L 60 10 A 50 50 0 0 1 ${endX} ${endY} Z`}
+                      fill="rgba(59, 130, 246, 0.2)"
+                      stroke="rgba(59, 130, 246, 0.6)"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                </div>
+              );
+            })()}
           </div>
         );
       });
@@ -518,7 +536,7 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                 }}
               >
                 <div 
-                  className={`${getCCTVIconClassName('default')} flex items-center justify-center ${item.count > 1 ? 'w-auto min-w-[28px]' : ''}`} 
+                  className={`${getCCTVIconClassName('light')} flex items-center justify-center ${item.count > 1 ? 'w-auto min-w-[28px]' : ''}`} 
                   style={{ ...getCCTVIconBoxStyle(item.count, pinScale), zIndex: 60 }}
                 >
                   <CCTVIcon 
@@ -540,30 +558,39 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                   </div>
                 )}
                 {/* 시야각 표시 */}
-                {showCCTVViewAngle && (
-                  <div 
-                    className="absolute"
-                    style={{
-                      width: '120px',
-                      height: '120px',
-                      left: '50%',
-                      top: '50%',
-                      transform: `translate(-50%, -50%) rotate(${item.viewAngle}deg)`,
-                      transformOrigin: 'center center',
-                      pointerEvents: 'none',
-                      zIndex: 30,
-                    }}
-                  >
-                    <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
-                      <path
-                        d="M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z"
-                        fill="rgba(156, 163, 175, 0.2)"
-                        stroke="rgba(156, 163, 175, 0.6)"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  </div>
-                )}
+                {showCCTVViewAngle && (() => {
+                  // 확대 모드일 때 각도를 더 넓게 (형태는 동일, 각도만 증가)
+                  const isZoomed = currentZoomLevel > 0;
+                  // 기본: 중심(60,60)에서 위(60,10)로 가서 오른쪽(110,60)으로 약 90도
+                  // 확대: 각도를 더 넓게 펼치기 위해 끝점을 더 오른쪽 아래로
+                  const endX = isZoomed ? 130 : 110;
+                  const endY = isZoomed ? 75 : 60;
+                  
+                  return (
+                    <div 
+                      className="absolute"
+                      style={{
+                        width: '120px',
+                        height: '120px',
+                        left: '50%',
+                        top: '50%',
+                        transform: `translate(-50%, -50%) rotate(${item.viewAngle}deg)`,
+                        transformOrigin: 'center center',
+                        pointerEvents: 'none',
+                        zIndex: 30,
+                      }}
+                    >
+                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
+                        <path
+                          d={`M 60 60 L 60 10 A 50 50 0 0 1 ${endX} ${endY} Z`}
+                          fill="rgba(156, 163, 175, 0.2)"
+                          stroke="rgba(156, 163, 175, 0.6)"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    </div>
+                  );
+                })()}
               </div>
             );
           } else {
@@ -574,8 +601,8 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
               const offsetLeft = Math.cos(angle) * radius;
               const offsetTop = Math.sin(angle) * radius;
               
-              // 각 CCTV마다 다른 시야각 회전값 적용
-              const individualViewAngle = item.viewAngle + (i * 45); // 각 CCTV마다 45도씩 회전
+              // 각 CCTV마다 시야각 회전값 적용 (원래 설정값 그대로 사용)
+              const individualViewAngle = item.viewAngle;
               
               return (
                   <div
@@ -591,7 +618,7 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                       // 나중에 모달 띄울 예정
                     }}
                   >
-                    <div className={getCCTVIconClassName('default')} style={{ ...getCCTVIconBoxStyle(1, pinScale), zIndex: 60 }}>
+                    <div className={getCCTVIconClassName('light')} style={{ ...getCCTVIconBoxStyle(1, pinScale), zIndex: 60 }}>
                       <img 
                         src="/icon_cctv.svg" 
                         alt="CCTV" 
@@ -606,30 +633,39 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                     </div>
                   )}
                   {/* 시야각 표시 */}
-                  {showCCTVViewAngle && (
-                    <div 
-                      className="absolute"
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        left: '50%',
-                        top: '50%',
-                        transform: `translate(-50%, -50%) rotate(${individualViewAngle}deg)`,
-                        transformOrigin: 'center center',
-                        pointerEvents: 'none',
-                        zIndex: 30,
-                      }}
-                    >
-                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
-                        <path
-                          d="M 60 60 L 60 10 A 50 50 0 0 1 110 60 Z"
-                          fill="rgba(156, 163, 175, 0.2)"
-                          stroke="rgba(156, 163, 175, 0.6)"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </div>
-                  )}
+                  {showCCTVViewAngle && (() => {
+                    // 확대 모드일 때 각도를 더 넓게 (형태는 동일, 각도만 증가)
+                    const isZoomed = currentZoomLevel > 0;
+                    // 기본: 중심(60,60)에서 위(60,10)로 가서 오른쪽(110,60)으로 약 90도
+                    // 확대: 각도를 더 넓게 펼치기 위해 끝점을 더 오른쪽 아래로
+                    const endX = isZoomed ? 130 : 110;
+                    const endY = isZoomed ? 75 : 60;
+                    
+                    return (
+                      <div 
+                        className="absolute"
+                        style={{
+                          width: '120px',
+                          height: '120px',
+                          left: '50%',
+                          top: '50%',
+                          transform: `translate(-50%, -50%) rotate(${individualViewAngle}deg)`,
+                          transformOrigin: 'center center',
+                          pointerEvents: 'none',
+                          zIndex: 30,
+                        }}
+                      >
+                        <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0 }}>
+                          <path
+                            d={`M 60 60 L 60 10 A 50 50 0 0 1 ${endX} ${endY} Z`}
+                            fill="rgba(156, 163, 175, 0.2)"
+                            stroke="rgba(156, 163, 175, 0.6)"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             });
@@ -935,8 +971,8 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                 const offsetLeft = Math.cos(angle) * radius;
                 const offsetTop = Math.sin(angle) * radius;
                 
-                // 각 CCTV마다 다른 시야각 회전값 적용
-                const individualViewAngle = 0 + (index * 45); // 각 CCTV마다 45도씩 회전
+                // 각 CCTV마다 시야각 회전값 적용
+                const individualViewAngle = 0;
                 
                 return (
                   <div
@@ -1036,8 +1072,8 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
               <span className="text-gray-300" style={{ fontSize: '14.4px' }}>추적 동선</span>
             </div>
             <div className="flex items-center gap-2.5">
-              <div className="w-5 h-5 border-2 border-gray-500 rounded flex items-center justify-center" style={{ width: '20px', height: '20px' }}>
-                <CCTVIcon className="text-gray-400" width="14px" height="14px" />
+              <div className="w-5 h-5 border-2 border-gray-400 rounded flex items-center justify-center" style={{ width: '20px', height: '20px' }}>
+                <CCTVIcon className="text-gray-300" width="14px" height="14px" />
               </div>
               <span className="text-gray-300" style={{ fontSize: '14.4px' }}>일반 CCTV</span>
             </div>

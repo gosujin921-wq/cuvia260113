@@ -100,7 +100,7 @@ export const DetectedCCTVClipPopup = ({
     if (locationText.includes('호계')) return '호계 방향';
     if (locationText.includes('범계')) return '범계 방향';
     if (locationText.includes('동안')) return '동안 방향';
-    if (locationText.includes('안양')) return '안양 방향';
+    if (locationText.includes('부천')) return '부천 방향';
     if (locationText.includes('금정')) return '금정 방향';
     // 기본값: 위치 정보가 없으면 인덕원 방향으로 설정
     return '인덕원 방향';

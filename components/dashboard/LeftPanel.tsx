@@ -94,6 +94,10 @@ const LeftPanel = () => {
   const [spotThumbnailIndices, setSpotThumbnailIndices] = useState<Record<string, number>>({});
   const [currentPage, setCurrentPage] = useState(0);
   const [areaPage, setAreaPage] = useState(0);
+  const [heatmapAreaOffset, setHeatmapAreaOffset] = useState(0);
+  const [heatmapAnimationKey, setHeatmapAnimationKey] = useState(0);
+  const [previousHeatmapData, setPreviousHeatmapData] = useState<Record<string, Record<string, number>>>({});
+  const previousHeatmapDataRef = useRef<Record<string, Record<string, number>>>({});
   /**
    * ============================================================================
    * 📡 API 연동 포인트: 센서 데이터 및 상태 정보
@@ -216,7 +220,7 @@ const LeftPanel = () => {
     delayCount: 12,
     areaStatus: [
       {
-        area: '비산동',
+        area: '원미동',
         total: 182,
         normal: 176,
         delay: 4,
@@ -231,7 +235,7 @@ const LeftPanel = () => {
         monitorState: '정상',
       },
       {
-        area: '안양동',
+        area: '중동',
         total: 205,
         normal: 198,
         delay: 5,
@@ -246,7 +250,7 @@ const LeftPanel = () => {
         monitorState: '집중',
       },
       {
-        area: '평촌동',
+        area: '심곡동',
         total: 210,
         normal: 203,
         delay: 5,
@@ -261,7 +265,7 @@ const LeftPanel = () => {
         monitorState: '정상',
       },
       {
-        area: '관악산로',
+        area: '부천로',
         total: 96,
         normal: 90,
         delay: 4,
@@ -276,7 +280,7 @@ const LeftPanel = () => {
         monitorState: '집중',
       },
       {
-        area: '석수동',
+        area: '춘의동',
         total: 134,
         normal: 127,
         delay: 5,
@@ -291,7 +295,7 @@ const LeftPanel = () => {
         monitorState: '정상',
       },
       {
-        area: '중앙시장 일대',
+        area: '부천중앙시장 일대',
         total: 108,
         normal: 101,
         delay: 5,
@@ -345,7 +349,7 @@ const LeftPanel = () => {
       },
       {
         spotId: '5',
-        spotName: '안양역 광장',
+        spotName: '부천역 광장',
         fps: 27,
         status: 'delay',
         autoSequence: true,
@@ -368,6 +372,29 @@ const LeftPanel = () => {
   const totalAreaPages = Math.ceil(cctvStatus.areaStatus.length / areasPerPage);
   const visibleAreas = cctvStatus.areaStatus.slice(areaPage * areasPerPage, areaPage * areasPerPage + areasPerPage);
 
+  // 모든 지역 목록 (히트맵 롤링용) - useEffect보다 먼저 정의 (부천시 동 단위만)
+  const allHeatmapAreas = useMemo(() => {
+    return [
+      '원미동',
+      '심곡동',
+      '춘의동',
+      '도당동',
+      '약대동',
+      '중동',
+      '상동',
+      '소사동',
+      '역곡동',
+      '여월동',
+      '작동',
+      '고강동',
+      '오정동',
+      '신흥동',
+      '삼정동',
+      '부개동',
+      '원종동',
+    ];
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentStreamIndex((prev) => {
@@ -379,9 +406,19 @@ const LeftPanel = () => {
         if (totalAreaPages <= 1) return prev;
         return (prev + 1) % totalAreaPages;
       });
+      // 히트맵 지역 롤링 (5초마다) - 6개씩 한 판으로 전환
+      // 애니메이션을 위해 현재 데이터를 이전 데이터로 저장 (offset 변경 전)
+      // ref에 먼저 저장 (동기적으로)
+      const currentDataCopy = JSON.parse(JSON.stringify(heatmapData));
+      previousHeatmapDataRef.current = currentDataCopy;
+      // state에도 저장 (비동기)
+      setPreviousHeatmapData(currentDataCopy);
+      // 그 다음 offset 변경 및 애니메이션 트리거
+      setHeatmapAreaOffset((prev) => (prev + 6) % allHeatmapAreas.length);
+      setHeatmapAnimationKey((prev) => prev + 1);
     }, 5000);
     return () => clearInterval(interval);
-  }, [totalAreaPages]);
+  }, [totalAreaPages, allHeatmapAreas.length]);
 
   const getLevelText = (level: 'good' | 'normal' | 'bad') => {
     switch (level) {
@@ -677,18 +714,17 @@ const LeftPanel = () => {
     });
   }, []);
 
+  // 현재 표시할 지역 (6개씩 롤링)
   const heatmapAreas = useMemo(() => {
-    return [
-      '비산동',
-      '안양동',
-      '평촌동',
-      '석수동',
-      '관양동',
-      '호계동',
-      '범계동',
-      '동안구',
-    ] as const;
-  }, []);
+    const startIndex = heatmapAreaOffset % allHeatmapAreas.length;
+    const result: string[] = [];
+    for (let i = 0; i < 6; i++) {
+      const index = (startIndex + i) % allHeatmapAreas.length;
+      result.push(allHeatmapAreas[index]);
+    }
+    return result;
+  }, [heatmapAreaOffset, allHeatmapAreas]);
+
 
   type HeatmapBucket = 'none' | 'low' | 'mid' | 'high';
   const getHeatmapBucket = (count: number): HeatmapBucket => {
@@ -740,9 +776,18 @@ const LeftPanel = () => {
     return result;
   }, [heatmapAreas, heatmapTimeSlots]);
 
+  // 초기 데이터 저장
+  useEffect(() => {
+    if (Object.keys(previousHeatmapDataRef.current).length === 0 && Object.keys(heatmapData).length > 0) {
+      const initialData = JSON.parse(JSON.stringify(heatmapData));
+      previousHeatmapDataRef.current = initialData;
+      setPreviousHeatmapData(initialData);
+    }
+  }, [heatmapData]);
+
   return (
     <div
-      className={`${isCollapsed ? 'w-20' : ''} bg-[#091326] border-r border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
+      className={`${isCollapsed ? 'w-20' : ''} bg-[#0a0e14] border-r border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
       style={{ 
         borderWidth: '1px',
         height: '100%',
@@ -808,7 +853,7 @@ const LeftPanel = () => {
         </div>
       ) : (
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 pb-4 pl-6 space-y-6"
+          className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pb-4 pl-6 pr-6 space-y-3"
           ref={scrollContainerRef}
           style={{ maxWidth: '100%' }}
         >
@@ -839,52 +884,126 @@ const LeftPanel = () => {
           </div>
         </div>
 
-        {/* 1) CCTV 운영 현황 요약 (타이틀 + 상태 값만 표시) */}
-        <div className="space-y-6 mb-8">
-          <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
-          {/* 정상 / 장애 / 지연 - 한 줄을 가득 채우는 pill 스타일 요약 카드 */}
-          <div className="flex gap-3">
-            {/* 정상 */}
-            <div className="flex flex-1 items-center justify-between px-4 py-2 rounded-2xl bg-[#36383b] min-w-0">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-gray-400 leading-none">Equipment</span>
-                <span className="text-[11px] text-gray-400 leading-none">정상</span>
+        {/* CCTV 운영 현황 (상세 카드) */}
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between gap-4">
+            <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
+            {/* 정상/장애/지연 장비 수 */}
+            <div className="flex items-center gap-x-2 gap-y-2 flex-wrap ml-auto">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
+                <span className="text-green-400 text-xs font-medium">{cctvStatus.normalCount.toLocaleString()}</span>
               </div>
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#0f172a] text-[11px] font-semibold text-slate-200">
-                {cctvStatus.normalCount.toLocaleString()}
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
+                <span className="text-red-400 text-xs font-medium">{cctvStatus.errorCount}</span>
               </div>
-            </div>
-
-            {/* 장애 */}
-            <div className="flex flex-1 items-center justify-between px-4 py-2 rounded-2xl bg-[#36383b] min-w-0">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-gray-400 leading-none">Equipment</span>
-                <span className="text-[11px] text-gray-400 leading-none">장애</span>
-              </div>
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#b91c1c] text-[11px] font-semibold text-white">
-                {cctvStatus.errorCount.toLocaleString()}
-              </div>
-            </div>
-
-            {/* 지연 */}
-            <div className="flex flex-1 items-center justify-between px-4 py-2 rounded-2xl bg-[#36383b] min-w-0">
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[11px] text-gray-400 leading-none">Network</span>
-                <span className="text-[11px] text-gray-400 leading-none">지연</span>
-              </div>
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#ca8a04] text-[11px] font-semibold text-white">
-                {cctvStatus.delayCount.toLocaleString()}
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0" />
+                <span className="text-gray-400 text-xs whitespace-nowrap">지연</span>
+                <span className="text-yellow-400 text-xs font-medium">{cctvStatus.delayCount}</span>
               </div>
             </div>
           </div>
+                  
+          {/* 전체 요약 데이터 */}
+          <div className="space-y-3">
+            {/* 전체 CCTV 가동률과 총 CCTV 수 (큰 숫자 스코어 스타일) */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="text-gray-400 text-xs mb-1 mt-2">전체 CCTV 가동률</div>
+                <div className="text-white text-2xl font-bold">
+                  {cctvStatus.totalRate}
+                  <span className="text-xl">%</span>
+                </div>
+              </div>
+              <div className="w-px h-12 bg-[#31353a]" />
+              <div className="flex-1">
+                <div className="text-gray-400 text-xs mb-1 mt-2">총 CCTV 수</div>
+                <div className="text-white text-2xl font-bold">
+                  {cctvStatus.totalCount.toLocaleString()}
+                  <span className="text-xl">대</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 지역별 CCTV 운영 현황 카드 (막대 그래프 포함) */}
+          <div className="space-y-4 mt-3">
+            <div className="grid grid-cols-2 gap-3 min-w-0">
+              {visibleAreas.map((area, areaIndex) => (
+                <div
+                  key={`${area.area}-${areaPage}`}
+                  className="bg-[#1f1f1f] px-3 py-2 space-y-3 min-w-0 overflow-hidden rounded-lg"
+                >
+                  <div className="flex items-start justify-between gap-2 min-w-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white text-sm font-semibold truncate">{area.area}</p>
+                    </div>
+                    <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-gray-400 text-xs font-semibold tracking-tight truncate">장비 작동률</p>
+                      <p className="text-white text-xl">{area.uptime}%</p>
+                      <div className="w-full h-3 bg-[#3a3a3a] mt-1 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full progress-bar-fill"
+                          style={{ 
+                            width: `${area.uptime}%`,
+                            '--target-width': `${area.uptime}%`,
+                            animationDelay: `${areaIndex * 100}ms`,
+                            background: 'linear-gradient(90deg, #0066FF 0%, #8A2BE2 100%)',
+                          } as React.CSSProperties}
+                        />
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-gray-400 text-xs font-semibold tracking-tight truncate">영상 수신율</p>
+                      <p className="text-white text-xl">{area.streamRate}%</p>
+                      <div className="w-full h-3 bg-[#3a3a3a] mt-1 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full progress-bar-fill"
+                          style={{ 
+                            width: `${area.streamRate}%`,
+                            '--target-width': `${area.streamRate}%`,
+                            animationDelay: `${areaIndex * 100 + 150}ms`,
+                            background: 'linear-gradient(90deg, #0066FF 0%, #8A2BE2 100%)',
+                          } as React.CSSProperties}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <style>{`
+            @keyframes progressBarFill {
+              0% {
+                width: 0%;
+              }
+              100% {
+                width: var(--target-width);
+              }
+            }
+            
+            .progress-bar-fill {
+              animation: progressBarFill 1s ease-out both;
+            }
+          `}</style>
         </div>
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
-        <div className="space-y-5 mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-0 pt-0">
+          <div className="flex items-center justify-between" style={{ paddingTop: '12px', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
           </div>
-          <div className="p-3 overflow-hidden">
+          <div className="overflow-hidden" style={{ padding: '12px', marginTop: '0' }}>
             <div className="flex justify-end">
               <div className="relative h-40 w-[418px] rounded-xl overflow-visible">
                 <ResponsiveContainer width="100%" height="100%">
@@ -909,6 +1028,21 @@ const LeftPanel = () => {
                           <feMergeNode in="SourceGraphic"/>
                         </feMerge>
                       </filter>
+                      {/* 빛 반사 효과를 위한 그라디언트 */}
+                      <linearGradient id="lightReflectionStroke" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="30%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="50%" stopColor="rgba(255,255,255,0.9)" />
+                        <stop offset="70%" stopColor="rgba(255,255,255,0)" />
+                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                        <animateTransform
+                          attributeName="gradientTransform"
+                          type="translate"
+                          values="-200 0;400 0"
+                          dur="5s"
+                          repeatCount="indefinite"
+                        />
+                      </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="1.5 2" stroke="#1f2933" opacity={0.5} />
                     <XAxis
@@ -936,11 +1070,21 @@ const LeftPanel = () => {
                       fill="url(#eventWaveFill)"
                       fillOpacity={0.9}
                     />
+                    {/* 빛 반사 효과 - 선에만 적용 */}
+                    <Area
+                      type="basis"
+                      dataKey="value"
+                      stroke="url(#lightReflectionStroke)"
+                      strokeWidth={4}
+                      fill="none"
+                      opacity={0.7}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
           </div>
+          
         </div>
 
         {/* 1) CCTV 운영 현황 상세 (그래프/지역별 카드 잠시 비노출) */}
@@ -1053,12 +1197,12 @@ const LeftPanel = () => {
         )}
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
-        <div className="space-y-5 mb-8">
-          <div className="flex items-center justify-between gap-4">
-            <h3 className="text-white font-semibold text-sm">이벤트 발생률 상위 지역 이벤트 수</h3>
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-4" style={{ paddingTop: '12px', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '0', marginBottom: '0' }}>
+            <h3 className="text-white font-semibold text-sm">지역별 이벤트 발생 건 수</h3>
             <div className="flex items-center gap-4 text-[12px] text-gray-200">
               <div className="flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-sm bg-[#1f2937]" />
+                <span className="inline-block w-3 h-3 rounded-sm bg-[#1f2937] border border-gray-500/30" />
                 <span>None</span>
               </div>
               <div className="flex items-center gap-2">
@@ -1076,33 +1220,128 @@ const LeftPanel = () => {
             </div>
           </div>
 
-          <div className="p-3 overflow-hidden">
+          <div className="overflow-hidden" style={{ padding: '12px', marginTop: '0' }}>
             {/* 그리드 */}
-            <div className="space-y-1">
-              {heatmapAreas.map((area) => (
-                <div key={area} className="flex items-center gap-0">
-                  <div className="w-10 text-[12px] text-gray-400 truncate" title={area}>
-                    {area}
+            <div className="space-y-1 relative">
+              {heatmapAreas.map((area, index) => {
+                // 6개를 3개씩 2그룹으로 나누기 (애니메이션 타이밍용)
+                const groupIndex = Math.floor(index / 3);
+                const isFirstGroup = groupIndex === 0;
+                const groupDelay = isFirstGroup ? 0 : 200;
+                
+                return (
+                  <div
+                    key={`${area}`}
+                    className="flex items-center gap-0"
+                  >
+                    <div className="w-10 text-[12px] text-gray-400 truncate" title={area}>
+                      {area}
+                    </div>
+                    <div className="grid grid-cols-12 gap-1 flex-1 min-w-0">
+                      {heatmapTimeSlots.map((slot, slotIndex) => {
+                        const count = heatmapData[area]?.[slot.key] ?? 0;
+                        const bucket = getHeatmapBucket(count);
+                        const isNowNone = bucket === 'none';
+                        
+                        const label = `${area} · ${slot.label}~${(slot.startHour + 2).toString().padStart(2, '0')}시 · ${count}건`;
+                        const borderClass = bucket === 'none' ? 'border border-gray-500/30' : '';
+                        
+                        // 각 셀마다 랜덤한 지연으로 반짝이는 효과
+                        const cellSeed = `${heatmapAnimationKey}-${area}-${slot.key}`;
+                        const delaySeed = getSeededInt(`${cellSeed}-delay`, 100);
+                        const cellDelay = (index * 50) + (slotIndex * 20) + (delaySeed % 100); // 행과 열에 따른 지연 + 랜덤
+                        
+                        // 새로운 색상 결정
+                        const newColorClass = getHeatmapCellClassName(count);
+                        const newColorValue = bucket === 'low' ? '#3b5a8c' : 
+                                             bucket === 'mid' ? '#005eb8' : 
+                                             bucket === 'high' ? '#F87171' : '#1f2937';
+                        
+                        // 애니메이션 적용: 판이 전환될 때(heatmapAnimationKey가 변경될 때) 모든 none이 아닌 셀에 적용
+                        // 매우 단순화: 현재 none이 아니고 애니메이션 키가 0보다 크면 항상 애니메이션 적용
+                        const shouldAnimate = !isNowNone && heatmapAnimationKey > 0;
+                        
+                        return (
+                          <div
+                            key={`${area}-${slot.key}-${heatmapAnimationKey}`}
+                            className={`h-5 rounded-sm ${borderClass} ${!shouldAnimate ? newColorClass : ''} ${bucket !== 'none' ? 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]' : ''} ${shouldAnimate ? 'heatmap-cell-sparkle-dissolve' : ''}`}
+                            title={label}
+                            aria-label={label}
+                            style={{
+                              '--new-color': newColorValue,
+                              ...(shouldAnimate ? { 
+                                backgroundColor: newColorValue,
+                                animation: `heatmapCellSparkleDissolve 1.8s cubic-bezier(0.4, 0, 0.2, 1) ${cellDelay}ms both`,
+                              } : {}),
+                            } as React.CSSProperties}
+                          />
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-12 gap-1 flex-1 min-w-0">
-                    {heatmapTimeSlots.map((slot) => {
-                      const count = heatmapData[area]?.[slot.key] ?? 0;
-                      const label = `${area} · ${slot.label}~${(slot.startHour + 2).toString().padStart(2, '0')}시 · ${count}건`;
-                      const bucket = getHeatmapBucket(count);
-                      const borderClass = bucket === 'none' ? 'border border-gray-500/30' : '';
-                      return (
-                        <div
-                          key={`${area}-${slot.key}`}
-                          className={`h-5 rounded-sm ${borderClass} ${getHeatmapCellClassName(count)} ${bucket !== 'none' ? 'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]' : ''}`}
-                          title={label}
-                          aria-label={label}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            
+            <style>{`
+              @keyframes heatmapCellSparkleDissolve {
+                /* Phase 1: None 상태에서 반짝이기 (0-30%) */
+                0% {
+                  background-color: #1f2937;
+                  opacity: 0.6;
+                  transform: scale(1);
+                  filter: brightness(0.8);
+                }
+                15% {
+                  background-color: #1f2937;
+                  opacity: 1;
+                  transform: scale(1.05);
+                  filter: brightness(1.5);
+                }
+                30% {
+                  background-color: #1f2937;
+                  opacity: 0.95;
+                  transform: scale(1.08);
+                  filter: brightness(1.3);
+                }
+                
+                /* Phase 2: 새로운 컬러로 디졸브 (30-100%) */
+                40% {
+                  background-color: var(--new-color);
+                  opacity: 0.4;
+                  transform: scale(1.05);
+                  filter: brightness(0.6) blur(1.5px);
+                }
+                55% {
+                  background-color: var(--new-color);
+                  opacity: 0.7;
+                  transform: scale(1.08);
+                  filter: brightness(1.1) blur(1px);
+                }
+                70% {
+                  background-color: var(--new-color);
+                  opacity: 0.9;
+                  transform: scale(1.05);
+                  filter: brightness(1.2) blur(0.5px);
+                }
+                85% {
+                  background-color: var(--new-color);
+                  opacity: 0.95;
+                  transform: scale(1.02);
+                  filter: brightness(1.05) blur(0.3px);
+                }
+                100% {
+                  background-color: var(--new-color);
+                  opacity: 1;
+                  transform: scale(1);
+                  filter: brightness(1) blur(0px);
+                }
+              }
+              
+              .heatmap-cell-sparkle-dissolve {
+                animation: heatmapCellSparkleDissolve 1.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+              }
+            `}</style>
 
             {/* X축 라벨 (아래) */}
             <div className="flex items-center gap-0 mt-2">
@@ -1119,16 +1358,16 @@ const LeftPanel = () => {
         </div>
 
         {/* 2) 실시간 환경 센서 모니터링 */}
-        <div className="space-y-5 mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-4">
+          <div className="flex items-center justify-between" style={{ paddingTop: '12px', paddingLeft: '12px', paddingRight: '12px', paddingBottom: '0', marginBottom: '0' }}>
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
             <span className="text-gray-300 text-xs">
               마지막 업데이트: {lastUpdateTime || '--:--:--'}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2 min-w-0">
+          <div className="grid grid-cols-3 gap-2 min-w-0" style={{ marginTop: '0' }}>
             {/* PM2.5 */}
-            <div className="p-3 min-w-0 overflow-hidden">
+            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
               <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
                 <div className="flex items-center gap-1 min-w-0">
                   <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -1145,7 +1384,7 @@ const LeftPanel = () => {
             </div>
 
             {/* PM10 */}
-            <div className="p-3 min-w-0 overflow-hidden">
+            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
               <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
                 <div className="flex items-center gap-1 min-w-0">
                   <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -1162,7 +1401,7 @@ const LeftPanel = () => {
             </div>
 
             {/* 온도 */}
-            <div className="p-3 min-w-0 overflow-hidden">
+            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
               <div className="flex items-center gap-1 min-w-0 mb-1.5">
                 <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">온도</span>
@@ -1174,7 +1413,7 @@ const LeftPanel = () => {
             </div>
 
             {/* 습도 */}
-            <div className="p-3 min-w-0 overflow-hidden">
+            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
               <div className="flex items-center gap-1 min-w-0 mb-1.5">
                 <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">습도</span>
@@ -1186,7 +1425,7 @@ const LeftPanel = () => {
             </div>
 
             {/* 강수량 */}
-            <div className="p-3 min-w-0 overflow-hidden">
+            <div className="min-w-0 overflow-hidden" style={{ padding: '12px' }}>
               <div className="flex items-center gap-1 min-w-0 mb-1.5">
                 <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">강수량</span>

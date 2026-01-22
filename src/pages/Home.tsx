@@ -157,7 +157,7 @@ export default function Home() {
 
   return (
     <div
-      className="flex flex-col bg-[#091326] overflow-hidden"
+      className="flex flex-col bg-[#0a0e14] overflow-hidden"
       style={{ width: '100vw', height: '100vh' }}
     >
       <div className="flex flex-1 overflow-hidden" style={{ minHeight: 0, height: '100%' }}>
@@ -179,15 +179,6 @@ export default function Home() {
           </div>
           {/* 우측: 이벤트 리스트 패널 */}
           <div className="flex flex-col flex-shrink-0 border-l border-[#31353a] pl-4 pr-5" style={{ width: '370px' }}>
-            <div className="py-4 px-3">
-              <Link to="/" className="w-24 h-5 flex items-center justify-start">
-                <img 
-                  src="/logo.svg" 
-                  alt="CUVIA Logo" 
-                  className="h-5 w-auto object-contain"
-                />
-              </Link>
-            </div>
             <div className="py-3">
               <Score summary={eventSummary} />
             </div>

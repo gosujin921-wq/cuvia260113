@@ -212,7 +212,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
   }, [selectedEventId, onEventHover]);
 
   return (
-    <div className="w-full bg-[#091326] flex flex-col h-full overflow-y-auto">
+    <div className="w-full bg-[#0a0e14] flex flex-col h-full overflow-y-auto">
       <div className="border-t border-b border-[#31353a]">
         <div className="flex items-center justify-center gap-2" style={{ paddingTop: '14px' }}>
           {tabs.map((tab, index) => {
@@ -285,8 +285,8 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 onMouseLeave={() => onEventHover?.(null)}
                 className={`w-full text-left border-b pt-3 pb-3 pr-3 transition-all duration-200 ${
                   isSelected
-                    ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30 rounded-xl'
-                    : 'bg-transparent border-[#2f3136] shadow-[0_4px_14px_-8px_rgba(0,0,0,0.8)] hover:bg-[#24272d] hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4),0_0_40px_rgba(34,211,238,0.2)] rounded-xl'
+                    ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30'
+                    : 'bg-transparent border-[#2f3136] shadow-[0_4px_14px_-8px_rgba(0,0,0,0.8)] hover:bg-[#24272d] hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(34,211,238,0.4),0_0_40px_rgba(34,211,238,0.2)]'
                 }`}
                 style={{ paddingLeft: '14px' }}
               >
@@ -371,7 +371,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                       onClick={() => onEventSelect?.(evt.id)}
                       onMouseEnter={() => onEventHover?.(evt.id)}
                       onMouseLeave={() => onEventHover?.(null)}
-                      className="p-2 border border-cyan-500/30 bg-[#36383B] cursor-pointer hover:bg-[#091326] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-200 rounded-lg"
+                      className="p-2 border border-cyan-500/30 bg-[#36383B] cursor-pointer hover:bg-[#091326] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-all duration-200"
                       style={{ borderWidth: '1px' }}
                     >
                       <div className="flex items-center gap-2">

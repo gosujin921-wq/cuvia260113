@@ -460,12 +460,9 @@ export default function ComponentsStylePage() {
           <div className="space-y-12">
             {/* 구조 설명 */}
             <div className={getCardClassName()}>
-              <h2 className="text-xl font-semibold mb-4">CCTV 아이콘 구조</h2>
+              <h2 className="text-xl font-semibold mb-4">CCTV 아이콘 타입</h2>
               <div className="space-y-3 text-sm text-gray-300">
-                <p><span className="font-semibold text-white">1. CCTV 아이콘 박스:</span> 아이콘 + 개수 (2개 이상일 때)</p>
-                <p><span className="font-semibold text-white">2. CCTV 이름 라벨:</span> showCCTVName이 true일 때 표시 (1개: "CCTV-7", 2개 이상: "CCTV-7-1")</p>
-                <p><span className="font-semibold text-white">3. 타임라인 타이틀:</span> 항상 표시 (CCTV 이름 없을 때: mt-1, 있을 때: mt-8)</p>
-                <p className="text-xs text-gray-400 mt-2">컬러: default (gray), active (blue), tracking (red), warning (yellow)</p>
+                <p className="text-xs text-gray-400 mt-2">타입: default (gray), light, active (blue), tracking (red), warning (yellow)</p>
               </div>
             </div>
 
@@ -479,6 +476,14 @@ export default function ComponentsStylePage() {
                     <div className="mb-4">
                       <div className={getCCTVIconClassName('default')}>
                         <CCTVIcon className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 text-gray-400">Light</h3>
+                    <div className="mb-4">
+                      <div className={getCCTVIconClassName('light')}>
+                        <CCTVIcon className="w-4 h-4 text-gray-300" />
                       </div>
                     </div>
                   </div>
@@ -515,305 +520,16 @@ import CCTVIcon from '@/components/common/CCTVIcon';
 
 <div className={getCCTVIconClassName('default')}>
   <CCTVIcon className="w-4 h-4 text-gray-400" />
+</div>
+
+<div className={getCCTVIconClassName('light')}>
+  <CCTVIcon className="w-4 h-4 text-gray-300" />
 </div>`}</code>
                   </pre>
                 </div>
               </div>
             </div>
 
-            {/* CCTV 아이콘 + 라벨 조합 (모든 경우의 수) */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4">CCTV 아이콘 + 이름 + 상황 라벨 조합 (모든 경우의 수)</h2>
-              
-              {/* Default (Gray) */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4 text-gray-300">Default (Gray) - 일반 CCTV</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {/* 1개 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('default')}>
-                        <CCTVIcon className="w-4 h-4 text-gray-400" />
-                      </div>
-                      <div className={`${getTimelineTitleClassName('default', false)}`} style={{ color: '#9ca3af' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 1개 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('default')}>
-                        <CCTVIcon className="w-4 h-4 text-gray-400" />
-                      </div>
-                      <div className={`${getCCTVLabelClassName('default')} mt-1`}>
-                        CCTV-7
-                      </div>
-                      <div className={`${getTimelineTitleClassName('default', true)}`} style={{ color: '#9ca3af' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('default')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-gray-400" />
-                        <span className="text-xs font-semibold text-gray-400 ml-1">3</span>
-                      </div>
-                      <div className={`${getTimelineTitleClassName('default', false)}`} style={{ color: '#9ca3af' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('default')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-gray-400" />
-                        <span className="text-xs font-semibold text-gray-400 ml-1">3</span>
-                      </div>
-                      <div className={`${getCCTVLabelClassName('default')} mt-1`}>
-                        CCTV-7
-                      </div>
-                      <div className={`${getTimelineTitleClassName('default', true)}`} style={{ color: '#9ca3af' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Active (Blue) */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4 text-gray-300">Active (Blue) - 과거 동선</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {/* 1개 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('active')}>
-                        <CCTVIcon className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <div className={`${getTimelineTitleClassName('active', false)}`} style={{ color: '#60a5fa' }}>
-                        용의자가 차량에 아이 태우는 장면 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 1개 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('active')}>
-                        <CCTVIcon className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <div className={`${getCCTVLabelClassName('active')} mt-1`}>
-                        CCTV-15
-                      </div>
-                      <div className={`${getTimelineTitleClassName('active', true)}`} style={{ color: '#60a5fa' }}>
-                        용의자가 차량에 아이 태우는 장면 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('active')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-blue-400" />
-                        <span className="text-xs font-semibold text-blue-400 ml-1">5</span>
-                      </div>
-                      <div className={`${getTimelineTitleClassName('active', false)}`} style={{ color: '#60a5fa' }}>
-                        용의자가 차량에 아이 태우는 장면 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('active')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-blue-400" />
-                        <span className="text-xs font-semibold text-blue-400 ml-1">5</span>
-                      </div>
-                      <div className={`${getCCTVLabelClassName('active')} mt-1`}>
-                        CCTV-15
-                      </div>
-                      <div className={`${getTimelineTitleClassName('active', true)}`} style={{ color: '#60a5fa' }}>
-                        용의자가 차량에 아이 태우는 장면 포착
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tracking (Red) */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4 text-gray-300">Tracking (Red) - 추적 동선</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {/* 1개 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('tracking')}>
-                        <CCTVIcon className="w-4 h-4 text-red-400" />
-                      </div>
-                      <div className={`${getTimelineTitleClassName('tracking', false)}`} style={{ color: '#f87171' }}>
-                        차량 도주 추적 중
-                      </div>
-                    </div>
-                  </div>
-                  {/* 1개 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('tracking')}>
-                        <CCTVIcon className="w-4 h-4 text-red-400" />
-                      </div>
-                      <div className={`${getCCTVLabelClassName('tracking')} mt-1`}>
-                        현재 위치
-                      </div>
-                      <div className={`${getTimelineTitleClassName('tracking', true)}`} style={{ color: '#f87171' }}>
-                        차량 도주 추적 중
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('tracking')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-red-400" />
-                        <span className="text-xs font-semibold text-red-400 ml-1">999+</span>
-                      </div>
-                      <div className={`${getTimelineTitleClassName('tracking', false)}`} style={{ color: '#f87171' }}>
-                        차량 도주 추적 중
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('tracking')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-red-400" />
-                        <span className="text-xs font-semibold text-red-400 ml-1">999+</span>
-                      </div>
-                      <div className={`${getCCTVLabelClassName('tracking')} mt-1`}>
-                        현재 위치
-                      </div>
-                      <div className={`${getTimelineTitleClassName('tracking', true)}`} style={{ color: '#f87171' }}>
-                        차량 도주 추적 중
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Warning (Yellow) */}
-              <div className="mb-8">
-                <h3 className="text-lg font-semibold mb-4 text-gray-300">Warning (Yellow) - 초기 포착</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {/* 1개 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('warning')}>
-                        <CCTVIcon className="w-4 h-4 text-yellow-400" />
-                      </div>
-                      <div className={`${getTimelineTitleClassName('warning', false)}`} style={{ color: '#facc15' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 1개 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">1개, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('warning')}>
-                        <CCTVIcon className="w-4 h-4 text-yellow-400" />
-                      </div>
-                      <div className={`${getCCTVLabelClassName('warning')} mt-1`}>
-                        CCTV-7
-                      </div>
-                      <div className={`${getTimelineTitleClassName('warning', true)}`} style={{ color: '#facc15' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 없음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 숨김</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('warning')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-yellow-400" />
-                        <span className="text-xs font-semibold text-yellow-400 ml-1">2</span>
-                      </div>
-                      <div className={`${getTimelineTitleClassName('warning', false)}`} style={{ color: '#facc15' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* 2개 이상 - 이름 있음 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">2개 이상, 이름 표시</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={`${getCCTVIconClassName('warning')} flex items-center justify-center w-auto min-w-[28px]`} style={{ paddingLeft: '4px', paddingRight: '4px' }}>
-                        <CCTVIcon className="w-4 h-4 text-yellow-400" />
-                        <span className="text-xs font-semibold text-yellow-400 ml-1">2</span>
-                      </div>
-                      <div className={`${getCCTVLabelClassName('warning')} mt-1`}>
-                        CCTV-7
-                      </div>
-                      <div className={`${getTimelineTitleClassName('warning', true)}`} style={{ color: '#facc15' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 확대 모드 - 개별 아이콘 */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-300">확대 모드 - 개별 아이콘 (2개 이상일 때)</h3>
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Default - 개별 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">Default - CCTV-7-1, CCTV-7-2</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('default')}>
-                        <CCTVIcon className="w-4 h-4 text-gray-400" />
-                      </div>
-                      <div className={`${getCCTVLabelClassName('default')} mt-1`}>
-                        CCTV-7-1
-                      </div>
-                      <div className={`${getTimelineTitleClassName('default', true)}`} style={{ color: '#9ca3af' }}>
-                        유괴범과 아동 함께 이동 포착
-                      </div>
-                    </div>
-                  </div>
-                  {/* Active - 개별 */}
-                  <div className={getCardClassName()}>
-                    <div className="text-xs text-gray-400 mb-3">Active - CCTV-15-1, CCTV-15-2</div>
-                    <div className="relative inline-block mb-4">
-                      <div className={getCCTVIconClassName('active')}>
-                        <CCTVIcon className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <div className={`${getCCTVLabelClassName('active')} mt-1`}>
-                        CCTV-15-1
-                      </div>
-                      <div className={`${getTimelineTitleClassName('active', true)}`} style={{ color: '#60a5fa' }}>
-                        용의자가 차량에 아이 태우는 장면 포착
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 

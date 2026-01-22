@@ -747,7 +747,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 }}
               >
                 <div 
-                  className={`${getCCTVIconClassName('default')} flex items-center justify-center ${item.count > 1 && zoomLevel === 0 ? 'w-auto min-w-[28px]' : ''}`} 
+                  className={`${getCCTVIconClassName('light')} flex items-center justify-center ${item.count > 1 && zoomLevel === 0 ? 'w-auto min-w-[28px]' : ''}`} 
                   style={getCCTVIconBoxStyle(item.count, mapScale, item.count > 1 && zoomLevel === 0, 60)}
                 >
                   <CCTVIcon 
@@ -861,7 +861,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     // 나중에 모달 띄울 예정
                   }}
                 >
-                  <div className={getCCTVIconClassName('default')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
+                  <div className={getCCTVIconClassName('light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
                     <CCTVIcon 
                       className="!text-gray-400"
                       style={{ color: '#9ca3af' }}

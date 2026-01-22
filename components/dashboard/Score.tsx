@@ -17,7 +17,7 @@ const Score = ({ summary }: ScoreProps) => {
   const adjustedClosedRate = totalRate > 0 ? (closedRate / totalRate) * 100 : 0;
 
   return (
-    <div className="flex flex-col gap-2 bg-[#091326] pl-[14px] pr-[14px] py-3 rounded-xl border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
+    <div className="flex flex-col gap-2 bg-[#0a0e14] pl-[14px] pr-[14px] py-3 rounded-xl border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
           <span className="text-gray-400 text-sm">전체</span>

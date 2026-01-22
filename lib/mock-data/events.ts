@@ -154,7 +154,7 @@ export const MOCK_EVENTS: BaseEvent[] = [
     time: '18:42',
     location: '부천시 원미구 중동 123-7',
     description: '112 신고자 "흉기 든 남성이 위협 중"',
-    source: '안양112센터',
+    source: '부천112센터',
     risk: '긴급',
     status: '진행중',
     domain: 'A',
