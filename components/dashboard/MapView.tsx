@@ -31,9 +31,10 @@ interface MapViewProps {
   onZoomLevelChange?: (level: number) => void;
   onAiDetectionClose?: () => void;
   hideControls?: boolean;
+  leftPanelWidth?: number; // 좌측 패널 너비 (px)
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480 }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -788,8 +789,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }}
     >
        <div 
-         className="absolute top-4 left-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+         className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
+           left: `${leftPanelWidth + 24}px`,
            zIndex: 250,
            transform: hideControls ? 'translateX(-200px)' : 'translateX(0)',
            opacity: hideControls ? 0 : 1,
@@ -876,8 +878,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
 
        <div 
-         className="absolute left-4 top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+         className="absolute top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
+           left: `${leftPanelWidth + 24}px`,
            zIndex: 250,
            transform: hideControls ? 'translateX(-200px) translateY(-50%)' : 'translateX(0) translateY(-50%)',
            opacity: hideControls ? 0 : 1,
@@ -1515,10 +1518,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const baseOffset = cctvList.length * totalItemWidth;
         const currentOffset = baseOffset + (currentCCTVIndex * totalItemWidth);
         
+        // 좌측 패널 너비와 우측 패널 너비(370px)를 제외한 너비 계산
+        const rightPanelWidth = 370;
+        const cctvPanelLeft = leftPanelWidth;
+        const cctvPanelRight = rightPanelWidth;
+        
         return (
           <div
-            className="absolute bottom-0 left-0 right-0 transition-all duration-500 ease-in-out"
+            className="absolute bottom-0 transition-all duration-500 ease-in-out"
             style={{ 
+              left: `${cctvPanelLeft}px`,
+              right: `${cctvPanelRight}px`,
               zIndex: 200,
               transform: hideControls ? 'translateY(136px)' : 'translateY(0)',
               opacity: hideControls ? 0 : 1,

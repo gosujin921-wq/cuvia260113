@@ -88,7 +88,11 @@ const buildThumbnails = (identifier: string, count = 3) => {
   });
 };
 
-const LeftPanel = () => {
+interface LeftPanelProps {
+  onCollapsedChange?: (isCollapsed: boolean) => void;
+}
+
+const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentStreamIndex, setCurrentStreamIndex] = useState(0);
   const [spotThumbnailIndices, setSpotThumbnailIndices] = useState<Record<string, number>>({});
@@ -795,7 +799,13 @@ const LeftPanel = () => {
       }}
     >
       <button
-        onClick={() => setIsCollapsed((prev) => !prev)}
+        onClick={() => {
+          setIsCollapsed((prev) => {
+            const newValue = !prev;
+            onCollapsedChange?.(newValue);
+            return newValue;
+          });
+        }}
         className="absolute top-1/2 -translate-y-1/2 -right-2 w-8 h-14 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-white transition-colors focus:outline-none"
         aria-label={isCollapsed ? '좌측 패널 펼치기' : '좌측 패널 접기'}
       >
