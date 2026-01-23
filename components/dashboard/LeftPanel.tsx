@@ -394,7 +394,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     ];
   }, []);
 
-  // 히트맵 지역 롤링은 heatmapData와 visibleHeatmapRows 선언 이후로 이동
 
   const getLevelText = (level: 'good' | 'normal' | 'bad') => {
     switch (level) {
@@ -448,7 +447,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const infrastructureRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const heatmapGridRef = useRef<HTMLDivElement>(null);
-  const [visibleHeatmapRows, setVisibleHeatmapRows] = useState(4);
 
   const sensorData: SensorData = {
     pm25: { value: sensorValues.pm25, level: getPm25Level(sensorValues.pm25) },
@@ -692,17 +690,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     });
   }, []);
 
-  // 현재 표시할 지역 (높이에 맞게 동적으로 계산)
+  // 현재 표시할 지역 (4개씩 롤링)
   const heatmapAreas = useMemo(() => {
     const startIndex = heatmapAreaOffset % allHeatmapAreas.length;
     const result: string[] = [];
-    const rowCount = Math.max(4, visibleHeatmapRows); // 최소 4개
-    for (let i = 0; i < rowCount; i++) {
+    for (let i = 0; i < 4; i++) {
       const index = (startIndex + i) % allHeatmapAreas.length;
       result.push(allHeatmapAreas[index]);
     }
     return result;
-  }, [heatmapAreaOffset, allHeatmapAreas, visibleHeatmapRows]);
+  }, [heatmapAreaOffset, allHeatmapAreas]);
 
 
   type HeatmapBucket = 'none' | 'low' | 'mid' | 'high';
@@ -726,26 +723,99 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     const nowSeed = typeof window !== 'undefined' ? new Date().toISOString().slice(0, 10) : 'static';
     const result: Record<string, Record<string, number>> = {};
 
+    // 구역별 컬러 분포 패턴 정의
+    const getAreaDistribution = (area: string) => {
+      const areaNum = parseInt(area.replace('zone', '')) || 1;
+      const jitter = getSeededInt(`${nowSeed}:${area}:jitter`, 11) - 5; // -5 ~ +5
+      
+      // 각 구역별로 다른 분포 패턴
+      switch (areaNum) {
+        case 1: // zone1: None이 많고, 낮은 값 위주
+          return {
+            noneThreshold: 65 + jitter, // 60~70% None
+            lowThreshold: 25, // 20~30% 낮은 값
+            midThreshold: 10, // 5~15% 중간 값
+          };
+        case 2: // zone2: 중간 값이 많음
+          return {
+            noneThreshold: 40 + jitter, // 35~45% None
+            lowThreshold: 30, // 25~35% 낮은 값
+            midThreshold: 25, // 20~30% 중간 값
+          };
+        case 3: // zone3: 높은 값이 조금 더 많음
+          return {
+            noneThreshold: 45 + jitter, // 40~50% None
+            lowThreshold: 25, // 20~30% 낮은 값
+            midThreshold: 20, // 15~25% 중간 값
+          };
+        case 4: // zone4: 균등한 분포
+          return {
+            noneThreshold: 50 + jitter, // 45~55% None
+            lowThreshold: 25, // 20~30% 낮은 값
+            midThreshold: 20, // 15~25% 중간 값
+          };
+        case 5: // zone5: None이 적고, 중간~높은 값이 많음
+          return {
+            noneThreshold: 30 + jitter, // 25~35% None
+            lowThreshold: 30, // 25~35% 낮은 값
+            midThreshold: 30, // 25~35% 중간 값
+          };
+        case 6: // zone6: 낮은 값이 많음
+          return {
+            noneThreshold: 50 + jitter, // 45~55% None
+            lowThreshold: 35, // 30~40% 낮은 값
+            midThreshold: 10, // 5~15% 중간 값
+          };
+        case 7: // zone7: 높은 값이 많음
+          return {
+            noneThreshold: 35 + jitter, // 30~40% None
+            lowThreshold: 25, // 20~30% 낮은 값
+            midThreshold: 30, // 25~35% 중간 값
+          };
+        case 8: // zone8: 균등하지만 약간 높은 값 위주
+          return {
+            noneThreshold: 45 + jitter, // 40~50% None
+            lowThreshold: 20, // 15~25% 낮은 값
+            midThreshold: 25, // 20~30% 중간 값
+          };
+        default:
+          return {
+            noneThreshold: 55 + jitter,
+            lowThreshold: 25,
+            midThreshold: 15,
+          };
+      }
+    };
+
     heatmapAreas.forEach((area) => {
       result[area] = {};
+      const distribution = getAreaDistribution(area);
+      
       heatmapTimeSlots.forEach((slot) => {
-        // 기본 분포는 None이 많고 6+가 적게, 다만 셀마다 임계값을 살짝씩 흔들어서 패턴이 더 랜덤하게 보이도록 처리
-        const baseRand = getSeededInt(`${nowSeed}:${area}:${slot.key}`, 100); // 0~100
-        const jitter = getSeededInt(`${nowSeed}:${area}:${slot.key}:j`, 11) - 5; // -5 ~ +5
-
-        const noneThreshold = 55 + jitter; // 약 50~60% 정도 None
-        const lowThreshold = noneThreshold + 25; // 그 다음 20~30% 정도 1~2건
-        const midThreshold = lowThreshold + 15; // 그 다음 10~20% 정도 3~5건
+        // 각 셀마다 독립적인 랜덤 값 생성 (더 랜덤하게 섞이도록)
+        const cellSeed = getSeededInt(`${nowSeed}:${area}:${slot.key}:cell`, 1000); // 0~999
+        const baseRand = cellSeed % 100; // 0~99
+        const slotJitter = getSeededInt(`${nowSeed}:${area}:${slot.key}:j`, 21) - 10; // -10 ~ +10
+        
+        // none 값의 임계값을 셀마다 다르게 적용하여 일렬로 배치되지 않도록
+        const cellNoneOffset = getSeededInt(`${nowSeed}:${area}:${slot.key}:noneOffset`, 31) - 15; // -15 ~ +15
+        const noneThreshold = Math.max(20, Math.min(80, distribution.noneThreshold + slotJitter + cellNoneOffset));
+        
+        const lowThreshold = distribution.lowThreshold;
+        const midThreshold = distribution.midThreshold;
+        const highThreshold = 100 - noneThreshold - lowThreshold - midThreshold;
 
         let value: number;
-        if (baseRand < noneThreshold) {
+        const valueRand = baseRand;
+        
+        if (valueRand < noneThreshold) {
           value = 0;
-        } else if (baseRand < lowThreshold) {
+        } else if (valueRand < noneThreshold + lowThreshold) {
           value = 1 + getSeededInt(`${nowSeed}:${area}:${slot.key}:low`, 1); // 1~2
-        } else if (baseRand < midThreshold) {
+        } else if (valueRand < noneThreshold + lowThreshold + midThreshold) {
           value = 3 + getSeededInt(`${nowSeed}:${area}:${slot.key}:mid`, 2); // 3~5
         } else {
-          value = 6 + getSeededInt(`${nowSeed}:${area}:${slot.key}:high`, 3); // 6~9 (아주 드물게)
+          value = 6 + getSeededInt(`${nowSeed}:${area}:${slot.key}:high`, 3); // 6~9
         }
 
         result[area][slot.key] = value;
@@ -764,13 +834,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     }
   }, [heatmapData]);
 
-  // 히트맵 데이터를 ref로 저장 (interval에서 최신 값 참조용)
-  const heatmapDataRef = useRef(heatmapData);
-  useEffect(() => {
-    heatmapDataRef.current = heatmapData;
-  }, [heatmapData]);
-
-  // 히트맵 지역 롤링 (5초마다) - heatmapData와 visibleHeatmapRows 선언 이후에 위치
+  // 히트맵 지역 롤링 (5초마다) - heatmapData 선언 이후에 위치
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentStreamIndex((prev) => {
@@ -782,57 +846,20 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         if (totalAreaPages <= 1) return prev;
         return (prev + 1) % totalAreaPages;
       });
-      // 히트맵 지역 롤링 (5초마다) - 높이에 맞게 동적으로 전환
+      // 히트맵 지역 롤링 (5초마다) - 4개씩 전환
       // 애니메이션을 위해 현재 데이터를 이전 데이터로 저장 (offset 변경 전)
       // ref에 먼저 저장 (동기적으로)
-      const currentDataCopy = JSON.parse(JSON.stringify(heatmapDataRef.current));
+      const currentDataCopy = JSON.parse(JSON.stringify(heatmapData));
       previousHeatmapDataRef.current = currentDataCopy;
       // state에도 저장 (비동기)
       setPreviousHeatmapData(currentDataCopy);
       // 그 다음 offset 변경 및 애니메이션 트리거
-      setHeatmapAreaOffset((prev) => {
-        const newOffset = (prev + visibleHeatmapRows) % allHeatmapAreas.length;
-        return newOffset;
-      });
+      setHeatmapAreaOffset((prev) => (prev + 4) % allHeatmapAreas.length);
       setHeatmapAnimationKey((prev) => prev + 1);
     }, 5000);
     return () => clearInterval(interval);
-  }, [totalAreaPages, allHeatmapAreas.length, visibleHeatmapRows, cctvStatus.monitoringSpots]);
+  }, [totalAreaPages, allHeatmapAreas.length]);
 
-  // 그리드 높이에 맞춰 표시할 행 수 계산
-  useEffect(() => {
-    const calculateVisibleRows = () => {
-      const container = heatmapGridRef.current;
-      if (!container) return;
-      
-      // 각 행 높이: h-5 (20px) + space-y-1 (4px) = 24px
-      const rowHeight = 24;
-      const availableHeight = container.clientHeight;
-      const maxRows = Math.floor(availableHeight / rowHeight);
-      
-      // 최소 4개, 최대 8개
-      const rows = Math.max(4, Math.min(8, maxRows));
-      setVisibleHeatmapRows(rows);
-    };
-    
-    // 초기 계산을 위해 약간의 지연
-    const timeoutId = setTimeout(() => {
-      calculateVisibleRows();
-    }, 0);
-    
-    const container = heatmapGridRef.current;
-    if (!container) {
-      return () => clearTimeout(timeoutId);
-    }
-    
-    const resizeObserver = new ResizeObserver(calculateVisibleRows);
-    resizeObserver.observe(container);
-    
-    return () => {
-      clearTimeout(timeoutId);
-      resizeObserver.disconnect();
-    };
-  }, []);
 
   return (
     <div
@@ -1039,8 +1066,8 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           </div>
           <div className="overflow-hidden flex-1 min-h-0">
             <div className="flex justify-end h-full">
-              <div className="relative flex-1 max-w-[434px] rounded-xl overflow-visible" style={{ minHeight: '80px' }}>
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="relative flex-1 max-w-[434px] rounded-xl overflow-visible" style={{ minHeight: '80px', width: '100%', height: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={80}>
                   <AreaChart
                     data={trendData}
                     margin={{ top: 26, right: 4, left: 0, bottom: 20 }}
@@ -1149,7 +1176,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
           <div className="flex-1 min-h-0 flex flex-col" style={{ overflow: 'hidden' }}>
             {/* 그리드 */}
-            <div ref={heatmapGridRef} className="space-y-1 relative flex-1 min-h-0 overflow-y-auto">
+            <div ref={heatmapGridRef} className="space-y-1 relative flex-1 min-h-0 overflow-hidden">
               {heatmapAreas.map((area, index) => {
                 // 4개를 2개씩 2그룹으로 나누기 (애니메이션 타이밍용)
                 const groupIndex = Math.floor(index / 2);
