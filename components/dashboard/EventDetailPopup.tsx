@@ -11,13 +11,24 @@ interface EventDetailPopupProps {
   onClose: () => void;
   title: string;
   icon?: string;
+  hideClipLabel?: boolean;
+  hideTitleLocation?: boolean;
+  hideAIAnalysis?: boolean;
 }
 
 /**
  * 이벤트 상세 팝업 컴포넌트 (공통)
  * AI 탐지 팝업과 메인투망 팝업에서 공통으로 사용
  */
-const EventDetailPopup: React.FC<EventDetailPopupProps> = ({ event, onClose, title, icon = 'mdi:robot' }) => {
+const EventDetailPopup: React.FC<EventDetailPopupProps> = ({ 
+  event, 
+  onClose, 
+  title, 
+  icon = 'mdi:robot',
+  hideClipLabel = false,
+  hideTitleLocation = false,
+  hideAIAnalysis = false,
+}) => {
   const navigate = useNavigate();
 
   if (!event) return null;

@@ -687,6 +687,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       newPositions['event-7'] = tempPosition;
     }
 
+    // 2번 키 이벤트 (A-20251210-003) 위치를 중앙으로 조정
+    if (newPositions['A-20251210-003']) {
+      newPositions['A-20251210-003'] = {
+        left: centerX,
+        top: centerY,
+      };
+    }
+
     // 새 위치를 캐시에 추가
     setCachedPositions(prev => ({ ...prev, ...newPositions }));
   }, [events.map(e => e.id).join(',')]); // 이벤트 ID 목록이 변경될 때만 실행
@@ -696,7 +704,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const result: Record<string, { left: number; top: number }> = {};
     events.forEach(event => {
       if (cachedPositions[event.id]) {
-        result[event.id] = cachedPositions[event.id];
+        // 2번 키 이벤트 (A-20251210-003)는 항상 중앙으로 강제
+        if (event.id === 'A-20251210-003') {
+          result[event.id] = { left: centerX, top: centerY };
+        } else {
+          result[event.id] = cachedPositions[event.id];
+        }
       }
     });
     return result;
