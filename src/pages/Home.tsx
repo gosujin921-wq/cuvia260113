@@ -334,7 +334,7 @@ export default function Home() {
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
         {/* 스코어 카드 */}
-        <div className="bg-[#393a42] rounded-lg p-4" style={{ flexShrink: 0 }}>
+        <div className="rounded-lg p-4 gradient-border-right-bottom" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           <div className="grid grid-cols-2 gap-3">
             {[
               {
@@ -361,7 +361,8 @@ export default function Home() {
                 icon: 'mdi:check-circle',
                 color: 'text-green-400',
               },
-            ].map((card) => (
+            ].map((card, index) => {
+              return (
               <div
                 key={card.title}
                 className="bg-[#393a42] p-3 rounded-lg flex items-start justify-between relative"
@@ -374,14 +375,15 @@ export default function Home() {
                   </div>
                 </div>
                 {/* 아이콘 */}
-                <div className="bg-[#393a42] rounded flex-shrink-0">
+                <div className="flex-shrink-0">
                   <Icon icon={card.icon} className={`w-6 h-6 ${card.color}`} />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
-        <div className="bg-[#393a42] rounded-lg p-4 flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+        <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           <EventList
             events={eventsForList}
             selectedEventId={selectedEventId || undefined}

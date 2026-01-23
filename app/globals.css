@@ -458,3 +458,59 @@ input[type="range"].slider::-moz-range-thumb {
   position: relative;
   z-index: 1;
 }
+
+.gradient-border-left-top {
+  position: relative;
+  border-radius: 0.5rem; /* rounded-lg */
+}
+
+.gradient-border-left-top::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;                  /* 보더 두께 */
+  pointer-events: none;
+
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.55) 60%,
+    rgba(255,255,255,0.15) 100%
+  );
+
+  /* 핵심: 가운데를 뻥 뚫고 테두리만 남김 */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.gradient-border-right-bottom {
+  position: relative;
+  border-radius: 0.5rem; /* rounded-lg */
+}
+
+.gradient-border-right-bottom::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;                  /* 보더 두께 */
+  pointer-events: none;
+
+  background: linear-gradient(
+    315deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.55) 60%,
+    rgba(255,255,255,0.15) 100%
+  );
+
+  /* 핵심: 가운데를 뻥 뚫고 테두리만 남김 */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}

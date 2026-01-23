@@ -127,6 +127,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [waterLeakageTime, setWaterLeakageTime] = useState<string>('');
   const [powerSupplyTime, setPowerSupplyTime] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
+  const [sensorLocationIndex, setSensorLocationIndex] = useState<number>(0);
+  
+  const sensorLocations = useMemo(() => ['신원동', '행신동', '식사동'], []);
   
   // 📡 API 연동 필요: 날씨 데이터
   // GET /api/weather/current
@@ -206,9 +209,11 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         rainfall: Math.max(0, prev.rainfall + (Math.random() - 0.5) * 0.2),
         windSpeed: Math.max(0, prev.windSpeed + (Math.random() - 0.5) * 0.3),
       }));
+      setLastUpdateTime(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setSensorLocationIndex((prev) => (prev + 1) % sensorLocations.length);
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [sensorLocations]);
 
   /**
    * 📡 API 연동 필요: CCTV 운영 현황 데이터
@@ -223,13 +228,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     delayCount: 12,
     areaStatus: [
       {
-        area: '원미동',
+        area: 'zone1',
         total: 182,
         normal: 176,
         delay: 4,
         error: 2,
         uptime: 96,
-        streamRate: 91,
+        streamRate: 2.3,
         online: 176,
         offline: 6,
         warning: 1,
@@ -238,13 +243,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         monitorState: '정상',
       },
       {
-        area: '중동',
+        area: 'zone2',
         total: 205,
         normal: 198,
         delay: 5,
         error: 2,
         uptime: 93,
-        streamRate: 88,
+        streamRate: 3.7,
         online: 198,
         offline: 7,
         warning: 2,
@@ -253,13 +258,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         monitorState: '집중',
       },
       {
-        area: '심곡동',
+        area: 'zone3',
         total: 210,
         normal: 203,
         delay: 5,
         error: 2,
         uptime: 95,
-        streamRate: 90,
+        streamRate: 1.8,
         online: 203,
         offline: 7,
         warning: 1,
@@ -268,13 +273,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         monitorState: '정상',
       },
       {
-        area: '부천로',
+        area: 'zone4',
         total: 96,
         normal: 90,
         delay: 4,
         error: 2,
         uptime: 89,
-        streamRate: 84,
+        streamRate: 4.2,
         online: 90,
         offline: 6,
         warning: 1,
@@ -283,13 +288,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         monitorState: '집중',
       },
       {
-        area: '춘의동',
+        area: 'zone5',
         total: 134,
         normal: 127,
         delay: 5,
         error: 2,
         uptime: 92,
-        streamRate: 86,
+        streamRate: 2.9,
         online: 127,
         offline: 7,
         warning: 1,
@@ -298,13 +303,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         monitorState: '정상',
       },
       {
-        area: '부천중앙시장 일대',
+        area: 'zone6',
         total: 108,
         normal: 101,
         delay: 5,
         error: 2,
         uptime: 90,
-        streamRate: 82,
+        streamRate: 3.5,
         online: 101,
         offline: 7,
         warning: 2,
@@ -375,53 +380,21 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const totalAreaPages = Math.ceil(cctvStatus.areaStatus.length / areasPerPage);
   const visibleAreas = cctvStatus.areaStatus.slice(areaPage * areasPerPage, areaPage * areasPerPage + areasPerPage);
 
-  // 모든 지역 목록 (히트맵 롤링용) - useEffect보다 먼저 정의 (부천시 동 단위만)
+  // 모든 지역 목록 (히트맵 롤링용) - useEffect보다 먼저 정의 (zone1~zone8)
   const allHeatmapAreas = useMemo(() => {
     return [
-      '원미동',
-      '심곡동',
-      '춘의동',
-      '도당동',
-      '약대동',
-      '중동',
-      '상동',
-      '소사동',
-      '역곡동',
-      '여월동',
-      '작동',
-      '고강동',
-      '오정동',
-      '신흥동',
-      '삼정동',
-      '부개동',
-      '원종동',
+      'zone1',
+      'zone2',
+      'zone3',
+      'zone4',
+      'zone5',
+      'zone6',
+      'zone7',
+      'zone8',
     ];
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentStreamIndex((prev) => {
-        const autoSequenceSpots = cctvStatus.monitoringSpots.filter((spot) => spot.autoSequence);
-        if (autoSequenceSpots.length === 0) return prev;
-        return (prev + 1) % autoSequenceSpots.length;
-      });
-      setAreaPage((prev) => {
-        if (totalAreaPages <= 1) return prev;
-        return (prev + 1) % totalAreaPages;
-      });
-      // 히트맵 지역 롤링 (5초마다) - 6개씩 한 판으로 전환
-      // 애니메이션을 위해 현재 데이터를 이전 데이터로 저장 (offset 변경 전)
-      // ref에 먼저 저장 (동기적으로)
-      const currentDataCopy = JSON.parse(JSON.stringify(heatmapData));
-      previousHeatmapDataRef.current = currentDataCopy;
-      // state에도 저장 (비동기)
-      setPreviousHeatmapData(currentDataCopy);
-      // 그 다음 offset 변경 및 애니메이션 트리거
-      setHeatmapAreaOffset((prev) => (prev + 7) % allHeatmapAreas.length);
-      setHeatmapAnimationKey((prev) => prev + 1);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [totalAreaPages, allHeatmapAreas.length]);
+  // 히트맵 지역 롤링은 heatmapData와 visibleHeatmapRows 선언 이후로 이동
 
   const getLevelText = (level: 'good' | 'normal' | 'bad') => {
     switch (level) {
@@ -474,6 +447,8 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
   const infrastructureRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const heatmapGridRef = useRef<HTMLDivElement>(null);
+  const [visibleHeatmapRows, setVisibleHeatmapRows] = useState(4);
 
   const sensorData: SensorData = {
     pm25: { value: sensorValues.pm25, level: getPm25Level(sensorValues.pm25) },
@@ -635,7 +610,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     const seedBase = typeof window !== 'undefined' ? new Date().toISOString().slice(0, 10) : 'static';
     // 더 부드러운 곡선 + 충분한 셰이프를 위해 30분 간격 포인트 사용 (48개)
     const hours = Array.from({ length: 48 }, (_, index) => index * 0.5); // 0 ~ 23.5시 (30분 간격)
-    const maxValue = 800;
+    const maxValue = 50;
     const minValue = 0;
     const range = maxValue - minValue;
 
@@ -650,7 +625,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       const noise = (noiseSeed / 100 - 0.5) * 0.04; // 노이즈는 더 줄여서 형태만 살짝 깨주는 정도
 
       const shaped = baseWave + noise; // -1 ~ 1 근처의 파형
-      const value = minValue + (range / 2) + shaped * (range / 2); // 0~800 안에서 굴곡만 더 강하게
+      const value = minValue + (range / 2) + shaped * (range / 2); // 0~50 안에서 굴곡만 더 강하게
 
       return {
         hour: hour % 1 === 0 ? hour.toString().padStart(2, '0') : '', // 정수 시간만 라벨로 사용
@@ -689,7 +664,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     const value = Number(payload?.value);
     if (Number.isNaN(value)) return null;
 
-    const isTop = value === 800;
+    const isTop = value === 50;
 
     return (
       <g transform={`translate(${x},${y})`}>
@@ -717,16 +692,17 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     });
   }, []);
 
-  // 현재 표시할 지역 (6개씩 롤링)
+  // 현재 표시할 지역 (높이에 맞게 동적으로 계산)
   const heatmapAreas = useMemo(() => {
     const startIndex = heatmapAreaOffset % allHeatmapAreas.length;
     const result: string[] = [];
-    for (let i = 0; i < 7; i++) {
+    const rowCount = Math.max(4, visibleHeatmapRows); // 최소 4개
+    for (let i = 0; i < rowCount; i++) {
       const index = (startIndex + i) % allHeatmapAreas.length;
       result.push(allHeatmapAreas[index]);
     }
     return result;
-  }, [heatmapAreaOffset, allHeatmapAreas]);
+  }, [heatmapAreaOffset, allHeatmapAreas, visibleHeatmapRows]);
 
 
   type HeatmapBucket = 'none' | 'low' | 'mid' | 'high';
@@ -787,6 +763,76 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       setPreviousHeatmapData(initialData);
     }
   }, [heatmapData]);
+
+  // 히트맵 데이터를 ref로 저장 (interval에서 최신 값 참조용)
+  const heatmapDataRef = useRef(heatmapData);
+  useEffect(() => {
+    heatmapDataRef.current = heatmapData;
+  }, [heatmapData]);
+
+  // 히트맵 지역 롤링 (5초마다) - heatmapData와 visibleHeatmapRows 선언 이후에 위치
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentStreamIndex((prev) => {
+        const autoSequenceSpots = cctvStatus.monitoringSpots.filter((spot) => spot.autoSequence);
+        if (autoSequenceSpots.length === 0) return prev;
+        return (prev + 1) % autoSequenceSpots.length;
+      });
+      setAreaPage((prev) => {
+        if (totalAreaPages <= 1) return prev;
+        return (prev + 1) % totalAreaPages;
+      });
+      // 히트맵 지역 롤링 (5초마다) - 높이에 맞게 동적으로 전환
+      // 애니메이션을 위해 현재 데이터를 이전 데이터로 저장 (offset 변경 전)
+      // ref에 먼저 저장 (동기적으로)
+      const currentDataCopy = JSON.parse(JSON.stringify(heatmapDataRef.current));
+      previousHeatmapDataRef.current = currentDataCopy;
+      // state에도 저장 (비동기)
+      setPreviousHeatmapData(currentDataCopy);
+      // 그 다음 offset 변경 및 애니메이션 트리거
+      setHeatmapAreaOffset((prev) => {
+        const newOffset = (prev + visibleHeatmapRows) % allHeatmapAreas.length;
+        return newOffset;
+      });
+      setHeatmapAnimationKey((prev) => prev + 1);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [totalAreaPages, allHeatmapAreas.length, visibleHeatmapRows, cctvStatus.monitoringSpots]);
+
+  // 그리드 높이에 맞춰 표시할 행 수 계산
+  useEffect(() => {
+    const calculateVisibleRows = () => {
+      const container = heatmapGridRef.current;
+      if (!container) return;
+      
+      // 각 행 높이: h-5 (20px) + space-y-1 (4px) = 24px
+      const rowHeight = 24;
+      const availableHeight = container.clientHeight;
+      const maxRows = Math.floor(availableHeight / rowHeight);
+      
+      // 최소 4개, 최대 8개
+      const rows = Math.max(4, Math.min(8, maxRows));
+      setVisibleHeatmapRows(rows);
+    };
+    
+    // 초기 계산을 위해 약간의 지연
+    const timeoutId = setTimeout(() => {
+      calculateVisibleRows();
+    }, 0);
+    
+    const container = heatmapGridRef.current;
+    if (!container) {
+      return () => clearTimeout(timeoutId);
+    }
+    
+    const resizeObserver = new ResizeObserver(calculateVisibleRows);
+    resizeObserver.observe(container);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   return (
     <div
@@ -861,18 +907,19 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
       ) : (
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pl-6 pr-6 flex flex-col gap-4"
+          className="flex-1 overflow-hidden pt-4 pb-4 pl-6 pr-6 flex flex-col gap-4"
           ref={scrollContainerRef}
-          style={{ maxWidth: '100%', paddingBottom: '16px' }}
+          style={{ maxWidth: '100%', height: '100%' }}
         >
         {/* 상단 헤더: 좌측 로고, 우측 날씨 + 시간 */}
-        <div className="bg-[#393a42] rounded-lg p-4 flex items-center justify-between" style={{ flexShrink: 0 }}>
+        <div className="rounded-lg p-4 flex items-center justify-between gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           {/* 좌측: 패널 로고 */}
           <div className="flex items-center gap-2">
             <img
               src="/logo.svg"
               alt="CUVIA"
               className="h-5 w-auto object-contain"
+              style={{ filter: 'brightness(0) invert(1)' }}
             />
           </div>
 
@@ -893,7 +940,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* CCTV 운영 현황 (상세 카드) */}
-        <div className="bg-[#393a42] rounded-lg p-4 space-y-3" style={{ flexShrink: 0 }}>
+        <div className="rounded-lg px-4 pt-4 pb-2 space-y-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
             {/* 정상/장애/지연 장비 수 */}
@@ -912,28 +959,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                 <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0" />
                 <span className="text-gray-400 text-xs whitespace-nowrap">지연</span>
                 <span className="text-yellow-400 text-xs font-medium">{cctvStatus.delayCount}</span>
-              </div>
-            </div>
-          </div>
-                  
-          {/* 전체 요약 데이터 */}
-          <div className="space-y-3">
-            {/* 전체 CCTV 가동률과 총 CCTV 수 (큰 숫자 스코어 스타일) */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <div className="text-gray-400 text-xs mb-1 mt-2">전체 CCTV 가동률</div>
-                <div className="text-white text-2xl font-bold">
-                  {cctvStatus.totalRate}
-                  <span className="text-xl">%</span>
-                </div>
-              </div>
-              <div className="w-px h-12 bg-[#31353a]" />
-              <div className="flex-1">
-                <div className="text-gray-400 text-xs mb-1 mt-2">총 CCTV 수</div>
-                <div className="text-white text-2xl font-bold">
-                  {cctvStatus.totalCount.toLocaleString()}
-                  <span className="text-xl">대</span>
-                </div>
               </div>
             </div>
           </div>
@@ -970,7 +995,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-gray-400 text-xs font-semibold tracking-tight truncate">영상 수신율</p>
+                      <p className="text-gray-400 text-xs font-semibold tracking-tight truncate">CCTV 장애율</p>
                       <p className="text-white text-xl">{area.streamRate}%</p>
                       <div className="w-full h-3 bg-[#1a1a1a] mt-1 rounded-full overflow-hidden">
                         <div 
@@ -979,7 +1004,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                             width: `${area.streamRate}%`,
                             '--target-width': `${area.streamRate}%`,
                             animationDelay: `${areaIndex * 100 + 150}ms`,
-                            background: 'linear-gradient(90deg, #0066FF 0%, #8A2BE2 100%)',
+                            background: 'linear-gradient(90deg, #8A2BE2 0%, #ff8566 100%)',
                           } as React.CSSProperties}
                         />
                       </div>
@@ -1007,30 +1032,18 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
-        <div className="bg-[#393a42] rounded-lg p-4 relative" style={{ flexShrink: 0 }}>
-          {/* 좌측+상단 이너 보더 */}
-          <div 
-            className="absolute pointer-events-none rounded-lg"
-            style={{
-              left: 0,
-              top: 0,
-              right: 0,
-              bottom: 0,
-              borderLeft: '1px solid rgba(255,255,255,0.5)',
-              borderTop: '1px solid rgba(255,255,255,0.5)',
-              borderTopLeftRadius: '0.5rem',
-            }}
-          />
-          <div className="flex items-center mb-3">
+        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flex: 1, minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
+            <span className="text-gray-400 text-xs">지난 24시간</span>
           </div>
-          <div className="overflow-hidden">
-            <div className="flex justify-end">
-              <div className="relative h-40 w-[434px] rounded-xl overflow-visible">
+          <div className="overflow-hidden flex-1 min-h-0">
+            <div className="flex justify-end h-full">
+              <div className="relative flex-1 max-w-[434px] rounded-xl overflow-visible" style={{ minHeight: '80px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
                     data={trendData}
-                    margin={{ top: 26, right: 4, left: 0, bottom: 34 }}
+                    margin={{ top: 26, right: 4, left: 0, bottom: 20 }}
                   >
                     <defs>
                       <linearGradient id="eventWaveFill" x1="0" y1="0" x2="0" y2="1">
@@ -1075,11 +1088,11 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                       tickMargin={8}
                     />
                     <YAxis
-                      domain={[0, 800]}
+                      domain={[0, 50]}
                       tick={renderTrendYAxisTick}
                       tickLine={false}
                       axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
-                      ticks={[0, 200, 400, 600, 800]}
+                      ticks={[0, 25, 50]}
                       width={40}
                       allowDecimals={false}
                     />
@@ -1110,42 +1123,46 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
-        <div className="bg-[#393a42] rounded-lg p-4" style={{ flexShrink: 0 }}>
-          <div className="flex items-center justify-between gap-4 mb-3">
-            <h3 className="text-white font-semibold text-sm">지역별 이벤트 발생 건 수</h3>
-            <div className="flex items-center gap-4 text-[12px] text-gray-200">
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-sm bg-[#1f2937] border border-gray-500/30" />
-                <span>None</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-sm bg-[#3b5a8c]" />
-                <span>1–2</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-sm bg-[#005eb8]" />
-                <span>3–5</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-3 h-3 rounded-sm bg-[#F87171]" />
-                <span>6+</span>
-              </div>
+        <div className="rounded-lg p-4 gradient-border-right-bottom flex flex-col" style={{ flex: 1, minHeight: '240px', background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white font-semibold text-sm">구역별 이벤트 발생 건 수</h3>
+            <span className="text-gray-400 text-xs">지난 24시간</span>
+          </div>
+          <div className="flex items-center justify-end gap-4 text-[12px] text-gray-200 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[#1f2937] border border-gray-500/30" />
+              <span>None</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[#3b5a8c]" />
+              <span>1–2</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[#005eb8]" />
+              <span>3–5</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-3 h-3 rounded-sm bg-[#F87171]" />
+              <span>6+</span>
             </div>
           </div>
 
-          <div className="overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col" style={{ overflow: 'hidden' }}>
             {/* 그리드 */}
-            <div className="space-y-1 relative">
+            <div ref={heatmapGridRef} className="space-y-1 relative flex-1 min-h-0 overflow-y-auto">
               {heatmapAreas.map((area, index) => {
-                // 6개를 3개씩 2그룹으로 나누기 (애니메이션 타이밍용)
-                const groupIndex = Math.floor(index / 3);
+                // 4개를 2개씩 2그룹으로 나누기 (애니메이션 타이밍용)
+                const groupIndex = Math.floor(index / 2);
                 const isFirstGroup = groupIndex === 0;
                 const groupDelay = isFirstGroup ? 0 : 200;
                 
                 return (
                   <div
-                    key={`${area}`}
+                    key={`${area}-${heatmapAnimationKey}`}
                     className="flex items-center gap-0"
+                    style={{
+                      animation: `fadeInUp 0.4s ease-out ${groupDelay}ms both`,
+                    }}
                   >
                     <div className="w-10 text-[12px] text-gray-400 truncate" title={area}>
                       {area}
@@ -1171,8 +1188,8 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                              bucket === 'high' ? '#F87171' : '#1f2937';
                         
                         // 애니메이션 적용: 판이 전환될 때(heatmapAnimationKey가 변경될 때) 모든 none이 아닌 셀에 적용
-                        // 매우 단순화: 현재 none이 아니고 애니메이션 키가 0보다 크면 항상 애니메이션 적용
-                        const shouldAnimate = !isNowNone && heatmapAnimationKey > 0;
+                        // 애니메이션 키가 변경될 때마다 애니메이션 적용
+                        const shouldAnimate = !isNowNone;
                         
                         return (
                           <div
@@ -1197,6 +1214,17 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
             </div>
             
             <style>{`
+              @keyframes fadeInUp {
+                from {
+                  opacity: 0;
+                  transform: translateY(8px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+              
               @keyframes heatmapCellSparkleDissolve {
                 /* Phase 1: None 상태에서 반짝이기 (0-30%) */
                 0% {
@@ -1257,7 +1285,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
             `}</style>
 
             {/* X축 라벨 (아래) */}
-            <div className="flex items-center gap-0 mt-2">
+            <div className="flex items-center gap-0 mt-2 flex-shrink-0">
               <div className="w-10" />
               <div className="grid grid-cols-12 gap-1 flex-1 min-w-0">
                 {heatmapTimeSlots.map((slot, index) => {
@@ -1282,11 +1310,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 2) 실시간 환경 센서 모니터링 */}
-        <div className="bg-[#393a42] rounded-lg p-4" style={{ marginTop: 'auto', marginBottom: 0, flexShrink: 0 }}>
+        <div className="rounded-lg p-4 gradient-border-right-bottom" style={{ marginTop: 'auto', marginBottom: 0, flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
-            <span className="text-gray-300 text-xs">
-              마지막 업데이트: {lastUpdateTime || '--:--:--'}
+            <span className="text-gray-400 text-xs flex items-center gap-1.5">
+              마지막 업데이트: <span>{sensorLocations[sensorLocationIndex]}</span>
+              <span className="text-gray-400">·</span>
+              <span>{lastUpdateTime || '--:--:--'}</span>
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 min-w-0">

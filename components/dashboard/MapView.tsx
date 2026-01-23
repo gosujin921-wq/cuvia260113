@@ -31,7 +31,7 @@ interface MapViewProps {
   onZoomLevelChange?: (level: number) => void;
   onAiDetectionClose?: () => void;
   hideControls?: boolean;
-  leftPanelWidth?: number; // 좌측 패널 너비 (px)
+  leftPanelWidth?: number;
 }
 
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480 }: MapViewProps) => {
@@ -44,6 +44,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [showCCTVName, setShowCCTVName] = useState(true);
   const [is3DMode, setIs3DMode] = useState(true);
   const [mapBearing, setMapBearing] = useState(-17.6);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -145,26 +146,20 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     onZoomLevelChange?.(zoomLevel);
   }, [zoomLevel, onZoomLevelChange]);
 
+  // 윈도우 리사이즈 감지
   useEffect(() => {
-    if (!showCCTV) return;
+    if (typeof window === 'undefined') return;
     
-    const interval = setInterval(() => {
-      setCurrentCCTVIndex((prev) => prev + 1);
-    }, 5000);
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
     
-    return () => clearInterval(interval);
-  }, [showCCTV]);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  useEffect(() => {
-    if (!showCCTV) return;
-    
-    if (currentCCTVIndex >= 8) {
-      const timer = setTimeout(() => {
-        setCurrentCCTVIndex(0);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [currentCCTVIndex, showCCTV]);
+
+  // CCTV 자동 롤링 제거 (무한 스크롤로 변경)
 
   const prevZoomLevelRef = useRef(zoomLevel);
   const animationFrameRef = useRef<number | null>(null);
@@ -788,6 +783,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       }}
     >
+       {/* 맵 컨트롤 버튼 */}
        <div 
          className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
@@ -877,6 +873,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
        </div>
 
 
+       {/* CCTV 컨트롤 버튼 */}
        <div 
          className="absolute top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
@@ -1507,47 +1504,85 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       )}
 
 
-      {/* 하단 CCTV 비디오 플레이어 - 1줄에 4개, 무한 롤링 */}
+      {/* 하단 CCTV 비디오 플레이어 - 무한 스크롤 */}
       {showCCTV && (() => {
-        const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4', 'CCTV-V-5', 'CCTV-V-6', 'CCTV-V-7', 'CCTV-V-8'];
-        const duplicatedList = [...cctvList, ...cctvList, ...cctvList];
-        const itemWidth = 200;
-        const gap = 12;
-        const padding = 12;
-        const totalItemWidth = itemWidth + gap;
-        const baseOffset = cctvList.length * totalItemWidth;
-        const currentOffset = baseOffset + (currentCCTVIndex * totalItemWidth);
-        
-        // 좌측 패널 너비와 우측 패널 너비(370px)를 제외한 너비 계산
         const rightPanelWidth = 370;
-        const cctvPanelLeft = leftPanelWidth;
-        const cctvPanelRight = rightPanelWidth;
+        const panelGap = 16;
+        const verticalPadding = 16; // 상하 여백
+        const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4'];
+        
+        // 사용 가능한 너비 계산
+        const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
+        
+        // 4:3 비율로 아이템 크기 계산 (4개 표시)
+        const gap = 12;
+        const paddingHorizontal = 12;
+        const paddingVertical = 16;
+        const totalGapWidth = gap * 3; // 4개 아이템 사이 3개 gap
+        const totalPaddingWidth = paddingHorizontal * 2;
+        const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
+        const itemHeight = Math.floor((itemWidth * 3) / 4); // 4:3 비율
+        
+        // 패널 위치 계산
+        const cctvPanelLeft = leftPanelWidth + panelGap;
+        const cctvPanelRight = rightPanelWidth + panelGap;
         
         return (
           <div
-            className="absolute bottom-0 transition-all duration-500 ease-in-out"
+            className="absolute transition-all duration-500 ease-in-out"
             style={{ 
               left: `${cctvPanelLeft}px`,
               right: `${cctvPanelRight}px`,
+              bottom: `${verticalPadding}px`,
+              top: 'auto',
               zIndex: 200,
               transform: hideControls ? 'translateY(136px)' : 'translateY(0)',
               opacity: hideControls ? 0 : 1,
             }}
           >
-            <div className="bg-[#242a34] border-t border-[#31353a] rounded-t-lg" style={{ height: '136px', width: '100%', overflow: 'hidden' }}>
+            <div className="rounded-lg gradient-border-right-bottom" style={{ height: `${itemHeight + (verticalPadding * 2)}px`, width: '100%', overflow: 'hidden', paddingTop: `${verticalPadding}px`, paddingBottom: `${verticalPadding}px`, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
               <div 
-                className="flex items-center h-full transition-transform duration-500 ease-in-out"
+                ref={(el) => {
+                  if (el && showCCTV) {
+                    // 초기 스크롤 위치를 중간으로 설정 (무한 스크롤을 위해)
+                    const totalItemWidth = itemWidth + gap;
+                    const oneSetWidth = cctvList.length * totalItemWidth;
+                    el.scrollLeft = oneSetWidth;
+                  }
+                }}
+                className="flex items-center"
                 style={{ 
+                  height: `${itemHeight}px`,
                   gap: `${gap}px`,
-                  padding: `${padding}px`,
-                  transform: `translateX(-${currentOffset}px)`,
+                  paddingLeft: `${paddingHorizontal}px`,
+                  paddingRight: `${paddingHorizontal}px`,
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent',
+                }}
+                onScroll={(e) => {
+                  const target = e.currentTarget;
+                  const scrollLeft = target.scrollLeft;
+                  const totalItemWidth = itemWidth + gap;
+                  const oneSetWidth = cctvList.length * totalItemWidth;
+                  
+                  // 오른쪽 끝에 가까워지면 중간으로 이동
+                  if (scrollLeft >= oneSetWidth * 2 - 10) {
+                    target.scrollLeft = oneSetWidth + (scrollLeft - oneSetWidth * 2);
+                  }
+                  // 왼쪽 끝에 가까워지면 중간으로 이동
+                  else if (scrollLeft <= 10) {
+                    target.scrollLeft = oneSetWidth + scrollLeft;
+                  }
                 }}
               >
-                {duplicatedList.map((cctvId, index) => (
+                {/* 무한 스크롤을 위한 복제 아이템들 (3세트) */}
+                {[...cctvList, ...cctvList, ...cctvList].map((cctvId, index) => (
                   <div
                     key={`bottom-cctv-${index}-${cctvId}`}
                     className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0"
-                    style={{ width: `${itemWidth}px`, height: '100%' }}
+                    style={{ width: `${itemWidth}px`, height: `${itemHeight}px` }}
                   >
                     <video
                       src={getRandomCCTVVideo(cctvId)}
@@ -1571,46 +1606,66 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       })()}
 
 
-      {/* Agent Hub 버튼 - 우측 하단 플로팅 버튼 */}
-      <div
-        className="absolute group"
-        style={{
-          bottom: (showCCTV && !hideControls) ? '152px' : '24px',
-          right: '24px',
-          zIndex: 200,
-          transition: 'bottom 0.3s ease-in-out',
-        }}
-      >
-        <a
-          href="/agent-hub"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
-          style={{
-            background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
-            boxShadow: '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)';
-          }}
-          aria-label="Agent Hub"
-        >
-          <img 
-            src="/simbol.svg" 
-            alt="AI" 
-            className="w-6 h-6"
-            style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-          />
-        </a>
-        {/* 툴팁 */}
-        <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">
-          Agent Hub 이동
-          <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-[#1a1a1a]"></div>
-        </div>
-      </div>
+      {/* Agent Hub 버튼 - CCTV 화면 패널 우측 정렬 */}
+      {(() => {
+        const rightPanelWidth = 370;
+        const panelGap = 16;
+        const verticalPadding = 16;
+        
+        // CCTV 패널 높이 계산 (Agent Hub 버튼 위치용)
+        const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
+        const gap = 12;
+        const paddingHorizontal = 12;
+        const totalGapWidth = gap * 3;
+        const totalPaddingWidth = paddingHorizontal * 2;
+        const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
+        const itemHeight = Math.floor((itemWidth * 3) / 4);
+        
+        // CCTV 패널 우측 위치 계산
+        const cctvPanelRight = rightPanelWidth + panelGap;
+        
+        return (
+          <div
+            className="absolute group"
+            style={{
+              bottom: (showCCTV && !hideControls) ? `${verticalPadding + itemHeight + (verticalPadding * 2) + 24}px` : '24px',
+              right: `${cctvPanelRight}px`,
+              zIndex: 200,
+              transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out',
+            }}
+          >
+            <a
+              href="/agent-hub"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+                boxShadow: '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)';
+              }}
+              aria-label="Agent Hub"
+            >
+              <img 
+                src="/simbol.svg" 
+                alt="AI" 
+                className="w-6 h-6"
+                style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+              />
+            </a>
+            {/* 툴팁 */}
+            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">
+              Agent Hub 이동
+              <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-[#1a1a1a]"></div>
+            </div>
+          </div>
+        );
+      })()}
 
 
     </div>
