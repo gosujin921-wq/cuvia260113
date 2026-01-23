@@ -330,11 +330,11 @@ export default function Home() {
 
       {/* 우측: 이벤트 리스트 패널 - 플로팅 */}
       <div 
-        className="absolute right-0 top-0 bottom-0 flex flex-col border-l border-[#31353a] pl-4 pr-5 bg-[#242a34]" 
-        style={{ width: '370px', zIndex: 100 }}
+        className="absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4" 
+        style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
-        <div className="py-3">
-          {/* 스코어 카드 */}
+        {/* 스코어 카드 */}
+        <div className="bg-[#393a42] rounded-lg p-4" style={{ flexShrink: 0 }}>
           <div className="grid grid-cols-2 gap-3">
             {[
               {
@@ -381,7 +381,7 @@ export default function Home() {
             ))}
           </div>
         </div>
-        <div className="flex-1 overflow-hidden">
+        <div className="bg-[#393a42] rounded-lg p-4 flex-1 overflow-hidden" style={{ minHeight: 0 }}>
           <EventList
             events={eventsForList}
             selectedEventId={selectedEventId || undefined}

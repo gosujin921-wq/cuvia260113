@@ -790,9 +790,8 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
   return (
     <div
-      className={`${isCollapsed ? 'w-20' : ''} bg-[#242a34] border-r border-[#31353a] flex flex-col overflow-hidden relative transition-all duration-300`}
+      className={`${isCollapsed ? 'w-20' : ''} flex flex-col overflow-hidden relative transition-all duration-300`}
       style={{ 
-        borderWidth: '1px',
         height: '100%',
         minHeight: 0,
         width: isCollapsed ? '5rem' : '30rem',
@@ -862,12 +861,12 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
       ) : (
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pl-6 pr-6 flex flex-col"
+          className="flex-1 overflow-y-auto overflow-x-hidden pt-4 pl-6 pr-6 flex flex-col gap-4"
           ref={scrollContainerRef}
           style={{ maxWidth: '100%', paddingBottom: '16px' }}
         >
         {/* 상단 헤더: 좌측 로고, 우측 날씨 + 시간 */}
-        <div className="flex items-center justify-between pb-2 mb-4 border-b border-[#31353a]" style={{ flexShrink: 0 }}>
+        <div className="bg-[#393a42] rounded-lg p-4 flex items-center justify-between" style={{ flexShrink: 0 }}>
           {/* 좌측: 패널 로고 */}
           <div className="flex items-center gap-2">
             <img
@@ -894,7 +893,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* CCTV 운영 현황 (상세 카드) */}
-        <div className="space-y-3 mb-4" style={{ flexShrink: 0 }}>
+        <div className="bg-[#393a42] rounded-lg p-4 space-y-3" style={{ flexShrink: 0 }}>
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
             {/* 정상/장애/지연 장비 수 */}
@@ -1008,11 +1007,24 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
-        <div className="pt-0" style={{ marginBottom: '-12px', flexShrink: 0 }}>
-          <div className="flex items-center" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
+        <div className="bg-[#393a42] rounded-lg p-4 relative" style={{ flexShrink: 0 }}>
+          {/* 좌측+상단 이너 보더 */}
+          <div 
+            className="absolute pointer-events-none rounded-lg"
+            style={{
+              left: 0,
+              top: 0,
+              right: 0,
+              bottom: 0,
+              borderLeft: '1px solid rgba(255,255,255,0.5)',
+              borderTop: '1px solid rgba(255,255,255,0.5)',
+              borderTopLeftRadius: '0.5rem',
+            }}
+          />
+          <div className="flex items-center mb-3">
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
           </div>
-          <div className="overflow-hidden" style={{ paddingTop: '12px', paddingBottom: '12px', marginTop: '0' }}>
+          <div className="overflow-hidden">
             <div className="flex justify-end">
               <div className="relative h-40 w-[434px] rounded-xl overflow-visible">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1098,8 +1110,8 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
-        <div style={{ flexShrink: 0 }}>
-          <div className="flex items-center justify-between gap-4" style={{ paddingTop: '12px', paddingBottom: '0', marginBottom: '0' }}>
+        <div className="bg-[#393a42] rounded-lg p-4" style={{ flexShrink: 0 }}>
+          <div className="flex items-center justify-between gap-4 mb-3">
             <h3 className="text-white font-semibold text-sm">지역별 이벤트 발생 건 수</h3>
             <div className="flex items-center gap-4 text-[12px] text-gray-200">
               <div className="flex items-center gap-2">
@@ -1121,7 +1133,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
             </div>
           </div>
 
-          <div className="overflow-hidden" style={{ paddingTop: '12px', paddingBottom: '12px', marginTop: '0' }}>
+          <div className="overflow-hidden">
             {/* 그리드 */}
             <div className="space-y-1 relative">
               {heatmapAreas.map((area, index) => {
@@ -1270,14 +1282,14 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 2) 실시간 환경 센서 모니터링 */}
-        <div style={{ marginTop: 'auto', marginBottom: 0, flexShrink: 0 }}>
-          <div className="flex items-center justify-between" style={{ paddingTop: '12px', paddingBottom: '12px', marginBottom: '0' }}>
+        <div className="bg-[#393a42] rounded-lg p-4" style={{ marginTop: 'auto', marginBottom: 0, flexShrink: 0 }}>
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
             <span className="text-gray-300 text-xs">
               마지막 업데이트: {lastUpdateTime || '--:--:--'}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2 min-w-0" style={{ marginTop: '0' }}>
+          <div className="grid grid-cols-3 gap-2 min-w-0">
             {/* PM2.5 */}
             <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center justify-between mb-1.5 gap-1 min-w-0">
