@@ -9,13 +9,14 @@ import { getPrimaryButtonClassName } from '@/components/shared/styles';
 interface AIDetectionPopupProps {
   event: Event | null;
   onClose: () => void;
+  hideControls?: boolean;
 }
 
 /**
  * AI탐지 팝업 컴포넌트
  * 대시보드 맵뷰에서 AI 탐지된 이벤트를 표시하는 팝업입니다.
  */
-const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) => {
+const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose, hideControls = false }) => {
   const navigate = useNavigate();
 
   if (!event) return null;
@@ -48,8 +49,11 @@ const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) =
     alert(message);
   };
 
+  const TOP_PANEL_HEIGHT = 56;
+  const topOffset = hideControls ? 20 + TOP_PANEL_HEIGHT : 20;
+
   return (
-    <div className="absolute top-5 right-5 z-[1000]">
+    <div className="absolute right-5 z-[1000]" style={{ top: `${topOffset}px` }}>
       <div
         className="gradient-border-left-top w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-lg"
         style={{

@@ -5,13 +5,14 @@ import { Event } from '@/types';
 interface SituationSummaryProps {
   event: Event | null;
   onClose: () => void;
+  hideControls?: boolean;
 }
 
 /**
  * 상황요약 팝업 컴포넌트
  * 대시보드 맵뷰에서 이벤트를 선택했을 때 표시되는 팝업입니다.
  */
-const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) => {
+const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose, hideControls = false }) => {
   if (!event) return null;
 
   // "상가 절도 의심" 이벤트는 팝업 전체 제외
@@ -21,8 +22,11 @@ const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) =
   const aiCaseSummaryText =
     '경찰청 신고에 따르면, 2026-01-07 09:30경 부천시 원미구 부천로 245번길 일원에서 22세 남성 김도연이 마지막으로 확인된 이후 행방불명 상태로 확인되었습니다.';
 
+  const TOP_PANEL_HEIGHT = 56;
+  const topOffset = hideControls ? 20 + TOP_PANEL_HEIGHT : 20;
+
   return (
-    <div className="absolute top-5 right-5 z-[1000]">
+    <div className="absolute right-5 z-[1000]" style={{ top: `${topOffset}px` }}>
       <div
         className="gradient-border-left-top w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-lg"
         style={{

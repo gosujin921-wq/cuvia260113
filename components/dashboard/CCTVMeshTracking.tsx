@@ -11,11 +11,15 @@ interface CCTVMeshTrackingProps {
   cctvIndex?: number;
   position?: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string };
   width?: number;
+  hideControls?: boolean;
+  isAutoMode?: boolean;
+  isProgressComplete?: boolean;
+  viewAngleAnimationProgress?: number;
 }
 
 export { CCTV_TITLES };
 
-const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cctvIndex, position, width = 420 }) => {
+const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cctvIndex, position, width = 420, hideControls = false, isAutoMode = true, isProgressComplete = false, viewAngleAnimationProgress = 0 }) => {
   if (!event) return null;
 
   const isTheftEvent = event.title.includes('상가 절도 의심') || event.title.includes('현금 절취 포착');
@@ -25,15 +29,31 @@ const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cct
     ? CCTV_TITLES[cctvIndex - 1] 
     : 'CCTV 투망';
 
+  const TOP_PANEL_HEIGHT = 56;
   const defaultPosition: { top: string; right: string } = { top: '1.25rem', right: '1.25rem' };
   const finalPosition = position || defaultPosition;
+
+  const getTopValue = (top: string | number | undefined): string | undefined => {
+    if (top === undefined) return undefined;
+    if (typeof top === 'number') {
+      return hideControls ? `${top + TOP_PANEL_HEIGHT}px` : `${top}px`;
+    }
+    if (typeof top === 'string') {
+      if (top.includes('px')) {
+        const numValue = parseInt(top.replace('px', ''));
+        return hideControls ? `${numValue + TOP_PANEL_HEIGHT}px` : top;
+      }
+      return top;
+    }
+    return undefined;
+  };
 
   const positionStyle: React.CSSProperties = position === undefined 
     ? {}
     : {
         position: 'absolute',
         zIndex: 1000,
-        ...(finalPosition.top !== undefined && { top: typeof finalPosition.top === 'number' ? `${finalPosition.top}px` : finalPosition.top }),
+        ...(finalPosition.top !== undefined && { top: getTopValue(finalPosition.top) }),
         ...('left' in finalPosition && finalPosition.left !== undefined && { left: typeof finalPosition.left === 'number' ? `${finalPosition.left}px` : finalPosition.left }),
         ...(finalPosition.right !== undefined && { right: typeof finalPosition.right === 'number' ? `${finalPosition.right}px` : finalPosition.right }),
         ...('bottom' in finalPosition && finalPosition.bottom !== undefined && { bottom: typeof finalPosition.bottom === 'number' ? `${finalPosition.bottom}px` : finalPosition.bottom }),

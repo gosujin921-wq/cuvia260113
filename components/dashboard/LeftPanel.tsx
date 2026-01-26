@@ -92,6 +92,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [heatmapAnimationKey, setHeatmapAnimationKey] = useState(0);
   const [previousHeatmapData, setPreviousHeatmapData] = useState<Record<string, Record<string, number>>>({});
   const previousHeatmapDataRef = useRef<Record<string, Record<string, number>>>({});
+  const [visibleHeatmapCount, setVisibleHeatmapCount] = useState(4);
   const [trendAnimationProgress, setTrendAnimationProgress] = useState(0);
   const [sensorValues, setSensorValues] = useState({
     pm25: 38,
@@ -739,16 +740,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     });
   }, []);
 
-  // 현재 표시할 지역 (4개씩 롤링)
+  // 현재 표시할 지역 (화면 높이에 따라 동적으로 계산)
   const heatmapAreas = useMemo(() => {
     const startIndex = heatmapAreaOffset % allHeatmapAreas.length;
     const result: string[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < visibleHeatmapCount; i++) {
       const index = (startIndex + i) % allHeatmapAreas.length;
       result.push(allHeatmapAreas[index]);
     }
     return result;
-  }, [heatmapAreaOffset, allHeatmapAreas]);
+  }, [heatmapAreaOffset, allHeatmapAreas, visibleHeatmapCount]);
 
 
   type HeatmapBucket = 'none' | 'low' | 'mid' | 'high';
@@ -883,6 +884,38 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     }
   }, [heatmapData]);
 
+  // 히트맵 그리드 높이 측정하여 표시 가능한 개수 계산
+  useEffect(() => {
+    const calculateVisibleCount = () => {
+      if (!heatmapGridRef.current) return;
+      
+      const container = heatmapGridRef.current;
+      const containerHeight = container.clientHeight;
+      
+      // 각 행의 높이: h-5 (20px) + space-y-1 (4px) = 약 24px
+      const rowHeight = 24;
+      const maxVisibleRows = Math.floor(containerHeight / rowHeight);
+      
+      // 최소 1개, 최대 allHeatmapAreas.length개
+      const count = Math.max(1, Math.min(maxVisibleRows, allHeatmapAreas.length));
+      setVisibleHeatmapCount(count);
+    };
+
+    calculateVisibleCount();
+    
+    const resizeObserver = new ResizeObserver(() => {
+      calculateVisibleCount();
+    });
+    
+    if (heatmapGridRef.current) {
+      resizeObserver.observe(heatmapGridRef.current);
+    }
+    
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [allHeatmapAreas.length]);
+
   // 히트맵 지역 롤링 (5초마다) - heatmapData 선언 이후에 위치
   useEffect(() => {
     const interval = setInterval(() => {
@@ -895,7 +928,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         if (totalAreaPages <= 1) return prev;
         return (prev + 1) % totalAreaPages;
       });
-      // 히트맵 지역 롤링 (5초마다) - 4개씩 전환
+      // 히트맵 지역 롤링 (5초마다) - 화면 높이에 따라 동적으로 계산된 개수만큼 전환
       // 애니메이션을 위해 현재 데이터를 이전 데이터로 저장 (offset 변경 전)
       // ref에 먼저 저장 (동기적으로)
       const currentDataCopy = JSON.parse(JSON.stringify(heatmapData));
@@ -903,11 +936,11 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       // state에도 저장 (비동기)
       setPreviousHeatmapData(currentDataCopy);
       // 그 다음 offset 변경 및 애니메이션 트리거
-      setHeatmapAreaOffset((prev) => (prev + 4) % allHeatmapAreas.length);
+      setHeatmapAreaOffset((prev) => (prev + visibleHeatmapCount) % allHeatmapAreas.length);
       setHeatmapAnimationKey((prev) => prev + 1);
     }, 5000);
     return () => clearInterval(interval);
-  }, [totalAreaPages, allHeatmapAreas.length]);
+  }, [totalAreaPages, allHeatmapAreas.length, visibleHeatmapCount, heatmapData]);
 
 
   return (
@@ -1049,7 +1082,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                 >
                   <div className="flex items-start justify-between gap-2 min-w-0">
                     <div className="min-w-0 flex-1">
-                      <p className="text-white text-sm font-semibold truncate">{area.area}</p>
+                      <p className="text-white text-sm font-semibold truncate">{area.area.replace('zone', 'Zone')}</p>
                     </div>
                     <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-300 flex-shrink-0" />
                   </div>
@@ -1288,7 +1321,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                     }}
                   >
                     <div className="w-10 text-[12px] text-gray-400 truncate" title={area}>
-                      {area}
+                      {area.replace('zone', 'Zone')}
                     </div>
                     <div className="grid grid-cols-12 gap-1 flex-1 min-w-0">
                       {heatmapTimeSlots.map((slot, slotIndex) => {

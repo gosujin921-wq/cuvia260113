@@ -6,6 +6,7 @@ import { chatBlocks } from '@/components/event-detail/constants';
 interface AIAgentPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  hideControls?: boolean;
 }
 
 interface ChatMessage {
@@ -23,7 +24,7 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
 
-const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose }) => {
+const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false }) => {
   const [chatInput, setChatInput] = useState('네, 분석해 주세요.');
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -393,7 +394,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose }) => {
         <div
           className="absolute z-[1000]"
           style={{
-            top: `${padding + mainPopupHeight + gap}px`,
+            top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
             right: `${padding}px`,
           }}
           onClick={(e) => e.stopPropagation()}

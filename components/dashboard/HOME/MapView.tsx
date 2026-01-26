@@ -29,9 +29,10 @@ interface MapViewProps {
   onAiDetectionClose?: () => void;
   hideControls?: boolean;
   leftPanelWidth?: number;
+  isAutoMode?: boolean;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480 }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -45,6 +46,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [showProgressAfterZoom, setShowProgressAfterZoom] = useState(false);
   const [isProgressComplete, setIsProgressComplete] = useState(false);
   const [viewAngleAnimationProgress, setViewAngleAnimationProgress] = useState(0);
+  const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isUserScrollingRef = useRef(false);
+  const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -103,6 +108,66 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       localStorage.setItem('cctv-view-angles', JSON.stringify(cctvViewAngles));
     }
   }, [cctvViewAngles]);
+
+  useEffect(() => {
+    if (!showCCTV || hideControls) {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+        autoScrollIntervalRef.current = null;
+      }
+      return;
+    }
+
+    const rightPanelWidth = 370;
+    const panelGap = 16;
+    const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4'];
+    const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
+    const gap = 12;
+    const paddingHorizontal = 12;
+    const totalGapWidth = gap * 3;
+    const totalPaddingWidth = paddingHorizontal * 2;
+    const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
+
+    const startAutoScroll = () => {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+      }
+
+      autoScrollIntervalRef.current = setInterval(() => {
+        if (cctvScrollContainerRef.current && !isUserScrollingRef.current) {
+          const totalItemWidth = itemWidth + gap;
+          const oneSetWidth = cctvList.length * totalItemWidth;
+          const currentScroll = cctvScrollContainerRef.current.scrollLeft;
+          const nextScroll = currentScroll + totalItemWidth;
+          
+          if (nextScroll >= oneSetWidth * 2 - 10) {
+            cctvScrollContainerRef.current.scrollLeft = oneSetWidth + (nextScroll - oneSetWidth * 2);
+          } else {
+            cctvScrollContainerRef.current.scrollLeft = nextScroll;
+          }
+        }
+      }, 3000);
+    };
+
+    const container = cctvScrollContainerRef.current;
+    if (container) {
+      const totalItemWidth = itemWidth + gap;
+      const oneSetWidth = cctvList.length * totalItemWidth;
+      container.scrollLeft = oneSetWidth;
+      startAutoScroll();
+    }
+
+    return () => {
+      if (autoScrollIntervalRef.current) {
+        clearInterval(autoScrollIntervalRef.current);
+        autoScrollIntervalRef.current = null;
+      }
+      if (userScrollTimeoutRef.current) {
+        clearTimeout(userScrollTimeoutRef.current);
+        userScrollTimeoutRef.current = null;
+      }
+    };
+  }, [showCCTV, hideControls, windowWidth, leftPanelWidth]);
 
   const getCCTVViewAngle = (cctvId: string, defaultViewAngle: number): number => {
     if (cctvViewAngles[cctvId] !== undefined) {
@@ -191,6 +256,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       setViewAngleAnimationProgress(0);
     }
   }, [selectedEventId, zoomLevel, events, showProgressAfterZoom]);
+
+  useEffect(() => {
+    if (!isAutoMode) {
+      setViewAngleAnimationProgress(0);
+    }
+  }, [isAutoMode]);
 
   useEffect(() => {
     const isEvent1Selected = selectedEventId && events.find(e => e.id === selectedEventId && (e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'));
@@ -1075,7 +1146,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   }
                   
                   const cctvId = baseCctvId;
-                  const direction = getRandomCCTVDirection(index);
+                  const direction = isAutoMode ? getZoomedCCTVDirection(index) : getRandomCCTVDirection(index);
                   const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
                   
                   return (
@@ -1124,14 +1195,20 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     }}
                     onClick={() => {}}
                   >
-                    <div className={getCCTVIconClassName('light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
-                      <CCTVIcon 
-                        className="!text-gray-300"
-                        style={{ color: '#d1d5db' }}
-                        width="16px"
-                        height="16px"
-                      />
-                    </div>
+                    {(() => {
+                      const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
+                      const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
+                      return (
+                        <div className={getCCTVIconClassName(shouldChangeToBlue ? 'active' : 'light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
+                          <CCTVIcon 
+                            className={shouldChangeToBlue ? "text-blue-400" : "!text-gray-300"}
+                            style={shouldChangeToBlue ? { color: '#60a5fa' } : { color: '#d1d5db' }}
+                            width="16px"
+                            height="16px"
+                          />
+                        </div>
+                      );
+                    })()}
                     {showCCTVName && (
                       <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
                         CCTV-V-{index + 1}
@@ -1158,13 +1235,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                         const defaultDirection = cctvPositions[index]?.viewAngle ?? getRandomCCTVDirection(index);
                         const targetDirection = getZoomedCCTVDirection(index);
                         
-                        if (isProgressComplete && viewAngleAnimationProgress > 0) {
+                        if (isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0) {
                           direction = defaultDirection + (targetDirection - defaultDirection) * viewAngleAnimationProgress;
                         } else {
                           direction = defaultDirection;
                         }
                       } else {
-                        direction = getZoomedCCTVDirection(index);
+                        if (isAutoMode) {
+                          direction = getZoomedCCTVDirection(index);
+                        } else {
+                          direction = getRandomCCTVDirection(index);
+                        }
                       }
                       
                       if (zoomLevel === 0) {
@@ -1186,7 +1267,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                             transformOrigin: 'center center',
                             pointerEvents: 'none',
                             zIndex: 30,
-                            transition: isEvent1Selected && isProgressComplete && viewAngleAnimationProgress > 0 ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-out' : 'opacity 0.7s ease-out',
+                            transition: isEvent1Selected && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0 ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-out' : 'opacity 0.7s ease-out',
                             opacity: zoomLevel > 0 ? 1 : 0,
                           }}
                         >
@@ -1268,14 +1349,20 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   }}
                   onClick={() => {}}
                 >
-                  <div className={getCCTVIconClassName('light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
-                    <CCTVIcon 
-                      className="!text-gray-300"
-                      style={{ color: '#d1d5db' }}
-                      width="16px"
-                      height="16px"
-                    />
-                  </div>
+                  {(() => {
+                    const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
+                    const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
+                    return (
+                      <div className={getCCTVIconClassName(shouldChangeToBlue ? 'active' : 'light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
+                        <CCTVIcon 
+                          className={shouldChangeToBlue ? "text-blue-400" : "!text-gray-300"}
+                          style={shouldChangeToBlue ? { color: '#60a5fa' } : { color: '#d1d5db' }}
+                          width="16px"
+                          height="16px"
+                        />
+                      </div>
+                    );
+                  })()}
                   {showCCTVName && (
                     <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
                       CCTV-V-{index + 1}
@@ -1283,7 +1370,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   )}
                   {showCCTVViewAngle && (() => {
                     const cctvId = `cctv-${index}-${i}`;
-                    const direction = getRandomCCTVDirection(index, i);
+                    const direction = isAutoMode ? getZoomedCCTVDirection(index) : getRandomCCTVDirection(index, i);
                     
                     if (zoomLevel === 0) {
                       return null;
@@ -1539,13 +1626,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 left: undefined,
                 bottom: undefined
               }}
+              hideControls={hideControls}
+              isAutoMode={isAutoMode}
+              isProgressComplete={isProgressComplete}
+              viewAngleAnimationProgress={viewAngleAnimationProgress}
             />
             
             <div
               style={{
                 position: 'absolute',
                 left: `${padding}px`,
-                top: `${padding}px`,
+                top: `${padding + (hideControls ? 56 : 0)}px`,
                 display: 'grid',
                 gridTemplateColumns: `repeat(2, ${gridPopupWidth}px)`,
                 gridAutoRows: 'auto',
@@ -1572,6 +1663,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                       cctvIndex={cctvIndexForTitle}
                       position={undefined}
                       width={gridPopupWidth}
+                      hideControls={hideControls}
+                      isAutoMode={isAutoMode}
+                      isProgressComplete={isProgressComplete}
+                      viewAngleAnimationProgress={viewAngleAnimationProgress}
                     />
                   </div>
                 );
@@ -1596,7 +1691,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const itemHeight = Math.floor((itemWidth * 3) / 4);
         const cctvPanelLeft = leftPanelWidth + panelGap;
         const cctvPanelRight = rightPanelWidth + panelGap;
-        
+
         return (
           <div
             className="absolute transition-all duration-500 ease-in-out"
@@ -1613,6 +1708,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             <div className="rounded-t-lg gradient-border-right-bottom" style={{ height: `${itemHeight + (verticalPadding * 2)}px`, width: '100%', overflow: 'hidden', paddingTop: `${verticalPadding}px`, paddingBottom: `${verticalPadding}px`, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
               <div 
                 ref={(el) => {
+                  cctvScrollContainerRef.current = el;
                   if (el && showCCTV) {
                     const totalItemWidth = itemWidth + gap;
                     const oneSetWidth = cctvList.length * totalItemWidth;
@@ -1629,12 +1725,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   overflowY: 'hidden',
                   scrollbarWidth: 'thin',
                   scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent',
+                  scrollBehavior: 'smooth',
                 }}
                 onScroll={(e) => {
                   const target = e.currentTarget;
                   const scrollLeft = target.scrollLeft;
                   const totalItemWidth = itemWidth + gap;
                   const oneSetWidth = cctvList.length * totalItemWidth;
+                  
+                  isUserScrollingRef.current = true;
+                  if (userScrollTimeoutRef.current) {
+                    clearTimeout(userScrollTimeoutRef.current);
+                  }
+                  userScrollTimeoutRef.current = setTimeout(() => {
+                    isUserScrollingRef.current = false;
+                  }, 2000);
                   
                   if (scrollLeft >= oneSetWidth * 2 - 10) {
                     target.scrollLeft = oneSetWidth + (scrollLeft - oneSetWidth * 2);

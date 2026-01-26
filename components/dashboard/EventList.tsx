@@ -295,23 +295,46 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 }`}
                 style={{ paddingLeft: '14px' }}
               >
-                {/* 1. 시간 / 신고기관 / 우선순위 뷸렛 */}
+                {/* 1. 날짜 시간 신고기관 / 우선순위 뷸렛 */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-300 text-[0.7rem] font-medium">
-                      {formatEventDateTime(main.eventId ?? '', main.timestamp)}
-                    </span>
-                    {main.eventId && (() => {
-                      const baseEvent = getEventById(main.eventId);
-                      const source = baseEvent?.source || '';
-                      const isAI = source.includes('AI') || source === 'AI';
-                      if (!source) return null;
-                      return (
+                    {main.id.startsWith('mock-') ? (
+                      <>
                         <span className="text-gray-300 text-[0.7rem] font-medium">
-                          {isAI ? 'AI' : source}
+                          {(() => {
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            return `${year}.${month}.${day} ${main.timestamp}`;
+                          })()}
                         </span>
-                      );
-                    })()}
+                        <span className="text-gray-300 text-[0.7rem] font-medium">
+                          {main.type === '112-치안' ? '112 상황실' : 
+                           main.type === '112-미아' ? '112 상황실' :
+                           main.type === '119-화재' || main.type === '119-구조' ? '119 지휘센터' :
+                           main.type === '약자' ? '약자 보호 센터' :
+                           main.type === 'AI-배회' ? 'AI 시스템' : main.type}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-gray-300 text-[0.7rem] font-medium">
+                          {formatEventDateTime(main.eventId ?? '', main.timestamp)}
+                        </span>
+                        {main.eventId && (() => {
+                          const baseEvent = getEventById(main.eventId);
+                          const source = baseEvent?.source || '';
+                          const isAI = source.includes('AI') || source === 'AI';
+                          if (!source) return null;
+                          return (
+                            <span className="text-gray-300 text-[0.7rem] font-medium">
+                              {isAI ? 'AI' : source}
+                            </span>
+                          );
+                        })()}
+                      </>
+                    )}
                   </div>
                   {main.priority === '긴급' && (
                     <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full">
@@ -340,64 +363,75 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                   )}
                 </div>
 
-                {/* 2. 유형 */}
-                <div className="flex items-center gap-2 mb-2">
-                  {(() => {
-                    if (main.eventId) {
-                      const baseEvent = getEventById(main.eventId);
-                      if (!baseEvent) return null;
-                      return (
-                        <span className={`px-2 py-0.5 rounded text-xs ${
-                          baseEvent.domain === 'A'
-                            ? baseEvent.type.includes('폭행') || baseEvent.type.includes('상해')
-                              ? 'bg-red-500/20 text-red-400'
-                              : baseEvent.type.includes('절도') || baseEvent.type.includes('강도')
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : baseEvent.type.includes('차량도주') || baseEvent.type.includes('추적')
-                                  ? 'bg-orange-500/20 text-orange-400'
-                                  : 'bg-blue-500/20 text-blue-400'
-                            : baseEvent.domain === 'B'
-                              ? 'bg-red-500/20 text-red-400'
-                              : baseEvent.domain === 'C'
-                                ? 'bg-orange-500/20 text-orange-400'
-                                : baseEvent.domain === 'D'
-                                  ? 'bg-green-500/20 text-green-400'
-                                  : baseEvent.domain === 'E'
+                {main.id.startsWith('mock-') ? (
+                  <>
+                    {/* 허구 이벤트: 신고 내용 */}
+                    <div className="text-white text-sm font-semibold mb-2 leading-relaxed">{main.title}</div>
+                    {/* 허구 이벤트: 주소 */}
+                    <div className="text-gray-200 text-xs mb-2">{main.location.name}</div>
+                  </>
+                ) : (
+                  <>
+                    {/* 2. 유형 */}
+                    <div className="flex items-center gap-2 mb-2">
+                      {(() => {
+                        if (main.eventId) {
+                          const baseEvent = getEventById(main.eventId);
+                          if (!baseEvent) return null;
+                          return (
+                            <span className={`px-2 py-0.5 rounded text-xs ${
+                              baseEvent.domain === 'A'
+                                ? baseEvent.type.includes('폭행') || baseEvent.type.includes('상해')
+                                  ? 'bg-red-500/20 text-red-400'
+                                  : baseEvent.type.includes('절도') || baseEvent.type.includes('강도')
+                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                    : baseEvent.type.includes('차량도주') || baseEvent.type.includes('추적')
+                                      ? 'bg-orange-500/20 text-orange-400'
+                                      : 'bg-blue-500/20 text-blue-400'
+                                : baseEvent.domain === 'B'
+                                  ? 'bg-red-500/20 text-red-400'
+                                  : baseEvent.domain === 'C'
                                     ? 'bg-orange-500/20 text-orange-400'
-                                    : 'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          {baseEvent.type}
-                        </span>
-                      );
-                    } else {
-                      // 가상 이벤트: type을 직접 표시
-                      const getTypeColor = (type: string) => {
-                        if (type.includes('화재') || type.includes('구조')) {
-                          return 'bg-red-500/20 text-red-400';
-                        } else if (type.includes('미아') || type.includes('치안')) {
-                          return 'bg-blue-500/20 text-blue-400';
-                        } else if (type.includes('약자')) {
-                          return 'bg-orange-500/20 text-orange-400';
-                        } else if (type.includes('AI')) {
-                          return 'bg-green-500/20 text-green-400';
+                                    : baseEvent.domain === 'D'
+                                      ? 'bg-green-500/20 text-green-400'
+                                      : baseEvent.domain === 'E'
+                                        ? 'bg-orange-500/20 text-orange-400'
+                                        : 'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {baseEvent.type}
+                            </span>
+                          );
                         } else {
-                          return 'bg-gray-500/20 text-gray-400';
+                          // 가상 이벤트: type을 직접 표시
+                          const getTypeColor = (type: string) => {
+                            if (type.includes('화재') || type.includes('구조')) {
+                              return 'bg-red-500/20 text-red-400';
+                            } else if (type.includes('미아') || type.includes('치안')) {
+                              return 'bg-blue-500/20 text-blue-400';
+                            } else if (type.includes('약자')) {
+                              return 'bg-orange-500/20 text-orange-400';
+                            } else if (type.includes('AI')) {
+                              return 'bg-green-500/20 text-green-400';
+                            } else {
+                              return 'bg-gray-500/20 text-gray-400';
+                            }
+                          };
+                          return (
+                            <span className={`px-2 py-0.5 rounded text-xs ${getTypeColor(main.type)}`}>
+                              {main.type}
+                            </span>
+                          );
                         }
-                      };
-                      return (
-                        <span className={`px-2 py-0.5 rounded text-xs ${getTypeColor(main.type)}`}>
-                          {main.type}
-                        </span>
-                      );
-                    }
-                  })()}
-                </div>
+                      })()}
+                    </div>
 
-                {/* 3. 제목 (AI가 축약한 핵심 문장) */}
-                <div className="text-white text-sm font-semibold mb-2">{main.title}</div>
+                    {/* 3. 제목 (AI가 축약한 핵심 문장) */}
+                    <div className="text-white text-sm font-semibold mb-2">{main.title}</div>
 
-                {/* 4. 장소 (정확한 주소) */}
-                <div className="text-gray-200 text-xs mb-2">{main.location.name}</div>
+                    {/* 4. 장소 (정확한 주소) */}
+                    <div className="text-gray-200 text-xs mb-2">{main.location.name}</div>
+                  </>
+                )}
 
 
               </div>

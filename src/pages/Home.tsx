@@ -5,6 +5,7 @@ import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import AIAgentPopup from '@/components/dashboard/AIAgentPopup';
+import TopControlPanel from '@/components/dashboard/TopControlPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
@@ -20,6 +21,7 @@ export default function Home() {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState<boolean>(false);
   const [panelsSlidOut, setPanelsSlidOut] = useState<boolean>(false);
   const [showAIAgentPopup, setShowAIAgentPopup] = useState<boolean>(false);
+  const [isAutoMode, setIsAutoMode] = useState<boolean>(true);
 
   /**
    * ============================================================================
@@ -46,6 +48,12 @@ export default function Home() {
   // 가상 이벤트 데이터 (레이아웃 확인용)
   const mockEvents: Event[] = useMemo(() => {
     const now = new Date();
+    const formatDate = () => {
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}.${month}.${day}`;
+    };
     const formatTime = (hours: number, minutes: number) => {
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
     };
@@ -55,55 +63,55 @@ export default function Home() {
       {
         id: 'mock-1',
         type: '112-치안',
-        title: '주차장 소음 신고',
+        title: '심야 시간대 주차장에서 지속적인 차량 경적 소음 및 고성방가로 인한 민원 신고',
         priority: '일반',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
-        location: { name: '관양동 주차장', coordinates: [126.98, 37.42] },
+        location: { name: '부천시 원미구 중동 지하주차장', coordinates: [126.98, 37.42] },
         processingStage: '생성',
         resolution: { category: '112', code: '001', description: '' },
       },
       {
         id: 'mock-2',
         type: '약자',
-        title: '노인 낙상 신고',
+        title: '공원 산책로에서 70대 남성 낙상으로 인한 부상 신고, 응급의료진 출동 필요',
         priority: '일반',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
-        location: { name: '부천시 중앙공원', coordinates: [126.99, 37.43] },
+        location: { name: '부천시 원미구 중앙공원 산책로', coordinates: [126.99, 37.43] },
         processingStage: '선별',
         resolution: { category: '약자', code: '002', description: '' },
       },
       {
         id: 'mock-3',
         type: '112-치안',
-        title: '횡단보도 신호 위반',
+        title: '사거리 횡단보도에서 빨간 신호 무시 차량 무단 횡단으로 인한 교통법규 위반',
         priority: '일반',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
-        location: { name: '관양동 사거리', coordinates: [126.97, 37.41] },
+        location: { name: '부천시 원미구 중동 사거리', coordinates: [126.97, 37.41] },
         processingStage: '착수',
         resolution: { category: '112', code: '003', description: '' },
       },
       {
         id: 'mock-4',
         type: 'AI-배회',
-        title: '의심 행동 탐지',
+        title: '부천역 인근에서 30분 이상 반복 배회하는 이상 행동 AI 탐지',
         priority: '일반',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 45)),
-        location: { name: '부천역 인근', coordinates: [126.96, 37.40] },
+        location: { name: '부천시 원미구 부천역 앞 광장', coordinates: [126.96, 37.40] },
         processingStage: '생성',
         resolution: { category: 'AI', code: '004', description: '' },
       },
       {
         id: 'mock-5',
         type: '112-치안',
-        title: '교통 혼잡 신고',
+        title: '송내대로에서 차량 사고로 인한 교통 정체 발생, 교통 정리 지원 필요',
         priority: '일반',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
-        location: { name: '송내대로', coordinates: [126.95, 37.39] },
+        location: { name: '부천시 원미구 송내대로', coordinates: [126.95, 37.39] },
         processingStage: '선별',
         resolution: { category: '112', code: '005', description: '' },
       },
@@ -111,33 +119,33 @@ export default function Home() {
       {
         id: 'mock-6',
         type: '112-미아',
-        title: '아동 미아 신고',
+        title: '초등학교 앞에서 하교 시간 8세 여아 보호자와 헤어짐, 긴급 수색 필요',
         priority: '주의',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
-        location: { name: '관양초등학교 앞', coordinates: [126.98, 37.42] },
+        location: { name: '부천시 원미구 중동초등학교 정문 앞', coordinates: [126.98, 37.42] },
         processingStage: '착수',
         resolution: { category: '112', code: '006', description: '' },
       },
       {
         id: 'mock-7',
         type: '119-구조',
-        title: '교통사고 신고',
+        title: '시청 앞 교차로에서 승용차와 오토바이 충돌 사고, 오토바이 운전자 부상',
         priority: '주의',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
-        location: { name: '부천시청 앞', coordinates: [126.99, 37.43] },
+        location: { name: '부천시 원미구 부천시청 앞 교차로', coordinates: [126.99, 37.43] },
         processingStage: '생성',
         resolution: { category: '119', code: '007', description: '' },
       },
       {
         id: 'mock-8',
         type: '112-치안',
-        title: '싸움 신고',
+        title: '송내역 인근 상가 앞에서 20대 남성 2명 말다툼 후 주먹다짐 발생',
         priority: '주의',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 30)),
-        location: { name: '송내역 인근', coordinates: [126.97, 37.41] },
+        location: { name: '부천시 원미구 송내역 인근 상가 앞', coordinates: [126.97, 37.41] },
         processingStage: '착수',
         resolution: { category: '112', code: '008', description: '' },
       },
@@ -145,22 +153,22 @@ export default function Home() {
       {
         id: 'mock-9',
         type: '119-화재',
-        title: '작은 불꽃 발견',
+        title: '아파트 단지 내 쓰레기 수거함에서 연기 및 작은 불꽃 발생, 소방대 출동 필요',
         priority: '경계',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
-        location: { name: '부천시 아파트 단지', coordinates: [126.96, 37.40] },
+        location: { name: '부천시 원미구 중동 아파트 단지 내 쓰레기 수거함', coordinates: [126.96, 37.40] },
         processingStage: '착수',
         resolution: { category: '119', code: '009', description: '' },
       },
       {
         id: 'mock-10',
         type: '112-치안',
-        title: '절도 의심 신고',
+        title: '상가 앞에서 의심 인물이 상점 문 흔들고 창문 들여다보는 행동 반복, 절도 시도 의심',
         priority: '경계',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
-        location: { name: '관양동 상가', coordinates: [126.95, 37.39] },
+        location: { name: '부천시 원미구 중동 상가 앞', coordinates: [126.95, 37.39] },
         processingStage: '선별',
         resolution: { category: '112', code: '010', description: '' },
       },
@@ -320,6 +328,13 @@ export default function Home() {
       className="relative bg-[#0a0e14] overflow-hidden"
       style={{ width: '100vw', height: '100vh' }}
     >
+      {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
+      <TopControlPanel
+        isVisible={hideControls}
+        isAutoMode={isAutoMode}
+        onAutoModeToggle={setIsAutoMode}
+      />
+
       {/* 페이지 설명 */}
       <div
         className="absolute left-4 top-4 z-[110] rounded px-2.5 py-1 text-xs font-medium text-gray-300 bg-black/50 backdrop-blur-sm"
@@ -343,6 +358,7 @@ export default function Home() {
           onZoomLevelChange={setMapZoomLevel}
           hideControls={hideControls}
           leftPanelWidth={leftPanelCollapsed ? 80 : 480}
+          isAutoMode={isAutoMode}
         />
       </div>
 
@@ -423,6 +439,7 @@ export default function Home() {
         <AIAgentPopup
           isOpen={showAIAgentPopup}
           onClose={() => setShowAIAgentPopup(false)}
+          hideControls={hideControls}
         />
       )}
     </div>
