@@ -1187,7 +1187,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     </div>
                     {showCCTVName && (
                       <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                        CCTV-V-{index + 1}-{i + 1}
+                        CCTV-V-{index + 1}
                       </div>
                     )}
                     {showCCTVViewAngle && (() => {
@@ -1311,7 +1311,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   </div>
                   {showCCTVName && (
                     <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                      CCTV-V-{index + 1}-{i + 1}
+                      CCTV-V-{index + 1}
                     </div>
                   )}
                   {showCCTVViewAngle && (() => {

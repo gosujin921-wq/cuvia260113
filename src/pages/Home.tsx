@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
+import AIAgentPopup from '@/components/dashboard/AIAgentPopup';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
@@ -13,10 +14,12 @@ export default function Home() {
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
   const [mapZoomLevel, setMapZoomLevel] = useState<number>(0);
   const [aiDetectionEventId, setAiDetectionEventId] = useState<string | null>(null);
+  const [cctvIndex, setCctvIndex] = useState<number | null>(null);
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [hideControls, setHideControls] = useState<boolean>(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState<boolean>(false);
   const [panelsSlidOut, setPanelsSlidOut] = useState<boolean>(false);
+  const [showAIAgentPopup, setShowAIAgentPopup] = useState<boolean>(false);
 
   /**
    * ============================================================================
@@ -255,9 +258,11 @@ export default function Home() {
     setSelectedEventId(null);
     setHighlightedEventId(null);
     setAiDetectionEventId(null);
+    setCctvIndex(null);
     setMapZoomLevel(0);
     setHideControls(false);
     setPanelsSlidOut(false);
+    setShowAIAgentPopup(false);
   };
 
   // 키보드 단축키 핸들러
@@ -274,25 +279,11 @@ export default function Home() {
         if (missingEvent) {
           setHideControls(true);
           setPanelsSlidOut(true);
-          animateToEvent(missingEvent);
-        }
-      } else if (e.key === '2') {
-        const abductionEvent = allConvertedEvents.find(event => 
-          event.eventId === 'A-20251210-003' || event.id === 'A-20251210-003'
-        );
-        if (abductionEvent) {
-          setHideControls(true);
-          animateToEvent(abductionEvent, () => {
-            setAiDetectionEventId(abductionEvent.id);
+          setShowAIAgentPopup(true);
+          setCctvIndex(1);
+          animateToEvent(missingEvent, () => {
+            setAiDetectionEventId(missingEvent.id);
           });
-        }
-      } else if (e.key === '3') {
-        const assaultEvent = allConvertedEvents.find(event => 
-          event.eventId === 'A-20241124-001' || event.id === 'A-20241124-001'
-        );
-        if (assaultEvent) {
-          setHideControls(true);
-          animateToEvent(assaultEvent);
         }
       } else if (e.key === 'Escape') {
         clearSelection();
@@ -324,6 +315,7 @@ export default function Home() {
           highlightedEventId={highlightedEventId}
           selectedEventId={selectedEventId}
           aiDetectionEventId={aiDetectionEventId}
+          cctvIndex={cctvIndex}
           onEventClick={handleEventAction}
           onAiDetectionClose={clearSelection}
           onMapClick={clearSelection}
@@ -406,6 +398,13 @@ export default function Home() {
           />
         </div>
       </div>
+
+      {showAIAgentPopup && (
+        <AIAgentPopup
+          isOpen={showAIAgentPopup}
+          onClose={() => setShowAIAgentPopup(false)}
+        />
+      )}
     </div>
   );
 }

@@ -629,7 +629,7 @@ export const EventCenterColumn1: React.FC<EventCenterColumn1Props> = ({
                   {/* CCTV 이름 라벨 */}
                   {showCCTVName && (
                     <div className={`${getCCTVLabelClassName('default')} mt-1`}>
-                      CCTV-V-{index + 1}-{i + 1}
+                      CCTV-V-{index + 1}
                     </div>
                   )}
                   {/* 시야각 표시 */}

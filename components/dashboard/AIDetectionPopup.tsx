@@ -51,7 +51,12 @@ const AIDetectionPopup: React.FC<AIDetectionPopupProps> = ({ event, onClose }) =
   return (
     <div className="absolute top-5 right-5 z-[1000]">
       <div
-        className="bg-[#101013] border border-blue-500/40 shadow-[0_0_30px_rgba(59,130,246,0.3),0_0_60px_rgba(59,130,246,0.15)] w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-2xl"
+        className="gradient-border-left-top w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-lg"
+        style={{
+          background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
+          backdropFilter: 'blur(2px)',
+          WebkitBackdropFilter: 'blur(2px)',
+        }}
         style={{ borderWidth: '1px' }}
         onClick={(e) => e.stopPropagation()}
       >

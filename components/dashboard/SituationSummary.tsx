@@ -1,8 +1,6 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
 import { Event } from '@/types';
-import { getPrimaryButtonClassName } from '@/components/shared/styles';
 
 interface SituationSummaryProps {
   event: Event | null;
@@ -14,8 +12,6 @@ interface SituationSummaryProps {
  * 대시보드 맵뷰에서 이벤트를 선택했을 때 표시되는 팝업입니다.
  */
 const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) => {
-  const navigate = useNavigate();
-
   if (!event) return null;
 
   // "상가 절도 의심" 이벤트는 팝업 전체 제외
@@ -25,16 +21,15 @@ const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) =
   const aiCaseSummaryText =
     '경찰청 신고에 따르면, 2026-01-07 09:30경 부천시 원미구 부천로 245번길 일원에서 22세 남성 김도연이 마지막으로 확인된 이후 행방불명 상태로 확인되었습니다.';
 
-  const handleStartFastSearch = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    if (!event.eventId) return;
-    navigate(`/event/${event.eventId}`);
-  };
-
   return (
     <div className="absolute top-5 right-5 z-[1000]">
       <div
-        className="bg-[#101013] border border-blue-500/40 shadow-[0_0_30px_rgba(59,130,246,0.3),0_0_60px_rgba(59,130,246,0.15)] w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-2xl"
+        className="gradient-border-left-top w-[420px] max-h-[600px] overflow-y-auto flex flex-col rounded-lg"
+        style={{
+          background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
+          backdropFilter: 'blur(2px)',
+          WebkitBackdropFilter: 'blur(2px)',
+        }}
         style={{ borderWidth: '1px' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -87,19 +82,6 @@ const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) =
               </div>
             </div>
           </div>
-        </div>
-
-        {/* 버튼 영역 - 고속검색 시작 */}
-        <div className="p-4 border-t border-[#31353a] flex-shrink-0" style={{ borderTopWidth: '1px' }}>
-          <button
-            type="button"
-            onClick={handleStartFastSearch}
-            disabled={!event.eventId}
-            className={`w-full ${getPrimaryButtonClassName()} disabled:opacity-50 disabled:cursor-not-allowed`}
-            aria-label="고속검색 시작"
-          >
-            고속검색 시작
-          </button>
         </div>
       </div>
     </div>
