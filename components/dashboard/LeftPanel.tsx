@@ -7,11 +7,11 @@ interface MonitoringSpot {
   spotId: string;
   spotName: string;
   streamUrl?: string;
-  thumbnails?: string[]; // 여러 썸네일 (2-3개)
+  thumbnails?: string[];
   fps: number;
   status: 'normal' | 'delay' | 'disconnected';
   autoSequence: boolean;
-  environment?: 'normal' | 'night' | 'fog' | 'rain'; // 환경 상태
+  environment?: 'normal' | 'night' | 'fog' | 'rain';
 }
 
 interface AreaStatus {
@@ -53,17 +53,12 @@ interface SensorData {
 interface InfrastructureStatus {
   waterLeakage: { status: 'normal' | 'warning' | 'error'; lastUpdate: string };
   powerSupply: { status: 'normal' | 'warning' | 'error'; lastUpdate: string };
-  streetLightRate: number; // 가로등 점등률 (%)
-  iotSensorRate: number; // 공공 IoT 센서 가동률 (%)
+  streetLightRate: number;
+  iotSensorRate: number;
   alert: boolean;
   alertMessage?: string;
 }
 
-/**
- * 📡 API 연동 필요: CCTV 썸네일 이미지
- * 현재: 로컬 정적 이미지 사용
- * 변경: API에서 썸네일 URL 조회 필요
- */
 const cctvLocalImages = [
   '/cctv_img/001.jpg',
   '/cctv_img/002.jpg',
@@ -72,11 +67,6 @@ const cctvLocalImages = [
   '/cctv_img/005.jpg',
 ];
 
-/**
- * 📡 API 연동 필요: CCTV 썸네일 생성
- * 현재: 로컬 이미지 순환
- * 변경: API에서 실제 썸네일 URL 배열 반환
- */
 const buildThumbnails = (identifier: string, count = 3) => {
   const seed = identifier
     .split('')
@@ -102,17 +92,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [heatmapAnimationKey, setHeatmapAnimationKey] = useState(0);
   const [previousHeatmapData, setPreviousHeatmapData] = useState<Record<string, Record<string, number>>>({});
   const previousHeatmapDataRef = useRef<Record<string, Record<string, number>>>({});
-  /**
-   * ============================================================================
-   * 📡 API 연동 포인트: 센서 데이터 및 상태 정보
-   * ============================================================================
-   * 현재: 더미 데이터 및 로컬 상태 관리
-   * 변경: API 호출로 실시간 데이터 조회 필요
-   * ============================================================================
-   */
-  
-  // 📡 API 연동 필요: 환경 센서 데이터
-  // GET /api/sensors/realtime
+  const [trendAnimationProgress, setTrendAnimationProgress] = useState(0);
   const [sensorValues, setSensorValues] = useState({
     pm25: 38,
     pm10: 72,
@@ -131,12 +111,10 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   
   const sensorLocations = useMemo(() => ['신원동', '행신동', '식사동'], []);
   
-  // 📡 API 연동 필요: 날씨 데이터
-  // GET /api/weather/current
   const weatherData = {
     icon: 'mdi:weather-partly-cloudy',
-    high: 25, // 섭씨
-    low: 18, // 섭씨
+    high: 25,
+    low: 18,
   };
   
   useEffect(() => {
@@ -215,11 +193,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     return () => clearInterval(interval);
   }, [sensorLocations]);
 
-  /**
-   * 📡 API 연동 필요: CCTV 운영 현황 데이터
-   * 현재: 더미 데이터
-   * 변경: GET /api/cctv/status
-   */
   const cctvStatus: CctvStatus = {
     totalRate: 96.1,
     totalCount: 1240,
@@ -604,47 +577,123 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     return Math.abs(hash) % (maxInclusive + 1);
   };
 
+  // 시간대별 이벤트 트렌드 데이터 생성 (0~24시, 30분 간격, 총 49개 포인트)
   const trendData = useMemo(() => {
     const seedBase = typeof window !== 'undefined' ? new Date().toISOString().slice(0, 10) : 'static';
-    // 더 부드러운 곡선 + 충분한 셰이프를 위해 30분 간격 포인트 사용 (48개)
-    const hours = Array.from({ length: 48 }, (_, index) => index * 0.5); // 0 ~ 23.5시 (30분 간격)
+    const hours = Array.from({ length: 49 }, (_, index) => index * 0.5);
     const maxValue = 50;
     const minValue = 0;
     const range = maxValue - minValue;
 
     return hours.map((hour) => {
-      const t = hour / 23.5;
-      // 기본 큰 파형 + 살짝 빠른 파형을 섞어서, 골과 봉우리가 있는 부드러운 곡선
-      const wave1 = Math.sin(t * Math.PI * 2) * 1.0; // 메인 파형 (진폭 조금 더 키움)
-      const wave2 = Math.sin(t * Math.PI * 4) * 0.5; // 디테일용 서브 파형도 약간 키움
-      const baseWave = (wave1 + wave2) / 1.4; // 너무 과하지 않게 한 번 눌러줌
-
+      const t = hour / 24;
+      // 부드러운 곡선을 위한 파형 생성
+      const wave1 = Math.sin(t * Math.PI * 2) * 1.0;
+      const wave2 = Math.sin(t * Math.PI * 4) * 0.5;
+      const baseWave = (wave1 + wave2) / 1.4;
+      // 시드 기반 노이즈로 자연스러운 변동 추가
       const noiseSeed = getSeededInt(`${seedBase}-${Math.floor(hour)}`, 100);
-      const noise = (noiseSeed / 100 - 0.5) * 0.04; // 노이즈는 더 줄여서 형태만 살짝 깨주는 정도
-
-      const shaped = baseWave + noise; // -1 ~ 1 근처의 파형
-      const value = minValue + (range / 2) + shaped * (range / 2); // 0~50 안에서 굴곡만 더 강하게
+      const noise = (noiseSeed / 100 - 0.5) * 0.04;
+      const shaped = baseWave + noise;
+      const value = minValue + (range / 2) + shaped * (range / 2);
 
       return {
-        hour: hour % 1 === 0 ? hour.toString().padStart(2, '0') : '', // 정수 시간만 라벨로 사용
+        hour: hour % 1 === 0 ? (hour === 24 ? '24' : hour.toString().padStart(2, '0')) : '',
+        xValue: hour, // X축 위치 (0~24)
         value: Math.round(value * 10) / 10,
+        originalHour: hour,
       };
     });
+  }, []);
+
+  const X_AXIS_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+
+  const labeledTrendData = useMemo(() => {
+    return trendData
+      .map((item, index) => ({ ...item, originalIndex: index }))
+      .filter(item => {
+        if (!item.hour || item.hour === '') return false;
+        const hour = Number.parseInt(item.hour, 10);
+        return !Number.isNaN(hour) && X_AXIS_TICKS.includes(hour);
+      });
+  }, [trendData]);
+
+  // 애니메이션을 위한 데이터 (순차적으로 나타나는 효과)
+  const animatedTrendData = useMemo(() => {
+    return trendData.map((item, index) => {
+      const hasLabel = item.hour !== '';
+      if (!hasLabel) {
+        return { ...item, _opacity: 0 };
+      }
+      
+      const labelIndex = labeledTrendData.findIndex(labeled => labeled.originalIndex === index);
+      
+      if (labelIndex === -1) {
+        return { ...item, _opacity: 0 };
+      }
+      
+      // 순차적으로 나타나도록 opacity 계산
+      const totalLabels = labeledTrendData.length;
+      const pointProgress = (trendAnimationProgress * totalLabels) - labelIndex;
+      const opacity = Math.max(0, Math.min(1, pointProgress));
+      
+      return {
+        ...item,
+        _opacity: opacity,
+      };
+    });
+  }, [trendData, labeledTrendData, trendAnimationProgress]);
+
+  // X축 마지막 틱(24)의 Y 위치를 다른 틱과 맞추기 위한 ref
+  const xAxisBaselineYRef = useRef<number | null>(null);
+  // X축 각 틱의 SVG 내부 X 좌표를 저장 (플로팅 라벨 위치 계산용)
+  const xAxisTickXMapRef = useRef<Map<number, number>>(new Map());
+  // 차트 컨테이너 ref (크기 측정용)
+  const trendChartContainerRef = useRef<HTMLDivElement>(null);
+  // 차트 컨테이너의 크기 정보 (플로팅 라벨 위치 계산용)
+  const [trendChartRect, setTrendChartRect] = useState<{ left: number; width: number; top: number; height: number }>({ left: 0, width: 0, top: 0, height: 0 });
+
+  // 차트 컨테이너 크기 측정 (ResizeObserver + window resize)
+  useEffect(() => {
+    const chartEl = trendChartContainerRef.current;
+    if (!chartEl) return;
+    const update = () => {
+      const cr = chartEl.getBoundingClientRect();
+      setTrendChartRect({
+        left: 0, // wrapper 내부 기준이므로 0
+        width: cr.width,
+        top: 0, // wrapper 내부 기준이므로 0
+        height: cr.height,
+      });
+    };
+    const ro = new ResizeObserver(() => requestAnimationFrame(update));
+    ro.observe(chartEl);
+    update();
+    const onResize = () => requestAnimationFrame(update);
+    window.addEventListener('resize', onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   const renderTrendXAxisTick = (props: any) => {
     const { x, y, payload } = props ?? {};
     const raw = payload?.value;
-    if (!raw) return null;
+    if (raw === undefined || raw === null) return null;
 
-    const hour = Number.parseInt(String(raw), 10);
-    if (Number.isNaN(hour) || hour % 2 !== 0) return null;
-
+    const hour = Number(raw);
+    xAxisTickXMapRef.current.set(hour, x);
     const label = String(hour).padStart(2, '0');
-    const isLast = hour === 22;
+    const isLast = hour === 24;
+
+    if (!isLast) {
+      xAxisBaselineYRef.current = y;
+    }
+    const yToUse = isLast && xAxisBaselineYRef.current != null ? xAxisBaselineYRef.current : y;
 
     return (
-      <g transform={`translate(${x},${y})`}>
+      <g transform={`translate(${x},${yToUse})`}>
         <text x={0} y={0} dy={12} textAnchor="middle" fill="#9ca3af" fontSize={12}>
           {label}
         </text>
@@ -1059,18 +1108,18 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
-        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flex: 1, minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col relative" style={{ flex: 1, minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
             <span className="text-gray-400 text-xs">지난 24시간</span>
           </div>
           <div className="overflow-hidden flex-1 min-h-0">
             <div className="flex justify-end h-full">
-              <div className="relative flex-1 max-w-[434px] rounded-xl overflow-visible" style={{ minHeight: '80px', width: '100%', height: '100%' }}>
+              <div ref={trendChartContainerRef} className="relative flex-1 max-w-[434px] rounded-xl overflow-visible" style={{ minHeight: '80px', width: '100%', height: '100%' }}>
                 <ResponsiveContainer width="100%" height="100%" minHeight={80}>
                   <AreaChart
-                    data={trendData}
-                    margin={{ top: 26, right: 4, left: 0, bottom: 20 }}
+                    data={animatedTrendData}
+                    margin={{ top: 26, right: 20, left: 0, bottom: 30 }}
                   >
                     <defs>
                       <linearGradient id="eventWaveFill" x1="0" y1="0" x2="0" y2="1">
@@ -1107,11 +1156,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                     </defs>
                     <CartesianGrid strokeDasharray="1.5 2" stroke="rgba(107, 114, 128, 0.3)" opacity={1} />
                     <XAxis
-                      dataKey="hour"
+                      dataKey="xValue"
+                      type="number"
+                      domain={[0, 24]}
+                      ticks={X_AXIS_TICKS}
                       tick={renderTrendXAxisTick}
                       tickLine={false}
                       axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
-                      interval={3}
                       tickMargin={8}
                     />
                     <YAxis
@@ -1130,6 +1181,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                       strokeWidth={3}
                       fill="url(#eventWaveFill)"
                       fillOpacity={0.9}
+                      isAnimationActive={false}
+                      dot={false}
+                      activeDot={false}
                     />
                     {/* 빛 반사 효과 - 선에만 적용 */}
                     <Area
@@ -1139,13 +1193,55 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                       strokeWidth={4}
                       fill="none"
                       opacity={0.7}
+                      isAnimationActive={false}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+                {/* X축 틱에 해당하는 데이터 포인트 위에 플로팅 라벨 표시 */}
+                {trendChartRect.width > 0 &&
+                  labeledTrendData.map((item) => {
+                    const hourNum = Number.parseInt(item.hour ?? '0', 10);
+                    // 차트 margin 및 축 크기 (AreaChart margin과 일치해야 함)
+                    const yAxisWidth = 40;
+                    const marginTop = 26;
+                    const marginBottom = 30;
+                    const marginRight = 20;
+                    // 실제 plot area 크기 계산
+                    const plotWidth = trendChartRect.width - yAxisWidth - marginRight;
+                    const plotHeight = Math.max(0, trendChartRect.height - marginTop - marginBottom);
+                    
+                    // X 위치: xValue(0~24)를 plot area width에 매핑
+                    const xValue = item.xValue ?? hourNum;
+                    const xRatio = xValue / 24;
+                    const left = yAxisWidth + (xRatio * plotWidth);
+                    
+                    // Y 위치: value를 Y축 domain [0, 50]에 맞춰 계산
+                    // value=0 -> yRatio=1 (맨 아래), value=50 -> yRatio=0 (맨 위)
+                    const value = item.value ?? 0;
+                    const yRatio = 1 - (value / 50);
+                    const dataPointY = marginTop + (yRatio * plotHeight);
+                    // 데이터 포인트 위 20px에 라벨 배치
+                    const top = dataPointY - 20;
+                    
+                    return (
+                      <div
+                        key={`floating-${item.originalIndex}`}
+                        className="absolute pointer-events-none -translate-x-1/2"
+                        style={{
+                          left: `${left}px`,
+                          top: `${top}px`,
+                          zIndex: 10,
+                        }}
+                      >
+                        <span className="rounded px-1.5 py-0.5 text-[11px] font-medium text-white whitespace-nowrap" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+                          {Math.round(item.value ?? 0)}
+                        </span>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           </div>
-          
         </div>
 
 

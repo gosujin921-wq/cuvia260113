@@ -2,12 +2,12 @@
 
 import { Event } from '@/types';
 import { Icon } from '@iconify/react';
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { getCCTVIconClassName, getCCTVLabelClassName, getPrimaryButtonClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
-import SituationSummary from './SituationSummary';
-import AIDetectionPopup from './AIDetectionPopup';
+import SituationSummary from '../SituationSummary';
+import AIDetectionPopup from '../AIDetectionPopup';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { 
@@ -167,42 +167,26 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   useEffect(() => {
     if (zoomLevel > 0 && prevZoomLevelRef.current === 0 && showCCTV && showCCTVViewAngle) {
       const cctvPositions = [
-        { left: 10, top: 20, count: 1, viewAngle: 45 },
-        { left: 25, top: 15, count: 3, viewAngle: 90 },
-        { left: 35, top: 30, count: 1, viewAngle: 135 },
-        { left: 55, top: 25, count: 2, viewAngle: 180 },
-        { left: 70, top: 20, count: 1, viewAngle: 225 },
-        { left: 85, top: 30, count: 4, viewAngle: 270 },
-        { left: 20, top: 50, count: 2, viewAngle: 45 },
-        { left: 40, top: 55, count: 1, viewAngle: 90 },
-        { left: 60, top: 50, count: 3, viewAngle: 135 },
-        { left: 80, top: 55, count: 1, viewAngle: 180 },
-        { left: 15, top: 75, count: 2, viewAngle: 225 },
-        { left: 30, top: 70, count: 1, viewAngle: 270 },
-        { left: 50, top: 75, count: 5, viewAngle: 45 },
-        { left: 70, top: 70, count: 2, viewAngle: 90 },
-        { left: 90, top: 75, count: 1, viewAngle: 135 },
-        { left: 10, top: 90, count: 1, viewAngle: 180 },
-        { left: 25, top: 95, count: 3, viewAngle: 225 },
-        { left: 45, top: 90, count: 2, viewAngle: 270 },
-        { left: 65, top: 95, count: 1, viewAngle: 45 },
-        { left: 85, top: 90, count: 4, viewAngle: 90 },
+        { left: 34, top: 40, count: 1, viewAngle: 45 },
+        { left: 40, top: 38, count: 1, viewAngle: 90 },
+        { left: 48, top: 40, count: 1, viewAngle: 135 },
+        { left: 52, top: 46, count: 1, viewAngle: 180 },
+        { left: 50, top: 56, count: 1, viewAngle: 225 },
+        { left: 42, top: 58, count: 1, viewAngle: 270 },
+        { left: 34, top: 56, count: 1, viewAngle: 315 },
+        { left: 32, top: 48, count: 1, viewAngle: 0 },
+        { left: 38, top: 42, count: 1, viewAngle: 60 },
+        { left: 48, top: 50, count: 1, viewAngle: 120 },
       ];
 
       const startAngles: Record<string, number> = {};
       const targetAngles: Record<string, number> = {};
 
+      const homeViewAngle = 90;
       cctvPositions.forEach((item, index) => {
         const cctvId = `cctv-${index}`;
-        const baseViewAngle = cctvViewAngles[cctvId] ?? getCCTVViewAngleUtil(cctvId, 90);
-        const minViewAngle = 90;
-        const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
-        const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
-        const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-        const finalViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
-        
-        startAngles[cctvId] = finalViewAngle;
-        targetAngles[cctvId] = finalViewAngle + 10;
+        startAngles[cctvId] = homeViewAngle;
+        targetAngles[cctvId] = homeViewAngle + 10;
       });
 
       setAnimatingViewAngles(startAngles);
@@ -247,9 +231,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     } else {
       prevZoomLevelRef.current = zoomLevel;
     }
-  }, [zoomLevel, showCCTV, showCCTVViewAngle, cctvViewAngles]);
+  }, [zoomLevel, showCCTV, showCCTVViewAngle]);
   
-  const mapScale = zoomLevel === 0 ? 1 : 1.5;
+  const mapScale = zoomLevel === 0 ? 1 : 1.3;
   const mapTransformOrigin = 'center center';
 
   useEffect(() => {
@@ -648,6 +632,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     return result;
   }, [events, cachedPositions]);
 
+  const getRandomCCTVDirection = (index: number, subIndex?: number): number => {
+    const n = subIndex !== undefined ? index * 13 + subIndex * 7 : index * 13;
+    return (n * 97) % 360;
+  };
+
   // 선택된 이벤트를 중앙으로 이동시키기 위한 translate 계산
   const mapTranslate = useMemo(() => {
     if (zoomLevel === 0 || !selectedEventId) {
@@ -668,7 +657,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     // 중앙(50, 50)으로 이동하려면: (50 - (50 + (x - 50) * s), 50 - (50 + (y - 50) * s))
     // = (-(x - 50) * s, -(y - 50) * s)
     // = ((50 - x) * s, (50 - y) * s)
-    const translateX = (50 - eventPosition.left) * mapScale;
+    const translateX = (50 - eventPosition.left) * mapScale - 5;
     const translateY = (50 - eventPosition.top) * mapScale;
     
     return { x: translateX, y: translateY };
@@ -991,26 +980,16 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         `}</style>
         {/* 가상 CCTV 아이콘들 - 그레이 컬러 */}
         {showCCTV && [
-          { left: 10, top: 20, count: 1, viewAngle: 45 },
-          { left: 25, top: 15, count: 3, viewAngle: 90 },
-          { left: 35, top: 30, count: 1, viewAngle: 135 },
-          { left: 55, top: 25, count: 2, viewAngle: 180 },
-          { left: 70, top: 20, count: 1, viewAngle: 225 },
-          { left: 85, top: 30, count: 4, viewAngle: 270 },
-          { left: 20, top: 50, count: 2, viewAngle: 45 },
-          { left: 40, top: 55, count: 1, viewAngle: 90 },
-          { left: 60, top: 50, count: 3, viewAngle: 135 },
-          { left: 80, top: 55, count: 1, viewAngle: 180 },
-          { left: 15, top: 75, count: 2, viewAngle: 225 },
-          { left: 30, top: 70, count: 1, viewAngle: 270 },
-          { left: 50, top: 75, count: 5, viewAngle: 45 },
-          { left: 70, top: 70, count: 2, viewAngle: 90 },
-          { left: 90, top: 75, count: 1, viewAngle: 135 },
-          { left: 10, top: 90, count: 1, viewAngle: 180 },
-          { left: 25, top: 95, count: 3, viewAngle: 225 },
-          { left: 45, top: 90, count: 2, viewAngle: 270 },
-          { left: 65, top: 95, count: 1, viewAngle: 45 },
-          { left: 85, top: 90, count: 4, viewAngle: 90 },
+          { left: 34, top: 40, count: 1, viewAngle: 45 },
+          { left: 40, top: 38, count: 1, viewAngle: 90 },
+          { left: 48, top: 40, count: 1, viewAngle: 135 },
+          { left: 52, top: 46, count: 1, viewAngle: 180 },
+          { left: 50, top: 56, count: 1, viewAngle: 225 },
+          { left: 42, top: 58, count: 1, viewAngle: 270 },
+          { left: 34, top: 56, count: 1, viewAngle: 315 },
+          { left: 32, top: 48, count: 1, viewAngle: 0 },
+          { left: 38, top: 42, count: 1, viewAngle: 60 },
+          { left: 48, top: 50, count: 1, viewAngle: 120 },
         ].map((item, index) => {
           const cctvName = `CCTV-V-${index + 1}`;
           if (zoomLevel === 0) {
@@ -1052,12 +1031,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 )}
                 {showCCTVViewAngle && (() => {
                   const baseCctvId = `cctv-${index}`;
-                  const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
-                  const minViewAngle = 90;
-                  const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
-                  const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
-                  const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                  const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+                  const homeViewAngle = 90;
                   
                   if (zoomLevel === 0) {
                     const patternSeed = index % 4;
@@ -1087,8 +1061,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                           viewAngle = item.viewAngle;
                       }
                       
-                      const direction = getCCTVDirection(baseCctvId, viewAngle);
-                      const pathData = generateViewAnglePath(targetViewAngle, 50, 60, 60);
+                      const direction = getRandomCCTVDirection(index, i);
+                      const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
                       
                       return (
                         <div 
@@ -1120,9 +1094,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   }
                   
                   const cctvId = baseCctvId;
-                  const direction = getCCTVDirection(cctvId, item.viewAngle);
-                  const currentViewAngle = animatingViewAngles[cctvId] ?? targetViewAngle;
-                  const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
+                  const direction = getRandomCCTVDirection(index);
+                  const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
                   
                   return (
                     <div 
@@ -1154,15 +1127,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           } else {
             // 확대 모드: 개별 CCTV 아이콘 표시 - 다양한 각도와 위치로 배치
             return Array.from({ length: item.count }, (_, i) => {
-              // 확대 모드에서도 방향과 화각 분리
               const baseCctvId = `cctv-${index}`;
-              const baseDirection = getCCTVDirection(baseCctvId, item.viewAngle);
-              const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
               
-              // count가 1개인 경우는 원래 위치 유지
               if (item.count === 1) {
-                const finalDirection = baseDirection;
-                
                 return (
                   <div
                     key={`virtual-cctv-${index}-${i}`}
@@ -1192,20 +1159,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     )}
                     {showCCTVViewAngle && (() => {
                       const cctvId = `cctv-${index}-${i}`;
-                      const direction = finalDirection;
+                      const direction = getRandomCCTVDirection(index);
                       
                       if (zoomLevel === 0) {
                         return null;
                       }
                       
-                      const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
-                      const minViewAngle = 90;
-                      const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
-                      const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
-                      const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                      const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
-                      const currentViewAngle = animatingViewAngles[baseCctvId] ?? targetViewAngle;
-                      const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
+                      const homeViewAngle = 90;
+                      const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
                       
                       return (
                         <div 
@@ -1285,15 +1246,16 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               
               const offsetLeft = Math.cos(angle) * radius;
               const offsetTop = Math.sin(angle) * radius;
-              const finalDirection = (baseDirection + (viewAngle - item.viewAngle)) % 360;
+              const actualCctvLeft = item.left + offsetLeft;
+              const actualCctvTop = item.top + offsetTop;
               
               return (
                 <div
                   key={`virtual-cctv-${index}-${i}`}
                   className="absolute cursor-pointer"
                   style={{ 
-                    left: `${item.left + offsetLeft}%`, 
-                    top: `${item.top + offsetTop}%`, 
+                    left: `${actualCctvLeft}%`, 
+                    top: `${actualCctvTop}%`, 
                     transform: 'translate(-50%, -50%)', 
                     zIndex: 50,
                     transition: 'left 0.7s ease-out, top 0.7s ease-out, opacity 0.7s ease-out',
@@ -1316,20 +1278,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   )}
                   {showCCTVViewAngle && (() => {
                     const cctvId = `cctv-${index}-${i}`;
-                    const direction = finalDirection;
+                    const direction = getRandomCCTVDirection(index, i);
                     
                     if (zoomLevel === 0) {
                       return null;
                     }
                     
-                    const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
-                    const minViewAngle = 90;
-                    const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
-                    const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
-                    const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                    const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
-                    const currentViewAngle = animatingViewAngles[baseCctvId] ?? targetViewAngle;
-                    const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
+                    const homeViewAngle = 90;
+                    const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
                     
                     return (
                       <div 

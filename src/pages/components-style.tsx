@@ -41,6 +41,7 @@ export default function ComponentsStylePage() {
     { id: 'cards', name: '카드/박스', icon: 'mdi:card' },
     { id: 'inputs', name: '입력 필드', icon: 'mdi:text-box' },
     { id: 'cctv-icons', name: 'CCTV 아이콘', icon: 'mdi:cctv' },
+    { id: 'weather-icons', name: '날씨 아이콘', icon: 'mdi:weather-partly-cloudy' },
     { id: 'colors', name: '컬러 팔레트', icon: 'mdi:palette' },
     { id: 'fonts', name: '폰트', icon: 'mdi:format-font' },
   ];
@@ -530,6 +531,206 @@ import CCTVIcon from '@/components/common/CCTVIcon';
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* 날씨 아이콘 섹션 */}
+        {activeSection === 'weather-icons' && (
+          <div className="space-y-12">
+            {/* 구조 설명 */}
+            <div className={getCardClassName()}>
+              <h2 className="text-xl font-semibold mb-4">날씨 아이콘 타입</h2>
+              <div className="space-y-3 text-sm text-gray-300">
+                <p className="text-xs text-gray-400 mt-2">
+                  좌측 패널 로고 섹션에서 사용되는 날씨 아이콘의 모든 경우의 수입니다.
+                </p>
+              </div>
+            </div>
+
+            {/* 날씨 아이콘 그리드 */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">날씨 아이콘 목록</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {[
+                  { 
+                    icon: 'mdi:weather-sunny', 
+                    label: '맑음', 
+                    description: 'Sunny',
+                    high: 28,
+                    low: 20,
+                  },
+                  { 
+                    icon: 'mdi:weather-partly-cloudy', 
+                    label: '부분 흐림', 
+                    description: 'Partly Cloudy',
+                    high: 25,
+                    low: 18,
+                  },
+                  { 
+                    icon: 'mdi:weather-cloudy', 
+                    label: '흐림', 
+                    description: 'Cloudy',
+                    high: 22,
+                    low: 16,
+                  },
+                  { 
+                    icon: 'mdi:weather-rainy', 
+                    label: '비', 
+                    description: 'Rainy',
+                    high: 18,
+                    low: 12,
+                  },
+                  { 
+                    icon: 'mdi:weather-pouring', 
+                    label: '폭우', 
+                    description: 'Heavy Rain',
+                    high: 16,
+                    low: 10,
+                  },
+                  { 
+                    icon: 'mdi:weather-snowy', 
+                    label: '눈', 
+                    description: 'Snowy',
+                    high: 2,
+                    low: -5,
+                  },
+                  { 
+                    icon: 'mdi:weather-lightning', 
+                    label: '천둥/번개', 
+                    description: 'Thunderstorm',
+                    high: 20,
+                    low: 14,
+                  },
+                  { 
+                    icon: 'mdi:weather-lightning-rainy', 
+                    label: '천둥/비', 
+                    description: 'Thunderstorm with Rain',
+                    high: 19,
+                    low: 13,
+                  },
+                  { 
+                    icon: 'mdi:weather-fog', 
+                    label: '안개', 
+                    description: 'Fog',
+                    high: 15,
+                    low: 8,
+                  },
+                  { 
+                    icon: 'mdi:weather-windy', 
+                    label: '바람', 
+                    description: 'Windy',
+                    high: 23,
+                    low: 15,
+                  },
+                  { 
+                    icon: 'mdi:weather-windy-variant', 
+                    label: '강한 바람', 
+                    description: 'Strong Wind',
+                    high: 21,
+                    low: 13,
+                  },
+                  { 
+                    icon: 'mdi:weather-hail', 
+                    label: '우박', 
+                    description: 'Hail',
+                    high: 14,
+                    low: 7,
+                  },
+                ].map((weather) => (
+                  <div key={weather.icon} className={getCardClassName()}>
+                    <div className="flex flex-col items-center gap-3 p-4">
+                      {/* 날씨 아이콘 */}
+                      <div className="flex items-center justify-center w-16 h-16 rounded-lg bg-[#1a1a1a] border border-[#31353a]">
+                        <Icon icon={weather.icon} className="w-8 h-8 text-white" />
+                      </div>
+                      
+                      {/* 라벨과 설명 */}
+                      <div className="text-center">
+                        <div className="text-white font-semibold mb-1">{weather.label}</div>
+                        <div className="text-gray-400 text-xs mb-2">{weather.description}</div>
+                        
+                        {/* 온도 표시 (좌측 패널과 동일한 스타일) */}
+                        <div className="flex items-center justify-center gap-2 mt-3">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-white text-sm font-medium">{weather.high}°</span>
+                            <span className="text-gray-400 text-xs">/</span>
+                            <span className="text-gray-400 text-xs">{weather.low}°</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 아이콘 코드 */}
+                    <div className="mt-3 pt-3 border-t border-[#31353a]">
+                      <div className="text-xs text-gray-400 mb-1">아이콘 코드:</div>
+                      <code className="text-xs text-gray-300 font-mono break-all">{weather.icon}</code>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 사용 예시 */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">사용 예시</h2>
+              <div className="grid grid-cols-2 gap-6">
+                <div className={getCardClassName()}>
+                  <h3 className="text-sm font-semibold mb-4 text-gray-400">좌측 패널 로고 섹션</h3>
+                  <div className="rounded-lg p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="/logo.svg"
+                        alt="CUVIA"
+                        className="h-5 w-auto object-contain"
+                        style={{ filter: 'brightness(0) invert(1)' }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Icon icon="mdi:weather-partly-cloudy" className="w-6 h-6 text-white" />
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-white text-sm font-medium">25°</span>
+                          <span className="text-gray-400 text-xs">/</span>
+                          <span className="text-gray-400 text-xs">18°</span>
+                        </div>
+                      </div>
+                      <div className="text-white text-sm font-medium whitespace-nowrap min-w-[90px] text-right">
+                        14:30:25
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className={getCardClassName()}>
+                  <h3 className="text-sm font-semibold mb-4 text-gray-400">코드 예시</h3>
+                  <pre className="text-xs text-gray-300 overflow-x-auto">
+                    <code>{`const weatherData = {
+  icon: 'mdi:weather-partly-cloudy',
+  high: 25,
+  low: 18,
+};
+
+<div className="flex items-center gap-2">
+  <Icon icon={weatherData.icon} className="w-6 h-6 text-white" />
+  <div className="flex items-baseline gap-1">
+    <span className="text-white text-sm font-medium">
+      {weatherData.high}°
+    </span>
+    <span className="text-gray-400 text-xs">/</span>
+    <span className="text-gray-400 text-xs">
+      {weatherData.low}°
+    </span>
+  </div>
+</div>`}</code>
+                  </pre>
+                  <button
+                    onClick={() => copyToClipboard(`const weatherData = {\n  icon: 'mdi:weather-partly-cloudy',\n  high: 25,\n  low: 18,\n};\n\n<div className="flex items-center gap-2">\n  <Icon icon={weatherData.icon} className="w-6 h-6 text-white" />\n  <div className="flex items-baseline gap-1">\n    <span className="text-white text-sm font-medium">{weatherData.high}°</span>\n    <span className="text-gray-400 text-xs">/</span>\n    <span className="text-gray-400 text-xs">{weatherData.low}°</span>\n  </div>\n</div>`)}
+                    className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                  >
+                    코드 복사
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

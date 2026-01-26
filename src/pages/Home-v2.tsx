@@ -2,12 +2,12 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/EventList';
-import MapView from '@/components/dashboard/HOME/MapView';
+import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
-export default function Home() {
+export default function HomeV2() {
   const navigate = useNavigate();
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
@@ -16,31 +16,13 @@ export default function Home() {
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [hideControls, setHideControls] = useState<boolean>(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState<boolean>(false);
-  const [panelsSlidOut, setPanelsSlidOut] = useState<boolean>(false);
 
-  /**
-   * ============================================================================
-   * 📡 API 연동 포인트: 이벤트 목록 조회
-   * ============================================================================
-   * 현재: 더미 데이터(allEvents) 사용
-   * 변경: API 호출로 대체 필요
-   * 
-   * 예시:
-   * const [events, setEvents] = useState<Event[]>([]);
-   * useEffect(() => {
-   *   fetch('/api/events?status=active')
-   *     .then(res => res.json())
-   *     .then(data => setEvents(data));
-   * }, []);
-   * ============================================================================
-   */
   const allConvertedEvents: Event[] = useMemo(() => {
     return allEvents
       .map((event, index) => convertToDashboardEvent(event, index))
       .filter((event) => event.processingStage !== '종결');
   }, []);
 
-  // 가상 이벤트 데이터 (레이아웃 확인용)
   const mockEvents: Event[] = useMemo(() => {
     const now = new Date();
     const formatTime = (hours: number, minutes: number) => {
@@ -48,7 +30,6 @@ export default function Home() {
     };
     
     return [
-      // 일반 5개
       {
         id: 'mock-1',
         type: '112-치안',
@@ -104,7 +85,6 @@ export default function Home() {
         processingStage: '선별',
         resolution: { category: '112', code: '005', description: '' },
       },
-      // 주의 3개
       {
         id: 'mock-6',
         type: '112-미아',
@@ -138,7 +118,6 @@ export default function Home() {
         processingStage: '착수',
         resolution: { category: '112', code: '008', description: '' },
       },
-      // 경계 2개
       {
         id: 'mock-9',
         type: '119-화재',
@@ -164,7 +143,6 @@ export default function Home() {
     ];
   }, []);
 
-  // 표시할 이벤트만 필터링 (숫자 키를 눌렀을 때만 표시)
   const events: Event[] = useMemo(() => {
     if (visibleEventIds.size === 0) {
       return [];
@@ -172,9 +150,7 @@ export default function Home() {
     return allConvertedEvents.filter(event => visibleEventIds.has(event.id));
   }, [allConvertedEvents, visibleEventIds]);
 
-  // 이벤트 리스트용 이벤트 (가상 이벤트 포함)
   const eventsForList: Event[] = useMemo(() => {
-    // 가상 이벤트는 항상 표시
     const visibleRealEvents = visibleEventIds.size > 0
       ? allConvertedEvents.filter(event => visibleEventIds.has(event.id))
       : [];
@@ -182,17 +158,14 @@ export default function Home() {
     return [...mockEvents, ...visibleRealEvents];
   }, [allConvertedEvents, visibleEventIds, mockEvents]);
 
-  // 이벤트 요약 계산 (처리결과 기준) - 모든 이벤트 포함 (종결 포함)
   const eventSummary: EventSummaryType = useMemo(() => {
     const allEventsForSummary = allEvents.map((event, index) => convertToDashboardEvent(event, index));
     
-    // 대기: 생성, 선별
     const pendingStages: Array<'생성' | '선별'> = ['생성', '선별'];
     const pending = allEventsForSummary.filter((event) =>
       pendingStages.includes(event.processingStage as any)
     ).length;
     
-    // 진행중: 착수, 사실 검증, 추적 · 지원, 전파
     const inProgressStages: Array<'착수' | '사실 검증' | '추적 · 지원' | '전파'> = [
       '착수',
       '사실 검증',
@@ -213,7 +186,6 @@ export default function Home() {
     };
   }, []);
 
-  // 이벤트 선택/클릭 핸들러 (통합)
   const handleEventAction = (eventId: string) => {
     const event = events.find((e) => e.id === eventId);
     if (event?.eventId) {
@@ -228,52 +200,47 @@ export default function Home() {
     setHighlightedEventId(eventId);
   };
 
-  // 공통 이벤트 애니메이션 함수
-  // 순서: 1. 이벤트 표시 및 하이라이트 (즉시) → 2. 줌인 시작 (300ms 후) → 3. 팝업 표시 (줌인 완료 후 800ms)
+  // V2 프로토타입: 다른 애니메이션 로직 (필요시 수정)
   const animateToEvent = useCallback((event: Event, callback?: () => void) => {
     const eventId = event.id;
-    // 1단계: 이벤트 표시 및 하이라이트 (즉시)
     setVisibleEventIds(prev => new Set([...prev, eventId]));
     setHighlightedEventId(eventId);
     
-    // 2단계: 줌인 시작 (300ms 후)
+    // V2: 다른 타이밍으로 수정 가능
     setTimeout(() => {
       setMapZoomLevel(1);
       
-      // 3단계: 줌인 완료 후 팝업 표시 (300ms + 500ms = 800ms 후)
       setTimeout(() => {
-        setSelectedEventId(eventId); // 팝업 표시
+        setSelectedEventId(eventId);
         if (callback) {
           callback();
         }
-      }, 500); // 줌인 애니메이션 완료 시간
+      }, 500);
     }, 300);
   }, []);
 
-  // 선택 해제 함수
   const clearSelection = () => {
     setSelectedEventId(null);
     setHighlightedEventId(null);
     setAiDetectionEventId(null);
     setMapZoomLevel(0);
     setHideControls(false);
-    setPanelsSlidOut(false);
   };
 
-  // 키보드 단축키 핸들러
+  // V2 프로토타입: 다른 키보드 단축키 (필요시 수정)
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
+      // V2: 다른 키보드 동작으로 수정 가능
       if (e.key === '1') {
         const missingEvent = allConvertedEvents.find(event => 
           event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
         );
         if (missingEvent) {
           setHideControls(true);
-          setPanelsSlidOut(true);
           animateToEvent(missingEvent);
         }
       } else if (e.key === '2') {
@@ -314,10 +281,9 @@ export default function Home() {
         className="absolute left-4 top-4 z-[110] rounded px-2.5 py-1 text-xs font-medium text-gray-300 bg-black/50 backdrop-blur-sm"
         aria-label="페이지 설명"
       >
-        투망감시
+        데모(실종)
       </div>
 
-      {/* 맵 - 전체 화면 */}
       <div className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
         <MapView
           events={events}
@@ -334,20 +300,14 @@ export default function Home() {
         />
       </div>
 
-      {/* 좌측: LeftPanel (운영 패널) - 플로팅. 1키: 좌측으로 이동·페이드아웃 */}
-      <div
-        className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
-        style={{ zIndex: 100 }}
-      >
+      <div className="absolute left-0 top-0 bottom-0" style={{ zIndex: 100 }}>
         <LeftPanel onCollapsedChange={setLeftPanelCollapsed} />
       </div>
 
-      {/* 우측: 이벤트 리스트 패널 - 플로팅. 1키: 우측으로 이동·페이드아웃 */}
-      <div
-        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+      <div 
+        className="absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4" 
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
-        {/* 스코어 카드 */}
         <div className="rounded-lg p-4 gradient-border-right-bottom" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -381,14 +341,12 @@ export default function Home() {
                 key={card.title}
                 className="bg-[#393a42] p-3 rounded-lg flex items-start justify-between relative"
               >
-                {/* 타이틀과 숫자 */}
                 <div className="flex flex-col gap-0.5">
                   <span className="text-gray-400 text-xs font-medium">{card.title}</span>
                   <div className="text-white text-2xl font-bold">
                     {card.value.toLocaleString()}
                   </div>
                 </div>
-                {/* 아이콘 */}
                 <div className="flex-shrink-0">
                   <Icon icon={card.icon} className={`w-6 h-6 ${card.color}`} />
                 </div>
