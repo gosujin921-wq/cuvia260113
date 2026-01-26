@@ -39,6 +39,8 @@ const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cct
         ...('bottom' in finalPosition && finalPosition.bottom !== undefined && { bottom: typeof finalPosition.bottom === 'number' ? `${finalPosition.bottom}px` : finalPosition.bottom }),
       };
 
+  const isMainPopup = cctvIndex === 11;
+
   return (
     <div style={positionStyle}>
       <div
@@ -48,6 +50,9 @@ const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cct
           background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
           backdropFilter: 'blur(2px)',
           WebkitBackdropFilter: 'blur(2px)',
+          ...(isMainPopup ? {
+            boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.3)',
+          } : {}),
         }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -41,6 +41,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [is3DMode, setIs3DMode] = useState(true);
   const [mapBearing, setMapBearing] = useState(-17.6);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
+  const [zoomProgress, setZoomProgress] = useState(0);
+  const [showProgressAfterZoom, setShowProgressAfterZoom] = useState(false);
+  const [isProgressComplete, setIsProgressComplete] = useState(false);
+  const [viewAngleAnimationProgress, setViewAngleAnimationProgress] = useState(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -139,6 +143,68 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   }, [zoomLevel, onZoomLevelChange]);
 
   useEffect(() => {
+    const isEvent1Selected = selectedEventId && events.find(e => e.id === selectedEventId && (e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'));
+    
+    if (isEvent1Selected && zoomLevel === 1 && showProgressAfterZoom) {
+      setZoomProgress(0);
+      setIsProgressComplete(false);
+      const duration = 3000;
+      const startTime = Date.now();
+      
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        setZoomProgress(progress);
+        
+        if (progress >= 1) {
+          clearInterval(interval);
+          setZoomProgress(0);
+          setShowProgressAfterZoom(false);
+          setIsProgressComplete(true);
+          
+          const angleDuration = 600;
+          const angleStartTime = Date.now();
+          setViewAngleAnimationProgress(0);
+          
+          const angleAnimate = () => {
+            const angleElapsed = Date.now() - angleStartTime;
+            const angleProgress = Math.min(angleElapsed / angleDuration, 1);
+            const easedProgress = 1 - Math.pow(1 - angleProgress, 3);
+            setViewAngleAnimationProgress(easedProgress);
+            
+            if (angleProgress < 1) {
+              requestAnimationFrame(angleAnimate);
+            } else {
+              setViewAngleAnimationProgress(1);
+            }
+          };
+          
+          requestAnimationFrame(angleAnimate);
+        }
+      }, 16);
+      
+      return () => clearInterval(interval);
+    } else if (!isEvent1Selected || zoomLevel === 0) {
+      setZoomProgress(0);
+      setShowProgressAfterZoom(false);
+      setIsProgressComplete(false);
+      setViewAngleAnimationProgress(0);
+    }
+  }, [selectedEventId, zoomLevel, events, showProgressAfterZoom]);
+
+  useEffect(() => {
+    const isEvent1Selected = selectedEventId && events.find(e => e.id === selectedEventId && (e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'));
+    
+    if (isEvent1Selected && zoomLevel === 1) {
+      const timer = setTimeout(() => {
+        setShowProgressAfterZoom(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [selectedEventId, zoomLevel, events]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const handleResize = () => {
@@ -153,7 +219,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (zoomLevel > 0 && prevZoomLevelRef.current === 0 && showCCTV && showCCTVViewAngle) {
+    const isEvent1Selected = selectedEventId && events.find(e => e.id === selectedEventId && (e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'));
+    
+    if (zoomLevel > 0 && prevZoomLevelRef.current === 0 && showCCTV && showCCTVViewAngle && !isEvent1Selected) {
       const cctvPositions = [
         { left: 34, top: 40, count: 1, viewAngle: 45 },
         { left: 40, top: 38, count: 1, viewAngle: 90 },
@@ -219,7 +287,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     } else {
       prevZoomLevelRef.current = zoomLevel;
     }
-  }, [zoomLevel, showCCTV, showCCTVViewAngle]);
+  }, [zoomLevel, showCCTV, showCCTVViewAngle, selectedEventId, events]);
   
   const mapScale = zoomLevel === 0 ? 1 : 1.3;
   const mapTransformOrigin = 'center center';
@@ -578,20 +646,23 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
   const mapTranslate = useMemo(() => {
     if (zoomLevel === 0 || !selectedEventId) {
-      return { x: 0, y: 0 };
+      return { x: 0, y: 0, offsetX: 0 };
     }
     
     const selectedEvent = events.find(e => e.id === selectedEventId);
     if (!selectedEvent) {
-      return { x: 0, y: 0 };
+      return { x: 0, y: 0, offsetX: 0 };
     }
     
     const eventPosition = positionsById[selectedEvent.id] || { left: centerX, top: centerY };
     const translateX = (50 - eventPosition.left) * mapScale - 5;
     const translateY = (50 - eventPosition.top) * mapScale;
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : windowWidth;
+    const offsetXPx = 100;
+    const offsetXPercent = (offsetXPx / screenWidth) * 100;
     
-    return { x: translateX, y: translateY };
-  }, [zoomLevel, selectedEventId, events, mapScale, positionsById]);
+    return { x: translateX, y: translateY, offsetX: offsetXPercent };
+  }, [zoomLevel, selectedEventId, events, mapScale, positionsById, windowWidth]);
 
   const getEventPosition = (event: Event) => {
     return positionsById[event.id] || { left: centerX, top: centerY };
@@ -856,8 +927,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         style={{
           borderWidth: '1px',
           height: '100%',
-          width: '100%',
-          transform: `scale(${mapScale}) translate(${mapTranslate.x}%, ${mapTranslate.y}%) translateZ(0)`,
+          width: zoomLevel > 0 ? 'calc(100% + 100px)' : '100%',
+          left: zoomLevel > 0 ? '-100px' : '0',
+          transform: `scale(${mapScale}) translate(calc(${mapTranslate.x}% + ${mapTranslate.offsetX}%), ${mapTranslate.y}%) translateZ(0)`,
           transformOrigin: mapTransformOrigin,
           willChange: 'transform',
           transition: 'transform 0.5s ease-out, width 0.5s ease-out, left 0.5s ease-out',
@@ -1067,7 +1139,33 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     )}
                     {showCCTVViewAngle && (() => {
                       const cctvId = `cctv-${index}-${i}`;
-                      const direction = getZoomedCCTVDirection(index);
+                      const isEvent1Selected = selectedEventId && events.find(e => e.id === selectedEventId && (e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'));
+                      let direction: number;
+                      
+                      if (isEvent1Selected) {
+                        const cctvPositions = [
+                          { viewAngle: 45 },
+                          { viewAngle: 90 },
+                          { viewAngle: 135 },
+                          { viewAngle: 180 },
+                          { viewAngle: 225 },
+                          { viewAngle: 270 },
+                          { viewAngle: 315 },
+                          { viewAngle: 0 },
+                          { viewAngle: 60 },
+                          { viewAngle: 120 },
+                        ];
+                        const defaultDirection = cctvPositions[index]?.viewAngle ?? getRandomCCTVDirection(index);
+                        const targetDirection = getZoomedCCTVDirection(index);
+                        
+                        if (isProgressComplete && viewAngleAnimationProgress > 0) {
+                          direction = defaultDirection + (targetDirection - defaultDirection) * viewAngleAnimationProgress;
+                        } else {
+                          direction = defaultDirection;
+                        }
+                      } else {
+                        direction = getZoomedCCTVDirection(index);
+                      }
                       
                       if (zoomLevel === 0) {
                         return null;
@@ -1088,7 +1186,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                             transformOrigin: 'center center',
                             pointerEvents: 'none',
                             zIndex: 30,
-                            transition: 'opacity 0.7s ease-out',
+                            transition: isEvent1Selected && isProgressComplete && viewAngleAnimationProgress > 0 ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-out' : 'opacity 0.7s ease-out',
                             opacity: zoomLevel > 0 ? 1 : 0,
                           }}
                         >
@@ -1248,9 +1346,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   transform: isEvent1 ? 'translate(-50%, calc(-50% - 30px))' : 'translate(-50%, -50%)',
                   zIndex: isSelected ? 150 : isHighlighted ? 140 : 100,
                   pointerEvents: 'auto',
+                  opacity: isEvent1 ? 1 : 1,
                 }}
               >
-                {isSelected && !event.title.includes('상가 절도 의심') && !event.title.includes('현금 절취 포착') && (
+                {isSelected && !event.title.includes('상가 절도 의심') && !event.title.includes('현금 절취 포착') && (!isEvent1 || isProgressComplete) && (
                   <>
                     <div 
                       className="absolute animate-circle-pulse" 
@@ -1317,21 +1416,54 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     const clusterCount = samePositionEvents.length;
                     const hasMultiple = clusterCount > 1 && zoomLevel === 0;
                     
-                    const cctvLabel = (cctvIndex !== undefined && cctvIndex !== null && cctvIndex >= 1 && cctvIndex <= 10)
-                      ? CCTV_TITLES[cctvIndex - 1] 
-                      : null;
+                    const cctvLabel = isEvent1 
+                      ? 'CCTV-V-11'
+                      : (cctvIndex !== undefined && cctvIndex !== null && cctvIndex >= 1 && cctvIndex <= 10)
+                        ? CCTV_TITLES[cctvIndex - 1] 
+                        : null;
                     
                     return (
                       <>
                         <div 
-                          className={`${getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''}`}
+                          className={`${isEvent1 ? getCCTVIconClassName('light') : getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''} relative`}
                           style={{ 
                             ...getCCTVIconBoxStyle(clusterCount, mapScale, hasMultiple),
-                            transformOrigin: 'center center'
+                            transformOrigin: 'center center',
+                            opacity: isEvent1 ? 1 : (zoomLevel > 0 ? 1 : 0),
+                            ...(isEvent1 && isSelected && zoomProgress > 0 && {
+                              borderColor: 'transparent',
+                            }),
+                            ...(isEvent1 && isSelected && isProgressComplete && {
+                              borderColor: 'rgb(239, 68, 68)',
+                            }),
                           }}
                         >
+                          {isEvent1 && isSelected && zoomProgress > 0 && (
+                            <div
+                              className="absolute inset-0 rounded-xl"
+                              style={{
+                                background: `conic-gradient(from -90deg, 
+                                  #0066FF 0deg,
+                                  #8A2BE2 ${zoomProgress * 180}deg,
+                                  #ff8566 ${zoomProgress * 360}deg,
+                                  #d1d5db ${zoomProgress * 360}deg)`,
+                                mask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+                                maskComposite: 'exclude',
+                                WebkitMaskComposite: 'xor',
+                                padding: '2px',
+                                pointerEvents: 'none',
+                                zIndex: 1,
+                              }}
+                            />
+                          )}
                           {isEvent1 ? (
-                            <CCTVIcon className="text-red-400 drop-shadow-lg" width="16px" height="16px" />
+                            <CCTVIcon 
+                              className={isSelected && isProgressComplete ? "text-red-400 drop-shadow-lg transition-colors duration-500" : "!text-gray-300 transition-colors duration-500"} 
+                              style={isSelected && isProgressComplete ? {} : { color: '#d1d5db' }} 
+                              width="16px" 
+                              height="16px" 
+                            />
                           ) : (
                             <Icon 
                               icon="mdi:map-marker"
@@ -1347,7 +1479,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                           )}
                         </div>
                         {cctvLabel && (
-                          <div className={`${getCCTVLabelClassName('tracking')} absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap`}>
+                          <div 
+                            className={`${isEvent1 ? getCCTVLabelClassName(isSelected && isProgressComplete ? 'tracking' : 'default') : getCCTVLabelClassName('tracking')} absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap`}
+                            style={{ opacity: isEvent1 ? 1 : (zoomLevel > 0 ? 1 : 0) }}
+                          >
                             {cctvLabel}
                           </div>
                         )}
@@ -1397,11 +1532,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             <CCTVMeshTracking
               event={events.find(e => e.id === aiDetectionEventId) || null}
               onClose={() => onAiDetectionClose?.()}
-              cctvIndex={cctvIndex}
+              cctvIndex={11}
               position={{ 
-                top: '15%', 
-                left: '48.1503%',
-                right: undefined,
+                top: `${padding}px`, 
+                right: `${padding}px`,
+                left: undefined,
                 bottom: undefined
               }}
             />
@@ -1548,13 +1683,16 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
         const itemHeight = Math.floor((itemWidth * 3) / 4);
         const cctvPanelRight = rightPanelWidth + panelGap;
+        const cctvPanelHeight = itemHeight + (verticalPadding * 2);
+        const floatingButtonRight = hideControls ? 24 : cctvPanelRight + 20;
+        const floatingButtonBottom = hideControls ? 24 : cctvPanelHeight + 16 + 20;
         
         return (
           <div
             className="absolute group"
             style={{
-              bottom: (showCCTV && !hideControls) ? `${verticalPadding + itemHeight + (verticalPadding * 2) + 24}px` : '24px',
-              right: `${cctvPanelRight}px`,
+              bottom: `${floatingButtonBottom}px`,
+              right: `${floatingButtonRight}px`,
               zIndex: 200,
               transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out',
             }}

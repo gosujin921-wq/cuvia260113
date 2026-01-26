@@ -29,8 +29,8 @@ const SituationSummary: React.FC<SituationSummaryProps> = ({ event, onClose }) =
           background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
           backdropFilter: 'blur(2px)',
           WebkitBackdropFilter: 'blur(2px)',
+          borderWidth: '1px',
         }}
-        style={{ borderWidth: '1px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}

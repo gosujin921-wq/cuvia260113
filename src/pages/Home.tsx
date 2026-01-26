@@ -167,12 +167,21 @@ export default function Home() {
     ];
   }, []);
 
-  // 표시할 이벤트만 필터링 (숫자 키를 눌렀을 때만 표시)
+  // 표시할 이벤트만 필터링 (숫자 키를 눌렀을 때만 표시, 단 1번 이벤트는 항상 표시)
   const events: Event[] = useMemo(() => {
+    const event1 = allConvertedEvents.find(event => 
+      event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+    );
+    
     if (visibleEventIds.size === 0) {
-      return [];
+      return event1 ? [event1] : [];
     }
-    return allConvertedEvents.filter(event => visibleEventIds.has(event.id));
+    
+    const filteredEvents = allConvertedEvents.filter(event => visibleEventIds.has(event.id));
+    if (event1 && !filteredEvents.find(e => e.id === event1.id)) {
+      filteredEvents.push(event1);
+    }
+    return filteredEvents;
   }, [allConvertedEvents, visibleEventIds]);
 
   // 이벤트 리스트용 이벤트 (가상 이벤트 포함)
@@ -277,13 +286,24 @@ export default function Home() {
           event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
         );
         if (missingEvent) {
-          setHideControls(true);
-          setPanelsSlidOut(true);
-          setShowAIAgentPopup(true);
           setCctvIndex(1);
-          animateToEvent(missingEvent, () => {
-            setAiDetectionEventId(missingEvent.id);
-          });
+          setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
+          setHighlightedEventId(missingEvent.id);
+          
+          setTimeout(() => {
+            setMapZoomLevel(1);
+            
+            setTimeout(() => {
+              setSelectedEventId(missingEvent.id);
+              
+              setTimeout(() => {
+                setHideControls(true);
+                setPanelsSlidOut(true);
+                setShowAIAgentPopup(true);
+                setAiDetectionEventId(missingEvent.id);
+              }, 3000);
+            }, 500);
+          }, 300);
         }
       } else if (e.key === 'Escape') {
         clearSelection();
