@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Icon } from '@iconify/react';
-import CCTVIcon from '@/components/common/CCTVIcon';
-import { chatBlocks } from '@/components/event-detail/constants';
 
 interface AIAgentPopupProps {
   isOpen: boolean;
@@ -349,7 +347,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                                             key={idx}
                                             onClick={() => {
                                               // 퀵 버튼 기능 (나중에 구현)
-                                              console.log('대응 추천 클릭:', buttonText);
                                             }}
                                             className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
                                             style={{ borderWidth: '1px' }}
@@ -581,7 +578,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                                             key={idx}
                                             onClick={() => {
                                               // 퀵 버튼 기능 (나중에 구현)
-                                              console.log('대응 추천 클릭:', buttonText);
                                             }}
                                             className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
                                             style={{ borderWidth: '1px' }}

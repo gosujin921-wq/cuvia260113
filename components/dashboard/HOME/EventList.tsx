@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Event, EventPriority } from '@/types';
-import { getEventById, formatEventDateTime } from '@/lib/events-data';
+import { formatEventDateTime } from '@/lib/events-data';
 
 interface EventListProps {
   events: Event[];

@@ -1,5 +1,3 @@
-
-
 import { Event } from '@/types';
 import { Icon } from '@iconify/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
@@ -35,7 +33,6 @@ interface MapViewProps {
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
-  const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
   const [showCCTV, setShowCCTV] = useState(true);
   const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
   const [showCCTVName, setShowCCTVName] = useState(true);
@@ -204,13 +201,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     return getCCTVViewAngleUtil(cctvId, defaultViewAngle);
   };
 
-  const setCCTVViewAngle = (cctvId: string, viewAngle: number) => {
-    setCctvViewAngles(prev => ({
-      ...prev,
-      [cctvId]: Math.max(0, Math.min(180, viewAngle))
-    }));
-  };
-
   const formatCCTVCount = (count: number): string => {
     return count > 999 ? '999+' : count.toString();
   };
@@ -337,8 +327,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         targetAngles[cctvId] = homeViewAngle + 10;
       });
 
-      setAnimatingViewAngles(startAngles);
-
       const duration = 600;
       const startTime = performance.now();
 
@@ -347,19 +335,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const progress = Math.min(1, elapsed / duration);
         const easedProgress = 1 - Math.pow(1 - progress, 3);
 
-        const newAngles: Record<string, number> = {};
-        Object.keys(targetAngles).forEach(cctvId => {
-          const start = startAngles[cctvId];
-          const target = targetAngles[cctvId];
-          newAngles[cctvId] = start + (target - start) * easedProgress;
-        });
-
-        setAnimatingViewAngles(newAngles);
-
         if (progress < 1) {
           animationFrameRef.current = requestAnimationFrame(animate);
         } else {
-          setAnimatingViewAngles(targetAngles);
           animationFrameRef.current = null;
         }
       };
@@ -374,7 +352,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       };
     } else if (zoomLevel === 0) {
-      setAnimatingViewAngles({});
       prevZoomLevelRef.current = zoomLevel;
     } else {
       prevZoomLevelRef.current = zoomLevel;
@@ -403,7 +380,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       if (!style || !style.layers) return;
 
       const layers = style.layers;
-      console.log('Map layers:', layers.map((l: any) => ({ id: l.id, type: l.type, source: l.source })));
 
       layers.forEach((layer: any) => {
         const layerId = layer.id.toLowerCase();
@@ -414,8 +390,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           (layer.type === 'fill-extrusion');
         
         if (isBuildingLayer) {
-          console.log('Processing building layer:', layer.id, layer.type);
-          
           try {
             if (layer.type === 'fill-extrusion') {
               if (map.getLayer(layer.id)) {
@@ -571,10 +545,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
 
-  const generalEventIds = new Set([
-    'event-26', 'event-27', 'event-28', 'event-29',
-    'event-30', 'event-31', 'event-32', 'event-33',
-  ]);
 
   const seededRandom = (seed: string) => {
     let hash = 0;
@@ -760,67 +730,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     return positionsById[event.id] || { left: centerX, top: centerY };
   };
 
-  const fireStations = useMemo(() => [
-    { id: 'fire-1', name: '안양소방서', left: 20, top: 30 },
-    { id: 'fire-2', name: '평촌소방서', left: 75, top: 25 },
-    { id: 'fire-3', name: '만안소방서', left: 30, top: 80 },
-  ], []);
-
-  const policeStations = useMemo(() => [
-    { id: 'police-1', name: '안양경찰서', left: 15, top: 50 },
-    { id: 'police-2', name: '평촌경찰서', left: 80, top: 40 },
-    { id: 'police-3', name: '만안경찰서', left: 25, top: 75 },
-    { id: 'police-4', name: '비산파출소', left: 60, top: 60 },
-    { id: 'police-5', name: '석수파출소', left: 10, top: 20 },
-  ], []);
-
-  const calculateDistance = (x1: number, y1: number, x2: number, y2: number) => {
-    return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-  };
-
-  const nearbyStations = useMemo(() => {
-    if (!selectedEventId) return { fireStations: [], policeStations: [] };
-    
-    const selectedEvent = events.find(e => e.id === selectedEventId);
-    if (!selectedEvent) return { fireStations: [], policeStations: [] };
-
-    let eventPosition = getEventPosition(selectedEvent);
-    if (selectedEventId === 'event-3') {
-      const event14 = events.find(e => e.id === 'event-14');
-      if (event14) {
-        eventPosition = getEventPosition(event14);
-      }
-    }
-    
-    const needsFireStation = selectedEvent.type === '119-화재' || selectedEvent.type === '119-구조';
-    const needsPoliceStation = selectedEvent.type === '112-미아' || selectedEvent.type === '112-치안';
-    const showBoth = !needsFireStation && !needsPoliceStation;
-
-    let nearbyFire: typeof fireStations = [];
-    let nearbyPolice: typeof policeStations = [];
-
-    if (needsFireStation || showBoth) {
-      const fireWithDistance = fireStations.map(station => ({
-        ...station,
-        distance: calculateDistance(eventPosition.left, eventPosition.top, station.left, station.top),
-      }));
-      nearbyFire = fireWithDistance
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 1);
-    }
-
-    if (needsPoliceStation || showBoth || selectedEventId === 'event-3') {
-      const policeWithDistance = policeStations.map(station => ({
-        ...station,
-        distance: calculateDistance(eventPosition.left, eventPosition.top, station.left, station.top),
-      }));
-      nearbyPolice = policeWithDistance
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, 1);
-    }
-
-    return { fireStations: nearbyFire, policeStations: nearbyPolice };
-  }, [selectedEventId, events, fireStations, policeStations, positionsById]);
 
 
 

@@ -1,18 +1,13 @@
-
 import React from 'react';
 import { Icon } from '@iconify/react';
 
 interface TopControlPanelProps {
   isVisible: boolean;
-  isAutoMode: boolean;
-  onAutoModeToggle: (enabled: boolean) => void;
   onStop?: () => void;
 }
 
 const TopControlPanel: React.FC<TopControlPanelProps> = ({ 
   isVisible, 
-  isAutoMode, 
-  onAutoModeToggle,
   onStop
 }) => {
   if (!isVisible) return null;

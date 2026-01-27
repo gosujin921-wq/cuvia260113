@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
@@ -333,8 +333,6 @@ export default function Home() {
       {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
       <TopControlPanel
         isVisible={hideControls}
-        isAutoMode={isAutoMode}
-        onAutoModeToggle={setIsAutoMode}
         onStop={clearSelection}
       />
 
