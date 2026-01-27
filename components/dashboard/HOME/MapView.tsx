@@ -1146,10 +1146,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                       const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
                       const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
                       const cctvIndexForPopup = index + 1;
+                      const isHovered = hoveredCCTVIndex === cctvIndexForPopup;
                       return (
                         <div 
                           className={getCCTVIconClassName(shouldChangeToBlue ? 'active' : 'light')} 
-                          style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60), cursor: shouldChangeToBlue ? 'pointer' : 'default' }}
+                          style={{ 
+                            ...getCCTVIconBoxStyle(1, mapScale, false, 60), 
+                            cursor: shouldChangeToBlue ? 'pointer' : 'default',
+                            ...(isHovered ? {
+                              background: 'linear-gradient(135deg, #e5e5e5 0%, #d4d4d4 50%, #c4c4c4 100%)',
+                            } : {})
+                          }}
                           {...(shouldChangeToBlue ? {
                             onMouseEnter: () => {
                               setHoveredCCTVIndex(cctvIndexForPopup);
@@ -1329,10 +1336,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
                     const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
                     const cctvIndexForPopup = index + 1;
+                    const isHovered = hoveredCCTVIndex === cctvIndexForPopup;
                     return (
                       <div 
                         className={getCCTVIconClassName(shouldChangeToBlue ? 'active' : 'light')} 
-                        style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60), cursor: shouldChangeToBlue ? 'pointer' : 'default' }}
+                        style={{ 
+                          ...getCCTVIconBoxStyle(1, mapScale, false, 60), 
+                          cursor: shouldChangeToBlue ? 'pointer' : 'default',
+                          ...(isHovered ? {
+                            background: 'linear-gradient(135deg, #e5e5e5 0%, #d4d4d4 50%, #c4c4c4 100%)',
+                          } : {})
+                        }}
                         {...(shouldChangeToBlue ? {
                           onMouseEnter: () => {
                             setHoveredCCTVIndex(cctvIndexForPopup);
@@ -1500,6 +1514,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                         ? CCTV_TITLES[cctvIndex - 1] 
                         : null;
                     
+                    const isHovered = isEvent1 && hoveredCCTVIndex === 11;
                     return (
                       <>
                         <div 
@@ -1511,6 +1526,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                             ...(isEvent1 && isSelected && {
                               borderColor: 'rgb(239, 68, 68)',
                             }),
+                            ...(isHovered ? {
+                              background: 'linear-gradient(135deg, #e5e5e5 0%, #d4d4d4 50%, #c4c4c4 100%)',
+                            } : {}),
                             cursor: isEvent1 && isSelected ? 'pointer' : 'default',
                           }}
                           onMouseEnter={() => {
@@ -1645,6 +1663,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               isProgressComplete={isProgressComplete}
               viewAngleAnimationProgress={viewAngleAnimationProgress}
               highlighted={hoveredCCTVIndex === 11}
+              onHover={setHoveredCCTVIndex}
             />
             
             <div
@@ -1693,6 +1712,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                       isProgressComplete={isProgressComplete}
                       viewAngleAnimationProgress={viewAngleAnimationProgress}
                       highlighted={hoveredCCTVIndex === cctvIndexForTitle}
+                      onHover={setHoveredCCTVIndex}
                     />
                   </div>
                 );
