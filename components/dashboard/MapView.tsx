@@ -6,8 +6,6 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getCCTVIconClassName, getCCTVLabelClassName, getPrimaryButtonClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
-import SituationSummary from './SituationSummary';
-import AIDetectionPopup from './AIDetectionPopup';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { 
@@ -16,7 +14,6 @@ import {
   generateViewAnglePath,
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
-import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 interface MapViewProps {
   events: Event[];
@@ -159,6 +156,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   }, []);
 
 
+
   // CCTV 자동 롤링 제거 (무한 스크롤로 변경)
 
   const prevZoomLevelRef = useRef(zoomLevel);
@@ -196,13 +194,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const cctvId = `cctv-${index}`;
         const baseViewAngle = cctvViewAngles[cctvId] ?? getCCTVViewAngleUtil(cctvId, 90);
         const minViewAngle = 90;
-        const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
+        const maxViewAngle = 120;
         const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
         const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-        const finalViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+        const finalViewAngle = Math.min(120, Math.max(90, dynamicViewAngle));
         
         startAngles[cctvId] = finalViewAngle;
-        targetAngles[cctvId] = finalViewAngle + 10;
+        targetAngles[cctvId] = Math.min(120, finalViewAngle + 10);
       });
 
       setAnimatingViewAngles(startAngles);
@@ -249,7 +247,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, [zoomLevel, showCCTV, showCCTVViewAngle, cctvViewAngles]);
   
-  const mapScale = zoomLevel === 0 ? 1 : 1.5;
+  const mapScale = zoomLevel === 0 ? 1 : 1.3;
   const mapTransformOrigin = 'center center';
 
   useEffect(() => {
@@ -651,28 +649,23 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   // 선택된 이벤트를 중앙으로 이동시키기 위한 translate 계산
   const mapTranslate = useMemo(() => {
     if (zoomLevel === 0 || !selectedEventId) {
-      return { x: 0, y: 0 };
+      return { x: 0, y: 0, offsetX: 0 };
     }
     
     const selectedEvent = events.find(e => e.id === selectedEventId);
     if (!selectedEvent) {
-      return { x: 0, y: 0 };
+      return { x: 0, y: 0, offsetX: 0 };
     }
     
     const eventPosition = positionsById[selectedEvent.id] || { left: centerX, top: centerY };
-    // CSS transform에서 transform-origin이 center center일 때:
-    // scale(s)를 적용하면 중심점(50%, 50%)을 기준으로 확대됩니다.
-    // 이벤트가 (x, y)에 있을 때, 중심점에서 이벤트까지의 벡터는 (x - 50, y - 50)
-    // scale 후 벡터: (x - 50) * s, (y - 50) * s
-    // scale 후 위치: (50 + (x - 50) * s, 50 + (y - 50) * s)
-    // 중앙(50, 50)으로 이동하려면: (50 - (50 + (x - 50) * s), 50 - (50 + (y - 50) * s))
-    // = (-(x - 50) * s, -(y - 50) * s)
-    // = ((50 - x) * s, (50 - y) * s)
-    const translateX = (50 - eventPosition.left) * mapScale;
+    const translateX = (50 - eventPosition.left) * mapScale - 5;
     const translateY = (50 - eventPosition.top) * mapScale;
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : windowWidth;
+    const offsetXPx = 100;
+    const offsetXPercent = (offsetXPx / screenWidth) * 100;
     
-    return { x: translateX, y: translateY };
-  }, [zoomLevel, selectedEventId, events, mapScale, positionsById]);
+    return { x: translateX, y: translateY, offsetX: offsetXPercent };
+  }, [zoomLevel, selectedEventId, events, mapScale, positionsById, windowWidth]);
 
   // 핀 위치 계산 - 단순히 퍼센트 위치 유지
   const getEventPosition = (event: Event) => {
@@ -954,11 +947,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         style={{
           borderWidth: '1px',
           height: '100%',
-          width: '100%',
-          transform: `scale(${mapScale}) translate(${mapTranslate.x}%, ${mapTranslate.y}%) translateZ(0)`,
+          width: zoomLevel > 0 ? 'calc(100% + 100px)' : '100%',
+          left: zoomLevel > 0 ? '-100px' : '0',
+          transform: `scale(${mapScale}) translate(calc(${mapTranslate.x}% + ${mapTranslate.offsetX}%), ${mapTranslate.y}%) translateZ(0)`,
           transformOrigin: mapTransformOrigin,
           willChange: 'transform',
-          transition: 'transform 0.5s ease-out',
+          transition: 'transform 0.5s ease-out, width 0.5s ease-out, left 0.5s ease-out',
         }}
       >
         <div
@@ -1054,10 +1048,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   const baseCctvId = `cctv-${index}`;
                   const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
                   const minViewAngle = 90;
-                  const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
+                  const maxViewAngle = 120;
                   const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
                   const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                  const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+                  const targetViewAngle = Math.min(120, Math.max(90, dynamicViewAngle));
                   
                   if (zoomLevel === 0) {
                     const patternSeed = index % 4;
@@ -1200,10 +1194,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                       
                       const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
                       const minViewAngle = 90;
-                      const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
+                      const maxViewAngle = 120;
                       const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
                       const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                      const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+                      const targetViewAngle = Math.min(120, Math.max(90, dynamicViewAngle));
                       const currentViewAngle = animatingViewAngles[baseCctvId] ?? targetViewAngle;
                       const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
                       
@@ -1324,10 +1318,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     
                     const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
                     const minViewAngle = 90;
-                    const maxViewAngle = baseViewAngle >= 120 ? baseViewAngle : 120;
+                    const maxViewAngle = 120;
                     const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
                     const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                    const targetViewAngle = baseViewAngle >= 120 ? baseViewAngle : dynamicViewAngle;
+                    const targetViewAngle = Math.min(120, Math.max(90, dynamicViewAngle));
                     const currentViewAngle = animatingViewAngles[baseCctvId] ?? targetViewAngle;
                     const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
                     
@@ -1437,7 +1431,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   </>
                 )}
                 
-                {/* 추적 CCTV 아이콘 */}
                 <div 
                   className="absolute cursor-pointer" 
                   style={{ zIndex: 130 }}
@@ -1447,39 +1440,39 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   }}
                 >
                   {(() => {
-                    // 같은 위치에 있는 이벤트 개수 계산 (위치가 1% 이내로 가까운 경우)
                     const samePositionEvents = events.filter(e => {
                       const otherPosition = getEventPosition(e);
                       const distance = Math.sqrt(
                         Math.pow(position.left - otherPosition.left, 2) + 
                         Math.pow(position.top - otherPosition.top, 2)
                       );
-                      return distance < 1; // 1% 이내 거리
+                      return distance < 1;
                     });
                     const clusterCount = samePositionEvents.length;
                     const hasMultiple = clusterCount > 1 && zoomLevel === 0;
                     
                     return (
-                      <div 
-                        className={`${getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''}`}
-                        style={{ 
-                          ...getCCTVIconBoxStyle(clusterCount, mapScale, hasMultiple),
-                          transformOrigin: 'center center'
-                        }}
-                      >
-                        <Icon 
-                          icon="mdi:map-marker"
-                          className="text-red-400"
-                          width="16px"
-                          height="16px"
-                        />
-                        {/* 이벤트 개수 - 축소 모드에서만 표시 */}
-                        {hasMultiple && (
-                          <span className="text-xs font-semibold text-red-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
-                            {formatCCTVCount(clusterCount)}
-                          </span>
-                        )}
-                      </div>
+                      <>
+                        <div 
+                          className={`${getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''} relative`}
+                          style={{ 
+                            ...getCCTVIconBoxStyle(clusterCount, mapScale, hasMultiple),
+                            transformOrigin: 'center center',
+                          }}
+                        >
+                          <Icon 
+                            icon="mdi:map-marker"
+                            className="text-red-400"
+                            width="16px"
+                            height="16px"
+                          />
+                          {hasMultiple && (
+                            <span className="text-xs font-semibold text-red-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
+                              {formatCCTVCount(clusterCount)}
+                            </span>
+                          )}
+                        </div>
+                      </>
                     );
                   })()}
                 </div>
@@ -1490,123 +1483,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
       </div>
 
-      {/* 상황요약 팝업 */}
-      {selectedEventId && (
-        <SituationSummary
-          event={events.find(e => e.id === selectedEventId) || null}
-          onClose={() => onMapClick?.()}
-        />
-      )}
 
-      {/* AI탐지 팝업 */}
-      {aiDetectionEventId && (
-        <AIDetectionPopup
-          event={events.find(e => e.id === aiDetectionEventId) || null}
-          onClose={() => onAiDetectionClose?.()}
-        />
-      )}
-
-
-      {/* 하단 CCTV 비디오 플레이어 - 무한 스크롤 */}
-      {showCCTV && (() => {
-        const rightPanelWidth = 370;
-        const panelGap = 16;
-        const verticalPadding = 16; // 상하 여백
-        const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4'];
-        
-        // 사용 가능한 너비 계산
-        const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
-        
-        // 4:3 비율로 아이템 크기 계산 (4개 표시)
-        const gap = 12;
-        const paddingHorizontal = 12;
-        const paddingVertical = 16;
-        const totalGapWidth = gap * 3; // 4개 아이템 사이 3개 gap
-        const totalPaddingWidth = paddingHorizontal * 2;
-        const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
-        const itemHeight = Math.floor((itemWidth * 3) / 4); // 4:3 비율
-        
-        // 패널 위치 계산
-        const cctvPanelLeft = leftPanelWidth + panelGap;
-        const cctvPanelRight = rightPanelWidth + panelGap;
-        
-        return (
-          <div
-            className="absolute transition-all duration-500 ease-in-out"
-            style={{ 
-              left: `${cctvPanelLeft}px`,
-              right: `${cctvPanelRight}px`,
-              bottom: `${verticalPadding}px`,
-              top: 'auto',
-              zIndex: 200,
-              transform: hideControls ? 'translateY(136px)' : 'translateY(0)',
-              opacity: hideControls ? 0 : 1,
-            }}
-          >
-            <div className="rounded-lg gradient-border-right-bottom" style={{ height: `${itemHeight + (verticalPadding * 2)}px`, width: '100%', overflow: 'hidden', paddingTop: `${verticalPadding}px`, paddingBottom: `${verticalPadding}px`, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-              <div 
-                ref={(el) => {
-                  if (el && showCCTV) {
-                    // 초기 스크롤 위치를 중간으로 설정 (무한 스크롤을 위해)
-                    const totalItemWidth = itemWidth + gap;
-                    const oneSetWidth = cctvList.length * totalItemWidth;
-                    el.scrollLeft = oneSetWidth;
-                  }
-                }}
-                className="flex items-center"
-                style={{ 
-                  height: `${itemHeight}px`,
-                  gap: `${gap}px`,
-                  paddingLeft: `${paddingHorizontal}px`,
-                  paddingRight: `${paddingHorizontal}px`,
-                  overflowX: 'auto',
-                  overflowY: 'hidden',
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent',
-                }}
-                onScroll={(e) => {
-                  const target = e.currentTarget;
-                  const scrollLeft = target.scrollLeft;
-                  const totalItemWidth = itemWidth + gap;
-                  const oneSetWidth = cctvList.length * totalItemWidth;
-                  
-                  // 오른쪽 끝에 가까워지면 중간으로 이동
-                  if (scrollLeft >= oneSetWidth * 2 - 10) {
-                    target.scrollLeft = oneSetWidth + (scrollLeft - oneSetWidth * 2);
-                  }
-                  // 왼쪽 끝에 가까워지면 중간으로 이동
-                  else if (scrollLeft <= 10) {
-                    target.scrollLeft = oneSetWidth + scrollLeft;
-                  }
-                }}
-              >
-                {/* 무한 스크롤을 위한 복제 아이템들 (3세트) */}
-                {[...cctvList, ...cctvList, ...cctvList].map((cctvId, index) => (
-                  <div
-                    key={`bottom-cctv-${index}-${cctvId}`}
-                    className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0"
-                    style={{ width: `${itemWidth}px`, height: `${itemHeight}px` }}
-                  >
-                    <video
-                      src={getRandomCCTVVideo(cctvId)}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-0.5">
-                      <div className="text-white text-[10px] font-semibold truncate" title={cctvId}>
-                        {cctvId}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
 
       {/* Agent Hub 버튼 - CCTV 화면 패널 우측 정렬 */}

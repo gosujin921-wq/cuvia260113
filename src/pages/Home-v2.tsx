@@ -1,9 +1,11 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
+import BottomPanel from '@/components/dashboard/BottomPanel';
+import ReportPopup from '@/components/dashboard/ReportPopup';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
@@ -16,6 +18,12 @@ export default function HomeV2() {
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [hideControls, setHideControls] = useState<boolean>(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState<boolean>(false);
+  const [showCCTV, setShowCCTV] = useState<boolean>(true);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
+  const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isUserScrollingRef = useRef(false);
+  const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const allConvertedEvents: Event[] = useMemo(() => {
     return allEvents
@@ -224,8 +232,19 @@ export default function HomeV2() {
     setHighlightedEventId(null);
     setAiDetectionEventId(null);
     setMapZoomLevel(0);
-    setHideControls(false);
   };
+
+  // 윈도우 리사이즈 감지
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // V2 프로토타입: 다른 키보드 단축키 (필요시 수정)
   useEffect(() => {
@@ -240,7 +259,6 @@ export default function HomeV2() {
           event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
         );
         if (missingEvent) {
-          setHideControls(true);
           animateToEvent(missingEvent);
         }
       } else if (e.key === '2') {
@@ -248,7 +266,6 @@ export default function HomeV2() {
           event.eventId === 'A-20251210-003' || event.id === 'A-20251210-003'
         );
         if (abductionEvent) {
-          setHideControls(true);
           animateToEvent(abductionEvent, () => {
             setAiDetectionEventId(abductionEvent.id);
           });
@@ -258,12 +275,10 @@ export default function HomeV2() {
           event.eventId === 'A-20241124-001' || event.id === 'A-20241124-001'
         );
         if (assaultEvent) {
-          setHideControls(true);
           animateToEvent(assaultEvent);
         }
       } else if (e.key === 'Escape') {
         clearSelection();
-        setHideControls(false);
       }
     };
 
@@ -364,6 +379,25 @@ export default function HomeV2() {
           />
         </div>
       </div>
+
+      <BottomPanel
+        showCCTV={showCCTV}
+        hideControls={hideControls}
+        leftPanelWidth={leftPanelCollapsed ? 80 : 480}
+        windowWidth={windowWidth}
+        cctvScrollContainerRef={cctvScrollContainerRef}
+        isUserScrollingRef={isUserScrollingRef}
+        userScrollTimeoutRef={userScrollTimeoutRef}
+        autoScrollIntervalRef={autoScrollIntervalRef}
+      />
+
+      {selectedEventId && (
+        <ReportPopup
+          event={[...allConvertedEvents, ...mockEvents].find(e => e.id === selectedEventId) || null}
+          onClose={clearSelection}
+          position={{ top: '1.25rem', right: '370px' }}
+        />
+      )}
     </div>
   );
 }
