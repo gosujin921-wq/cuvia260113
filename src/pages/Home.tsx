@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import EventList from '@/components/dashboard/EventList';
+import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import AIAgentPopup from '@/components/dashboard/AIAgentPopup';
@@ -22,6 +22,7 @@ export default function Home() {
   const [panelsSlidOut, setPanelsSlidOut] = useState<boolean>(false);
   const [showAIAgentPopup, setShowAIAgentPopup] = useState<boolean>(false);
   const [isAutoMode, setIsAutoMode] = useState<boolean>(true);
+  const [key1PressTime, setKey1PressTime] = useState<Date | undefined>(undefined);
 
   /**
    * ============================================================================
@@ -294,6 +295,7 @@ export default function Home() {
           event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
         );
         if (missingEvent) {
+          setKey1PressTime(new Date());
           setCctvIndex(1);
           setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
           setHighlightedEventId(missingEvent.id);
@@ -432,6 +434,7 @@ export default function Home() {
             selectedEventId={selectedEventId || undefined}
             onEventSelect={handleEventAction}
             onEventHover={handleEventHover}
+            key1PressTime={key1PressTime}
           />
         </div>
       </div>
