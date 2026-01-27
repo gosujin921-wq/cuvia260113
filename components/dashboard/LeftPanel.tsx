@@ -516,13 +516,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const getLevelColor = (level: 'good' | 'normal' | 'bad') => {
     switch (level) {
       case 'good':
-        return 'text-green-400';
+        return 'text-green-400 border-green-400';
       case 'normal':
-        return 'text-yellow-400';
+        return 'text-yellow-400 border-yellow-400';
       case 'bad':
-        return 'text-red-400';
+        return 'text-red-400 border-red-400';
       default:
-        return 'text-yellow-400';
+        return 'text-yellow-400 border-yellow-400';
     }
   };
 
@@ -1034,24 +1034,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
           {/* 우측: 날씨 + 시간 (시간을 뒤로) */}
           <div className="flex items-center gap-3">
-            <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-2">
               <Icon icon={weatherData.icon} className="w-6 h-6 text-white" />
-              {(() => {
-                const levels = [sensorData.pm25.level, sensorData.pm10.level, sensorData.temperature.level, sensorData.humidity.level, sensorData.rainfall.level, sensorData.windSpeed.level];
-                const hasBad = levels.includes('bad');
-                const hasNormal = levels.includes('normal');
-                const overallLevel = hasBad ? 'bad' : hasNormal ? 'normal' : 'good';
-                return (
-                  <span className={`text-xs font-medium ${getLevelColor(overallLevel)}`}>
-                    {getLevelText(overallLevel)}
-                  </span>
-                );
-              })()}
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-white text-sm font-medium">{weatherData.high}°</span>
-              <span className="text-gray-400 text-xs">/</span>
-              <span className="text-gray-400 text-xs">{weatherData.low}°</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-white text-sm font-medium">{weatherData.high}°</span>
+                <span className="text-gray-400 text-xs">/</span>
+                <span className="text-gray-400 text-xs">{weatherData.low}°</span>
+              </div>
             </div>
             <div className="text-white text-sm font-medium whitespace-nowrap min-w-[90px] text-right">
               {clockTime || '--:--:--'}

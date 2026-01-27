@@ -17,18 +17,26 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({
 }) => {
   if (!isVisible) return null;
 
-  const handleToggle = () => {
-    onAutoModeToggle(!isAutoMode);
-  };
-
   return (
     <div 
-      className="absolute top-0 left-0 right-0 z-[1500] transition-all duration-500 ease-in-out"
+      className="absolute top-0 left-0 right-0 z-[1500]"
       style={{
-        transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
+        animation: isVisible ? 'fadeInDown 0.5s ease-out' : 'none',
         opacity: isVisible ? 1 : 0,
       }}
     >
+      <style>{`
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <div 
         className="gradient-border-right-bottom"
         style={{
@@ -39,32 +47,13 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({
         }}
       >
         <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <h3 className="text-white text-sm font-semibold">투망 감시</h3>
+            <span className="text-gray-500">|</span>
+            <span className="text-gray-300 text-sm">인근 CCTV 8대를 모니터링 중입니다.</span>
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-gray-300 text-sm">투망감시</span>
-              <button
-                onClick={handleToggle}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  isAutoMode ? 'bg-blue-500' : 'bg-gray-600'
-                }`}
-                role="switch"
-                aria-checked={isAutoMode}
-                aria-label="투망감시 토글"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    isAutoMode ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-              <span className={`text-xs font-medium ${isAutoMode ? 'text-blue-400' : 'text-gray-400'}`}>
-                {isAutoMode ? 'ON' : 'OFF'}
-              </span>
-            </div>
             {onStop && (
               <button
                 onClick={onStop}

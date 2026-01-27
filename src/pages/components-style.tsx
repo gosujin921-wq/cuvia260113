@@ -731,6 +731,125 @@ import CCTVIcon from '@/components/common/CCTVIcon';
                 </div>
               </div>
             </div>
+
+            {/* 센서 상태 라벨 */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">센서 상태 라벨</h2>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 text-gray-400">좋음 (Good)</h3>
+                    <div className="mb-4">
+                      <div className="bg-[#393a42] p-3 rounded-lg inline-block">
+                        <div className="flex items-center justify-between gap-1 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-400 text-xs truncate">PM2.5</span>
+                          </div>
+                          <span className="px-2 py-0.5 border text-green-400 border-green-400 text-[10px] whitespace-nowrap flex-shrink-0" style={{ borderRadius: '9999px' }}>
+                            좋음
+                          </span>
+                        </div>
+                        <div className="text-white text-base font-semibold mt-1.5">
+                          12.5
+                          <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 text-gray-400">보통 (Normal)</h3>
+                    <div className="mb-4">
+                      <div className="bg-[#393a42] p-3 rounded-lg inline-block">
+                        <div className="flex items-center justify-between gap-1 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-400 text-xs truncate">PM10</span>
+                          </div>
+                          <span className="px-2 py-0.5 border text-yellow-400 border-yellow-400 text-[10px] whitespace-nowrap flex-shrink-0" style={{ borderRadius: '9999px' }}>
+                            보통
+                          </span>
+                        </div>
+                        <div className="text-white text-base font-semibold mt-1.5">
+                          45.0
+                          <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold mb-3 text-gray-400">나쁨 (Bad)</h3>
+                    <div className="mb-4">
+                      <div className="bg-[#393a42] p-3 rounded-lg inline-block">
+                        <div className="flex items-center justify-between gap-1 min-w-0">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="text-gray-400 text-xs truncate">PM2.5</span>
+                          </div>
+                          <span className="px-2 py-0.5 border text-red-400 border-red-400 text-[10px] whitespace-nowrap flex-shrink-0" style={{ borderRadius: '9999px' }}>
+                            나쁨
+                          </span>
+                        </div>
+                        <div className="text-white text-base font-semibold mt-1.5">
+                          38.3
+                          <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className={getCardClassName()}>
+                  <h3 className="text-sm font-semibold mb-4 text-gray-400">사용 예시</h3>
+                  <pre className="text-xs text-gray-300 overflow-x-auto">
+                    <code>{`// 레벨에 따른 색상 및 텍스트 반환 함수
+const getLevelText = (level: 'good' | 'normal' | 'bad') => {
+  switch (level) {
+    case 'good':
+      return '좋음';
+    case 'normal':
+      return '보통';
+    case 'bad':
+      return '나쁨';
+    default:
+      return '보통';
+  }
+};
+
+const getLevelColor = (level: 'good' | 'normal' | 'bad') => {
+  switch (level) {
+    case 'good':
+      return 'text-green-400 border-green-400';
+    case 'normal':
+      return 'text-yellow-400 border-yellow-400';
+    case 'bad':
+      return 'text-red-400 border-red-400';
+    default:
+      return 'text-yellow-400 border-yellow-400';
+  }
+};
+
+// 사용 예시
+<span className={\`px-2 py-0.5 border \${getLevelColor(sensorData.pm25.level)} text-[10px] whitespace-nowrap\`} style={{ borderRadius: '9999px' }}>
+  {getLevelText(sensorData.pm25.level)}
+</span>`}</code>
+                  </pre>
+                  <button
+                    onClick={() => copyToClipboard(`// 레벨에 따른 색상 및 텍스트 반환 함수\nconst getLevelText = (level: 'good' | 'normal' | 'bad') => {\n  switch (level) {\n    case 'good':\n      return '좋음';\n    case 'normal':\n      return '보통';\n    case 'bad':\n      return '나쁨';\n    default:\n      return '보통';\n  }\n};\n\nconst getLevelColor = (level: 'good' | 'normal' | 'bad') => {\n  switch (level) {\n    case 'good':\n      return 'text-green-400 border-green-400';\n    case 'normal':\n      return 'text-yellow-400 border-yellow-400';\n    case 'bad':\n      return 'text-red-400 border-red-400';\n    default:\n      return 'text-yellow-400 border-yellow-400';\n  }\n};\n\n// 사용 예시\n<span className={\`px-2 py-0.5 border \${getLevelColor(sensorData.pm25.level)} text-[10px] whitespace-nowrap\`} style={{ borderRadius: '9999px' }}>\n  {getLevelText(sensorData.pm25.level)}\n</span>`)}
+                    className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                  >
+                    코드 복사
+                  </button>
+                  <div className="mt-4 pt-4 border-t border-[#31353a]">
+                    <h4 className="text-sm font-semibold mb-2 text-gray-400">레벨 기준</h4>
+                    <div className="text-xs text-gray-300 space-y-1">
+                      <div><strong className="text-green-400">좋음:</strong> PM2.5 ≤ 15, PM10 ≤ 30</div>
+                      <div><strong className="text-yellow-400">보통:</strong> PM2.5 ≤ 35, PM10 ≤ 80</div>
+                      <div><strong className="text-red-400">나쁨:</strong> 그 외</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

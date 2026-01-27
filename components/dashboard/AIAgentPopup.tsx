@@ -252,7 +252,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                       style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
                     />
                   </div>
-                  <span className="text-gray-900">CUVIA Agent</span>
+                  <span className="text-gray-900 font-semibold">CUVIA Agent</span>
                 </div>
                 {messages.map((message) => (
                   <div key={message.id} className="space-y-2">
@@ -455,7 +455,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  CUVIA Agent는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+                  <span className="font-semibold">CUVIA Agent</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
                 </p>
               </div>
             </div>
@@ -686,7 +686,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2 text-center">
-                CUVIA Link는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+                <span className="font-semibold">CUVIA Link</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
               </p>
             </div>
           </div>
