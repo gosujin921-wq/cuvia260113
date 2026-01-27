@@ -13,6 +13,9 @@ import {
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
+import { sendToUnity } from '@/lib/unity/unityBridge';
+import { EventToUnity } from '@/lib/unity/types';
+import UnityCanvas from '../UnityCanvas';
 
 interface MapViewProps {
   events: Event[];
@@ -731,7 +734,89 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   };
 
 
+  const handleZoomLevelChange = (level: number) => {
+    setZoomLevel(level);
+    const eventToUnity: EventToUnity = {
+      methodName: 'zoomLevel',
+      payload: {
+        value: level
+      },
+    };
+    sendToUnity(JSON.stringify(eventToUnity))
+    console.log('eventToUnity', eventToUnity);
+  };
 
+  const handle3DModeChange = (mode: boolean) => {
+    setIs3DMode(mode);
+    const eventToUnity: EventToUnity = {
+      methodName: '3DMode',
+      payload: {
+        viewMode: mode ? '3d' : '2d'
+      },
+    };
+    sendToUnity(JSON.stringify(eventToUnity))
+    console.log('eventToUnity', eventToUnity);
+  };
+
+  const handleMapBearingChange = (bearing: number) => {
+    setMapBearing(bearing);
+    const eventToUnity: EventToUnity = {
+      methodName: 'mapBearing',
+      payload: {
+        value: bearing
+      },
+    };
+    sendToUnity(JSON.stringify(eventToUnity))
+    console.log('eventToUnity', eventToUnity);
+  };
+
+  const handleShowCctvName = (show: boolean) => {
+    setShowCCTVName(show);
+    const eventToUnity: EventToUnity = {
+      methodName: 'showCctvName',
+      payload: {
+        value: show ? 1 : 0
+      },
+    };
+    sendToUnity(JSON.stringify(eventToUnity))
+    console.log('eventToUnity', eventToUnity);
+  };
+
+  const handleShowCctv = (show: boolean) => {
+    setShowCCTV(show);
+    const eventToUnity: EventToUnity = {
+      methodName: 'showCctv',
+      payload: {
+        value: show ? 1 : 0
+      },
+    };
+    sendToUnity(JSON.stringify(eventToUnity))
+    console.log('eventToUnity', eventToUnity);
+  };
+
+  const handleShowCctvViewAngle = (show: boolean) => {
+    setShowCCTVViewAngle(show);
+    const eventToUnity: EventToUnity = {
+      methodName: 'showCctvViewAngle',
+      payload: {
+        value: show ? 1 : 0
+      },
+    };
+    sendToUnity(JSON.stringify(eventToUnity))
+    console.log('eventToUnity', eventToUnity);
+  };
+
+  const handleCCTVToggle = () => {
+    const newValue = !showCCTV;
+    handleShowCctv(newValue);
+    if (newValue) {
+      handleShowCctvViewAngle(true);
+      handleShowCctvName(true);
+    } else {
+      handleShowCctvViewAngle(false);
+      handleShowCctvName(false);
+    }
+  };
 
 
   return (
@@ -774,7 +859,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
-             setZoomLevel(prev => Math.min(prev + 1, 1));
+             handleZoomLevelChange(Math.min(zoomLevel + 1, 1));
            }}
            disabled={zoomLevel >= 1}
            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
@@ -785,7 +870,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
-             setZoomLevel(prev => Math.max(prev - 1, 0));
+             handleZoomLevelChange(Math.max(zoomLevel - 1, 0));
            }}
            disabled={zoomLevel <= 0}
            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
@@ -797,7 +882,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
-             setIs3DMode(false);
+             handle3DModeChange(false);
            }}
            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
              !is3DMode
@@ -811,7 +896,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
-             setIs3DMode(true);
+             handle3DModeChange(true);
            }}
            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
              is3DMode
@@ -828,7 +913,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
              <button
                onClick={(e) => {
                  e.stopPropagation();
-                 setMapBearing(prev => prev - 15);
+                 handleMapBearingChange(-30);
                }}
                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                aria-label="회전 왼쪽"
@@ -838,7 +923,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
              <button
                onClick={(e) => {
                  e.stopPropagation();
-                 setMapBearing(prev => prev + 15);
+                 handleMapBearingChange(30);
                }}
                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                aria-label="회전 오른쪽"
@@ -863,7 +948,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            <button
              onClick={(e) => {
                e.stopPropagation();
-               setShowCCTVName(prev => !prev);
+               handleShowCctvName(!showCCTVName);
              }}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               showCCTVName 
@@ -880,15 +965,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
-             const newValue = !showCCTV;
-             setShowCCTV(newValue);
-             if (newValue) {
-               setShowCCTVViewAngle(true);
-               setShowCCTVName(true);
-             } else {
-               setShowCCTVViewAngle(false);
-               setShowCCTVName(false);
-             }
+             handleCCTVToggle();
            }}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
             showCCTV 
@@ -908,7 +985,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            <button
              onClick={(e) => {
                e.stopPropagation();
-               setShowCCTVViewAngle(prev => !prev);
+               handleShowCctvViewAngle(!showCCTVViewAngle);
              }}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               showCCTVViewAngle 
@@ -923,680 +1000,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          )}
        </div>
 
-      <div
-        className="relative border border-[#31353a] transition-transform duration-700 ease-out"
-        style={{
-          borderWidth: '1px',
-          height: '100%',
-          width: zoomLevel > 0 ? 'calc(100% + 100px)' : '100%',
-          left: zoomLevel > 0 ? '-100px' : '0',
-          transform: `scale(${mapScale}) translate(calc(${mapTranslate.x}% + ${mapTranslate.offsetX}%), ${mapTranslate.y}%) translateZ(0)`,
-          transformOrigin: mapTransformOrigin,
-          willChange: 'transform',
-          transition: 'transform 0.5s ease-out, width 0.5s ease-out, left 0.5s ease-out',
-        }}
-      >
-        <div
-          ref={mapContainerRef}
-          className="absolute inset-0 w-full h-full"
-          style={{ zIndex: 1 }}
-        />
-        <div 
-          className="absolute inset-0 bg-black/5" 
-          style={{ zIndex: 2 }}
-        ></div>
-        
-        <style>{`
-          @keyframes viewAngleExpand {
-            0% {
-              opacity: 0;
-              transform: translate(-50%, -50%) rotate(var(--direction, 0deg)) scale(0.3);
-            }
-            100% {
-              opacity: 1;
-              transform: translate(-50%, -50%) rotate(var(--direction, 0deg)) scale(1);
-            }
-          }
-          
-          .view-angle-expand {
-            animation: viewAngleExpand 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-            animation-delay: var(--animation-delay, 0ms);
-          }
-        `}</style>
-        {showCCTV && [
-          { left: 34, top: 40, count: 1, viewAngle: 45 },
-          { left: 40, top: 38, count: 1, viewAngle: 90 },
-          { left: 48, top: 40, count: 1, viewAngle: 135 },
-          { left: 52, top: 46, count: 1, viewAngle: 180 },
-          { left: 50, top: 56, count: 1, viewAngle: 225 },
-          { left: 42, top: 58, count: 1, viewAngle: 270 },
-          { left: 34, top: 56, count: 1, viewAngle: 315 },
-          { left: 32, top: 48, count: 1, viewAngle: 0 },
-          { left: 38, top: 42, count: 1, viewAngle: 60 },
-          { left: 48, top: 50, count: 1, viewAngle: 120 },
-        ].map((item, index) => {
-          const cctvName = `CCTV-V-${index + 1}`;
-          if (zoomLevel === 0) {
-            return (
-              <div
-                key={`virtual-cctv-${index}`}
-                className="absolute cursor-pointer"
-                style={{ 
-                  left: `${item.left}%`, 
-                  top: `${item.top}%`, 
-                  transform: 'translate(-50%, -50%)', 
-                  zIndex: 50,
-                  transition: 'left 0.5s ease-out, top 0.5s ease-out',
-                }}
-                  onClick={() => {}}
-              >
-                <div 
-                  className={`${getCCTVIconClassName('light')} flex items-center justify-center ${item.count > 1 && zoomLevel === 0 ? 'w-auto min-w-[28px]' : ''}`} 
-                  style={getCCTVIconBoxStyle(item.count, mapScale, item.count > 1 && zoomLevel === 0, 60)}
-                >
-                  <CCTVIcon 
-                    className="!text-gray-300 drop-shadow-lg filter"
-                    style={{ color: '#d1d5db' }}
-                    width="16px"
-                    height="16px"
-                  />
-                  {item.count > 1 && zoomLevel === 0 && (
-                    <span className="text-xs font-semibold text-gray-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
-                      {formatCCTVCount(item.count)}
-                    </span>
-                  )}
-                </div>
-                {showCCTVName && (
-                  <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                    {cctvName}
-                  </div>
-                )}
-                {showCCTVViewAngle && (() => {
-                  const baseCctvId = `cctv-${index}`;
-                  const homeViewAngle = 90;
-                  
-                  if (zoomLevel === 0) {
-                    const patternSeed = index % 4;
-                    return Array.from({ length: item.count }, (_, i) => {
-                      let viewAngle: number;
-                      
-                      switch (patternSeed) {
-                        case 0:
-                          viewAngle = (item.viewAngle + i * 30) % 360;
-                          break;
-                        case 1:
-                          const side = Math.floor(i / 4);
-                          const pos = i % 4;
-                          viewAngle = (item.viewAngle + pos * 45 + side * 15) % 360;
-                          break;
-                        case 2:
-                          viewAngle = (item.viewAngle + i * 40 + (i % 2) * 60) % 360;
-                          break;
-                        case 3:
-                          if (i < 2) {
-                            viewAngle = (item.viewAngle + i * 90) % 360;
-                          } else {
-                            viewAngle = (item.viewAngle + (i - 2) * 50) % 360;
-                          }
-                          break;
-                        default:
-                          viewAngle = item.viewAngle;
-                      }
-                      
-                      const direction = getRandomCCTVDirection(index, i);
-                      const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
-                      
-                      return (
-                        <div 
-                          key={`cluster-view-angle-${i}`}
-                          className="absolute"
-                          style={{
-                            width: '120px',
-                            height: '120px',
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                            transformOrigin: 'center center',
-                            pointerEvents: 'none',
-                            zIndex: 30 - i,
-                            opacity: 0.7,
-                          }}
-                        >
-                          <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                            <path
-                              d={pathData}
-                              fill="rgba(156, 163, 175, 0.15)"
-                              stroke="rgba(156, 163, 175, 0.5)"
-                              strokeWidth="1.5"
-                            />
-                          </svg>
-                        </div>
-                      );
-                    });
-                  }
-                  
-                  const cctvId = baseCctvId;
-                  const direction = isAutoMode ? getZoomedCCTVDirection(index) : getRandomCCTVDirection(index);
-                  const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
-                  
-                  return (
-                    <div 
-                      className="absolute"
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        left: '50%',
-                        top: '50%',
-                        transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                        transformOrigin: 'center center',
-                        pointerEvents: 'none',
-                        zIndex: 30,
-                      }}
-                    >
-                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                        <path
-                          d={pathData}
-                          fill="rgba(156, 163, 175, 0.2)"
-                          stroke="rgba(156, 163, 175, 0.6)"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </div>
-                  );
-                })()}
-              </div>
-            );
-          } else {
-            return Array.from({ length: item.count }, (_, i) => {
-              const baseCctvId = `cctv-${index}`;
-              
-              if (item.count === 1) {
-                return (
-                  <div
-                    key={`virtual-cctv-${index}-${i}`}
-                    className="absolute cursor-pointer"
-                    style={{ 
-                      left: `${item.left}%`, 
-                      top: `${item.top}%`, 
-                      transform: 'translate(-50%, -50%)', 
-                      zIndex: 50,
-                      transition: 'opacity 0.7s ease-out',
-                      opacity: zoomLevel > 0 ? 1 : 0,
-                      cursor: (() => {
-                        const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
-                        const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
-                        return shouldChangeToBlue ? 'pointer' : 'default';
-                      })(),
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
-                      const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
-                      if (shouldChangeToBlue) {
-                        const cctvIndexForPopup = index + 1;
-                        setOpenedCCTVPopups(prev => {
-                          const newSet = new Set(prev);
-                          newSet.add(cctvIndexForPopup);
-                          return newSet;
-                        });
-                      }
-                    }}
-                  >
-                    {(() => {
-                      const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
-                      const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
-                      const cctvIndexForPopup = index + 1;
-                      return (
-                        <div 
-                          className={getCCTVIconClassName(shouldChangeToBlue ? 'active' : 'light')} 
-                          style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60), cursor: shouldChangeToBlue ? 'pointer' : 'default' }}
-                          {...(shouldChangeToBlue ? {
-                            onMouseEnter: () => {
-                              setHoveredCCTVIndex(cctvIndexForPopup);
-                            },
-                            onMouseLeave: () => {
-                              setHoveredCCTVIndex(null);
-                            }
-                          } : {})}
-                        >
-                          <CCTVIcon 
-                            className={shouldChangeToBlue ? "text-blue-400" : "!text-gray-300"}
-                            style={shouldChangeToBlue ? { color: '#60a5fa' } : { color: '#d1d5db' }}
-                            width="16px"
-                            height="16px"
-                          />
-                        </div>
-                      );
-                    })()}
-                    {showCCTVName && (
-                      <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                        CCTV-V-{index + 1}
-                      </div>
-                    )}
-                    {showCCTVViewAngle && (() => {
-                      const cctvId = `cctv-${index}-${i}`;
-                      const isEvent1Selected = selectedEventId && events.find(e => e.id === selectedEventId && (e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'));
-                      let direction: number;
-                      
-                      if (isEvent1Selected) {
-                        const cctvPositions = [
-                          { viewAngle: 45 },
-                          { viewAngle: 90 },
-                          { viewAngle: 135 },
-                          { viewAngle: 180 },
-                          { viewAngle: 225 },
-                          { viewAngle: 270 },
-                          { viewAngle: 315 },
-                          { viewAngle: 0 },
-                          { viewAngle: 60 },
-                          { viewAngle: 120 },
-                        ];
-                        const defaultDirection = cctvPositions[index]?.viewAngle ?? getRandomCCTVDirection(index);
-                        const targetDirection = getZoomedCCTVDirection(index);
-                        
-                        if (isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0) {
-                          direction = defaultDirection + (targetDirection - defaultDirection) * viewAngleAnimationProgress;
-                        } else {
-                          direction = defaultDirection;
-                        }
-                      } else {
-                        if (isAutoMode) {
-                          direction = getZoomedCCTVDirection(index);
-                        } else {
-                          direction = getRandomCCTVDirection(index);
-                        }
-                      }
-                      
-                      if (zoomLevel === 0) {
-                        return null;
-                      }
-                      
-                      const homeViewAngle = 90;
-                      const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
-                      
-                      return (
-                        <div 
-                          className="absolute"
-                          style={{
-                            width: '120px',
-                            height: '120px',
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                            transformOrigin: 'center center',
-                            pointerEvents: 'none',
-                            zIndex: 30,
-                            transition: isEvent1Selected && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0 ? 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-out' : 'opacity 0.7s ease-out',
-                            opacity: zoomLevel > 0 ? 1 : 0,
-                          }}
-                        >
-                          <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                            <path
-                              d={pathData}
-                              fill="rgba(156, 163, 175, 0.2)"
-                              stroke="rgba(156, 163, 175, 0.6)"
-                              strokeWidth="2"
-                              style={{
-                                transition: 'd 0.016s ease-out',
-                              }}
-                            />
-                          </svg>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              }
-              
-              const patternSeed = index % 4;
-              let angle: number;
-              let radius: number;
-              let viewAngle: number;
-              
-              switch (patternSeed) {
-                case 0:
-                  angle = (i / item.count) * 2 * Math.PI;
-                  radius = 2 + (i % 2) * 0.5;
-                  viewAngle = (item.viewAngle + i * 30) % 360;
-                  break;
-                case 1:
-                  const side = Math.floor(i / 4);
-                  const pos = i % 4;
-                  const squareRadius = 1.5 + side * 0.8;
-                  angle = (pos * Math.PI / 2) + (Math.PI / 4);
-                  radius = squareRadius;
-                  viewAngle = (item.viewAngle + pos * 45 + side * 15) % 360;
-                  break;
-                case 2:
-                  angle = (i / item.count) * 2 * Math.PI + (i % 3) * 0.3;
-                  radius = 1.5 + (i % 3) * 0.7 + Math.sin(i) * 0.5;
-                  viewAngle = (item.viewAngle + i * 40 + (i % 2) * 60) % 360;
-                  break;
-                case 3:
-                  if (i < 2) {
-                    angle = (i - 0.5) * Math.PI / 3;
-                    radius = 2.5;
-                    viewAngle = (item.viewAngle + i * 90) % 360;
-                  } else {
-                    angle = ((i - 2) / (item.count - 2)) * 2 * Math.PI;
-                    radius = 1.8 + (i % 2) * 0.6;
-                    viewAngle = (item.viewAngle + (i - 2) * 50) % 360;
-                  }
-                  break;
-                default:
-                  angle = (i / item.count) * 2 * Math.PI;
-                  radius = 2;
-                  viewAngle = item.viewAngle;
-              }
-              
-              const offsetLeft = Math.cos(angle) * radius;
-              const offsetTop = Math.sin(angle) * radius;
-              const actualCctvLeft = item.left + offsetLeft;
-              const actualCctvTop = item.top + offsetTop;
-              
-              return (
-                <div
-                  key={`virtual-cctv-${index}-${i}`}
-                  className="absolute cursor-pointer"
-                  style={{ 
-                    left: `${actualCctvLeft}%`, 
-                    top: `${actualCctvTop}%`, 
-                    transform: 'translate(-50%, -50%)', 
-                    zIndex: 50,
-                    transition: 'left 0.7s ease-out, top 0.7s ease-out, opacity 0.7s ease-out',
-                    opacity: zoomLevel > 0 ? 1 : 0,
-                    cursor: (() => {
-                      const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
-                      const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
-                      return shouldChangeToBlue ? 'pointer' : 'default';
-                    })(),
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
-                    const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
-                    if (shouldChangeToBlue) {
-                      const cctvIndexForPopup = index + 1;
-                      setOpenedCCTVPopups(prev => {
-                        const newSet = new Set(prev);
-                        newSet.add(cctvIndexForPopup);
-                        return newSet;
-                      });
-                    }
-                  }}
-                >
-                  {(() => {
-                    const blueCCTVIndices = [0, 8, 1, 7, 6, 9, 5, 4];
-                    const shouldChangeToBlue = blueCCTVIndices.includes(index) && isAutoMode && isProgressComplete && viewAngleAnimationProgress > 0;
-                    const cctvIndexForPopup = index + 1;
-                    return (
-                      <div 
-                        className={getCCTVIconClassName(shouldChangeToBlue ? 'active' : 'light')} 
-                        style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60), cursor: shouldChangeToBlue ? 'pointer' : 'default' }}
-                        {...(shouldChangeToBlue ? {
-                          onMouseEnter: () => {
-                            setHoveredCCTVIndex(cctvIndexForPopup);
-                          },
-                          onMouseLeave: () => {
-                            setHoveredCCTVIndex(null);
-                          }
-                        } : {})}
-                      >
-                        <CCTVIcon 
-                          className={shouldChangeToBlue ? "text-blue-400" : "!text-gray-300"}
-                          style={shouldChangeToBlue ? { color: '#60a5fa' } : { color: '#d1d5db' }}
-                          width="16px"
-                          height="16px"
-                        />
-                      </div>
-                    );
-                  })()}
-                  {showCCTVName && (
-                    <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                      CCTV-V-{index + 1}
-                    </div>
-                  )}
-                  {showCCTVViewAngle && (() => {
-                    const cctvId = `cctv-${index}-${i}`;
-                    const direction = isAutoMode ? getZoomedCCTVDirection(index) : getRandomCCTVDirection(index, i);
-                    
-                    if (zoomLevel === 0) {
-                      return null;
-                    }
-                    
-                    const homeViewAngle = 90;
-                    const pathData = generateViewAnglePath(homeViewAngle, 50, 60, 60);
-                    
-                    return (
-                      <div 
-                        className="absolute"
-                        style={{
-                          width: '120px',
-                          height: '120px',
-                          left: '50%',
-                          top: '50%',
-                          transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                          transformOrigin: 'center center',
-                          pointerEvents: 'none',
-                          zIndex: 30,
-                          transition: 'opacity 0.7s ease-out',
-                          opacity: zoomLevel > 0 ? 1 : 0,
-                        }}
-                      >
-                        <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                          <path
-                            d={pathData}
-                            fill="rgba(156, 163, 175, 0.2)"
-                            stroke="rgba(156, 163, 175, 0.6)"
-                            strokeWidth="2"
-                            style={{
-                              transition: 'd 0.016s ease-out',
-                            }}
-                          />
-                        </svg>
-                      </div>
-                    );
-                  })()}
-                </div>
-              );
-            });
-          }
-        })}
-
-        <div className="absolute inset-0" style={{ zIndex: 100, width: '100%', height: '100%', pointerEvents: 'none' }}>
-          {(events || []).map((event) => {
-            const position = getEventPosition(event);
-            const isHighlighted = highlightedEventId === event.id;
-            const isSelected = selectedEventId === event.id;
-            const isEvent1 = event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004';
-
-            return (
-              <div
-                key={event.id}
-                data-event-pin
-                className="absolute flex items-center justify-center"
-                style={{
-                  left: `${position.left}%`,
-                  top: `${position.top}%`,
-                  transform: isEvent1 ? 'translate(-50%, calc(-50% - 30px))' : 'translate(-50%, -50%)',
-                  zIndex: isSelected ? 150 : isHighlighted ? 140 : 100,
-                  pointerEvents: 'auto',
-                  opacity: isEvent1 ? 1 : 1,
-                }}
-              >
-                {isSelected && !event.title.includes('상가 절도 의심') && !event.title.includes('현금 절취 포착') && isEvent1 && (
-                  <>
-                    <div 
-                      className="absolute animate-circle-pulse" 
-                      style={{ 
-                        width: '120px', 
-                        height: '120px', 
-                        zIndex: 1, 
-                        animationDelay: '0s',
-                        transform: 'translateZ(0) scale(0.8)',
-                        willChange: 'transform, opacity',
-                        opacity: 1,
-                        pointerEvents: 'none'
-                      }}
-                    >
-                      <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.5)' }}></div>
-                    </div>
-                    <div 
-                      className="absolute animate-circle-pulse" 
-                      style={{ 
-                        width: '120px', 
-                        height: '120px', 
-                        zIndex: 1, 
-                        animationDelay: '0.2s',
-                        transform: 'translateZ(0) scale(0.8)',
-                        willChange: 'transform, opacity',
-                        opacity: 1,
-                        pointerEvents: 'none'
-                      }}
-                    >
-                      <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.4)' }}></div>
-                    </div>
-                    <div 
-                      className="absolute animate-circle-pulse" 
-                      style={{ 
-                        width: '120px', 
-                        height: '120px', 
-                        zIndex: 1, 
-                        animationDelay: '0.4s',
-                        transform: 'translateZ(0) scale(0.8)',
-                        willChange: 'transform, opacity',
-                        opacity: 1,
-                        pointerEvents: 'none'
-                      }}
-                    >
-                      <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.3)' }}></div>
-                    </div>
-                  </>
-                )}
-                
-                <div 
-                  className="absolute cursor-pointer" 
-                  style={{ zIndex: 130 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEventClick?.(event.id);
-                  }}
-                >
-                  {(() => {
-                    const samePositionEvents = events.filter(e => {
-                      const otherPosition = getEventPosition(e);
-                      const distance = Math.sqrt(
-                        Math.pow(position.left - otherPosition.left, 2) + 
-                        Math.pow(position.top - otherPosition.top, 2)
-                      );
-                      return distance < 1;
-                    });
-                    const clusterCount = samePositionEvents.length;
-                    const hasMultiple = clusterCount > 1 && zoomLevel === 0;
-                    
-                    const cctvLabel = isEvent1 
-                      ? 'CCTV-V-11'
-                      : (cctvIndex !== undefined && cctvIndex !== null && cctvIndex >= 1 && cctvIndex <= 10)
-                        ? CCTV_TITLES[cctvIndex - 1] 
-                        : null;
-                    
-                    return (
-                      <>
-                        <div 
-                          className={`${isEvent1 ? getCCTVIconClassName('light') : getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''} relative`}
-                          style={{ 
-                            ...getCCTVIconBoxStyle(clusterCount, mapScale, hasMultiple),
-                            transformOrigin: 'center center',
-                            opacity: isEvent1 ? 1 : (zoomLevel > 0 ? 1 : 0),
-                            ...(isEvent1 && isSelected && {
-                              borderColor: 'rgb(239, 68, 68)',
-                            }),
-                            cursor: isEvent1 && isSelected ? 'pointer' : 'default',
-                          }}
-                          onMouseEnter={() => {
-                            if (isEvent1 && isSelected) {
-                              setHoveredCCTVIndex(11);
-                            }
-                          }}
-                          onMouseLeave={() => {
-                            if (isEvent1 && isSelected) {
-                              setHoveredCCTVIndex(null);
-                            }
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isEvent1 && isSelected) {
-                              setOpenedCCTVPopups(prev => {
-                                const newSet = new Set(prev);
-                                newSet.add(11);
-                                return newSet;
-                              });
-                            }
-                          }}
-                        >
-                          {isEvent1 ? (
-                            <CCTVIcon 
-                              className={isSelected ? "text-red-400 drop-shadow-lg" : "!text-gray-300"} 
-                              style={isSelected ? {} : { color: '#d1d5db' }} 
-                              width="16px" 
-                              height="16px" 
-                            />
-                          ) : (
-                            <Icon 
-                              icon="mdi:map-marker"
-                              className="text-red-400"
-                              width="16px"
-                              height="16px"
-                            />
-                          )}
-                          {hasMultiple && !isEvent1 && (
-                            <span className="text-xs font-semibold text-red-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
-                              {formatCCTVCount(clusterCount)}
-                            </span>
-                          )}
-                        </div>
-                        {cctvLabel && (
-                          <div 
-                            className={`${isEvent1 ? getCCTVLabelClassName(isSelected ? 'tracking' : 'default') : getCCTVLabelClassName('tracking')} absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap`}
-                            style={{ opacity: isEvent1 ? 1 : (zoomLevel > 0 ? 1 : 0) }}
-                          >
-                            {cctvLabel}
-                          </div>
-                        )}
-                        {isEvent1 && isSelected && (
-                          <div
-                            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 whitespace-nowrap transition-opacity duration-500"
-                            style={{
-                              opacity: showEventCard ? 1 : 0,
-                              pointerEvents: showEventCard ? 'auto' : 'none',
-                              zIndex: 200,
-                            }}
-                          >
-                            <div
-                              className="px-4 py-3 rounded-lg"
-                              style={{
-                                background: 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(23,23,23,0.8) 100%)',
-                                backdropFilter: 'blur(8px)',
-                                WebkitBackdropFilter: 'blur(8px)',
-                                border: '2px solid rgba(239, 68, 68, 0.9)',
-                                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                              }}
-                            >
-                              <div className="text-white font-semibold text-sm mb-1">CCTV-V-11에서 폭력(싸움) 이벤트가 감지되었습니다.</div>
-                              <div className="text-gray-300 text-xs">투망감시를 시작합니다.</div>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-      </div>
+<UnityCanvas className='w-full h-full' />
 
       {aiDetectionEventId && cctvIndex !== null && cctvIndex !== undefined && (() => {
         const cctvV11Position = { left: 34, top: 40 };

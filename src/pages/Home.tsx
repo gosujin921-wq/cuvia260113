@@ -8,6 +8,8 @@ import AIAgentPopup from '@/components/dashboard/AIAgentPopup';
 import TopControlPanel from '@/components/dashboard/TopControlPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
+import { sendToUnity } from '@/lib/unity/unityBridge';
+import { EventToUnity } from '@/lib/unity/types';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -314,6 +316,27 @@ export default function Home() {
               }, 3000);
             }, 500);
           }, 300);
+          const eventToUnity: EventToUnity = {
+            methodName: 'event',
+            payload: {
+              value: {
+                id: missingEvent.id,
+                eventId: missingEvent.eventId,
+                description: missingEvent.description,
+                priority: missingEvent.priority,
+                processingStage: missingEvent.processingStage,
+                status: missingEvent.status,
+                timestamp: missingEvent.timestamp,
+                title: missingEvent.title,
+                type: missingEvent.type,
+                order: 1,
+                location: missingEvent.location,
+                resolution: missingEvent.resolution
+              }
+            },
+          };
+          console.log(eventToUnity);
+          sendToUnity(JSON.stringify(eventToUnity));
         }
       } else if (e.key === 'Escape') {
         clearSelection();
