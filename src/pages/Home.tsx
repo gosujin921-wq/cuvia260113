@@ -333,6 +333,7 @@ export default function Home() {
         isVisible={hideControls}
         isAutoMode={isAutoMode}
         onAutoModeToggle={setIsAutoMode}
+        onStop={clearSelection}
       />
 
       {/* 페이지 설명 */}
@@ -353,7 +354,7 @@ export default function Home() {
           cctvIndex={cctvIndex}
           onEventClick={handleEventAction}
           onAiDetectionClose={clearSelection}
-          onMapClick={clearSelection}
+          onMapClick={() => {}}
           externalZoomLevel={mapZoomLevel}
           onZoomLevelChange={setMapZoomLevel}
           hideControls={hideControls}

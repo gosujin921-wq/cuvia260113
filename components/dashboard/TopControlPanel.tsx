@@ -6,12 +6,14 @@ interface TopControlPanelProps {
   isVisible: boolean;
   isAutoMode: boolean;
   onAutoModeToggle: (enabled: boolean) => void;
+  onStop?: () => void;
 }
 
 const TopControlPanel: React.FC<TopControlPanelProps> = ({ 
   isVisible, 
   isAutoMode, 
-  onAutoModeToggle 
+  onAutoModeToggle,
+  onStop
 }) => {
   if (!isVisible) return null;
 
@@ -41,25 +43,36 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({
             <h3 className="text-white text-sm font-semibold">투망 감시</h3>
           </div>
           
-          <div className="flex items-center gap-3">
-            <span className="text-gray-300 text-sm">자동모드</span>
-            <button
-              onClick={handleToggle}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isAutoMode ? 'bg-blue-500' : 'bg-gray-600'
-              }`}
-              role="switch"
-              aria-checked={isAutoMode}
-              aria-label="자동모드 토글"
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  isAutoMode ? 'translate-x-6' : 'translate-x-1'
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-gray-300 text-sm">투망감시</span>
+              <button
+                onClick={handleToggle}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isAutoMode ? 'bg-blue-500' : 'bg-gray-600'
                 }`}
-              />
-            </button>
-            {isAutoMode && (
-              <span className="text-blue-400 text-xs font-medium">ON</span>
+                role="switch"
+                aria-checked={isAutoMode}
+                aria-label="투망감시 토글"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isAutoMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className={`text-xs font-medium ${isAutoMode ? 'text-blue-400' : 'text-gray-400'}`}>
+                {isAutoMode ? 'ON' : 'OFF'}
+              </span>
+            </div>
+            {onStop && (
+              <button
+                onClick={onStop}
+                className="px-4 py-1.5 bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                aria-label="투망감시 중지"
+              >
+                투망감시 중지
+              </button>
             )}
           </div>
         </div>

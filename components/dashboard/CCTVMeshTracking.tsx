@@ -15,11 +15,12 @@ interface CCTVMeshTrackingProps {
   isAutoMode?: boolean;
   isProgressComplete?: boolean;
   viewAngleAnimationProgress?: number;
+  highlighted?: boolean;
 }
 
 export { CCTV_TITLES };
 
-const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cctvIndex, position, width = 420, hideControls = false, isAutoMode = true, isProgressComplete = false, viewAngleAnimationProgress = 0 }) => {
+const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cctvIndex, position, width = 420, hideControls = false, isAutoMode = true, isProgressComplete = false, viewAngleAnimationProgress = 0, highlighted = false }) => {
   if (!event) return null;
 
   const isTheftEvent = event.title.includes('상가 절도 의심') || event.title.includes('현금 절취 포착');
@@ -72,6 +73,13 @@ const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cct
           WebkitBackdropFilter: 'blur(2px)',
           ...(isMainPopup ? {
             boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.3)',
+          } : {}),
+          ...(highlighted && isMainPopup ? {
+            outline: '3px solid #ef4444',
+            outlineOffset: '2px',
+          } : highlighted ? {
+            outline: '3px solid #3b82f6',
+            outlineOffset: '2px',
           } : {}),
         }}
         onClick={(e) => e.stopPropagation()}

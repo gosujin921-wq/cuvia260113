@@ -372,7 +372,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const getLevelText = (level: 'good' | 'normal' | 'bad') => {
     switch (level) {
       case 'good':
-        return '양호';
+        return '좋음';
       case 'normal':
         return '보통';
       case 'bad':
@@ -422,7 +422,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const heatmapGridRef = useRef<HTMLDivElement>(null);
 
-  const sensorData: SensorData = {
+  const sensorData: SensorData = useMemo(() => ({
     pm25: { value: sensorValues.pm25, level: getPm25Level(sensorValues.pm25) },
     pm10: { value: sensorValues.pm10, level: getPm10Level(sensorValues.pm10) },
     temperature: { value: sensorValues.temperature, level: getTemperatureLevel(sensorValues.temperature) },
@@ -430,7 +430,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     rainfall: { value: sensorValues.rainfall, level: getRainfallLevel(sensorValues.rainfall) },
     windSpeed: { value: sensorValues.windSpeed, level: getWindSpeedLevel(sensorValues.windSpeed) },
     lastUpdate: new Date().toISOString(),
-  };
+  }), [sensorValues]);
 
   const collapsedIndicators = [
     { label: '정상', value: cctvStatus.normalCount, dot: 'bg-green-400', color: 'text-green-400' },
@@ -1034,13 +1034,24 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
           {/* 우측: 날씨 + 시간 (시간을 뒤로) */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-1">
               <Icon icon={weatherData.icon} className="w-6 h-6 text-white" />
-              <div className="flex items-baseline gap-1">
-                <span className="text-white text-sm font-medium">{weatherData.high}°</span>
-                <span className="text-gray-400 text-xs">/</span>
-                <span className="text-gray-400 text-xs">{weatherData.low}°</span>
-              </div>
+              {(() => {
+                const levels = [sensorData.pm25.level, sensorData.pm10.level, sensorData.temperature.level, sensorData.humidity.level, sensorData.rainfall.level, sensorData.windSpeed.level];
+                const hasBad = levels.includes('bad');
+                const hasNormal = levels.includes('normal');
+                const overallLevel = hasBad ? 'bad' : hasNormal ? 'normal' : 'good';
+                return (
+                  <span className={`text-xs font-medium ${getLevelColor(overallLevel)}`}>
+                    {getLevelText(overallLevel)}
+                  </span>
+                );
+              })()}
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-white text-sm font-medium">{weatherData.high}°</span>
+              <span className="text-gray-400 text-xs">/</span>
+              <span className="text-gray-400 text-xs">{weatherData.low}°</span>
             </div>
             <div className="text-white text-sm font-medium whitespace-nowrap min-w-[90px] text-right">
               {clockTime || '--:--:--'}

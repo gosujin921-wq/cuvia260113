@@ -20,6 +20,18 @@ interface ChatMessage {
   totalSteps?: number;
   processingTime?: number;
   transmissionTime?: number;
+  analysisResult?: {
+    conclusion: string;
+    summary: {
+      time: string;
+      location: string;
+      personnel: string;
+      status: string;
+      riskLevel: string;
+    };
+    evidence: string[];
+    recommendations: string[];
+  };
 }
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
@@ -105,6 +117,27 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
         totalSteps: 4,
         processingTime,
         transmissionTime,
+        analysisResult: {
+          conclusion: '2인 간 신체 충돌이 반복 관측되어 **폭력(싸움) 의심** 상황입니다. **현장 요원 즉시 확인** 후 상황이 지속·확대될 경우 **112 협조 요청을 권고**합니다.',
+          summary: {
+            time: '2026-03-11 14:33:22 ~ 현재',
+            location: 'Zone1 / CCTV-V-11',
+            personnel: '직접 충돌 2명 + 주변 관망 2~4명',
+            status: '진행 중(충돌 동작 반복)',
+            riskLevel: '**경계** (낙상 위험 정황 관측)',
+          },
+          evidence: [
+            '서로 밀치며 접촉 동작이 반복 관측됨 (CCTV-V-11 14:33:26~14:33:35)',
+            '1인이 뒤로 밀리며 휘청이는 장면이 관측됨(낙상 위험) (CCTV-V-11 14:33:36~14:33:40)',
+            '주변 인원이 근접했다가 이탈하는 패턴이 관측됨(혼잡 가능) (CCTV-V-11 14:33:41~14:33:55)',
+            '흉기/위험물: 미확인(화면에서 명확히 식별되지 않음)',
+          ],
+          recommendations: [
+            '[현장 요원 확인] 진행 중 충돌로 안전사고위험이 있습니다.',
+            '[관련 인물 고속 검색] 관련 인물의 최근 이동 경로를 인근 카메라에서 조회합니다.',
+            '[112 협조 요청(권고)] 상황이 지속·확대되거나 통제 필요 정황이 있을 경우 현장 안전 확보를 위해 협조 요청을 권고합니다.',
+          ],
+        },
       };
     }
     return {
@@ -200,70 +233,27 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
               >
                 <Icon icon="mdi:window-restore" className="w-5 h-5" />
               </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
-                aria-label="닫기"
-              >
-                <Icon icon="mdi:close" className="w-5 h-5" />
-              </button>
             </div>
 
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 pl-10 pr-9 space-y-8">
-              {/* AI Chat Blocks */}
-              <div className="space-y-4">
-                {chatBlocks.map((block) => (
-                  <div key={block.title} className="bg-gray-50 border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon icon={block.icon} className="w-4 h-4 text-blue-600" />
-                      <h4 className="text-gray-900 font-semibold text-sm">{block.title}</h4>
-                    </div>
-                    <p className="text-gray-700 text-sm leading-relaxed">{block.content}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* CCTV 추천 */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <CCTVIcon className="w-4 h-4 text-blue-600" />
-                  <h4 className="text-gray-900 font-semibold text-sm">CCTV 추천</h4>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {['CCTV-7 (현장)', 'CCTV-12 (북쪽 50m)', 'CCTV-15 (골목길)'].map((cctv) => (
-                    <button
-                      key={cctv}
-                      className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                      style={{ borderWidth: '1px' }}
-                    >
-                      {cctv}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="h-px bg-gray-200"></div>
-
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 pl-10 pr-9">
               {/* CUVIA Agent 헤더 */}
-              <div className="flex items-center gap-2 text-gray-700 text-sm">
-                <div 
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-                  style={{
-                    background: AGENT_GRADIENT,
-                  }}
-                >
-                  <img 
-                    src="/simbol.svg" 
-                    alt="AI" 
-                    className="w-4 h-4"
-                    style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-                  />
-                </div>
-                <span className="text-gray-900">CUVIA Agent</span>
-              </div>
-
               <div className="space-y-3">
+                <div className="flex items-center gap-2 text-gray-700 text-sm">
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                    style={{
+                      background: AGENT_GRADIENT,
+                    }}
+                  >
+                    <img 
+                      src="/simbol.svg" 
+                      alt="AI" 
+                      className="w-4 h-4"
+                      style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+                    />
+                  </div>
+                  <span className="text-gray-900">CUVIA Agent</span>
+                </div>
                 {messages.map((message) => (
                   <div key={message.id} className="space-y-2">
                     {message.role === 'assistant' && (
@@ -291,6 +281,87 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                               <div className="text-xs text-gray-500 mt-2">
                                 {message.currentStep}/{message.totalSteps}
                               </div>
+                              
+                              {/* 분석 결과 표시 (프로그래스 완료 시) */}
+                              {message.progress && message.progress >= 1 && message.analysisResult && (
+                                <div className="mt-4 space-y-4 pt-4 border-t border-gray-300">
+                                  {/* 한 줄 결론 */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
+                                    </div>
+                                    <p className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: message.analysisResult.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                  </div>
+
+                                  {/* 사건 요약 */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
+                                    </div>
+                                    <div className="space-y-1.5 text-sm">
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 발생 시각:</span> {message.analysisResult.summary.time}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 위치/카메라:</span> {message.analysisResult.summary.location}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 관여 인원(추정):</span> {message.analysisResult.summary.personnel}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 진행 상태:</span> {message.analysisResult.summary.status}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 위험도:</span> <span dangerouslySetInnerHTML={{ __html: message.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* 근거 */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
+                                    </div>
+                                    <ul className="space-y-1.5">
+                                      {message.analysisResult.evidence.map((item, idx) => (
+                                        <li key={idx} className="text-gray-700 text-sm leading-relaxed flex items-start">
+                                          <span className="text-gray-400 mr-2">-</span>
+                                          <span>{item}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+
+                                  {/* 대응 추천 (퀵 버튼) */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">4. 대응 추천</h4>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {message.analysisResult.recommendations.map((rec, idx) => {
+                                        const buttonText = rec.match(/\[(.*?)\]/)?.[1] || rec;
+                                        return (
+                                          <button
+                                            key={idx}
+                                            onClick={() => {
+                                              // 퀵 버튼 기능 (나중에 구현)
+                                              console.log('대응 추천 클릭:', buttonText);
+                                            }}
+                                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                            style={{ borderWidth: '1px' }}
+                                          >
+                                            {buttonText}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <div className="max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200" style={{ borderWidth: '1px' }}>
@@ -411,14 +482,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
               >
                 <Icon icon={isExpanded ? "mdi:window-restore" : "mdi:window-maximize"} className="w-5 h-5" />
               </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
-                aria-label="닫기"
-              >
-                <Icon icon="mdi:close" className="w-5 h-5" />
-              </button>
             </div>
 
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 pt-6">
@@ -450,6 +513,87 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                               <div className="text-xs text-gray-500 mt-2">
                                 {message.currentStep}/{message.totalSteps}
                               </div>
+                              
+                              {/* 분석 결과 표시 (프로그래스 완료 시) */}
+                              {message.progress && message.progress >= 1 && message.analysisResult && (
+                                <div className="mt-4 space-y-4 pt-4 border-t border-gray-300">
+                                  {/* 한 줄 결론 */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
+                                    </div>
+                                    <p className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: message.analysisResult.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                  </div>
+
+                                  {/* 사건 요약 */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
+                                    </div>
+                                    <div className="space-y-1.5 text-sm">
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 발생 시각:</span> {message.analysisResult.summary.time}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 위치/카메라:</span> {message.analysisResult.summary.location}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 관여 인원(추정):</span> {message.analysisResult.summary.personnel}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 진행 상태:</span> {message.analysisResult.summary.status}
+                                      </div>
+                                      <div className="text-gray-700">
+                                        <span className="text-gray-500">- 위험도:</span> <span dangerouslySetInnerHTML={{ __html: message.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* 근거 */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
+                                    </div>
+                                    <ul className="space-y-1.5">
+                                      {message.analysisResult.evidence.map((item, idx) => (
+                                        <li key={idx} className="text-gray-700 text-sm leading-relaxed flex items-start">
+                                          <span className="text-gray-400 mr-2">-</span>
+                                          <span>{item}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+
+                                  {/* 대응 추천 (퀵 버튼) */}
+                                  <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-600" />
+                                      <h4 className="text-gray-900 font-semibold text-sm">4. 대응 추천</h4>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {message.analysisResult.recommendations.map((rec, idx) => {
+                                        const buttonText = rec.match(/\[(.*?)\]/)?.[1] || rec;
+                                        return (
+                                          <button
+                                            key={idx}
+                                            onClick={() => {
+                                              // 퀵 버튼 기능 (나중에 구현)
+                                              console.log('대응 추천 클릭:', buttonText);
+                                            }}
+                                            className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                            style={{ borderWidth: '1px' }}
+                                          >
+                                            {buttonText}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ) : (
                             <>
