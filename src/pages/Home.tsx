@@ -63,7 +63,7 @@ export default function Home() {
       {
         id: 'mock-1',
         type: '112-치안',
-        title: '심야 시간대 주차장에서 지속적인 차량 경적 소음 및 고성방가로 인한 민원 신고',
+        title: '주차장 소음 민원 신고',
         priority: '일반',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
@@ -74,7 +74,7 @@ export default function Home() {
       {
         id: 'mock-2',
         type: '약자',
-        title: '공원 산책로에서 70대 남성 낙상으로 인한 부상 신고, 응급의료진 출동 필요',
+        title: '노인 낙상 부상 신고',
         priority: '일반',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
@@ -85,7 +85,7 @@ export default function Home() {
       {
         id: 'mock-3',
         type: '112-치안',
-        title: '사거리 횡단보도에서 빨간 신호 무시 차량 무단 횡단으로 인한 교통법규 위반',
+        title: '횡단보도 신호 위반',
         priority: '일반',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
@@ -96,7 +96,7 @@ export default function Home() {
       {
         id: 'mock-4',
         type: 'AI-배회',
-        title: '부천역 인근에서 30분 이상 반복 배회하는 이상 행동 AI 탐지',
+        title: '이상 행동 AI 탐지',
         priority: '일반',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 45)),
@@ -107,7 +107,7 @@ export default function Home() {
       {
         id: 'mock-5',
         type: '112-치안',
-        title: '송내대로에서 차량 사고로 인한 교통 정체 발생, 교통 정리 지원 필요',
+        title: '차량 사고 교통 정체',
         priority: '일반',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
@@ -119,7 +119,7 @@ export default function Home() {
       {
         id: 'mock-6',
         type: '112-미아',
-        title: '초등학교 앞에서 하교 시간 8세 여아 보호자와 헤어짐, 긴급 수색 필요',
+        title: '미아 발생 긴급 수색',
         priority: '주의',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
@@ -130,7 +130,7 @@ export default function Home() {
       {
         id: 'mock-7',
         type: '119-구조',
-        title: '시청 앞 교차로에서 승용차와 오토바이 충돌 사고, 오토바이 운전자 부상',
+        title: '차량 충돌 사고 발생',
         priority: '주의',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
@@ -141,7 +141,7 @@ export default function Home() {
       {
         id: 'mock-8',
         type: '112-치안',
-        title: '송내역 인근 상가 앞에서 20대 남성 2명 말다툼 후 주먹다짐 발생',
+        title: '말다툼 주먹다짐 발생',
         priority: '주의',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 30)),
@@ -153,7 +153,7 @@ export default function Home() {
       {
         id: 'mock-9',
         type: '119-화재',
-        title: '아파트 단지 내 쓰레기 수거함에서 연기 및 작은 불꽃 발생, 소방대 출동 필요',
+        title: '쓰레기 수거함 화재 발생',
         priority: '경계',
         status: 'MONITORING',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
@@ -164,7 +164,7 @@ export default function Home() {
       {
         id: 'mock-10',
         type: '112-치안',
-        title: '상가 앞에서 의심 인물이 상점 문 흔들고 창문 들여다보는 행동 반복, 절도 시도 의심',
+        title: '절도 시도 의심 행동',
         priority: '경계',
         status: 'NEW',
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),

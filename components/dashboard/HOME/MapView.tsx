@@ -121,9 +121,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const rightPanelWidth = 370;
     const panelGap = 16;
     const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4'];
-    const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
+    const cctvPanelGap = 8;
+    const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (cctvPanelGap * 2);
     const gap = 12;
-    const paddingHorizontal = 12;
+    const paddingHorizontal = 16;
     const totalGapWidth = gap * 3;
     const totalPaddingWidth = paddingHorizontal * 2;
     const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
@@ -135,15 +136,16 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
       autoScrollIntervalRef.current = setInterval(() => {
         if (cctvScrollContainerRef.current && !isUserScrollingRef.current) {
+          const container = cctvScrollContainerRef.current;
           const totalItemWidth = itemWidth + gap;
           const oneSetWidth = cctvList.length * totalItemWidth;
-          const currentScroll = cctvScrollContainerRef.current.scrollLeft;
+          const currentScroll = container.scrollLeft;
           const nextScroll = currentScroll + totalItemWidth;
           
           if (nextScroll >= oneSetWidth * 2 - 10) {
-            cctvScrollContainerRef.current.scrollLeft = oneSetWidth + (nextScroll - oneSetWidth * 2);
+            container.scrollLeft = oneSetWidth + (nextScroll - oneSetWidth * 2);
           } else {
-            cctvScrollContainerRef.current.scrollLeft = nextScroll;
+            container.scrollLeft = nextScroll;
           }
         }
       }, 3000);
@@ -153,7 +155,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     if (container) {
       const totalItemWidth = itemWidth + gap;
       const oneSetWidth = cctvList.length * totalItemWidth;
-      container.scrollLeft = oneSetWidth;
+      setTimeout(() => {
+        if (container) {
+          container.scrollLeft = oneSetWidth;
+        }
+      }, 100);
       startAutoScroll();
     }
 
@@ -1681,23 +1687,25 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const panelGap = 16;
         const verticalPadding = 16;
         const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4'];
-        const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
         const gap = 12;
-        const paddingHorizontal = 12;
+        const paddingHorizontal = 16;
         const paddingVertical = 16;
         const totalGapWidth = gap * 3;
         const totalPaddingWidth = paddingHorizontal * 2;
-        const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
+        
+        // CCTV 패널 너비를 넓혀서 좌우 패널과의 여백을 줄임
+        const cctvPanelGap = 8; // 좌우 패널과의 여백을 줄임
+        const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (cctvPanelGap * 2);
+        // 패딩을 더미 div로 처리하므로 아이템 너비 계산에서 패딩 제외
+        const itemWidth = Math.floor((availableWidth - totalGapWidth) / 4);
         const itemHeight = Math.floor((itemWidth * 3) / 4);
-        const cctvPanelLeft = leftPanelWidth + panelGap;
-        const cctvPanelRight = rightPanelWidth + panelGap;
 
         return (
           <div
             className="absolute transition-all duration-500 ease-in-out"
             style={{ 
-              left: `${cctvPanelLeft}px`,
-              right: `${cctvPanelRight}px`,
+              left: `${leftPanelWidth + cctvPanelGap}px`,
+              right: `${rightPanelWidth + cctvPanelGap}px`,
               bottom: '16px',
               top: 'auto',
               zIndex: 200,
@@ -1705,22 +1713,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               opacity: hideControls ? 0 : 1,
             }}
           >
-            <div className="rounded-t-lg gradient-border-right-bottom" style={{ height: `${itemHeight + (verticalPadding * 2)}px`, width: '100%', overflow: 'hidden', paddingTop: `${verticalPadding}px`, paddingBottom: `${verticalPadding}px`, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+            <div className="rounded-t-lg gradient-border-right-bottom" style={{ height: `${itemHeight + (verticalPadding * 2)}px`, width: '100%', paddingTop: `${verticalPadding}px`, paddingBottom: `${verticalPadding}px`, paddingLeft: `${paddingHorizontal}px`, paddingRight: `${paddingHorizontal}px`, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)', overflow: 'hidden' }}>
               <div 
                 ref={(el) => {
                   cctvScrollContainerRef.current = el;
-                  if (el && showCCTV) {
-                    const totalItemWidth = itemWidth + gap;
-                    const oneSetWidth = cctvList.length * totalItemWidth;
-                    el.scrollLeft = oneSetWidth;
-                  }
                 }}
                 className="flex items-center"
                 style={{ 
                   height: `${itemHeight}px`,
                   gap: `${gap}px`,
-                  paddingLeft: `${paddingHorizontal}px`,
-                  paddingRight: `${paddingHorizontal}px`,
                   overflowX: 'auto',
                   overflowY: 'hidden',
                   scrollbarWidth: 'thin',
@@ -1782,7 +1783,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const verticalPadding = 16;
         const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
         const gap = 12;
-        const paddingHorizontal = 12;
+        const paddingHorizontal = 16;
         const totalGapWidth = gap * 3;
         const totalPaddingWidth = paddingHorizontal * 2;
         const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);

@@ -366,7 +366,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 {main.id.startsWith('mock-') ? (
                   <>
                     {/* 허구 이벤트: 신고 내용 */}
-                    <div className="text-white text-sm font-semibold mb-2 leading-relaxed">{main.title}</div>
+                    <div className="text-white text-sm font-semibold mb-2">{main.title}</div>
                     {/* 허구 이벤트: 주소 */}
                     <div className="text-gray-200 text-xs mb-2">{main.location.name}</div>
                   </>

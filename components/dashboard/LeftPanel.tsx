@@ -188,7 +188,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         rainfall: Math.max(0, prev.rainfall + (Math.random() - 0.5) * 0.2),
         windSpeed: Math.max(0, prev.windSpeed + (Math.random() - 0.5) * 0.3),
       }));
-      setLastUpdateTime(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setLastUpdateTime(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }));
       setSensorLocationIndex((prev) => (prev + 1) % sensorLocations.length);
     }, 2000);
     return () => clearInterval(interval);
@@ -1470,9 +1470,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
             <span className="text-gray-400 text-xs flex items-center gap-1.5">
-              마지막 업데이트: <span>{sensorLocations[sensorLocationIndex]}</span>
+              마지막 업데이트: <span>{sensorLocations[sensorLocationIndex]} 기준</span>
               <span className="text-gray-400">·</span>
-              <span>{lastUpdateTime || '--:--:--'}</span>
+              <span>{lastUpdateTime || '--:--'}</span>
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 min-w-0">
