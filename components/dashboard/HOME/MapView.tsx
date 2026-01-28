@@ -225,12 +225,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         };
     };
 
-    // useEffect(() => {
-    //     if (externalZoomLevel !== undefined) {
-    //         setZoomLevel(externalZoomLevel);
-    //     }
-    //     console.log("externalZoomLevel", externalZoomLevel);
-    // }, [externalZoomLevel]);
+    useEffect(() => {
+        if (externalZoomLevel !== undefined) {
+            setZoomLevel(externalZoomLevel);
+        }
+    }, [externalZoomLevel]);
 
     useEffect(() => {
         onZoomLevelChange?.(zoomLevel);
