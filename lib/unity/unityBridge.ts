@@ -100,13 +100,20 @@ export const sendToUnity = (
   objectName: string = UNITY_RECEIVER_OBJECT_NAME,
   methodName: string = ON_REACT_EVENT_METHOD
 ): void => {
-  const instance =
-    (typeof globalThis !== 'undefined' && (globalThis as Window).unityInstance) ||
-    (typeof window !== 'undefined' && window.unityInstance);
-  if (!instance?.SendMessage) {
+  // globalThis와 window에서 unityInstance 찾기
+  let instance: Window['unityInstance'] | undefined;
+  
+  if (typeof globalThis !== 'undefined' && (globalThis as unknown as Window).unityInstance) {
+    instance = (globalThis as unknown as Window).unityInstance;
+  } else if (typeof window !== 'undefined' && window.unityInstance) {
+    instance = window.unityInstance;
+  }
+  
+  if (!instance || !instance.SendMessage) {
     console.warn('[unityBridge] unityInstance.SendMessage not available. Is Unity WebGL loaded?');
     return;
   }
+  
   const payload = typeof data === 'string' ? data : JSON.stringify(data);
   instance.SendMessage(objectName, methodName, payload);
 };
