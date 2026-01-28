@@ -94,7 +94,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
 
     const tabs = [
         { label: "전체", value: "ALL" as const, count: null },
-        { label: "긴급", value: "긴급" as const, count: urgentCount },
+        { label: "긴급", value: "긴급" as const, count: key1PressTime ? 1 : 0 },
         { label: "경계", value: "경계" as const, count: cautionCount },
         { label: "주의", value: "주의" as const, count: attentionCount },
         { label: "일반", value: "일반" as const, count: generalCount },
