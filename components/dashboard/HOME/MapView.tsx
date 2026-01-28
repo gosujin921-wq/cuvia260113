@@ -1049,6 +1049,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               isProgressComplete={isProgressComplete}
               viewAngleAnimationProgress={viewAngleAnimationProgress}
               highlighted={hoveredCCTVIndex === 11}
+              onHover={setHoveredCCTVIndex}
             />
             
             <div
@@ -1097,6 +1098,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                       isProgressComplete={isProgressComplete}
                       viewAngleAnimationProgress={viewAngleAnimationProgress}
                       highlighted={hoveredCCTVIndex === cctvIndexForTitle}
+                      onHover={setHoveredCCTVIndex}
                     />
                   </div>
                 );

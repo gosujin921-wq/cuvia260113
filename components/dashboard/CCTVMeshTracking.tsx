@@ -16,11 +16,12 @@ interface CCTVMeshTrackingProps {
   isProgressComplete?: boolean;
   viewAngleAnimationProgress?: number;
   highlighted?: boolean;
+  onHover?: (cctvIndex: number | null) => void;
 }
 
 export { CCTV_TITLES };
 
-const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cctvIndex, position, width = 420, hideControls = false, isAutoMode = true, isProgressComplete = false, viewAngleAnimationProgress = 0, highlighted = false }) => {
+const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cctvIndex, position, width = 420, hideControls = false, isAutoMode = true, isProgressComplete = false, viewAngleAnimationProgress = 0, highlighted = false, onHover }) => {
   if (!event) return null;
 
   const isTheftEvent = event.title.includes('상가 절도 의심') || event.title.includes('현금 절취 포착');
@@ -83,6 +84,16 @@ const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cct
           } : {}),
         }}
         onClick={(e) => e.stopPropagation()}
+        onMouseEnter={() => {
+          if (onHover && cctvIndex !== undefined) {
+            onHover(cctvIndex);
+          }
+        }}
+        onMouseLeave={() => {
+          if (onHover) {
+            onHover(null);
+          }
+        }}
       >
         <div
           className="flex items-center justify-between px-3 py-1.5 flex-shrink-0"
