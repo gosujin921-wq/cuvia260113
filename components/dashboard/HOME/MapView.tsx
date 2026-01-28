@@ -9,7 +9,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCCTVViewAngle as getCCTVViewAngleUtil, generateViewAnglePath, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
 import { getRandomCCTVVideo } from "@/lib/cctv-video-utils";
-import { sendToUnity } from "@/lib/unity/unityBridge";
+import { sendToUnity, subscribeUnityToReact } from "@/lib/unity/unityBridge";
 import { EventToUnity } from "@/lib/unity/types";
 import UnityCanvas from "../UnityCanvas";
 
@@ -29,8 +29,19 @@ interface MapViewProps {
     isAutoMode?: boolean;
 }
 
+const requestedCCTVs = [
+    { cctvId: "CCTV-V-1", name: "CCTV-V-1", index: 0, position: { left: 34, top: 40 } },
+    { cctvId: "CCTV-V-2", name: "CCTV-V-2", index: 1, position: { left: 40, top: 38 } },
+    { cctvId: "CCTV-V-5", name: "CCTV-V-5", index: 4, position: { left: 50, top: 56 } },
+    { cctvId: "CCTV-V-6", name: "CCTV-V-6", index: 5, position: { left: 42, top: 58 } },
+    { cctvId: "CCTV-V-7", name: "CCTV-V-7", index: 6, position: { left: 34, top: 56 } },
+    { cctvId: "CCTV-V-8", name: "CCTV-V-8", index: 7, position: { left: 32, top: 48 } },
+    { cctvId: "CCTV-V-9", name: "CCTV-V-9", index: 8, position: { left: 38, top: 42 } },
+    { cctvId: "CCTV-V-10", name: "CCTV-V-10", index: 9, position: { left: 48, top: 50 } },
+];
+
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: MapViewProps) => {
-    const [zoomLevel, setZoomLevel] = useState(0);
+    const [zoomLevel, setZoomLevel] = useState(1);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
     const [showCCTV, setShowCCTV] = useState(true);
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
@@ -41,8 +52,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const [isProgressComplete, setIsProgressComplete] = useState(false);
     const [viewAngleAnimationProgress, setViewAngleAnimationProgress] = useState(0);
     const [showEventCard, setShowEventCard] = useState(false);
-    const [hoveredCCTVIndex, setHoveredCCTVIndex] = useState<number | null>(null);
-    const [lastHoveredCCTVId, setLastHoveredCCTVId] = useState<string | null>(null);
+    const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null);
     const [openedCCTVPopups, setOpenedCCTVPopups] = useState<Set<number>>(new Set());
     const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -215,11 +225,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         };
     };
 
-    useEffect(() => {
-        if (externalZoomLevel !== undefined) {
-            setZoomLevel(externalZoomLevel);
-        }
-    }, [externalZoomLevel]);
+    // useEffect(() => {
+    //     if (externalZoomLevel !== undefined) {
+    //         setZoomLevel(externalZoomLevel);
+    //     }
+    //     console.log("externalZoomLevel", externalZoomLevel);
+    // }, [externalZoomLevel]);
 
     useEffect(() => {
         onZoomLevelChange?.(zoomLevel);
@@ -228,7 +239,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     useEffect(() => {
         const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
 
-        if (isEvent1Selected && zoomLevel === 1) {
+        if (isEvent1Selected && zoomLevel > 1) {
             setIsProgressComplete(false);
             setViewAngleAnimationProgress(0);
             setShowEventCard(true);
@@ -259,7 +270,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             }, 3000);
 
             return () => clearTimeout(timer);
-        } else if (!isEvent1Selected || zoomLevel === 0) {
+        } else if (!isEvent1Selected || zoomLevel === 1) {
             setIsProgressComplete(false);
             setViewAngleAnimationProgress(0);
             setShowEventCard(false);
@@ -281,7 +292,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             // CCTV-V-11도 포함
             const blueCCTVIndices = [1, 9, 2, 8, 7, 10, 6, 5, 11];
             setOpenedCCTVPopups(new Set(blueCCTVIndices));
-        } else if (!isEvent1Selected || zoomLevel === 0) {
+        } else if (!isEvent1Selected || zoomLevel === 1) {
             setOpenedCCTVPopups(new Set());
         }
     }, [isProgressComplete, viewAngleAnimationProgress, selectedEventId, zoomLevel, events]);
@@ -303,7 +314,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     useEffect(() => {
         const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
 
-        if (zoomLevel > 0 && prevZoomLevelRef.current === 0 && showCCTV && showCCTVViewAngle && !isEvent1Selected) {
+        if (zoomLevel > 1 && prevZoomLevelRef.current === 1 && showCCTV && showCCTVViewAngle && !isEvent1Selected) {
             const cctvPositions = [
                 { left: 34, top: 40, count: 1, viewAngle: 45 },
                 { left: 40, top: 38, count: 1, viewAngle: 90 },
@@ -351,14 +362,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     animationFrameRef.current = null;
                 }
             };
-        } else if (zoomLevel === 0) {
+        } else if (zoomLevel === 1) {
             prevZoomLevelRef.current = zoomLevel;
         } else {
             prevZoomLevelRef.current = zoomLevel;
         }
     }, [zoomLevel, showCCTV, showCCTVViewAngle, selectedEventId, events]);
 
-    const mapScale = zoomLevel === 0 ? 1 : 1.3;
+    // zoomLevel 1 = 1.0배, 2 = 1.15배, 3 = 1.3배, 4 = 1.45배, 5 = 1.6배
+    const mapScale = 1 + (zoomLevel - 1) * 0.15;
     const mapTransformOrigin = "center center";
 
     useEffect(() => {
@@ -672,7 +684,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     };
 
     const mapTranslate = useMemo(() => {
-        if (zoomLevel === 0 || !selectedEventId) {
+        if (zoomLevel === 1 || !selectedEventId) {
             return { x: 0, y: 0, offsetX: 0 };
         }
 
@@ -780,35 +792,63 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     };
 
     const handleHoverCctv = (cctvIndex: number | null, cctvId?: string) => {
-        if (cctvIndex === null) {
-            if (lastHoveredCCTVId) {
+        // hover 종료 시
+        if (cctvIndex === null || !cctvId) {
+            if (hoveredCCTVId) {
                 const eventToUnity: EventToUnity = {
                     methodName: "exitHover",
                     payload: {
-                        value: lastHoveredCCTVId,
+                        value: hoveredCCTVId,
                     },
                 };
                 sendToUnity(JSON.stringify(eventToUnity));
                 console.log("eventToUnity", eventToUnity);
             }
-            setHoveredCCTVIndex(null);
+            setHoveredCCTVId(null);
             return;
         }
 
         // hover 시작 시
-        const currentCctvId = cctvId || `CCTV-V-${cctvIndex}`;
-        setHoveredCCTVIndex(cctvIndex);
-        setLastHoveredCCTVId(currentCctvId);
+        setHoveredCCTVId(cctvId);
 
         const eventToUnity: EventToUnity = {
             methodName: "enterHover",
             payload: {
-                value: currentCctvId,
+                value: cctvId,
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
         console.log("eventToUnity", eventToUnity);
     };
+
+    useEffect(() => {
+        // ✅ Unity → React 이벤트 수신 설정
+        const unsubscribe = subscribeUnityToReact((eventName, eventData) => {
+            if (eventName === "hoverCCTV") {
+                1;
+                try {
+                    const data = JSON.parse(eventData);
+                    console.log("[MapView] Unity에서 hover 이벤트 수신:", data);
+                    setHoveredCCTVId(data.cctvId);
+                } catch (e) {
+                    console.error("[MapView] JSON 파싱 에러:", e);
+                }
+            } else if (eventName === "leaveCCTV") {
+                try {
+                    const data = JSON.parse(eventData);
+                    console.log("[MapView] Unity에서 leave 이벤트 수신:", data);
+                    setHoveredCCTVId(null);
+                } catch (e) {
+                    console.error("[MapView] JSON 파싱 에러:", e);
+                }
+            }
+        });
+
+        // cleanup: 컴포넌트 언마운트 시 구독 해제
+        return () => {
+            unsubscribe();
+        };
+    }, []);
 
     return (
         <div
@@ -848,9 +888,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        handleZoomLevelChange(Math.min(zoomLevel + 1, 1));
+                        handleZoomLevelChange(Math.min(zoomLevel + 1, 5));
                     }}
-                    disabled={zoomLevel >= 1}
+                    disabled={zoomLevel >= 5}
                     className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     aria-label="확대">
                     <Icon icon="mdi:plus" className="w-5 h-5" />
@@ -858,9 +898,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        handleZoomLevelChange(Math.max(zoomLevel - 1, 0));
+                        handleZoomLevelChange(Math.max(zoomLevel - 1, 1));
                     }}
-                    disabled={zoomLevel <= 0}
+                    disabled={zoomLevel <= 1}
                     className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     aria-label="축소">
                     <Icon icon="mdi:minus" className="w-5 h-5" />
@@ -972,17 +1012,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 (() => {
                     const cctvV11Position = { left: 34, top: 40 };
 
-                    const requestedCCTVs = [
-                        { name: "CCTV-V-1", index: 0, position: { left: 34, top: 40 } },
-                        { name: "CCTV-V-2", index: 1, position: { left: 40, top: 38 } },
-                        { name: "CCTV-V-5", index: 4, position: { left: 50, top: 56 } },
-                        { name: "CCTV-V-6", index: 5, position: { left: 42, top: 58 } },
-                        { name: "CCTV-V-7", index: 6, position: { left: 34, top: 56 } },
-                        { name: "CCTV-V-8", index: 7, position: { left: 32, top: 48 } },
-                        { name: "CCTV-V-9", index: 8, position: { left: 38, top: 42 } },
-                        { name: "CCTV-V-10", index: 9, position: { left: 48, top: 50 } },
-                    ];
-
                     const sortedCCTVs = requestedCCTVs
                         .map((cctv) => {
                             const distance = Math.sqrt(Math.pow(cctv.position.left - cctvV11Position.left, 2) + Math.pow(cctv.position.top - cctvV11Position.top, 2));
@@ -1013,7 +1042,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                 isAutoMode={isAutoMode}
                                 isProgressComplete={isProgressComplete}
                                 viewAngleAnimationProgress={viewAngleAnimationProgress}
-                                highlighted={hoveredCCTVIndex === 11}
+                                highlighted={hoveredCCTVId === "CCTV-V-11"}
                                 onHover={handleHoverCctv}
                             />
 
@@ -1038,7 +1067,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
                                     return (
                                         <div
-                                            key={`${cctv.name}-${idx}`}
+                                            key={`${cctv.cctvId}-${idx}`}
                                             style={{
                                                 width: `${gridPopupWidth}px`,
                                                 height: "fit-content",
@@ -1054,14 +1083,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                                     });
                                                 }}
                                                 cctvIndex={cctvIndexForTitle}
-                                                cctvId={cctv.name}
+                                                cctvId={cctv.cctvId}
                                                 position={undefined}
                                                 width={gridPopupWidth}
                                                 hideControls={hideControls}
                                                 isAutoMode={isAutoMode}
                                                 isProgressComplete={isProgressComplete}
                                                 viewAngleAnimationProgress={viewAngleAnimationProgress}
-                                                highlighted={hoveredCCTVIndex === cctvIndexForTitle}
+                                                highlighted={hoveredCCTVId === cctv.cctvId}
                                                 onHover={handleHoverCctv}
                                             />
                                         </div>
