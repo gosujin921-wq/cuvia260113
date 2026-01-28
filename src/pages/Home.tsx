@@ -202,25 +202,24 @@ export default function Home() {
 
     // 이벤트 요약 계산 (처리결과 기준) - 모든 이벤트 포함 (종결 포함)
     const eventSummary: EventSummaryType = useMemo(() => {
-        const allEventsForSummary = allEvents.map((event, index) => convertToDashboardEvent(event, index));
-
         // 대기: 생성, 선별
-        const pendingStages: Array<"생성" | "선별"> = ["생성", "선별"];
-        const pending = allEventsForSummary.filter((event) => pendingStages.includes(event.processingStage as any)).length;
+        // 1번 키를 눌렀을 때 pending +1
+        const pending = key1PressTime ? 1 : 0;
 
-        // 진행중: 착수, 사실 검증, 추적 · 지원, 전파
-        const inProgressStages: Array<"착수" | "사실 검증" | "추적 · 지원" | "전파"> = ["착수", "사실 검증", "추적 · 지원", "전파"];
-        const inProgress = allEventsForSummary.filter((event) => inProgressStages.includes(event.processingStage as any)).length;
+        const inProgress = 0;
 
-        const closed = allEventsForSummary.filter((event) => event.processingStage === "종결").length;
+        const closed = 4;
+
+        // total도 1번 키 이벤트 발생 시 +1
+        const total = key1PressTime ? mockEvents.length + 1 : mockEvents.length;
 
         return {
-            total: allEventsForSummary.length,
+            total,
             pending,
             inProgress,
             closed,
         };
-    }, []);
+    }, [mockEvents, key1PressTime]);
 
     // 이벤트 선택/클릭 핸들러 (통합)
     const handleEventAction = (eventId: string) => {
@@ -317,6 +316,7 @@ export default function Home() {
             } else if (e.key === "Escape") {
                 clearSelection();
                 setHideControls(false);
+                setKey1PressTime(undefined);
                 const eventToUnity: EventToUnity = {
                     methodName: "endEvent",
                     payload: {
