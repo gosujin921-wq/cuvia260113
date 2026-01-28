@@ -165,7 +165,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
 
                         // 1 키로 선택된 이벤트의 제목 변경
                         const displayTitle = event.eventId === "A-20260107-004" || event.id === "A-20260107-004" ? "폭력 의심 상황 발생" : event.title;
-
+                        if ((event.eventId === "A-20260107-004" || event.id === "A-20260107-004") && !key1PressTime) return null;
                         return (
                             <div
                                 key={event.id}
