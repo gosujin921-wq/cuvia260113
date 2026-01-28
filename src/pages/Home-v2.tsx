@@ -6,6 +6,8 @@ import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/ReportPopup';
+import FastSearchProgress from '@/components/dashboard/FastSearchProgress';
+import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
@@ -18,11 +20,16 @@ export default function HomeV2() {
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [hideControls, setHideControls] = useState<boolean>(false);
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState<boolean>(false);
+  const [panelsSlidOut, setPanelsSlidOut] = useState<boolean>(false);
+  const [showFastSearch, setShowFastSearch] = useState<boolean>(false);
+  const [showFastSearchList, setShowFastSearchList] = useState<boolean>(false);
+  const [pinOffset, setPinOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [hideDimForFastSearch, setHideDimForFastSearch] = useState<boolean>(false);
   const [showCCTV, setShowCCTV] = useState<boolean>(true);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
   const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isUserScrollingRef = useRef(false);
+  const isUserScrollingRef = useRef<boolean>(false);
   const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const allConvertedEvents: Event[] = useMemo(() => {
@@ -232,51 +239,45 @@ export default function HomeV2() {
     setHighlightedEventId(null);
     setAiDetectionEventId(null);
     setMapZoomLevel(0);
+    setHideControls(false);
+    setPinOffset({ x: 0, y: 0 });
+    setShowFastSearchList(false);
+    setPanelsSlidOut(false);
+    setShowCCTV(true);
+    setShowFastSearch(false);
   };
 
-  // 윈도우 리사이즈 감지
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // V2 프로토타입: 다른 키보드 단축키 (필요시 수정)
+  // 키보드 단축키 핸들러
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
         return;
       }
       
-      // V2: 다른 키보드 동작으로 수정 가능
       if (e.key === '1') {
         const missingEvent = allConvertedEvents.find(event => 
           event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
         );
         if (missingEvent) {
+          setHideControls(true);
           animateToEvent(missingEvent);
         }
       } else if (e.key === '2') {
-        const abductionEvent = allConvertedEvents.find(event => 
-          event.eventId === 'A-20251210-003' || event.id === 'A-20251210-003'
-        );
-        if (abductionEvent) {
-          animateToEvent(abductionEvent, () => {
-            setAiDetectionEventId(abductionEvent.id);
-          });
-        }
+        // 고속검색 시작 (FastSearchProgress 표시)
+        setSelectedEventId(null);
+        setPanelsSlidOut(true);
+        setShowCCTV(false);
+        setHideControls(true);
+        setShowFastSearch(true);
+        setHideDimForFastSearch(false);
       } else if (e.key === '3') {
-        const assaultEvent = allConvertedEvents.find(event => 
-          event.eventId === 'A-20241124-001' || event.id === 'A-20241124-001'
-        );
-        if (assaultEvent) {
-          animateToEvent(assaultEvent);
-        }
+        // 직접 FastSearchListPanel 열기
+        setSelectedEventId(null);
+        setPanelsSlidOut(true);
+        setShowCCTV(false);
+        setHideControls(true);
+        setShowFastSearchList(true);
+        setPinOffset({ x: 0, y: 0 });
       } else if (e.key === 'Escape') {
         clearSelection();
       }
@@ -312,15 +313,20 @@ export default function HomeV2() {
           onZoomLevelChange={setMapZoomLevel}
           hideControls={hideControls}
           leftPanelWidth={leftPanelCollapsed ? 80 : 480}
+          pinOffset={pinOffset}
+          focusTargetXPercent={(showFastSearch || showFastSearchList) ? 66.67 : 50}
         />
       </div>
 
-      <div className="absolute left-0 top-0 bottom-0" style={{ zIndex: 100 }}>
+      <div 
+        className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+        style={{ zIndex: 100 }}
+      >
         <LeftPanel onCollapsedChange={setLeftPanelCollapsed} />
       </div>
 
       <div 
-        className="absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4" 
+        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
         <div className="rounded-lg p-4 gradient-border-right-bottom" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
@@ -380,6 +386,7 @@ export default function HomeV2() {
         </div>
       </div>
 
+      {/* BottomPanel (CCTV 화면) */}
       <BottomPanel
         showCCTV={showCCTV}
         hideControls={hideControls}
@@ -391,13 +398,37 @@ export default function HomeV2() {
         autoScrollIntervalRef={autoScrollIntervalRef}
       />
 
-      {selectedEventId && (
+      {/* ReportPopup */}
+      {selectedEventId && !showFastSearch && (
         <ReportPopup
           event={[...allConvertedEvents, ...mockEvents].find(e => e.id === selectedEventId) || null}
           onClose={clearSelection}
+          onFastSearchStart={() => {
+            setPanelsSlidOut(true);
+            setShowCCTV(false);
+            setHideControls(true);
+            setShowFastSearch(true);
+            setHideDimForFastSearch(false);
+          }}
           position={{ top: '1.25rem', right: '370px' }}
         />
       )}
+
+      {/* FastSearchProgress */}
+      <FastSearchProgress
+        isVisible={showFastSearch}
+        hideDim={hideDimForFastSearch}
+        onComplete={() => {
+          if (!hideDimForFastSearch) {
+            setShowFastSearch(false);
+            setShowFastSearchList(true);
+            setPinOffset({ x: 0, y: 0 });
+          }
+        }}
+      />
+
+      {/* FastSearchListPanel */}
+      <FastSearchListPanel isVisible={showFastSearchList} />
     </div>
   );
 }

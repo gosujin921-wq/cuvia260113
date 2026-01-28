@@ -5,6 +5,7 @@ import { Event } from '@/types';
 interface ReportPopupProps {
   event: Event | null;
   onClose: () => void;
+  onFastSearchStart?: () => void;
   position?: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string };
   width?: number;
 }
@@ -12,15 +13,16 @@ interface ReportPopupProps {
 const ReportPopup: React.FC<ReportPopupProps> = ({
   event,
   onClose,
+  onFastSearchStart,
   position,
-  width = 300,
+  width = 320,
 }) => {
   if (!event) {
     return null;
   }
 
   const defaultPosition: { top: string; right: string } = { top: '1.25rem', right: '1.25rem' };
-  const finalPosition = position || defaultPosition;
+  const finalPosition: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string } = position || defaultPosition;
 
   const positionStyle: React.CSSProperties = {
     position: 'absolute',
@@ -55,25 +57,57 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
           </button>
         </div>
 
-        <div className="px-3 pb-3 text-gray-200">
-          <div 
-            className="text-sm text-gray-100 leading-relaxed mb-3 whitespace-pre-line rounded-lg p-3 bg-[#393a42] border border-[#31353a]"
-            style={{ borderWidth: '1px' }}
-          >
-            김도연(남, 22세, 장애 있음).
-2026-01-07 오전 9시 30분경 원미구 부천로 245번길 일원에서 행방불명.
-176cm/65kg, 마름, 계란형, 흑색 짧은 머리, 회색 상의에 청바지.
+        <div className="px-3 pb-3">
+          {/* 상단: 사진과 정보 영역 */}
+          <div className="flex gap-3 mb-3">
+            {/* 좌측: 사진 영역 */}
+            <div className="flex-shrink-0">
+              <div 
+                className="w-20 h-24 rounded-lg bg-[#0f0f0f] border border-[#31353a] flex items-center justify-center overflow-hidden"
+                style={{ borderWidth: '1px' }}
+              >
+                <Icon icon="mdi:image-outline" className="w-6 h-6 text-gray-600" />
+              </div>
+            </div>
+
+            {/* 우측: 정보 영역 (레이블-값 구조) */}
+            <div className="flex-1 text-gray-200 min-w-0 space-y-2">
+              <div>
+                <div className="text-[10px] text-gray-400 mb-0.5">이름/나이</div>
+                <div className="text-sm font-semibold text-white">김도연 / 22세 (남)</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-gray-400 mb-0.5">인상착의</div>
+                <div className="text-xs text-gray-200 leading-relaxed">회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg.</div>
+              </div>
+              <div>
+                <div className="text-[10px] text-gray-400 mb-0.5">실종 장소/시간</div>
+                <div className="text-xs text-gray-200">부천로 245번길 일원, 09:30경</div>
+              </div>
+            </div>
           </div>
+
+          {/* 레드 박스: 장애 있음, 긴급 수색 요망 */}
+          <div className="mb-3 rounded-lg p-2.5 bg-red-500/20 border border-red-500/60">
+            <div className="text-xs font-semibold text-red-400">
+              장애 있음. 긴급 수색 요망.
+            </div>
+          </div>
+
+          {/* 버튼 */}
           <button
             onClick={() => {
-              // 고속 검색 시작 로직
+              if (onFastSearchStart) {
+                onFastSearchStart();
+              }
             }}
-            className="w-full px-4 py-2 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 focus:outline-none"
+            className="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 focus:outline-none flex items-center justify-center gap-2"
             style={{
               background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
             }}
           >
-            고속 검색 시작
+            <Icon icon="mdi:magnify" className="w-4 h-4" />
+            <span>고속검색 시작</span>
           </button>
         </div>
       </div>

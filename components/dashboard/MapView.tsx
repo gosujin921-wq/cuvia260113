@@ -29,9 +29,11 @@ interface MapViewProps {
   onAiDetectionClose?: () => void;
   hideControls?: boolean;
   leftPanelWidth?: number;
+  pinOffset?: { x: number; y: number };
+  focusTargetXPercent?: number; // 줌 시 포커스(화면) 위치 (기본: 50)
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480 }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50 }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -658,14 +660,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
     
     const eventPosition = positionsById[selectedEvent.id] || { left: centerX, top: centerY };
-    const translateX = (50 - eventPosition.left) * mapScale - 5;
+    const translateX = (focusTargetXPercent - eventPosition.left) * mapScale - 5;
     const translateY = (50 - eventPosition.top) * mapScale;
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : windowWidth;
     const offsetXPx = 100;
     const offsetXPercent = (offsetXPx / screenWidth) * 100;
     
     return { x: translateX, y: translateY, offsetX: offsetXPercent };
-  }, [zoomLevel, selectedEventId, events, mapScale, positionsById, windowWidth]);
+  }, [zoomLevel, selectedEventId, events, mapScale, positionsById, windowWidth, focusTargetXPercent]);
 
   // 핀 위치 계산 - 단순히 퍼센트 위치 유지
   const getEventPosition = (event: Event) => {
@@ -1376,11 +1378,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 data-event-pin
                 className="absolute flex items-center justify-center"
                 style={{
-                  left: `${position.left}%`,
-                  top: `${position.top}%`,
+                  left: `${position.left + (isSelected ? pinOffset.x : 0)}%`,
+                  top: `${position.top + (isSelected ? pinOffset.y : 0)}%`,
                   transform: 'translate(-50%, -50%)',
                   zIndex: isSelected ? 150 : isHighlighted ? 140 : 100,
                   pointerEvents: 'auto',
+                  transition: isSelected ? 'left 0.5s ease-out, top 0.5s ease-out' : 'none',
                 }}
               >
                 {/* 펄스 애니메이션 (여러 레이어) - 선택된 이벤트에만 표시, "상가 절도 의심, 현금 절취 포착" 제외 */}
@@ -1453,23 +1456,37 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     
                     return (
                       <>
-                        <div 
-                          className={`${getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''} relative`}
-                          style={{ 
-                            ...getCCTVIconBoxStyle(clusterCount, mapScale, hasMultiple),
-                            transformOrigin: 'center center',
-                          }}
-                        >
-                          <Icon 
-                            icon="mdi:map-marker"
-                            className="text-red-400"
-                            width="16px"
-                            height="16px"
-                          />
-                          {hasMultiple && (
-                            <span className="text-xs font-semibold text-red-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
-                              {formatCCTVCount(clusterCount)}
-                            </span>
+                        <div className="flex flex-col items-center">
+                          <div 
+                            className={`${getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''} relative`}
+                            style={{ 
+                              ...getCCTVIconBoxStyle(clusterCount, mapScale, hasMultiple),
+                              transformOrigin: 'center center',
+                            }}
+                          >
+                            <Icon 
+                              icon="mdi:map-marker"
+                              className="text-red-400"
+                              width="16px"
+                              height="16px"
+                            />
+                            {hasMultiple && (
+                              <span className="text-xs font-semibold text-red-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
+                                {formatCCTVCount(clusterCount)}
+                              </span>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <div 
+                              className="mt-2 px-2 py-1.5 rounded-lg bg-[#0f0f0f] border border-[#31353a] whitespace-nowrap"
+                              style={{ 
+                                borderWidth: '1px',
+                                zIndex: 140,
+                              }}
+                            >
+                              <div className="text-[10px] text-gray-400 mb-0.5">사건 발생 지점</div>
+                              <div className="text-xs font-semibold text-white">부천로 245번길</div>
+                            </div>
                           )}
                         </div>
                       </>

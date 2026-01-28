@@ -514,3 +514,16 @@ input[type="range"].slider::-moz-range-thumb {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
+
+/* Fast Search 그라데이션 움직임 애니메이션 */
+@keyframes fast-search-gradient-move {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
