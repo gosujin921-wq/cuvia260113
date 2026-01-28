@@ -42,6 +42,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const [viewAngleAnimationProgress, setViewAngleAnimationProgress] = useState(0);
     const [showEventCard, setShowEventCard] = useState(false);
     const [hoveredCCTVIndex, setHoveredCCTVIndex] = useState<number | null>(null);
+    const [lastHoveredCCTVId, setLastHoveredCCTVId] = useState<string | null>(null);
     const [openedCCTVPopups, setOpenedCCTVPopups] = useState<Set<number>>(new Set());
     const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -778,6 +779,37 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
     };
 
+    const handleHoverCctv = (cctvIndex: number | null, cctvId?: string) => {
+        if (cctvIndex === null) {
+            if (lastHoveredCCTVId) {
+                const eventToUnity: EventToUnity = {
+                    methodName: "exitHover",
+                    payload: {
+                        value: lastHoveredCCTVId,
+                    },
+                };
+                sendToUnity(JSON.stringify(eventToUnity));
+                console.log("eventToUnity", eventToUnity);
+            }
+            setHoveredCCTVIndex(null);
+            return;
+        }
+
+        // hover 시작 시
+        const currentCctvId = cctvId || `CCTV-V-${cctvIndex}`;
+        setHoveredCCTVIndex(cctvIndex);
+        setLastHoveredCCTVId(currentCctvId);
+
+        const eventToUnity: EventToUnity = {
+            methodName: "enterHover",
+            payload: {
+                value: currentCctvId,
+            },
+        };
+        sendToUnity(JSON.stringify(eventToUnity));
+        console.log("eventToUnity", eventToUnity);
+    };
+
     return (
         <div
             ref={containerRef}
@@ -970,6 +1002,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                 event={events.find((e) => e.id === aiDetectionEventId) || null}
                                 onClose={() => onAiDetectionClose?.()}
                                 cctvIndex={11}
+                                cctvId="CCTV-V-11"
                                 position={{
                                     top: `${padding}px`,
                                     right: `${padding}px`,
@@ -981,7 +1014,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                 isProgressComplete={isProgressComplete}
                                 viewAngleAnimationProgress={viewAngleAnimationProgress}
                                 highlighted={hoveredCCTVIndex === 11}
-                                onHover={setHoveredCCTVIndex}
+                                onHover={handleHoverCctv}
                             />
 
                             <div
@@ -1021,6 +1054,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                                     });
                                                 }}
                                                 cctvIndex={cctvIndexForTitle}
+                                                cctvId={cctv.name}
                                                 position={undefined}
                                                 width={gridPopupWidth}
                                                 hideControls={hideControls}
@@ -1028,7 +1062,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                                 isProgressComplete={isProgressComplete}
                                                 viewAngleAnimationProgress={viewAngleAnimationProgress}
                                                 highlighted={hoveredCCTVIndex === cctvIndexForTitle}
-                                                onHover={setHoveredCCTVIndex}
+                                                onHover={handleHoverCctv}
                                             />
                                         </div>
                                     );
