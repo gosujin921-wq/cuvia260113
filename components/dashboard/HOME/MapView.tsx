@@ -40,6 +40,8 @@ const requestedCCTVs = [
     { cctvId: "CCTV-V-10", name: "CCTV-V-10", index: 9, position: { left: 48, top: 50 } },
 ];
 
+const cctvList = ["CCTV-V-1", "CCTV-V-2", "CCTV-V-5", "CCTV-V-6", "CCTV-V-7", "CCTV-V-8", "CCTV-V-9", "CCTV-V-10"];
+
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: MapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
@@ -1105,7 +1107,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     const rightPanelWidth = 370;
                     const panelGap = 16;
                     const verticalPadding = 16;
-                    const cctvList = ["CCTV-V-1", "CCTV-V-2", "CCTV-V-3", "CCTV-V-4"];
                     const gap = 12;
                     const paddingHorizontal = 16;
                     const paddingVertical = 16;
@@ -1198,7 +1199,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                             target.scrollLeft = oneSetWidth + scrollLeft;
                                         }
                                     }}>
-                                    {[...cctvList, ...cctvList, ...cctvList].map((cctvId, index) => (
+                                    {cctvList.map((cctvId, index) => (
                                         <div key={`bottom-cctv-${index}-${cctvId}`} className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0" style={{ width: `${itemWidth}px`, height: `${itemHeight}px` }}>
                                             <video src={getRandomCCTVVideo(cctvId)} autoPlay loop muted playsInline className="w-full h-full object-cover" />
                                             <div className="absolute top-2 left-2" style={{ zIndex: 10 }}>

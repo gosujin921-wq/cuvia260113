@@ -37,7 +37,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
         // 다른 이벤트들은 이벤트 ID 기반으로 무작위 할당 (CCTV-V-1 ~ CCTV-V-12)
         const eventId = event.eventId || event.id;
         const hash = eventId.split("").reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
-        const cctvNumber = (hash % 12) + 1; // 1~12
+        const cctvNumber = event.eventId === "A-20260107-004" || event.id === "A-20260107-004" ? 11 : (hash % 12) + 1; // 1~12
         return `CCTV-V-${cctvNumber}`;
     };
 
@@ -46,7 +46,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
         // 이벤트 ID를 기반으로 일관된 Zone 할당 (같은 이벤트는 항상 같은 Zone)
         const eventId = event.eventId || event.id;
         const hash = eventId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const zoneNumber = (hash % 8) + 1; // 1~8
+        const zoneNumber = event.eventId === "A-20260107-004" || event.id === "A-20260107-004" ? 1 : (hash % 8) + 1; // 1~8
         return `Zone${zoneNumber}`;
     };
 

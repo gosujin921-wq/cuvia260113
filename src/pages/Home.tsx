@@ -307,13 +307,14 @@ export default function Home() {
                                 eventId: missingEvent.eventId,
                                 mainCctvId: "CCTV-V-11",
                                 cctvIdList: ["CCTV-V-1", "CCTV-V-2", "CCTV-V-5", "CCTV-V-6", "CCTV-V-7", "CCTV-V-8", "CCTV-V-9", "CCTV-V-10"],
+                                eventMessage: "CCTV-V-11에서 폭력(싸움)이벤트가 감지되었습니다.",
                             },
                         },
                     };
                     console.log(eventToUnity);
                     sendToUnity(JSON.stringify(eventToUnity));
                 }
-            } else if (e.key === "Escape") {
+            } else if (e.key === "Escape" || e.key === "0") {
                 clearSelection();
                 setHideControls(false);
                 setKey1PressTime(undefined);
