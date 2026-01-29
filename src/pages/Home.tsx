@@ -422,7 +422,7 @@ export default function Home() {
                 </div>
             </div>
 
-            {showAIAgentPopup && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} />}
+            {showAIAgentPopup && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} />}
         </div>
     );
 }
