@@ -363,7 +363,6 @@ export default function Home() {
                     hideControls={hideControls}
                     leftPanelWidth={leftPanelCollapsed ? 80 : 480}
                     isAutoMode={isAutoMode}
-                    onCCTVCountChange={setOpenedCCTVCount}
                 />
             </div>
 
