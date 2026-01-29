@@ -40,7 +40,7 @@ const requestedCCTVs = [
     { cctvId: "CCTV-V-10", name: "CCTV-V-10", index: 9, position: { left: 48, top: 50 } },
 ];
 
-const cctvList = ["CCTV-V-1", "CCTV-V-2", "CCTV-V-5", "CCTV-V-6", "CCTV-V-7", "CCTV-V-8", "CCTV-V-9", "CCTV-V-10"];
+const cctvList = ["CCTV-V-1", "CCTV-V-2", "CCTV-V-3", "CCTV-V-4", "CCTV-V-5", "CCTV-V-6", "CCTV-V-7", "CCTV-V-8", "CCTV-V-9", "CCTV-V-10"];
 
 const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: MapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(1);
@@ -1030,7 +1030,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                         <>
                             <CCTVMeshTracking
                                 event={events.find((e) => e.id === aiDetectionEventId) || null}
-                                onClose={() => onAiDetectionClose?.()}
+                                onClose={() => {}}
                                 cctvIndex={11}
                                 cctvId="CCTV-V-11"
                                 position={{
@@ -1076,13 +1076,24 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                                             }}>
                                             <CCTVMeshTracking
                                                 event={events.find((e) => e.id === aiDetectionEventId) || null}
-                                                onClose={() => {
-                                                    setOpenedCCTVPopups((prev) => {
-                                                        const newSet = new Set(prev);
-                                                        newSet.delete(cctvIndexForTitle);
-                                                        return newSet;
-                                                    });
-                                                }}
+                                                onClose={() => {}}
+                                                // onClose={() => {
+                                                //     // Unity로 CCTV 닫힘 이벤트 전송
+                                                //     const eventToUnity: EventToUnity = {
+                                                //         methodName: "closeCctvPopup",
+                                                //         payload: {
+                                                //             value: cctv.cctvId,
+                                                //         },
+                                                //     };
+                                                //     sendToUnity(JSON.stringify(eventToUnity));
+                                                //     console.log("eventToUnity", eventToUnity);
+
+                                                //     setOpenedCCTVPopups((prev) => {
+                                                //         const newSet = new Set(prev);
+                                                //         newSet.delete(cctvIndexForTitle);
+                                                //         return newSet;
+                                                //     });
+                                                // }}
                                                 cctvIndex={cctvIndexForTitle}
                                                 cctvId={cctv.cctvId}
                                                 position={undefined}

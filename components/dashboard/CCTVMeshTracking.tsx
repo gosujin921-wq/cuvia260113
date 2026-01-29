@@ -105,9 +105,11 @@ const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cct
                         <CCTVIcon className="w-4 h-4 text-blue-400" />
                         <h3>{cctvTitle}</h3>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors focus:outline-none" aria-label="닫기">
-                        <Icon icon="mdi:close" className="w-4 h-4" />
-                    </button>
+                    {/* {cctvId !== "CCTV-V-11" && (
+                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors focus:outline-none" aria-label="닫기">
+                            <Icon icon="mdi:close" className="w-4 h-4" />
+                        </button>
+                    )} */}
                 </div>
 
                 <div className="flex-shrink-0">

@@ -26,6 +26,7 @@ export default function Home() {
     const [isAutoMode, setIsAutoMode] = useState<boolean>(true);
     const [key1PressTime, setKey1PressTime] = useState<Date | undefined>(undefined);
     const [missingEventId, setMissingEventId] = useState<string | null>(null);
+    const [openedCCTVCount, setOpenedCCTVCount] = useState<number>(8);
 
     /**
      * ============================================================================
@@ -339,7 +340,7 @@ export default function Home() {
     return (
         <div className="relative bg-[#0a0e14] overflow-hidden" style={{ width: "100vw", height: "100vh" }}>
             {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
-            <TopControlPanel isVisible={hideControls} onStop={clearSelection} />
+            <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
 
             {/* 페이지 설명 */}
             <div className="absolute left-4 top-4 z-[110] rounded px-2.5 py-1 text-xs font-medium text-gray-300 bg-black/50 backdrop-blur-sm" aria-label="페이지 설명">
@@ -362,6 +363,7 @@ export default function Home() {
                     hideControls={hideControls}
                     leftPanelWidth={leftPanelCollapsed ? 80 : 480}
                     isAutoMode={isAutoMode}
+                    onCCTVCountChange={setOpenedCCTVCount}
                 />
             </div>
 
