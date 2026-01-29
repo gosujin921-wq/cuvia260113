@@ -268,6 +268,18 @@ export default function Home() {
         setHideControls(false);
         setPanelsSlidOut(false);
         setShowAIAgentPopup(false);
+        setKey1PressTime(undefined);
+        const eventToUnity: EventToUnity = {
+            methodName: "endEvent",
+            payload: {
+                value: {
+                    id: missingEventId,
+                    eventId: missingEventId,
+                },
+            },
+        };
+        console.log(eventToUnity);
+        sendToUnity(JSON.stringify(eventToUnity));
     };
 
     // 키보드 단축키 핸들러
@@ -317,18 +329,6 @@ export default function Home() {
             } else if (e.key === "Escape" || e.key === "0") {
                 clearSelection();
                 setHideControls(false);
-                setKey1PressTime(undefined);
-                const eventToUnity: EventToUnity = {
-                    methodName: "endEvent",
-                    payload: {
-                        value: {
-                            id: missingEventId,
-                            eventId: missingEventId,
-                        },
-                    },
-                };
-                console.log(eventToUnity);
-                sendToUnity(JSON.stringify(eventToUnity));
             }
         };
 
