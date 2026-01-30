@@ -13,6 +13,7 @@ import {
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
+import { getCCTVPanelLayout } from '@/lib/dashboard-cctv-layout';
 import BottomPanel from '../BottomPanel';
 
 interface MapViewProps {
@@ -1648,28 +1649,19 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         autoScrollIntervalRef={autoScrollIntervalRef}
       />
 
+      {/* Agent Hub 버튼 - 초기: CCTV 패널 위 30px / 그 외: 우측 하단 */}
       {(() => {
         const rightPanelWidth = 370;
         const panelGap = 16;
-        const verticalPadding = 16;
-        const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (panelGap * 2);
-        const gap = 12;
-        const paddingHorizontal = 16;
-        const totalGapWidth = gap * 3;
-        const totalPaddingWidth = paddingHorizontal * 2;
-        const itemWidth = Math.floor((availableWidth - totalGapWidth - totalPaddingWidth) / 4);
-        const itemHeight = Math.floor((itemWidth * 3) / 4);
+        const { buttonBottom } = getCCTVPanelLayout();
         const cctvPanelRight = rightPanelWidth + panelGap;
-        const cctvPanelHeight = itemHeight + (verticalPadding * 2);
-        const floatingButtonRight = hideControls ? 24 : cctvPanelRight + 20;
-        const floatingButtonBottom = hideControls ? 24 : cctvPanelHeight + 16 + 20;
-        
+        const isInitial = !hideControls;
         return (
           <div
             className="absolute group"
             style={{
-              bottom: `${floatingButtonBottom}px`,
-              right: `${floatingButtonRight}px`,
+              bottom: isInitial ? `${buttonBottom}px` : '24px',
+              right: isInitial ? `${cctvPanelRight + 20}px` : '24px',
               zIndex: 200,
               transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out',
             }}

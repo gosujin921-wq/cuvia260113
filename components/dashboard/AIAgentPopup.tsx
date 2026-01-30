@@ -5,6 +5,10 @@ interface AIAgentPopupProps {
   isOpen: boolean;
   onClose: () => void;
   hideControls?: boolean;
+  /** 축소 모드일 때 위치 오버라이드 (예: 신고팝업 아래) */
+  position?: { top?: string; right?: string; left?: string; bottom?: string };
+  /** 축소 모드일 때 최대 높이(px). 플로팅 버튼을 넘지 않도록 부모에서 계산해 전달 */
+  maxHeight?: number;
 }
 
 interface ChatMessage {
@@ -34,7 +38,7 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
 
-const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false }) => {
+const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false, position: positionOverride, maxHeight: maxHeightProp }) => {
   const [chatInput, setChatInput] = useState('네, 분석해 주세요.');
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -461,14 +465,19 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
       ) : (
         <div
           className="absolute z-[1000]"
-          style={{
-            top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
-            right: `${padding}px`,
-          }}
+          style={
+            positionOverride
+              ? { position: 'absolute' as const, ...positionOverride }
+              : {
+                  top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
+                  right: `${padding}px`,
+                }
+          }
           onClick={(e) => e.stopPropagation()}
         >
           <div 
-            className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px] max-h-[600px]"
+            className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px]"
+            style={{ maxHeight: maxHeightProp ?? 600 }}
           >
             <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
               <button

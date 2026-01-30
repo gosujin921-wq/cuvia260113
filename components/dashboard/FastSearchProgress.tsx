@@ -5,12 +5,18 @@ interface FastSearchProgressProps {
   isVisible: boolean;
   onComplete?: () => void;
   hideDim?: boolean;
+  /** 재검색 등 시 상단 문구 (예: "결과를 재검색합니다.") */
+  titleOverride?: string;
+  /** 부모 컨테이너 내부 중앙에 배치 (fixed 대신 absolute) */
+  inContainer?: boolean;
 }
 
 const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
   isVisible,
   onComplete,
   hideDim = false,
+  titleOverride,
+  inContainer = false,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -33,6 +39,7 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
     }
 
     // 각 단계를 순차적으로 진행
+    const stepIntervalMs = 650;
     const stepInterval = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev < steps.length - 1) {
@@ -44,27 +51,28 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
             setIsSearching(true);
             // 카메라 카운트 애니메이션
             let count = 0;
+            const countIntervalMs = 80;
             const countInterval = setInterval(() => {
               count += Math.floor(Math.random() * 3) + 1;
               if (count >= 37) {
                 count = 37;
                 clearInterval(countInterval);
                 setCameraCount(count);
-                // 37에 도달한 후 2초 더 표시
+                // 37에 도달한 후 1초 더 표시
                 if (onComplete) {
                   setTimeout(() => {
                     onComplete();
-                  }, 2000);
+                  }, 1000);
                 }
               } else {
                 setCameraCount(count);
               }
-            }, 150);
-          }, 500);
+            }, countIntervalMs);
+          }, 280);
           return prev;
         }
       });
-    }, 1500); // 각 단계당 1.5초
+    }, stepIntervalMs);
 
     return () => clearInterval(stepInterval);
   }, [isVisible, steps.length, onComplete]);
@@ -73,10 +81,14 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
     return null;
   }
 
+  const containerClass = inContainer
+    ? 'absolute inset-0 flex items-center justify-center z-[2001]'
+    : 'fixed inset-0 flex items-center justify-center z-[2001]';
+
   return (
     <>
-      {/* 딤 레이어 */}
-      {!hideDim && (
+      {/* 딤 레이어 (inContainer일 때는 부모에서 처리) */}
+      {!hideDim && !inContainer && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000]"
           style={{ pointerEvents: 'none' }}
@@ -85,7 +97,7 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
 
       {/* 프로그래스바 컨테이너 */}
       <div
-        className="fixed inset-0 flex items-center justify-center z-[2001]"
+        className={containerClass}
         style={{ pointerEvents: 'none' }}
       >
         <div
@@ -124,6 +136,11 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
 
           {/* 내용 */}
           <div className="relative z-10">
+            {titleOverride && (
+              <div className="text-center text-white font-medium mb-4">
+                {titleOverride}
+              </div>
+            )}
             {!isSearching ? (
               <>
                 {/* 프로그래스바 */}
@@ -170,17 +187,19 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
         </div>
       </div>
 
-      {/* 쿠비아 로고 - 우측 하단 */}
-      <div
-        className="fixed bottom-6 right-6 z-[2002]"
-        style={{ pointerEvents: 'none' }}
-      >
-        <img
-          src="/logo.svg"
-          alt="CUVIA"
-          className="h-6 w-auto object-contain opacity-80"
-        />
-      </div>
+      {/* 쿠비아 로고 - 우측 하단 (inContainer일 때는 숨김) */}
+      {!inContainer && (
+        <div
+          className="fixed bottom-6 right-6 z-[2002]"
+          style={{ pointerEvents: 'none' }}
+        >
+          <img
+            src="/logo.svg"
+            alt="CUVIA"
+            className="h-6 w-auto object-contain opacity-80"
+          />
+        </div>
+      )}
     </>
   );
 };

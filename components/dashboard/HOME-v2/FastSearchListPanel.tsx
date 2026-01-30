@@ -1,10 +1,29 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
 import TopControlPanel from './TopControlPanel';
+import FastSearchProgress from '@/components/dashboard/FastSearchProgress';
+import FastSearchCandidateDetailPopup from './FastSearchCandidateDetailPopup';
+import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
 
 interface FastSearchListPanelProps {
   isVisible: boolean;
   width?: number;
+  /** 리스트 카드 개수 변경 시 부모에 전달 (에이전트 첫 대화 문구용) */
+  onListCardCountChange?: (count: number) => void;
+  /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
+  onRadiusChange?: (radius: number) => void;
+  /** 재검색 중일 때 카드 리스트 박스(상단 버튼 포함) 딤 + 프로그래스 표시 */
+  showReSearchDim?: boolean;
+  /** 재검색 프로그래스 완료 시 호출 */
+  onReSearchComplete?: () => void;
+  /** 결과 재검색 버튼 클릭 시 호출 (딤+프로그래스 트리거) */
+  onReSearchClick?: () => void;
+  /** 에이전트 "속성 삭제"로 제외할 속성 목록. 해당 속성 이미지 카드는 리스트에서 숨김 */
+  excludedAttributes?: string[];
+  /** 후보 상세 > "이 후보 분석하기" 클릭 시 */
+  onAnalyzeCandidate?: (candidate: CaptureItem) => void;
+  /** 후보 상세 > "지도에서 위치 보기" 클릭 시 */
+  onShowOnMap?: (candidate: CaptureItem) => void;
 }
 
 interface CaptureItem {
@@ -16,9 +35,59 @@ interface CaptureItem {
   location: string;
 }
 
+/** 신고 위치로부터의 거리(m) 계산 (mock) - 위치별 가상 거리 */
+const LOCATION_DISTANCE_MAP: Record<string, number> = {
+  '원미구 부천로 245번길 15 (참사랑교회)': 0,
+  '원미구 부천로 245번길 41': 30,
+  '길주로363번길 48': 150,
+  '길주로391번길 29': 280,
+  '계남로301번길 28': 420,
+  '계남로301번길 54': 450,
+};
+
+const getDistanceFromReportLocation = (location: string): number => {
+  return LOCATION_DISTANCE_MAP[location] ?? 999;
+};
+
+/** 정렬 옵션 타입 */
+type SortOption = 'confidence-desc' | 'confidence-asc' | 'distance-asc' | 'distance-desc';
+
+/** 42개 카드용 베이스 데이터 생성 (이미지별 CCTV명, 위치, 유사도) */
+const buildBaseItems = (): Omit<CaptureItem, 'id'>[] => {
+  return Array.from({ length: 42 }, (_, i) => {
+    const id = String(i + 1);
+    const cctvName = getCctvNameForCaptureItem({ id });
+    const location = getLocationForCaptureItem({ id });
+    const confidence = getConfidenceForCaptureItem({ id });
+    const baseMin = 28 + Math.floor((i * 3) % 60);
+    const baseSec = (i * 11) % 60;
+    const hour = 9 + Math.floor((i * 5) / 60) % 4;
+    const min = baseMin % 60;
+    const sec = baseSec;
+    const ts = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    return {
+      cctvId: cctvName,
+      cctvName,
+      timestamp: ts,
+      confidence,
+      location,
+    };
+  });
+};
+
+const BASE_ITEMS = buildBaseItems();
+
 const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   isVisible,
-  width = 900,
+  width = 700,
+  onListCardCountChange,
+  onRadiusChange,
+  showReSearchDim = false,
+  onReSearchComplete,
+  onReSearchClick,
+  excludedAttributes = [],
+  onAnalyzeCandidate,
+  onShowOnMap,
 }) => {
   const [radius, setRadius] = useState<number>(500); // 반경 (m)
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60)
@@ -41,12 +110,16 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   };
   
   // 팝오버 상태
-  const [openPopover, setOpenPopover] = useState<'radius' | 'time' | 'zone' | null>(null);
+  const [openPopover, setOpenPopover] = useState<'radius' | 'time' | 'zone' | 'sort' | null>(null);
+  
+  // 정렬 옵션 상태
+  const [sortOption, setSortOption] = useState<SortOption>('confidence-desc');
   
   // 팝오버 refs
   const radiusPopoverRef = useRef<HTMLDivElement>(null);
   const timePopoverRef = useRef<HTMLDivElement>(null);
   const zonePopoverRef = useRef<HTMLDivElement>(null);
+  const sortPopoverRef = useRef<HTMLDivElement>(null);
   
   // 듀얼 슬라이더 드래그 상태
   const sliderTrackRef = useRef<HTMLDivElement>(null);
@@ -59,6 +132,13 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   
   // 구역 호버 상태
   const [isZoneHovered, setIsZoneHovered] = useState<boolean>(false);
+
+  // 맞음 선택된 카드 id 목록 (선택됨 상태 / pressed 표시용)
+  const [matchedIds, setMatchedIds] = useState<Set<string>>(new Set());
+  // 틀림 선택된 카드 id 목록 (pressed 표시용)
+  const [wrongIds, setWrongIds] = useState<Set<string>>(new Set());
+  // 후보 상세 팝업용 선택 카드
+  const [selectedCandidate, setSelectedCandidate] = useState<CaptureItem | null>(null);
   
   // 외부 클릭 감지
   useEffect(() => {
@@ -70,6 +150,9 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
         setOpenPopover(null);
       }
       if (openPopover === 'zone' && zonePopoverRef.current && !zonePopoverRef.current.contains(event.target as Node)) {
+        setOpenPopover(null);
+      }
+      if (openPopover === 'sort' && sortPopoverRef.current && !sortPopoverRef.current.contains(event.target as Node)) {
         setOpenPopover(null);
       }
     };
@@ -226,15 +309,43 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // Mock 데이터 - 실제로는 API에서 받아올 데이터
-  const captureList: CaptureItem[] = [
-    { id: '1', cctvId: 'CCTV-V-1', cctvName: 'CCTV-V-1', timestamp: '09:32:15', confidence: 92, location: '부천로 245번길' },
-    { id: '2', cctvId: 'CCTV-V-2', cctvName: 'CCTV-V-2', timestamp: '09:33:42', confidence: 88, location: '부천로 245번길' },
-    { id: '3', cctvId: 'CCTV-V-3', cctvName: 'CCTV-V-3', timestamp: '09:35:18', confidence: 85, location: '부천로 245번길' },
-    { id: '4', cctvId: 'CCTV-V-4', cctvName: 'CCTV-V-4', timestamp: '09:36:55', confidence: 90, location: '부천로 245번길' },
-    { id: '5', cctvId: 'CCTV-V-1', cctvName: 'CCTV-V-1', timestamp: '09:38:12', confidence: 87, location: '부천로 245번길' },
-    { id: '6', cctvId: 'CCTV-V-2', cctvName: 'CCTV-V-2', timestamp: '09:39:30', confidence: 91, location: '부천로 245번길' },
-  ];
+  const captureList = useMemo<CaptureItem[]>(() => {
+    return Array.from({ length: 42 }, (_, i) => {
+      const base = BASE_ITEMS[i];
+      return { id: String(i + 1), ...base };
+    });
+  }, []);
+
+  const visibleCaptureList = useMemo(() => {
+    const list = excludedAttributes.length
+      ? captureList.filter((item) => !shouldHideCaptureItem(item, excludedAttributes))
+      : captureList;
+    
+    return [...list].sort((a, b) => {
+      switch (sortOption) {
+        case 'confidence-desc':
+          return b.confidence - a.confidence;
+        case 'confidence-asc':
+          return a.confidence - b.confidence;
+        case 'distance-asc':
+          return getDistanceFromReportLocation(a.location) - getDistanceFromReportLocation(b.location);
+        case 'distance-desc':
+          return getDistanceFromReportLocation(b.location) - getDistanceFromReportLocation(a.location);
+        default:
+          return 0;
+      }
+    });
+  }, [captureList, excludedAttributes, sortOption]);
+
+  useLayoutEffect(() => {
+    if (!isVisible || !onListCardCountChange) return;
+    onListCardCountChange(captureList.length);
+  }, [isVisible, onListCardCountChange, captureList.length]);
+
+  useLayoutEffect(() => {
+    if (!onRadiusChange) return;
+    onRadiusChange(radius);
+  }, [onRadiusChange, radius]);
 
   return (
     <>
@@ -252,7 +363,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           paddingRight: '16px',
         }}
       >
-        <div className="flex flex-col gap-4 h-full" style={{ paddingTop: isVisible ? '60px' : '16px' }}>
+        <div className="flex flex-col gap-4 h-full" style={{ paddingTop: isVisible ? '60px' : '16px', minHeight: 0 }}>
         {/* 헤더 */}
         <div
           className="rounded-lg flex-shrink-0"
@@ -268,7 +379,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 onClick={() => setOpenPopover(openPopover === 'radius' ? null : 'radius')}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                 <span>반경: {radius}m</span>
                 <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'radius' ? 'rotate-180' : ''}`} />
               </button>
@@ -314,7 +425,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 onClick={() => setOpenPopover(openPopover === 'time' ? null : 'time')}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                <span className="w-2 h-2 rounded-full bg-green-500"></span>
                 <span>시간: {formatTime(timeRange[0])}~{formatTime(timeRange[1])}</span>
                 <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'time' ? 'rotate-180' : ''}`} />
               </button>
@@ -502,26 +613,143 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           </div>
         </div>
 
-        {/* 리스트 영역 */}
+        {/* 리스트 영역 - 스크롤바 포함 전체에 스트로크 (딤 시 상단 버튼 포함 전체) */}
         <div
-          className="rounded-lg p-4 flex-1 overflow-y-auto gradient-border-right-bottom"
+          className="rounded-lg flex-1 gradient-border-right-bottom border border-[#31353a] relative"
           style={{
             minHeight: 0,
+            maxHeight: '100%',
             background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
             backdropFilter: 'blur(2px)',
             WebkitBackdropFilter: 'blur(2px)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
-          <div className="grid grid-cols-5 gap-3">
-            {captureList.map((item) => (
+          {showReSearchDim && (
+            <>
+              <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10"
+                style={{ pointerEvents: 'none' }}
+                aria-hidden
+              />
+              <FastSearchProgress
+                isVisible
+                hideDim
+                titleOverride="결과를 재검색합니다."
+                inContainer
+                onComplete={onReSearchComplete}
+              />
+            </>
+          )}
+          {/* 리스트 상단 고정: 정렬 / 결과 재검색 */}
+          <div
+            className="flex items-center justify-between gap-2 flex-shrink-0 px-4 py-3 border-b border-[#31353a]"
+            style={{ background: 'rgba(0,0,0,0.2)' }}
+          >
+            {/* 정렬 버튼 + 팝오버 (좌측) */}
+            <div className="relative" ref={sortPopoverRef}>
+              <button
+                type="button"
+                onClick={() => setOpenPopover(openPopover === 'sort' ? null : 'sort')}
+                className="px-3 py-2 rounded-lg text-xs font-medium transition-colors text-white bg-[#31353a] hover:bg-[#3d4046] border border-[#31353a] flex items-center gap-2"
+                aria-label="정렬 옵션"
+                aria-expanded={openPopover === 'sort'}
+                aria-haspopup="listbox"
+              >
+                <Icon icon="mdi:sort" className="w-4 h-4 flex-shrink-0" />
+                <span>정렬</span>
+                <span className="text-gray-500">|</span>
+                <span className="text-gray-300">
+                  {sortOption === 'confidence-desc' && '유사도 높은 순'}
+                  {sortOption === 'confidence-asc' && '유사도 낮은 순'}
+                  {sortOption === 'distance-asc' && '신고 위치와 가까운 순'}
+                  {sortOption === 'distance-desc' && '신고 위치와 먼 순'}
+                </span>
+                <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {/* 정렬 옵션 팝오버 */}
+              {openPopover === 'sort' && (
+                <div
+                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-2 shadow-xl border border-[#31353a] z-[250] min-w-[200px]"
+                  role="listbox"
+                  aria-label="정렬 기준 선택"
+                >
+                  <div className="text-gray-400 text-[10px] font-medium px-3 py-1.5 uppercase tracking-wider">정렬 기준</div>
+                  {([
+                    { value: 'confidence-desc', label: '유사도 높은 순' },
+                    { value: 'confidence-asc', label: '유사도 낮은 순' },
+                    { value: 'distance-asc', label: '신고 위치와 가까운 순' },
+                    { value: 'distance-desc', label: '신고 위치와 먼 순' },
+                  ] as { value: SortOption; label: string }[]).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="option"
+                      aria-selected={sortOption === opt.value}
+                      onClick={() => {
+                        setSortOption(opt.value);
+                        setOpenPopover(null);
+                      }}
+                      className={`w-full px-3 py-2 rounded text-xs font-medium transition-colors text-left flex items-center gap-2 ${
+                        sortOption === opt.value
+                          ? 'bg-blue-500 text-white'
+                          : 'text-gray-300 hover:bg-[#2a2a2a]'
+                      }`}
+                    >
+                      {sortOption === opt.value && (
+                        <Icon icon="mdi:check" className="w-4 h-4 flex-shrink-0" />
+                      )}
+                      <span className={sortOption === opt.value ? '' : 'pl-6'}>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* 결과 재검색 (우측) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (onReSearchClick) onReSearchClick();
+              }}
+              className="px-4 py-2 rounded-lg text-xs font-medium transition-colors text-white bg-[#31353a] hover:bg-[#3d4046] border border-[#31353a]"
+              aria-label="결과 재검색"
+            >
+              결과 재검색
+            </button>
+          </div>
+          <div
+            className="flex-1 overflow-y-auto"
+            style={{
+              padding: '16px',
+              minHeight: 0,
+            }}
+          >
+            <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
+            {visibleCaptureList.map((item) => {
+              const isMatched = matchedIds.has(item.id);
+              const isWrong = wrongIds.has(item.id);
+              return (
               <div
                 key={item.id}
-                className="bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-colors flex flex-col"
+                onClick={() => setSelectedCandidate(item)}
+                className="bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-colors flex flex-col hover:bg-[#40424a]"
               >
                 {/* 썸네일 */}
                 <div className="relative w-full bg-black" style={{ height: '160px' }}>
+                  {isMatched && (
+                    <div
+                      className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-green-500/90 text-white"
+                      aria-label="선택됨"
+                    >
+                      선택됨
+                    </div>
+                  )}
                   <img
-                    src={`/cctv_img/00${(parseInt(item.id) % 5) + 1}.jpg`}
+                    src={getPathForCaptureItem(item)}
                     alt={item.cctvName}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -557,12 +785,80 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     </span>
                   </div>
                 </div>
+
+                {/* 틀림/맞음 버튼 */}
+                <div className="px-3 pb-2 flex gap-1.5">
+                  <button
+                    type="button"
+                    aria-pressed={isWrong}
+                    data-pressed={isWrong}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setWrongIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(item.id)) next.delete(item.id);
+                        else next.add(item.id);
+                        return next;
+                      });
+                      setMatchedIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(item.id);
+                        return next;
+                      });
+                    }}
+                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
+                      isWrong
+                        ? 'bg-red-500/30 text-red-300 border-red-500/80'
+                        : 'text-red-400 hover:text-red-300 border-red-500/40 hover:border-red-500/60'
+                    }`}
+                  >
+                    {isWrong && <Icon icon="mdi:close-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
+                    틀림
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={isMatched}
+                    data-pressed={isMatched}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMatchedIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(item.id)) next.delete(item.id);
+                        else next.add(item.id);
+                        return next;
+                      });
+                      setWrongIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(item.id);
+                        return next;
+                      });
+                    }}
+                    className={`flex-1 px-2 py-1.5 rounded text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
+                      isMatched
+                        ? 'bg-green-500/30 text-green-300 border-green-500/80'
+                        : 'text-green-400 hover:text-green-300 border-green-500/40 hover:border-green-500/60'
+                    }`}
+                  >
+                    {isMatched && <Icon icon="mdi:check-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
+                    맞음
+                  </button>
+                </div>
               </div>
-            ))}
+            );
+            })}
+            </div>
           </div>
         </div>
         </div>
       </div>
+
+      <FastSearchCandidateDetailPopup
+        isOpen={!!selectedCandidate}
+        onClose={() => setSelectedCandidate(null)}
+        candidate={selectedCandidate}
+        onAnalyze={onAnalyzeCandidate}
+        onShowOnMap={onShowOnMap}
+      />
     </>
   );
 };

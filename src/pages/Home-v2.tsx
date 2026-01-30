@@ -1,15 +1,17 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import EventList from '@/components/dashboard/EventList';
+import EventListV2 from '@/components/dashboard/EventListV2';
 import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/ReportPopup';
 import FastSearchProgress from '@/components/dashboard/FastSearchProgress';
 import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
+import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
+import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
 
 export default function HomeV2() {
   const navigate = useNavigate();
@@ -23,10 +25,18 @@ export default function HomeV2() {
   const [panelsSlidOut, setPanelsSlidOut] = useState<boolean>(false);
   const [showFastSearch, setShowFastSearch] = useState<boolean>(false);
   const [showFastSearchList, setShowFastSearchList] = useState<boolean>(false);
+  const [showAIAgentPopup, setShowAIAgentPopup] = useState<boolean>(false);
+  const [listCardCount, setListCardCount] = useState<number>(0);
+  const [fastSearchRadius, setFastSearchRadius] = useState<number>(500);
+  const [reportPopupHeight, setReportPopupHeight] = useState<number>(0);
   const [pinOffset, setPinOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hideDimForFastSearch, setHideDimForFastSearch] = useState<boolean>(false);
+  const [showReSearchProgress, setShowReSearchProgress] = useState<boolean>(false);
+  const [excludedAttributes, setExcludedAttributes] = useState<string[]>([]);
   const [showCCTV, setShowCCTV] = useState<boolean>(true);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
+  /** 에이전트 팝업 최대 높이: 플로팅 버튼(Agent Hub)을 넘지 않도록 */
+  const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
   const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
@@ -159,11 +169,21 @@ export default function HomeV2() {
   }, []);
 
   const events: Event[] = useMemo(() => {
-    if (visibleEventIds.size === 0) {
-      return [];
+    const base =
+      visibleEventIds.size === 0
+        ? []
+        : allConvertedEvents.filter((event) => visibleEventIds.has(event.id));
+    if (showFastSearchList && selectedEventId) {
+      const alreadyInList = base.some((e) => e.id === selectedEventId);
+      if (!alreadyInList) {
+        const fromReal = allConvertedEvents.find((e) => e.id === selectedEventId);
+        const fromMock = mockEvents.find((e) => e.id === selectedEventId);
+        const selected = fromReal ?? fromMock;
+        if (selected) return [selected, ...base];
+      }
     }
-    return allConvertedEvents.filter(event => visibleEventIds.has(event.id));
-  }, [allConvertedEvents, visibleEventIds]);
+    return base;
+  }, [allConvertedEvents, visibleEventIds, showFastSearchList, selectedEventId, mockEvents]);
 
   const eventsForList: Event[] = useMemo(() => {
     const visibleRealEvents = visibleEventIds.size > 0
@@ -200,6 +220,14 @@ export default function HomeV2() {
       closed,
     };
   }, []);
+
+  // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
+  // - 평상시: 50 (지도 컨테이너 정중앙)
+  // - 리스트 패널 열림: 52 (약간 우측으로만 이동)
+  const fastSearchFocusXPercent = useMemo(() => {
+    if (!showFastSearchList) return 50;
+    return 52;
+  }, [showFastSearchList]);
 
   const handleEventAction = (eventId: string) => {
     const event = events.find((e) => e.id === eventId);
@@ -242,10 +270,25 @@ export default function HomeV2() {
     setHideControls(false);
     setPinOffset({ x: 0, y: 0 });
     setShowFastSearchList(false);
+    setShowAIAgentPopup(false);
     setPanelsSlidOut(false);
     setShowCCTV(true);
     setShowFastSearch(false);
+    setShowReSearchProgress(false);
+    setExcludedAttributes([]);
   };
+
+  /** 에이전트 팝업 maxHeight: 팝업 top ~ 플로팅 버튼 위까지 (Agent Hub bottom 24px + 높이 56px + 여유 8px) */
+  useEffect(() => {
+    const updateAgentPopupMaxHeight = () => {
+      const topPx = reportPopupHeight > 0 ? 76 + reportPopupHeight + 24 : 480;
+      const reserveBottom = 24 + 56 + 8; // 플로팅 버튼 영역
+      setAgentPopupMaxHeight(Math.max(200, window.innerHeight - topPx - reserveBottom));
+    };
+    updateAgentPopupMaxHeight();
+    window.addEventListener('resize', updateAgentPopupMaxHeight);
+    return () => window.removeEventListener('resize', updateAgentPopupMaxHeight);
+  }, [reportPopupHeight]);
 
   // 키보드 단축키 핸들러
   useEffect(() => {
@@ -264,15 +307,15 @@ export default function HomeV2() {
         }
       } else if (e.key === '2') {
         // 고속검색 시작 (FastSearchProgress 표시)
-        setSelectedEventId(null);
+        // selectedEventId는 유지하여 지도 카메라 이동 가능하도록 함
         setPanelsSlidOut(true);
         setShowCCTV(false);
         setHideControls(true);
         setShowFastSearch(true);
         setHideDimForFastSearch(false);
       } else if (e.key === '3') {
-        // 직접 FastSearchListPanel 열기
-        setSelectedEventId(null);
+        // 직접 FastSearchListPanel 열기 (테스트용)
+        // selectedEventId는 유지하여 지도 카메라 이동 가능하도록 함
         setPanelsSlidOut(true);
         setShowCCTV(false);
         setHideControls(true);
@@ -312,9 +355,12 @@ export default function HomeV2() {
           externalZoomLevel={mapZoomLevel}
           onZoomLevelChange={setMapZoomLevel}
           hideControls={hideControls}
+          showFastSearch={showFastSearch}
+          showFastSearchList={showFastSearchList}
+          fastSearchRadius={fastSearchRadius}
           leftPanelWidth={leftPanelCollapsed ? 80 : 480}
           pinOffset={pinOffset}
-          focusTargetXPercent={(showFastSearch || showFastSearchList) ? 66.67 : 50}
+          focusTargetXPercent={fastSearchFocusXPercent}
         />
       </div>
 
@@ -376,8 +422,17 @@ export default function HomeV2() {
             })}
           </div>
         </div>
-        <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-          <EventList
+        <div
+          className="rounded-2xl p-4 flex-1 overflow-hidden min-h-0 relative"
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+          }}
+        >
+          <EventListV2
             events={eventsForList}
             selectedEventId={selectedEventId || undefined}
             onEventSelect={handleEventAction}
@@ -410,7 +465,9 @@ export default function HomeV2() {
             setShowFastSearch(true);
             setHideDimForFastSearch(false);
           }}
-          position={{ top: '1.25rem', right: '370px' }}
+          showFastSearchStartButton={!showFastSearchList}
+          onLayout={setReportPopupHeight}
+          position={showFastSearchList ? { top: '76px', right: '20px' } : { top: '1.25rem', right: '370px' }}
         />
       )}
 
@@ -422,13 +479,44 @@ export default function HomeV2() {
           if (!hideDimForFastSearch) {
             setShowFastSearch(false);
             setShowFastSearchList(true);
+            setShowAIAgentPopup(true);
             setPinOffset({ x: 0, y: 0 });
           }
         }}
       />
 
-      {/* FastSearchListPanel */}
-      <FastSearchListPanel isVisible={showFastSearchList} />
+      {/* FastSearchListPanel - 재검색 시 리스트 박스 전체(상단 버튼 포함) 딤 + 프로그래스 중앙 */}
+      <FastSearchListPanel
+        isVisible={showFastSearchList}
+        onListCardCountChange={setListCardCount}
+        onRadiusChange={setFastSearchRadius}
+        showReSearchDim={showReSearchProgress}
+        onReSearchComplete={() => setShowReSearchProgress(false)}
+        onReSearchClick={() => setShowReSearchProgress(true)}
+        excludedAttributes={excludedAttributes}
+      />
+
+      {/* 에이전트 팝업: 고속검색 리스트 시 신고팝업 아래 여백(24px) 유지, 사건팝업 높이 변동에 따라 위치 조정 */}
+      {showFastSearchList && showAIAgentPopup && (
+        <AIAgentPopup
+          isOpen={showAIAgentPopup}
+          onClose={() => setShowAIAgentPopup(false)}
+          hideControls={hideControls}
+          position={{
+            top: `${reportPopupHeight > 0 ? 76 + reportPopupHeight + 24 : 480}px`,
+            right: '20px',
+          }}
+          listCardCount={listCardCount}
+          onDeleteLikeRequest={({ rawMessage }) => {
+            const parsed = parseExcludedAttributesFromMessage(rawMessage);
+            if (parsed.length) {
+              setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
+            }
+            setShowReSearchProgress(true);
+          }}
+          maxHeight={agentPopupMaxHeight}
+        />
+      )}
     </div>
   );
 }

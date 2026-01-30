@@ -113,6 +113,29 @@ body {
   animation-fill-mode: both;
 }
 
+/* 블루 펄스 애니메이션 - 대시 스트로크 크기를 넘지 않도록 제한 */
+@keyframes blue-circle-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.0);
+    opacity: 0;
+  }
+}
+
+.animate-blue-circle-pulse {
+  animation: blue-circle-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  animation-fill-mode: both;
+}
+
 /* 이벤트 핀 광원 애니메이션 - 블랙 솔리드 배경에만 적용 (외곽 보더 제외) */
 @keyframes pin-glow {
   0%, 100% {
