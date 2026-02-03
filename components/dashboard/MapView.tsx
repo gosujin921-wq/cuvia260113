@@ -270,7 +270,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://api.maptiler.com/maps/019c1d3a-ccab-7831-95ca-c465fc632e7a/style.json?key=WPWmpNf4y5nzKDA7mQXe',
+      style: 'https://api.maptiler.com/maps/019c21c6-2620-732f-9316-281f6b8ae10c/style.json?key=ny4gKYAFAR9pfkXMVnmh',
       center: [126.7830, 37.5044],
       zoom: 15,
       pitch: 60,
