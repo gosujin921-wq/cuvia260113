@@ -303,18 +303,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           
           try {
             if (layer.type === 'fill-extrusion') {
-              // 이미 fill-extrusion이면 높이와 밝은 색상 설정
+              // 이미 fill-extrusion이면 높이 설정
               if (map.getLayer(layer.id)) {
-                const currentColor = map.getPaintProperty(layer.id, 'fill-extrusion-color');
-                if (currentColor) {
-                  map.setPaintProperty(layer.id, 'fill-extrusion-color', [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    0, ['lighter', currentColor],
-                    22, ['lighter', currentColor]
-                  ]);
-                }
                 map.setPaintProperty(layer.id, 'fill-extrusion-height', [
                   'case',
                   ['has', 'height'],
@@ -343,21 +333,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   map.removeLayer(layer.id);
                 }
                 
-                // fill-extrusion 레이어 추가 (밝은 색상)
-                const originalColor = map.getPaintProperty(layer.id, 'fill-color') || ['rgb', 200, 200, 200];
+                // fill-extrusion 레이어 추가
                 map.addLayer({
                   id: `${layer.id}-3d`,
                   type: 'fill-extrusion',
                   source: sourceId,
                   'source-layer': sourceLayer,
                   paint: {
-                    'fill-extrusion-color': [
-                      'interpolate',
-                      ['linear'],
-                      ['zoom'],
-                      0, ['lighter', originalColor],
-                      22, ['lighter', originalColor]
-                    ],
+                    'fill-extrusion-color': '#c8c8c8',
                     'fill-extrusion-height': [
                       'case',
                       ['has', 'height'],

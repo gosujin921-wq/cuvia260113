@@ -357,8 +357,6 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     videoSrc = '/fastsearch_img/qs_img_48_n.mov';
   } else if (imageId === '57') {
     videoSrc = '/fastsearch_img/qs_img_57_y.mov';
-  } else if (imageId === '59') {
-    videoSrc = '/fastsearch_img/qs_img_59_y.mov';
   }
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
