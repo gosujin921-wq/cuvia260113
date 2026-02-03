@@ -1638,7 +1638,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             }}
           >
             <a
-              href="/agent-hub"
+              href="/cuvia-link"
               target="_blank"
               rel="noopener noreferrer"
               className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
