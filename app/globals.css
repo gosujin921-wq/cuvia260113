@@ -113,6 +113,29 @@ body {
   animation-fill-mode: both;
 }
 
+/* 블루 펄스 애니메이션 - 대시 스트로크 크기를 넘지 않도록 제한 */
+@keyframes blue-circle-pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.0);
+    opacity: 0;
+  }
+}
+
+.animate-blue-circle-pulse {
+  animation: blue-circle-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  animation-fill-mode: both;
+}
+
 /* 이벤트 핀 광원 애니메이션 - 블랙 솔리드 배경에만 적용 (외곽 보더 제외) */
 @keyframes pin-glow {
   0%, 100% {
@@ -237,8 +260,8 @@ input[type="range"].slider::-moz-range-thumb {
   font-size: 12.8px !important;
 }
 
-/* Agent Hub 백그라운드 그라데이션 애니메이션 */
-@keyframes agent-hub-float1 {
+/* CUVIA Link 백그라운드 그라데이션 애니메이션 */
+@keyframes cuvia-link-float1 {
   0%, 100% {
     transform: translate(0, 0) scale(1);
   }
@@ -250,7 +273,7 @@ input[type="range"].slider::-moz-range-thumb {
   }
 }
 
-@keyframes agent-hub-float2 {
+@keyframes cuvia-link-float2 {
   0%, 100% {
     transform: translate(0, 0) scale(1);
   }
@@ -262,7 +285,7 @@ input[type="range"].slider::-moz-range-thumb {
   }
 }
 
-@keyframes agent-hub-float3 {
+@keyframes cuvia-link-float3 {
   0%, 100% {
     transform: translate(0, 0) scale(1);
   }
@@ -274,7 +297,7 @@ input[type="range"].slider::-moz-range-thumb {
   }
 }
 
-@keyframes agent-hub-float4 {
+@keyframes cuvia-link-float4 {
   0%, 100% {
     transform: translate(0, 0) scale(1);
   }
@@ -286,24 +309,24 @@ input[type="range"].slider::-moz-range-thumb {
   }
 }
 
-.agent-hub-gradient-1 {
-  animation: agent-hub-float1 15s ease-in-out infinite;
+.cuvia-link-gradient-1 {
+  animation: cuvia-link-float1 15s ease-in-out infinite;
 }
 
-.agent-hub-gradient-2 {
-  animation: agent-hub-float2 18s ease-in-out infinite;
+.cuvia-link-gradient-2 {
+  animation: cuvia-link-float2 18s ease-in-out infinite;
 }
 
-.agent-hub-gradient-3 {
-  animation: agent-hub-float3 20s ease-in-out infinite;
+.cuvia-link-gradient-3 {
+  animation: cuvia-link-float3 20s ease-in-out infinite;
 }
 
-.agent-hub-gradient-4 {
-  animation: agent-hub-float4 16s ease-in-out infinite;
+.cuvia-link-gradient-4 {
+  animation: cuvia-link-float4 16s ease-in-out infinite;
 }
 
-/* Agent Hub 채팅창 그라데이션 보더 애니메이션 */
-@keyframes agent-hub-gradient-flow {
+/* CUVIA Link 채팅창 그라데이션 보더 애니메이션 */
+@keyframes cuvia-link-gradient-flow {
   0% {
     background: conic-gradient(from 0deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
   }
@@ -429,19 +452,19 @@ input[type="range"].slider::-moz-range-thumb {
   }
 }
 
-.agent-hub-chat-input {
+.cuvia-link-chat-input {
   position: relative;
   background: rgb(249, 250, 251);
   isolation: isolate;
 }
 
-.agent-hub-chat-input::before {
+.cuvia-link-chat-input::before {
   content: '';
   position: absolute;
   inset: -3px;
   border-radius: inherit;
   background: conic-gradient(from 0deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  animation: agent-hub-gradient-flow 3s cubic-bezier(0.2, 0, 0.2, 1) infinite;
+  animation: cuvia-link-gradient-flow 3s cubic-bezier(0.2, 0, 0.2, 1) infinite;
   opacity: 0.5;
   z-index: 0;
   pointer-events: none;
@@ -454,7 +477,7 @@ input[type="range"].slider::-moz-range-thumb {
   transition: border-radius 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.agent-hub-chat-input > * {
+.cuvia-link-chat-input > * {
   position: relative;
   z-index: 1;
 }
@@ -513,4 +536,17 @@ input[type="range"].slider::-moz-range-thumb {
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+}
+
+/* Fast Search 그라데이션 움직임 애니메이션 */
+@keyframes fast-search-gradient-move {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
