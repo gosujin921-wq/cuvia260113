@@ -289,7 +289,7 @@ const AgentChatPage = () => {
           <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
             {/* 오렌지 그라데이션 원 1 */}
             <div 
-              className="absolute rounded-full agent-hub-gradient-1"
+              className="absolute rounded-full cuvia-link-gradient-1"
               style={{
                 width: '600px',
                 height: '600px',
@@ -302,7 +302,7 @@ const AgentChatPage = () => {
             />
             {/* 파란색 그라데이션 원 1 */}
             <div 
-              className="absolute rounded-full agent-hub-gradient-2"
+              className="absolute rounded-full cuvia-link-gradient-2"
               style={{
                 width: '500px',
                 height: '500px',
@@ -315,7 +315,7 @@ const AgentChatPage = () => {
             />
             {/* 오렌지 그라데이션 원 2 */}
             <div 
-              className="absolute rounded-full agent-hub-gradient-3"
+              className="absolute rounded-full cuvia-link-gradient-3"
               style={{
                 width: '550px',
                 height: '550px',
@@ -328,7 +328,7 @@ const AgentChatPage = () => {
             />
             {/* 파란색 그라데이션 원 2 */}
             <div 
-              className="absolute rounded-full agent-hub-gradient-4"
+              className="absolute rounded-full cuvia-link-gradient-4"
               style={{
                 width: '450px',
                 height: '450px',

@@ -4,7 +4,7 @@ import HomeV2 from './pages/Home-v2';
 import EventDetailPage from './pages/event-detail';
 import ComponentsStylePage from './pages/components-style';
 import AgentChatPage from './pages/agent-chat';
-import AgentHubPage from './pages/agent-hub';
+import CuviaLinkPage from './pages/cuvia-link';
 
 function App() {
   return (
@@ -14,7 +14,7 @@ function App() {
       <Route path="/event/:eventId" element={<EventDetailPage />} />
       <Route path="/components-style" element={<ComponentsStylePage />} />
       <Route path="/agent-chat" element={<AgentChatPage />} />
-      <Route path="/agent-hub" element={<AgentHubPage />} />
+      <Route path="/cuvia-link" element={<CuviaLinkPage />} />
     </Routes>
   );
 }
