@@ -72,8 +72,10 @@ const CCTVMeshTracking: React.FC<CCTVMeshTrackingProps> = ({ event, onClose, cct
           background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
           backdropFilter: 'blur(2px)',
           WebkitBackdropFilter: 'blur(2px)',
+          // 메인 CCTV-V-11 팝업은 신고 팝업과 동일한 보더/아웃글로우 스타일 적용
           ...(isMainPopup ? {
-            boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.3)',
+            border: '3px solid #0066FF',
+            boxShadow: '0 0 20px rgba(0, 102, 255, 0.6), 0 0 40px rgba(0, 102, 255, 0.3)',
           } : {}),
           ...(highlighted && isMainPopup ? {
             outline: '3px solid #ef4444',

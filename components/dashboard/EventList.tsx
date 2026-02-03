@@ -128,6 +128,22 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
     }
   };
 
+  const getTypeColor = (type: string) => {
+    if (type.includes('화재') || type.includes('구조')) {
+      return 'bg-red-500/20 text-red-400';
+    }
+    if (type.includes('미아') || type.includes('치안')) {
+      return 'bg-blue-500/20 text-blue-400';
+    }
+    if (type.includes('약자')) {
+      return 'bg-orange-500/20 text-orange-400';
+    }
+    if (type.includes('AI')) {
+      return 'bg-green-500/20 text-green-400';
+    }
+    return 'bg-gray-500/20 text-gray-400';
+  };
+
   const getEventIcon = (type: string) => {
     switch (type) {
       case '119-화재':
@@ -290,7 +306,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 onMouseLeave={() => onEventHover?.(null)}
                 className={`w-full text-left border-b pt-3 pb-3 pr-3 transition-all duration-200 ${
                   isSelected
-                    ? 'bg-red-500/10 border-red-500/50 ring-2 ring-red-500/30'
+                    ? 'bg-red-500/10 border-red-500 ring-2 ring-red-500/60'
                     : 'bg-transparent border-[#2f3136] hover:bg-[#24272d] hover:border-blue-400'
                 }`}
                 style={{ paddingLeft: '14px' }}
@@ -365,6 +381,12 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
 
                 {main.id.startsWith('mock-') ? (
                   <>
+                    {/* 허구 이벤트: 카테고리(유형) 배지 */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2 py-0.5 rounded text-xs ${getTypeColor(main.type)}`}>
+                        {main.type}
+                      </span>
+                    </div>
                     {/* 허구 이벤트: 신고 내용 */}
                     <div className="text-white text-sm font-semibold mb-2">{main.title}</div>
                     {/* 허구 이벤트: 주소 */}
@@ -402,20 +424,6 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                             </span>
                           );
                         } else {
-                          // 가상 이벤트: type을 직접 표시
-                          const getTypeColor = (type: string) => {
-                            if (type.includes('화재') || type.includes('구조')) {
-                              return 'bg-red-500/20 text-red-400';
-                            } else if (type.includes('미아') || type.includes('치안')) {
-                              return 'bg-blue-500/20 text-blue-400';
-                            } else if (type.includes('약자')) {
-                              return 'bg-orange-500/20 text-orange-400';
-                            } else if (type.includes('AI')) {
-                              return 'bg-green-500/20 text-green-400';
-                            } else {
-                              return 'bg-gray-500/20 text-gray-400';
-                            }
-                          };
                           return (
                             <span className={`px-2 py-0.5 rounded text-xs ${getTypeColor(main.type)}`}>
                               {main.type}

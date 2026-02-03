@@ -4,8 +4,8 @@ import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
-import AIAgentPopup from '@/components/dashboard/AIAgentPopup';
-import TopControlPanel from '@/components/dashboard/TopControlPanel';
+import AIAgentPopup from '@/components/dashboard/HOME/AIAgentPopup';
+import TopControlPanel from '@/components/dashboard/HOME/TopControlPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 
@@ -23,6 +23,23 @@ export default function Home() {
   const [showAIAgentPopup, setShowAIAgentPopup] = useState<boolean>(false);
   const [isAutoMode, setIsAutoMode] = useState<boolean>(true);
   const [key1PressTime, setKey1PressTime] = useState<Date | undefined>(undefined);
+  /** 에이전트 팝업 최대 높이: 플로팅 버튼(Agent Hub)을 넘지 않도록 */
+  const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
+
+  /** 에이전트 팝업 maxHeight: (dashboard AIAgentPopup 기본 top) ~ 플로팅 버튼 위까지 */
+  useEffect(() => {
+    const updateMaxHeight = () => {
+      const padding = 20;
+      const mainPopupHeight = 420 * (9 / 16) + 40 + 12;
+      const gap = 10;
+      const popupTop = padding + mainPopupHeight + gap + (hideControls ? 56 : 0);
+      const reserveBottom = 24 + 56 + 8;
+      setAgentPopupMaxHeight(Math.max(200, window.innerHeight - popupTop - reserveBottom));
+    };
+    updateMaxHeight();
+    window.addEventListener('resize', updateMaxHeight);
+    return () => window.removeEventListener('resize', updateMaxHeight);
+  }, [hideControls]);
 
   /**
    * ============================================================================
@@ -442,6 +459,7 @@ export default function Home() {
           isOpen={showAIAgentPopup}
           onClose={() => setShowAIAgentPopup(false)}
           hideControls={hideControls}
+          maxHeight={agentPopupMaxHeight}
         />
       )}
     </div>
