@@ -7,7 +7,7 @@ import LeftPanel from '@/components/dashboard/LeftPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/ReportPopup';
 import FastSearchProgress from '@/components/dashboard/FastSearchProgress';
-import FastSearchListPanel from '@/components/HOME-v2/FastSearchListPanel';
+import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
 import AIAgentPopup from '@/components/dashboard/HOME/AIAgentPopup';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
