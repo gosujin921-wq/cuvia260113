@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
-import AIAgentPopup from '@/components/dashboard/AIAgentPopup';
+import AIAgentPopup from '@/components/dashboard/HOME/AIAgentPopup';
 import TopControlPanel from '@/components/dashboard/HOME/TopControlPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';

@@ -7,10 +7,6 @@ interface AIAgentPopupProps {
   hideControls?: boolean;
   /** 축소 모드일 때 위치 오버라이드 (예: 신고팝업 아래) */
   position?: { top?: string; right?: string; left?: string; bottom?: string };
-  /** 고속검색 리스트 카드 개수 (첫 대화 문구용) */
-  listCardCount?: number;
-  /** 삭제/제거 등 delete류 문장 전송 시 호출 (딤+프로그래스 표시). rawMessage로 속성 파싱 후 리스트 숨김에 사용 */
-  onDeleteLikeRequest?: (payload: { rawMessage: string }) => void;
   /** 축소 모드일 때 최대 높이(px). 플로팅 버튼을 넘지 않도록 부모에서 계산해 전달 */
   maxHeight?: number;
 }
@@ -42,8 +38,8 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
 
-const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false, position: positionOverride, listCardCount = 0, onDeleteLikeRequest, maxHeight: maxHeightProp }) => {
-  const [chatInput, setChatInput] = useState('');
+const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false, position: positionOverride, maxHeight: maxHeightProp }) => {
+  const [chatInput, setChatInput] = useState('네, 분석해 주세요.');
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -51,7 +47,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
     {
       id: 'welcome-msg',
       role: 'assistant',
-      content: '',
+      content: 'CCTV-V-11에서 싸움 이벤트가 감지되었습니다. 사건을 분석해드릴까요?',
       timestamp: new Date().toLocaleTimeString('ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
@@ -102,12 +98,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
     const positiveKeywords = ['네', '예', '좋아', '분석', '해주세요', '해줘', '해주', '해', '요청', '시작'];
     const normalizedText = text.toLowerCase().replace(/[.,!?]/g, '');
     return positiveKeywords.some(keyword => normalizedText.includes(keyword.toLowerCase()));
-  };
-
-  const isDeleteLikeMessage = (text: string): boolean => {
-    const deleteKeywords = ['숨김', '숨겨', '삭제', '빼줘', '빼주', '제거', '없애', '지워', '삭제해', '제거해', '제외', '빼줘요', '삭제해줘', '제거해줘', '지워줘', '없애줘'];
-    const t = text.trim();
-    return deleteKeywords.some(kw => t.includes(kw));
   };
 
   const generateAssistantReply = (prompt: string): ChatMessage => {
@@ -186,12 +176,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
     setChatInput('');
     setInputKey((k) => k + 1);
     ignoreNextChangeRef.current = true;
-
-    if (isDeleteLikeMessage(text) && onDeleteLikeRequest) {
-      onDeleteLikeRequest({ rawMessage: text });
-      return;
-    }
-
     setIsResponding(true);
 
     setTimeout(() => {
@@ -229,7 +213,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
   const mainPopupHeight = mainPopupVideoHeight + mainPopupTitleHeight + mainPopupPadding;
   const padding = 20;
   const gap = 10;
-
+  
   return (
     <>
       {isExpanded ? (
@@ -238,7 +222,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
           onClick={(e) => e.stopPropagation()}
           style={{ zIndex: 2000 }}
         >
-          <div
+          <div 
             className="flex flex-col bg-white border-l border-[#31353a] h-full w-[30rem] overflow-hidden"
             style={{ borderLeftWidth: '1px' }}
           >
@@ -257,15 +241,15 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
               {/* CUVIA Agent 헤더 */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-gray-700 text-sm">
-                  <div
+                  <div 
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white"
                     style={{
                       background: AGENT_GRADIENT,
                     }}
                   >
-                    <img
-                      src="/simbol.svg"
-                      alt="AI"
+                    <img 
+                      src="/simbol.svg" 
+                      alt="AI" 
                       className="w-4 h-4"
                       style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
                     />
@@ -299,7 +283,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                               <div className="text-xs text-gray-500 mt-2">
                                 {message.currentStep}/{message.totalSteps}
                               </div>
-
+                              
                               {/* 분석 결과 표시 (프로그래스 완료 시) */}
                               {message.progress && message.progress >= 1 && message.analysisResult && (
                                 <div className="mt-4 space-y-4 pt-4 border-t border-gray-300">
@@ -383,9 +367,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                           ) : (
                             <div className="max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200" style={{ borderWidth: '1px' }}>
                               <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                                {message.id === 'welcome-msg'
-                                  ? `고속검색 결과 ${listCardCount}건이 검색되었습니다.\n조건을 추가해 후보를 좁힐 수 있습니다.`
-                                  : message.content}
+                                {message.content}
                               </p>
                               <div className="text-xs text-gray-500 mt-1">
                                 {message.timestamp}
@@ -448,7 +430,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                         handleSendMessage();
                       }
                     }}
-                    placeholder="검색 조건을 자연어로 입력해 주세요."
+                    placeholder="CUVIA에게 물어보기"
                     className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none overflow-hidden self-center"
                     style={{
                       minHeight: '24px',
@@ -493,7 +475,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
           }
           onClick={(e) => e.stopPropagation()}
         >
-          <div
+          <div 
             className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px]"
             style={{ maxHeight: maxHeightProp ?? 600 }}
           >
@@ -502,9 +484,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                 type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
-                aria-label={isExpanded ? '축소' : '확장'}
+                aria-label={isExpanded ? "축소" : "확장"}
               >
-                <Icon icon={isExpanded ? 'mdi:window-restore' : 'mdi:window-maximize'} className="w-5 h-5" />
+                <Icon icon={isExpanded ? "mdi:window-restore" : "mdi:window-maximize"} className="w-5 h-5" />
               </button>
             </div>
 
@@ -537,7 +519,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                               <div className="text-xs text-gray-500 mt-2">
                                 {message.currentStep}/{message.totalSteps}
                               </div>
-
+                              
                               {/* 분석 결과 표시 (프로그래스 완료 시) */}
                               {message.progress && message.progress >= 1 && message.analysisResult && (
                                 <div className="mt-4 space-y-4 pt-4 border-t border-gray-300">
@@ -625,9 +607,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                               </div>
                               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                                 <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                  {message.id === 'welcome-msg'
-                                    ? `고속검색 결과 ${listCardCount}건이 검색되었습니다.\n조건을 추가해 후보를 좁힐 수 있습니다.`
-                                    : message.content}
+                                  {message.content}
                                 </p>
                                 <div className="text-xs text-gray-500 mt-2">{message.timestamp}</div>
                               </div>
@@ -685,7 +665,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                       handleSendMessage();
                     }
                   }}
-                  placeholder="검색 조건을 자연어로 입력해 주세요."
+                  placeholder="CUVIA에게 물어보기"
                   className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none overflow-y-auto"
                   style={{
                     minHeight: '24px',

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
 import TopControlPanel from '@/components/dashboard/HOME-v2/TopControlPanel';
-import FastSearchProgress from '@/components/dashboard/FastSearchProgress';
+import FastSearchProgress from '@/components/dashboard/HOME-v2/FastSearchProgress';
 import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v2/FastSearchCandidateDetailPopup';
 import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
 

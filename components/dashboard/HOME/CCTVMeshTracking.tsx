@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import { Event } from '@/types';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import CCTVIcon from '@/components/common/CCTVIcon';
-import { CCTV_TITLES } from '../cctv-titles';
+import { CCTV_TITLES } from './cctv-titles';
 
 interface CCTVMeshTrackingProps {
   event: Event | null;

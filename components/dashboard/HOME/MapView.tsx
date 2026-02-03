@@ -3,7 +3,7 @@ import { Icon } from '@iconify/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { getCCTVIconClassName, getCCTVLabelClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
-import { CCTV_TITLES } from '../cctv-titles';
+import { CCTV_TITLES } from './cctv-titles';
 import CCTVMeshTracking from './CCTVMeshTracking';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
