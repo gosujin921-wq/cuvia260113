@@ -352,9 +352,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     'fill-extrusion-base': [
                       'case',
                       ['has', 'min_height'],
-                  ['to-number', ['get', 'min_height']],
-                  0
-                ],
+                      ['to-number', ['get', 'min_height']],
+                      0
+                    ],
                   },
                   filter: layer.filter || ['has', 'height'],
                 });
@@ -1649,7 +1649,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         autoScrollIntervalRef={autoScrollIntervalRef}
       />
 
-      {/* Agent Hub 버튼 - 초기: CCTV 패널 위 30px / 그 외: 우측 하단 */}
+      {/* CUVIA Link 버튼 - 초기: CCTV 패널 위 30px / 그 외: 우측 하단 */}
       {(() => {
         const rightPanelWidth = 370;
         const panelGap = 16;
@@ -1667,7 +1667,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             }}
           >
             <a
-              href="/agent-hub"
+              href="/cuvia-link"
               target="_blank"
               rel="noopener noreferrer"
               className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
@@ -1681,7 +1681,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               onMouseLeave={(e) => {
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)';
               }}
-              aria-label="Agent Hub"
+              aria-label="CUVIA Link"
             >
               <img 
                 src="/simbol.svg" 

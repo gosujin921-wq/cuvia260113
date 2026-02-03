@@ -1,13 +1,13 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import EventListV2 from '@/components/dashboard/EventListV2';
+import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/ReportPopup';
 import FastSearchProgress from '@/components/dashboard/FastSearchProgress';
-import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
+import FastSearchListPanel from '@/components/HOME-v2/FastSearchListPanel';
 import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
 import { Event, EventSummary as EventSummaryType } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
@@ -37,6 +37,7 @@ export default function HomeV2() {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
   /** 에이전트 팝업 최대 높이: 플로팅 버튼(Agent Hub)을 넘지 않도록 */
   const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
+  const [openCandidateId, setOpenCandidateId] = useState<string | null>(null); // 외부에서 열 후보 ID
   const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
@@ -321,6 +322,16 @@ export default function HomeV2() {
         setHideControls(true);
         setShowFastSearchList(true);
         setPinOffset({ x: 0, y: 0 });
+      } else if (e.key === '4') {
+        // 57번 이미지 팝업 열기 (42번 카드 = qs_img_57_y)
+        setPanelsSlidOut(true);
+        setShowCCTV(false);
+        setHideControls(true);
+        setShowFastSearchList(true);
+        setPinOffset({ x: 0, y: 0 });
+        setShowAIAgentPopup(true);
+        // 42번 카드 자동 열기
+        setOpenCandidateId('42');
       } else if (e.key === 'Escape') {
         clearSelection();
       }
@@ -422,17 +433,8 @@ export default function HomeV2() {
             })}
           </div>
         </div>
-        <div
-          className="rounded-2xl p-4 flex-1 overflow-hidden min-h-0 relative"
-          style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-          }}
-        >
-          <EventListV2
+        <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+          <EventList
             events={eventsForList}
             selectedEventId={selectedEventId || undefined}
             onEventSelect={handleEventAction}
@@ -494,6 +496,8 @@ export default function HomeV2() {
         onReSearchComplete={() => setShowReSearchProgress(false)}
         onReSearchClick={() => setShowReSearchProgress(true)}
         excludedAttributes={excludedAttributes}
+        openCandidateId={openCandidateId}
+        onCandidateOpened={() => setOpenCandidateId(null)}
       />
 
       {/* 에이전트 팝업: 고속검색 리스트 시 신고팝업 아래 여백(24px) 유지, 사건팝업 높이 변동에 따라 위치 조정 */}

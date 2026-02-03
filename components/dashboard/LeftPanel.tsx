@@ -1021,7 +1021,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           style={{ maxWidth: '100%', height: '100%' }}
         >
         {/* 상단 헤더: 좌측 로고, 우측 날씨 + 시간 */}
-        <div className="rounded-lg p-4 flex items-center justify-between gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <div className="rounded-lg p-4 flex items-center justify-between gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           {/* 좌측: 패널 로고 */}
           <div className="flex items-center gap-2">
             <img
@@ -1049,7 +1049,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* CCTV 운영 현황 (상세 카드) */}
-        <div className="rounded-lg px-4 pt-4 pb-2 space-y-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <div className="rounded-lg px-4 pt-4 pb-2 space-y-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-white font-semibold text-sm">CCTV 운영 현황</h3>
             {/* 정상/장애/지연 장비 수 */}
@@ -1141,7 +1141,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 시간별 이벤트 트렌드 (X축: 시간/날짜, Y축: 이벤트 발생 건수) */}
-        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col relative" style={{ flex: 1, minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col relative" style={{ flex: 1, minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white text-sm font-semibold">시간대 이벤트</h3>
             <span className="text-gray-400 text-xs">지난 24시간</span>
@@ -1279,7 +1279,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
 
         {/* 4) 발생 히트맵 (시간대 x 동) */}
-        <div className="rounded-lg p-4 gradient-border-right-bottom flex flex-col" style={{ flex: 1, minHeight: '240px', background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <div className="rounded-lg p-4 gradient-border-right-bottom flex flex-col" style={{ flex: 1, minHeight: '240px', background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold text-sm">구역별 이벤트 발생 건 수</h3>
             <span className="text-gray-400 text-xs">지난 24시간</span>
@@ -1466,7 +1466,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 2) 실시간 환경 센서 모니터링 */}
-        <div className="rounded-lg p-4 gradient-border-right-bottom" style={{ marginTop: 'auto', marginBottom: 0, flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <div className="rounded-lg p-4 gradient-border-right-bottom" style={{ marginTop: 'auto', marginBottom: 0, flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold text-sm">실시간 환경 센서 모니터링</h3>
             <span className="text-gray-400 text-xs flex items-center gap-1.5">

@@ -33,8 +33,48 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   onShowOnMap,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [metaOpen, setMetaOpen] = useState(false);
   const playCountRef = useRef(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // ========== 초록색 박스 관련 (프레임 추적용) ==========
+  const [greenBoxPosition, setGreenBoxPosition] = useState({ x: 100, y: 100 });
+  const [greenBoxSize, setGreenBoxSize] = useState({ width: 80, height: 80 });
+  const [showGreenBox, setShowGreenBox] = useState(false);
+  const [isAutoMode, setIsAutoMode] = useState(true);
+  
+  const moveGreenBox = (direction: 'up' | 'down' | 'left' | 'right') => {
+    setIsAutoMode(false);
+    const step = 10;
+    setGreenBoxPosition(prev => {
+      switch (direction) {
+        case 'up': return { ...prev, y: prev.y - step };
+        case 'down': return { ...prev, y: prev.y + step };
+        case 'left': return { ...prev, x: prev.x - step };
+        case 'right': return { ...prev, x: prev.x + step };
+        default: return prev;
+      }
+    });
+  };
+  
+  const resizeGreenBox = (type: 'width' | 'height', delta: number) => {
+    setIsAutoMode(false);
+    setGreenBoxSize(prev => {
+      const newSize = { ...prev };
+      if (type === 'width') {
+        newSize.width = Math.max(10, prev.width + delta);
+      } else {
+        newSize.height = Math.max(10, prev.height + delta);
+      }
+      return newSize;
+    });
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,7 +91,147 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   useEffect(() => {
     if (!candidate) return;
     playCountRef.current = 0;
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(true);
+    setPlaybackRate(1);
+    
+    setGreenBoxPosition({ x: 326, y: 71 });
+    setGreenBoxSize({ width: 20, height: 30 });
+    setShowGreenBox(false);
+    setIsAutoMode(true);
+    
+    setTimeout(() => {
+      const video = videoRef.current;
+      if (video && video.readyState >= 2) {
+        const event = new Event('timeupdate');
+        video.dispatchEvent(event);
+      }
+    }, 100);
   }, [candidate?.id]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isOpen) return;
+
+    const handleLoadedMetadata = () => {
+      setDuration(video.duration);
+      setIsPlaying(!video.paused);
+      
+      if (video.currentTime === 0) {
+        video.currentTime = 60;
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      if (!isDragging) {
+        setCurrentTime(video.currentTime);
+      }
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+    };
+    
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+
+    const handleLoadedData = () => {
+      setIsPlaying(!video.paused);
+    };
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('loadeddata', handleLoadedData);
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('loadeddata', handleLoadedData);
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isOpen, candidate?.id, isDragging]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const timeBasedData = [
+      { time: 71, x: 326, y: 71, width: 20, height: 30 },
+      { time: 74, x: 321, y: 81, width: 24, height: 38 },
+      { time: 78, x: 326, y: 85, width: 20, height: 36 },
+      { time: 80, x: 322, y: 87, width: 23, height: 42 },
+      { time: 89, x: 316, y: 107, width: 26, height: 46 },
+      { time: 95, x: 304, y: 148, width: 37, height: 66 },
+      { time: 97, x: 295, y: 163, width: 46, height: 82 },
+      { time: 98, x: 291, y: 175, width: 49, height: 88 },
+      { time: 99, x: 291, y: 189, width: 50, height: 90 },
+      { time: 100, x: 296, y: 211, width: 54, height: 98 },
+      { time: 102, x: 360, y: 270, width: 60, height: 110 },
+      { time: 103, x: 400, y: 290, width: 60, height: 110 },
+      { time: 106, x: 660, y: 410, width: 60, height: 110 },
+    ];
+
+    const handleVideoTimeUpdate = () => {
+      if (!isAutoMode) return;
+      
+      const currentTime = video.currentTime;
+      
+      let prevData = timeBasedData[0];
+      let nextData = timeBasedData[timeBasedData.length - 1];
+      
+      for (let i = 0; i < timeBasedData.length - 1; i++) {
+        if (currentTime >= timeBasedData[i].time && currentTime <= timeBasedData[i + 1].time) {
+          prevData = timeBasedData[i];
+          nextData = timeBasedData[i + 1];
+          break;
+        }
+      }
+      
+      if (currentTime >= timeBasedData[0].time && currentTime <= timeBasedData[timeBasedData.length - 1].time) {
+        setShowGreenBox(true);
+        
+        const timeDiff = nextData.time - prevData.time;
+        const progress = timeDiff > 0 ? (currentTime - prevData.time) / timeDiff : 0;
+        
+        const interpolatedX = prevData.x + (nextData.x - prevData.x) * progress;
+        const interpolatedY = prevData.y + (nextData.y - prevData.y) * progress;
+        const interpolatedWidth = prevData.width + (nextData.width - prevData.width) * progress;
+        const interpolatedHeight = prevData.height + (nextData.height - prevData.height) * progress;
+        
+        setGreenBoxPosition({ 
+          x: Math.round(interpolatedX), 
+          y: Math.round(interpolatedY) 
+        });
+        setGreenBoxSize({ 
+          width: Math.round(interpolatedWidth), 
+          height: Math.round(interpolatedHeight) 
+        });
+      } else {
+        setShowGreenBox(false);
+      }
+    };
+
+    if (isAutoMode) {
+      handleVideoTimeUpdate();
+    }
+    
+    video.addEventListener('timeupdate', handleVideoTimeUpdate);
+    
+    return () => {
+      video.removeEventListener('timeupdate', handleVideoTimeUpdate);
+    };
+  }, [isAutoMode, candidate?.id]);
 
   const handleTimelineClick = useCallback((entry: TimelineEntry) => {
     const v = videoRef.current;
@@ -59,6 +239,108 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     v.currentTime = entry.seconds;
     v.play().catch(() => {});
   }, []);
+
+  const togglePlayPause = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    
+    if (video.paused) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, []);
+
+  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const video = videoRef.current;
+    if (!video || !duration) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = x / rect.width;
+    video.currentTime = percentage * duration;
+  }, [duration]);
+
+  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setIsDragging(true);
+    
+    const video = videoRef.current;
+    if (!video || !duration) return;
+    
+    const updateTime = (clientX: number) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, x / rect.width));
+      video.currentTime = percentage * duration;
+      setCurrentTime(video.currentTime);
+    };
+    
+    updateTime(e.clientX);
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      updateTime(moveEvent.clientX);
+    };
+    
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [duration]);
+
+  const skipBackward = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.max(0, video.currentTime - 10);
+  }, []);
+
+  const skipForward = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = Math.min(video.duration, video.currentTime + 10);
+  }, []);
+
+  const changePlaybackRate = useCallback((rate: number, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    video.playbackRate = rate;
+    setPlaybackRate(rate);
+  }, []);
+
+  const toggleFullscreen = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    const container = containerRef.current;
+    if (!container) return;
+    
+    if (!document.fullscreenElement) {
+      container.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    if (!isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   if (!isOpen || !candidate) return null;
 
@@ -69,7 +351,15 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   });
   const timeEnd = addMinutesToTime(candidate.timestamp, 6);
   const timeRange = `${candidate.timestamp} ~ ${timeEnd}`;
-  const videoSrc = getRandomCCTVVideo(candidate.cctvId);
+  
+  let videoSrc = getRandomCCTVVideo(candidate.cctvId);
+  if (imageId === '48') {
+    videoSrc = '/fastsearch_img/qs_img_48_n.mov';
+  } else if (imageId === '57') {
+    videoSrc = '/fastsearch_img/qs_img_57_y.mov';
+  } else if (imageId === '59') {
+    videoSrc = '/fastsearch_img/qs_img_59_y.mov';
+  }
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -139,7 +429,11 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
           {/* 클립 영상 (AIDetectionPopup / CCTVMesh 동일: p-4 > bg-[#0f0f0f] 면) */}
           <div>
-            <div className="w-full bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" style={{ aspectRatio: '16/9' }}>
+            <div 
+              ref={containerRef}
+              className="w-full bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
+              style={{ aspectRatio: '16/9' }}
+            >
               <video
                 ref={videoRef}
                 src={videoSrc}
@@ -158,6 +452,118 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                   }
                 }}
               />
+              
+              {/* 초록색 박스 오버레이 */}
+              {showGreenBox && (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: `${greenBoxPosition.x}px`,
+                    top: `${greenBoxPosition.y}px`,
+                    width: `${greenBoxSize.width}px`,
+                    height: `${greenBoxSize.height}px`,
+                    backgroundColor: 'transparent',
+                    border: '3px solid #22c55e',
+                    borderRadius: '4px',
+                    zIndex: 5,
+                    transition: 'all 0.1s ease-out',
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+              
+              {/* 비디오 컨트롤 오버레이 */}
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{ zIndex: 10 }}
+              >
+                <div 
+                  className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* 프로그레스 바 */}
+                  <div 
+                    className="w-full h-1 bg-gray-600 rounded-full cursor-pointer mb-3 relative"
+                    onClick={handleProgressClick}
+                    onMouseDown={handleProgressMouseDown}
+                  >
+                    <div 
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                    />
+                  </div>
+                  
+                  {/* 컨트롤 버튼들 */}
+                  <div className="flex items-center justify-between text-white">
+                    <div className="flex items-center gap-2">
+                      {/* 재생/일시정지 */}
+                      <button
+                        type="button"
+                        onClick={togglePlayPause}
+                        className="hover:text-blue-400 transition-colors"
+                        aria-label={isPlaying ? '일시정지' : '재생'}
+                      >
+                        <Icon icon={isPlaying ? 'mdi:pause' : 'mdi:play'} className="w-6 h-6" />
+                      </button>
+                      
+                      {/* 10초 뒤로 */}
+                      <button
+                        type="button"
+                        onClick={skipBackward}
+                        className="hover:text-blue-400 transition-colors"
+                        aria-label="10초 뒤로"
+                      >
+                        <Icon icon="mdi:rewind-10" className="w-5 h-5" />
+                      </button>
+                      
+                      {/* 10초 앞으로 */}
+                      <button
+                        type="button"
+                        onClick={skipForward}
+                        className="hover:text-blue-400 transition-colors"
+                        aria-label="10초 앞으로"
+                      >
+                        <Icon icon="mdi:fast-forward-10" className="w-5 h-5" />
+                      </button>
+                      
+                      {/* 시간 표시 */}
+                      <span className="text-sm">
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {/* 재생 속도 */}
+                      <div className="flex items-center gap-1">
+                        {[0.5, 1, 1.5, 2].map(rate => (
+                          <button
+                            key={rate}
+                            type="button"
+                            onClick={(e) => changePlaybackRate(rate, e)}
+                            className={`text-xs px-2 py-1 rounded transition-colors ${
+                              playbackRate === rate 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-gray-700 hover:bg-gray-600'
+                            }`}
+                          >
+                            {rate}x
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {/* 전체화면 */}
+                      <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        className="hover:text-blue-400 transition-colors"
+                        aria-label={isFullscreen ? '전체화면 해제' : '전체화면'}
+                      >
+                        <Icon icon={isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'} className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

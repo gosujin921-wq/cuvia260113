@@ -25,7 +25,7 @@ cuvia3/
 │       ├── Home.tsx              # 메인 대시보드
 │       ├── event-detail.tsx      # 이벤트 상세 페이지
 │       ├── agent-chat.tsx        # Agent Chat 페이지
-│       ├── agent-hub.tsx         # Agent Hub 페이지
+│       ├── cuvia-link.tsx       # CUVIA Link 페이지
 │       └── components-style.tsx  # 스타일 관리 페이지
 │
 ├── components/                   # 컴포넌트
@@ -230,9 +230,9 @@ npm run preview
 - **중앙 영역**: 채팅 메시지 표시, AI 블록, CCTV 추천
 - **하단 입력 영역**: 메시지 입력 및 전송
 
-### 4. Agent Hub 페이지 (`/agent-hub`)
+### 4. CUVIA Link 페이지 (`/cuvia-link`)
 
-**agent-hub.tsx** - Agent Chat의 진입점이 되는 홈 화면입니다.
+**cuvia-link.tsx** - Agent Chat의 진입점이 되는 홈 화면입니다.
 
 #### 주요 기능
 - **자연어 검색**: 중앙 입력창에서 자연어로 질문 입력

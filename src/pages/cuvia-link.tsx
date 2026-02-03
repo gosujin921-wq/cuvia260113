@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ScaledLayout } from '@/components/layouts/ScaledLayout';
 import { BasePopup } from '@/components/shared/BasePopup';
 
-const AgentHubPage = () => {
+const CuviaLinkPage = () => {
   const navigate = useNavigate();
   const [chatInput, setChatInput] = useState('');
   const [showToolPopup, setShowToolPopup] = useState(false);
@@ -82,7 +82,7 @@ const AgentHubPage = () => {
         <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
           {/* 오렌지 그라데이션 원 1 */}
           <div 
-            className="absolute rounded-full agent-hub-gradient-1"
+            className="absolute rounded-full cuvia-link-gradient-1"
             style={{
               width: '600px',
               height: '600px',
@@ -95,7 +95,7 @@ const AgentHubPage = () => {
           />
           {/* 파란색 그라데이션 원 1 */}
           <div 
-            className="absolute rounded-full agent-hub-gradient-2"
+            className="absolute rounded-full cuvia-link-gradient-2"
             style={{
               width: '500px',
               height: '500px',
@@ -108,7 +108,7 @@ const AgentHubPage = () => {
           />
           {/* 오렌지 그라데이션 원 2 */}
           <div 
-            className="absolute rounded-full agent-hub-gradient-3"
+            className="absolute rounded-full cuvia-link-gradient-3"
             style={{
               width: '550px',
               height: '550px',
@@ -121,7 +121,7 @@ const AgentHubPage = () => {
           />
           {/* 파란색 그라데이션 원 2 */}
           <div 
-            className="absolute rounded-full agent-hub-gradient-4"
+            className="absolute rounded-full cuvia-link-gradient-4"
             style={{
               width: '450px',
               height: '450px',
@@ -146,21 +146,23 @@ const AgentHubPage = () => {
                     className="h-5 w-auto object-contain"
                   />
                 </Link>
-                <span className="text-xl font-semibold text-gray-400 tracking-tight">Agent</span>
+                <span className="text-xl font-semibold text-gray-400 tracking-tight">Link</span>
               </div>
               
               {/* 중앙: 문구와 채팅창 */}
               <div className="flex-1 flex flex-col items-center justify-center max-w-[800px] mx-auto w-full">
-                <p className="text-3xl font-medium text-gray-900 text-center mb-8 leading-relaxed w-full" style={{ fontSize: '27px' }}>
-                  자연어로 질문하면{' '}
-                  <span className="bg-gradient-to-r from-[#ff8566] to-[#ff8566] bg-clip-text text-transparent font-semibold">
+                <h1 className="text-4xl text-center mb-1 leading-relaxed w-full" style={{ fontSize: '40px' }}>
+                  <span className="font-bold" style={{ color: '#475569' }}>관제 특화 AI Agent,</span>{' '}
+                  <span className="bg-gradient-to-r from-[#ff8566] to-[#ff8566] bg-clip-text text-transparent font-bold">
                     CUVIA Link
                   </span>
-                  가 적절한 정보와 화면으로 안내합니다.
+                </h1>
+                <p className="text-lg font-normal text-gray-600 text-center mb-8 leading-relaxed w-full" style={{ fontSize: '17px' }}>
+                  자연어로 질문하면 내부 관제 데이터와 외부 근거를 종합해 신속하고 일관된 의사결정을 지원합니다.
                 </p>
                 <div className="w-full">
                   <div 
-                    className="relative flex items-center gap-3 px-4 py-3 agent-hub-chat-input"
+                    className="relative flex items-center gap-3 px-4 py-3 cuvia-link-chat-input"
                     style={{ 
                       isolation: 'isolate',
                       borderRadius: isInputExpanded ? '1rem' : '9999px',
@@ -483,4 +485,4 @@ const AgentHubPage = () => {
   );
 };
 
-export default AgentHubPage;
+export default CuviaLinkPage;

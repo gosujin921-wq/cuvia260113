@@ -270,7 +270,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://api.maptiler.com/maps/019bdf7d-b868-75ba-b003-3005177ff4fa/style.json?key=WPWmpNf4y5nzKDA7mQXe',
+      style: 'https://api.maptiler.com/maps/019c1d3a-ccab-7831-95ca-c465fc632e7a/style.json?key=WPWmpNf4y5nzKDA7mQXe',
       center: [126.7830, 37.5044],
       zoom: 15,
       pitch: 60,
@@ -288,9 +288,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const layers = style.layers;
       console.log('Map layers:', layers.map((l: any) => ({ id: l.id, type: l.type, source: l.source })));
 
-      // 건물 레이어 찾기 (더 넓은 범위로 검색)
+      // 레이어 처리
       layers.forEach((layer: any) => {
         const layerId = layer.id.toLowerCase();
+        
         const isBuildingLayer = 
           layerId.includes('building') || 
           layerId.includes('건물') ||
@@ -302,8 +303,18 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           
           try {
             if (layer.type === 'fill-extrusion') {
-              // 이미 fill-extrusion이면 높이 속성만 설정 (컬러는 API 원본 유지)
+              // 이미 fill-extrusion이면 높이와 밝은 색상 설정
               if (map.getLayer(layer.id)) {
+                const currentColor = map.getPaintProperty(layer.id, 'fill-extrusion-color');
+                if (currentColor) {
+                  map.setPaintProperty(layer.id, 'fill-extrusion-color', [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    0, ['lighter', currentColor],
+                    22, ['lighter', currentColor]
+                  ]);
+                }
                 map.setPaintProperty(layer.id, 'fill-extrusion-height', [
                   'case',
                   ['has', 'height'],
@@ -320,7 +331,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   ['to-number', ['get', 'min_height']],
                   0
                 ]);
-                // 컬러는 API 원본 그대로 유지 (설정하지 않음)
               }
             } else if (layer.type === 'fill' && layer.source) {
               // fill 타입을 fill-extrusion으로 변환
@@ -333,14 +343,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                   map.removeLayer(layer.id);
                 }
                 
-                // fill-extrusion 레이어 추가 (컬러는 API 원본 유지)
+                // fill-extrusion 레이어 추가 (밝은 색상)
+                const originalColor = map.getPaintProperty(layer.id, 'fill-color') || ['rgb', 200, 200, 200];
                 map.addLayer({
                   id: `${layer.id}-3d`,
                   type: 'fill-extrusion',
                   source: sourceId,
                   'source-layer': sourceLayer,
                   paint: {
-                    // fill-extrusion-color는 설정하지 않아 API 원본 컬러 사용
+                    'fill-extrusion-color': [
+                      'interpolate',
+                      ['linear'],
+                      ['zoom'],
+                      0, ['lighter', originalColor],
+                      22, ['lighter', originalColor]
+                    ],
                     'fill-extrusion-height': [
                       'case',
                       ['has', 'height'],
@@ -355,7 +372,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                       ['to-number', ['get', 'min_height']],
                       0
                     ],
-                    // opacity도 원본 유지 (설정하지 않음)
                   },
                   filter: layer.filter || ['has', 'height'],
                 });
@@ -1608,7 +1624,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             }}
           >
             <a
-              href="/agent-hub"
+              href="/cuvia-link"
               target="_blank"
               rel="noopener noreferrer"
               className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"

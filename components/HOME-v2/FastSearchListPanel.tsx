@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
-import TopControlPanel from './TopControlPanel';
+import TopControlPanel from '@/components/dashboard/HOME-v2/TopControlPanel';
 import FastSearchProgress from '@/components/dashboard/FastSearchProgress';
-import FastSearchCandidateDetailPopup from './FastSearchCandidateDetailPopup';
+import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v2/FastSearchCandidateDetailPopup';
 import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
 
 interface FastSearchListPanelProps {
@@ -24,6 +24,10 @@ interface FastSearchListPanelProps {
   onAnalyzeCandidate?: (candidate: CaptureItem) => void;
   /** 후보 상세 > "지도에서 위치 보기" 클릭 시 */
   onShowOnMap?: (candidate: CaptureItem) => void;
+  /** 외부에서 열 후보 ID (예: '42' = qs_img_57_y) */
+  openCandidateId?: string | null;
+  /** 후보가 열렸을 때 호출 */
+  onCandidateOpened?: () => void;
 }
 
 interface CaptureItem {
@@ -41,6 +45,7 @@ const LOCATION_DISTANCE_MAP: Record<string, number> = {
   '원미구 부천로 245번길 41': 30,
   '길주로363번길 48': 150,
   '길주로391번길 29': 280,
+  '길주로395번길 12': 310,
   '계남로301번길 28': 420,
   '계남로301번길 54': 450,
 };
@@ -52,9 +57,9 @@ const getDistanceFromReportLocation = (location: string): number => {
 /** 정렬 옵션 타입 */
 type SortOption = 'confidence-desc' | 'confidence-asc' | 'distance-asc' | 'distance-desc';
 
-/** 42개 카드용 베이스 데이터 생성 (이미지별 CCTV명, 위치, 유사도) */
+/** 43개 카드용 베이스 데이터 생성 (이미지별 CCTV명, 위치, 유사도) */
 const buildBaseItems = (): Omit<CaptureItem, 'id'>[] => {
-  return Array.from({ length: 42 }, (_, i) => {
+  return Array.from({ length: 43 }, (_, i) => {
     const id = String(i + 1);
     const cctvName = getCctvNameForCaptureItem({ id });
     const location = getLocationForCaptureItem({ id });
@@ -88,6 +93,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   excludedAttributes = [],
   onAnalyzeCandidate,
   onShowOnMap,
+  openCandidateId,
+  onCandidateOpened,
 }) => {
   const [radius, setRadius] = useState<number>(500); // 반경 (m)
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60)
@@ -310,7 +317,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   };
 
   const captureList = useMemo<CaptureItem[]>(() => {
-    return Array.from({ length: 42 }, (_, i) => {
+    return Array.from({ length: 43 }, (_, i) => {
       const base = BASE_ITEMS[i];
       return { id: String(i + 1), ...base };
     });
@@ -346,6 +353,19 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     if (!onRadiusChange) return;
     onRadiusChange(radius);
   }, [onRadiusChange, radius]);
+
+  // 외부에서 특정 후보 열기
+  useEffect(() => {
+    if (!openCandidateId || !isVisible) return;
+    
+    const candidate = captureList.find(item => item.id === openCandidateId);
+    if (candidate) {
+      setSelectedCandidate(candidate);
+      if (onCandidateOpened) {
+        onCandidateOpened();
+      }
+    }
+  }, [openCandidateId, isVisible, captureList, onCandidateOpened]);
 
   return (
     <>
