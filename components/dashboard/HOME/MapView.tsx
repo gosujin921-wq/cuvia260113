@@ -1258,7 +1258,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                             transition: "bottom 0.3s ease-in-out, right 0.3s ease-in-out",
                         }}>
                         <a
-                            href="/agent-hub"
+                            href="http://localhost:8010/cuvia-link.html"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
