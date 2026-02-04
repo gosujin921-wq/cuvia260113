@@ -30,9 +30,10 @@ const BottomPanel = ({
   const paddingHorizontal = 16;
   const totalPaddingWidth = paddingHorizontal * 2;
   
-  // CCTV 패널 너비를 넓혀서 좌우 패널과의 여백을 줄임
-  const cctvPanelGap = 8; // 좌우 패널과의 여백을 줄임
-  const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - (cctvPanelGap * 2);
+  // CCTV 패널 좌우 여백 동일하게
+  const leftPanelGap = 20; // 좌측 패널과의 여백
+  const rightPanelGap = 20; // 우측 패널과의 여백
+  const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - leftPanelGap - rightPanelGap;
   
   // 패널 높이 고정 (기존 4개 기준 높이 유지)
   const fixedItemHeight = 150; // 고정 높이
@@ -122,8 +123,8 @@ const BottomPanel = ({
     <div
       className="absolute transition-all duration-500 ease-in-out"
       style={{ 
-        left: `${leftPanelWidth + cctvPanelGap}px`,
-        right: `${rightPanelWidth + cctvPanelGap}px`,
+        left: `${leftPanelWidth + leftPanelGap}px`,
+        right: `${rightPanelWidth + rightPanelGap}px`,
         bottom: '16px',
         top: 'auto',
         zIndex: 200,

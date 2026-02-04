@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
+import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import AIAgentPopup from '@/components/dashboard/HOME/AIAgentPopup';
 import TopControlPanel from '@/components/dashboard/HOME/TopControlPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
@@ -375,7 +376,7 @@ export default function Home() {
           externalZoomLevel={mapZoomLevel}
           onZoomLevelChange={setMapZoomLevel}
           hideControls={hideControls}
-          leftPanelWidth={leftPanelCollapsed ? 80 : 480}
+          leftPanelWidth={leftPanelCollapsed ? 80 : 416}
           isAutoMode={isAutoMode}
         />
       </div>
@@ -393,57 +394,8 @@ export default function Home() {
         className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
-        {/* 스코어 카드 */}
-        <div className="rounded-lg p-4 gradient-border-right-bottom" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              {
-                title: '전체',
-                value: eventSummary.total,
-                icon: 'mdi:chart-box',
-                color: 'text-blue-400',
-              },
-              {
-                title: '대기',
-                value: eventSummary.pending || 0,
-                icon: 'mdi:clock-outline',
-                color: 'text-yellow-400',
-              },
-              {
-                title: '진행중',
-                value: eventSummary.inProgress,
-                icon: 'mdi:progress-clock',
-                color: 'text-blue-400',
-              },
-              {
-                title: '종결',
-                value: eventSummary.closed,
-                icon: 'mdi:check-circle',
-                color: 'text-green-400',
-              },
-            ].map((card, index) => {
-              return (
-              <div
-                key={card.title}
-                className="bg-[#393a42] p-3 rounded-lg flex items-start justify-between relative"
-              >
-                {/* 타이틀과 숫자 */}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-gray-400 text-xs font-medium">{card.title}</span>
-                  <div className="text-white text-2xl font-bold">
-                    {card.value.toLocaleString()}
-                  </div>
-                </div>
-                {/* 아이콘 */}
-                <div className="flex-shrink-0">
-                  <Icon icon={card.icon} className={`w-6 h-6 ${card.color}`} />
-                </div>
-              </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <HeatmapPanel />
+        <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <EventList
             events={eventsForList}
             selectedEventId={selectedEventId || undefined}
