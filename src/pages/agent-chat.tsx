@@ -35,7 +35,7 @@ const AgentChatPage = () => {
     {
       id: 'chat-1',
       title: '새 채팅',
-      messages: [
+      messages: initialQuery ? [] : [
         {
           id: 'chat-1-msg-1',
           role: 'assistant',
@@ -529,57 +529,63 @@ const AgentChatPage = () => {
           {/* Chat Content */}
           <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
             <div className="p-6 space-y-8 max-w-[800px] mx-auto w-full">
-              {/* AI Chat Blocks */}
-              <div className="space-y-4">
-                {chatBlocks.map((block) => (
-                  <div key={block.title} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon icon={block.icon} className="w-5 h-5 text-blue-600" />
-                      <h4 className="text-gray-900 font-semibold text-sm">{block.title}</h4>
-                    </div>
-                    <p className="text-gray-700 leading-relaxed" style={{ fontSize: '15px' }}>{block.content}</p>
+              {/* AI Chat Blocks - cuvia-link에서 온 경우 숨김 */}
+              {!initialQuery && (
+                <>
+                  <div className="space-y-4">
+                    {chatBlocks.map((block) => (
+                      <div key={block.title} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon icon={block.icon} className="w-5 h-5 text-blue-600" />
+                          <h4 className="text-gray-900 font-semibold text-sm">{block.title}</h4>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed" style={{ fontSize: '15px' }}>{block.content}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
 
-              {/* CCTV 추천 */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <CCTVIcon className="w-5 h-5 text-blue-600" />
-                  <h4 className="text-gray-900 font-semibold text-sm">CCTV 추천</h4>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {['CCTV-7 (현장)', 'CCTV-12 (북쪽 50m)', 'CCTV-15 (골목길)'].map((cctv) => (
-                    <button
-                      key={cctv}
-                      className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                    >
-                      {cctv}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  {/* CCTV 추천 */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CCTVIcon className="w-5 h-5 text-blue-600" />
+                      <h4 className="text-gray-900 font-semibold text-sm">CCTV 추천</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {['CCTV-7 (현장)', 'CCTV-12 (북쪽 50m)', 'CCTV-15 (골목길)'].map((cctv) => (
+                        <button
+                          key={cctv}
+                          className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                        >
+                          {cctv}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="h-px bg-gray-200"></div>
+                  <div className="h-px bg-gray-200"></div>
+                </>
+              )}
 
               {/* 대화 로그 */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-gray-700 text-sm">
-                  <div 
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
-                    style={{
-                      background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
-                    }}
-                  >
-                    <img
-                      src="/simbol.svg"
-                      alt="AI"
-                      className="w-4 h-4"
-                      style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-                    />
+                {!initialQuery && (
+                  <div className="flex items-center gap-2 text-gray-700 text-sm">
+                    <div 
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                      style={{
+                        background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
+                      }}
+                    >
+                      <img
+                        src="/simbol.svg"
+                        alt="AI"
+                        className="w-4 h-4"
+                        style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+                      />
+                    </div>
+                    <span className="text-gray-900">CUVIA</span>
                   </div>
-                  <span className="text-gray-900">CUVIA</span>
-                </div>
+                )}
                 <div className="space-y-3">
                   {chatMessages.map((message) => (
                     <div key={message.id} className="space-y-2">

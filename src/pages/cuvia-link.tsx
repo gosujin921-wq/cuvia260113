@@ -10,15 +10,65 @@ const CuviaLinkPage = () => {
   const [showToolPopup, setShowToolPopup] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isComposingRef = useRef(false);
   const pendingEnterRef = useRef(false);
 
-  const recommendedSearches = [
-    '8월 화재 통계',
-    '서초구 지도',
-    'CCTV 설정 이동',
-    '지난달 침수 이력',
+  const promptCategories = [
+    {
+      id: 'summary',
+      title: '상황 요약하기',
+      prompts: [
+        '지난달 사건사고 요약해줘',
+        '지난주 폭력 사건 핵심만 정리해줘',
+        '지난주 쓰러짐 통계 보여줘',
+      ],
+    },
+    {
+      id: 'pattern',
+      title: '패턴 분석하기',
+      prompts: [
+        '폭력 제일 많이 발생한 곳은 어디야?',
+        '쓰러짐 많은 CCTV 알려줘',
+        '폭력은 보통 몇 시에 많이 발생해?',
+      ],
+    },
+    {
+      id: 'history',
+      title: '이력 조회하기',
+      prompts: [
+        '어제 밤 폭력사건 보여줘',
+        '지난주 침수 이벤트 조회해줘',
+        '부천역 주변 CCTV에서 쓰러짐 찾아줘',
+      ],
+    },
+    {
+      id: 'map',
+      title: '지도에서 보기',
+      prompts: [
+        '부천 범죄주의구간 보여줘',
+        '침수 위험구간 높은 곳 보여줘',
+        '부천역 근처 대피소 보여줘',
+      ],
+    },
+    {
+      id: 'monitor',
+      title: '우선 감시 추천받기',
+      prompts: [
+        '지금 당장 모니터링 해야 할 CCTV 10개 띄워줘',
+        '호우특보면 어디부터 감시해야 돼?',
+        '쓰러짐 자주 뜨는 곳 CCTV 추천해줘',
+      ],
+    },
+    {
+      id: 'manual',
+      title: '메뉴얼 확인하기',
+      prompts: [
+        '침수 발생했을 때 초동 대응 절차 알려줘',
+        '폭력 사건 대응 근거 포함해서 정리해줘',
+      ],
+    },
   ];
 
 
@@ -150,17 +200,32 @@ const CuviaLinkPage = () => {
               </div>
               
               {/* 중앙: 문구와 채팅창 */}
-              <div className="flex-1 flex flex-col items-center justify-center max-w-[800px] mx-auto w-full">
-                <h1 className="text-4xl text-center mb-1 leading-relaxed w-full" style={{ fontSize: '40px' }}>
+              <div 
+                className="flex-1 flex flex-col items-center justify-center max-w-[800px] mx-auto w-full"
+                onClick={() => {
+                  if (selectedCategory) {
+                    setSelectedCategory(null);
+                  }
+                }}
+              >
+                <h1 
+                  className="text-4xl text-center mb-1 leading-relaxed w-full" 
+                  style={{ fontSize: '40px' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <span className="font-bold" style={{ color: '#475569' }}>관제 특화 AI Agent,</span>{' '}
                   <span className="bg-gradient-to-r from-[#ff8566] to-[#ff8566] bg-clip-text text-transparent font-bold">
                     CUVIA Link
                   </span>
                 </h1>
-                <p className="text-lg font-normal text-gray-600 text-center mb-8 leading-relaxed w-full" style={{ fontSize: '17px' }}>
+                <p 
+                  className="text-lg font-normal text-gray-600 text-center mb-8 leading-relaxed w-full" 
+                  style={{ fontSize: '17px' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
                   자연어로 질문하면 내부 관제 데이터와 외부 근거를 종합해 신속하고 일관된 의사결정을 지원합니다.
                 </p>
-                <div className="w-full">
+                <div className="w-full" onClick={(e) => e.stopPropagation()}>
                   <div 
                     className="relative flex items-center gap-3 px-4 py-3 cuvia-link-chat-input"
                     style={{ 
@@ -261,139 +326,45 @@ const CuviaLinkPage = () => {
                   </div>
                 </div>
 
-                {/* 추천 검색어 */}
-                <div className="w-full mt-4">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-sm text-gray-600 font-medium">추천 검색어</span>
-                    <div className="h-4 w-px bg-gray-300"></div>
-                    <div className="flex flex-wrap gap-2">
-                      {recommendedSearches.map((search, index) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            setChatInput(search);
-                            textareaRef.current?.focus();
-                          }}
-                          className="px-4 py-1.5 bg-white border border-gray-300 rounded-full text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                        >
-                          {search}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 지원 기능 섹션 */}
-                <div className="w-full mt-8">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">지원 기능</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* 통계 조회 */}
-                    <button
-                      onClick={() => {
-                        const example = '8월 화재 통계';
-                        setChatInput(example);
-                        textareaRef.current?.focus();
-                      }}
-                      className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
-                          <Icon icon="mdi:chart-line" className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1">통계 조회</h4>
-                          <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                            자연어로 통계 데이터를 조회하고 시각화합니다.
-                          </p>
-                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-sm text-gray-700">
-                              예시: <span className="text-gray-900 font-medium">&quot;8월 화재 통계&quot;</span>, <span className="text-gray-900 font-medium">&quot;서초구 상위 5 이벤트&quot;</span>
-                            </p>
-                          </div>
-                        </div>
+                {/* 추천 프롬프트 영역 - 고정 높이와 너비 */}
+                <div className="w-full mt-4 flex justify-center">
+                  <div style={{ width: '750px', height: '220px' }}>
+                    {/* 추천 프롬프트 카테고리 버튼 - 선택되지 않았을 때만 표시 */}
+                    {!selectedCategory && (
+                      <div className="flex flex-wrap gap-2 justify-center" style={{ height: '220px' }}>
+                        {promptCategories.map((category) => (
+                          <button
+                            key={category.id}
+                            onClick={() => setSelectedCategory(category.id)}
+                            className="px-4 py-2 rounded-full text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all h-fit"
+                          >
+                            {category.title}
+                          </button>
+                        ))}
                       </div>
-                    </button>
+                    )}
 
-                    {/* 지도 이동 */}
-                    <button
-                      onClick={() => {
-                        const example = '서초구 지도';
-                        setChatInput(example);
-                        textareaRef.current?.focus();
-                      }}
-                      className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
-                          <Icon icon="mdi:map" className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1">지도 이동</h4>
-                          <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                            특정 지역이나 시설물의 위치로 지도를 이동합니다.
-                          </p>
-                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-sm text-gray-700">
-                              예시: <span className="text-gray-900 font-medium">&quot;서초구 지도&quot;</span>, <span className="text-gray-900 font-medium">&quot;강남역 CCTV&quot;</span>
-                            </p>
-                          </div>
-                        </div>
+                    {/* 선택된 카테고리의 추천 문구들 - 리스트 형식 텍스트 */}
+                    {selectedCategory && (
+                      <div className="space-y-2" style={{ height: '220px' }}>
+                        {promptCategories
+                          .find((cat) => cat.id === selectedCategory)
+                          ?.prompts.map((prompt, index) => (
+                            <div key={index} className="w-full text-left">
+                              <button
+                                onClick={() => {
+                                  setChatInput(prompt);
+                                  setSelectedCategory(null);
+                                  textareaRef.current?.focus();
+                                }}
+                                className="inline-block px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
+                              >
+                                {prompt}
+                              </button>
+                            </div>
+                          ))}
                       </div>
-                    </button>
-
-                    {/* 메뉴 이동 */}
-                    <button
-                      onClick={() => {
-                        const example = 'CCTV 설정 이동';
-                        setChatInput(example);
-                        textareaRef.current?.focus();
-                      }}
-                      className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
-                          <Icon icon="mdi:menu" className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1">메뉴 이동</h4>
-                          <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                            원하는 메뉴나 설정 화면으로 바로 이동합니다.
-                          </p>
-                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-sm text-gray-700">
-                              예시: <span className="text-gray-900 font-medium">&quot;CCTV 설정 이동&quot;</span>, <span className="text-gray-900 font-medium">&quot;이벤트 관리&quot;</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* 이벤트 이력 */}
-                    <button
-                      onClick={() => {
-                        const example = '지난달 침수 이력';
-                        setChatInput(example);
-                        textareaRef.current?.focus();
-                      }}
-                      className="bg-gray-50 border border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-200 transition-colors">
-                          <Icon icon="mdi:history" className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1">이벤트 이력</h4>
-                          <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                            과거 이벤트 발생 이력을 검색합니다.
-                          </p>
-                          <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
-                            <p className="text-sm text-gray-700">
-                              예시: <span className="text-gray-900 font-medium">&quot;지난달 침수 이력&quot;</span>, <span className="text-gray-900 font-medium">&quot;9월 이벤트 기록&quot;</span>
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
+                    )}
                   </div>
                 </div>
               </div>
