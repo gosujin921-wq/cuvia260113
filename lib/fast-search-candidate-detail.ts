@@ -44,6 +44,7 @@ const MOCK_SUMMARIES: Partial<Record<ImageId, string>> = {
   '08': '회색 패딩·검정 바지 착용자가 우산과 백팩을 메고 편의점 앞에 등장한 뒤 체류하였고, 이후 화면을 이탈함.',
   '09': '어두운색 아우터 착용자가 우산을 들고 야간에 등장한 뒤 체류하였고, 이후 화면을 이탈함.',
   '10': '회색 상의 착용자가 비닐백/쇼핑백을 들고 출입문을 통과한 뒤 화면을 이탈함.',
+  '59': '회색 후드티를 입은 남성이 편의점 입구 근처에서 머물거나 전화를 하는 듯한 모습을 보이다가 입구 쪽으로 이동함. 검은색 옷을 입고 우산을 쓴 행인과 초록색 큰 우산을 쓴 행인이 도로를 따라 이동함. 검은색 SUV와 승용차가 서행하며 도로를 통과함. 형광색 안전 조끼와 흰색 헬멧을 착용한 작업자가 화면 오른쪽에서 나타나 도로를 가로질러 위쪽으로 이동함.',
 };
 
 const MOCK_TIMELINES: Partial<Record<ImageId, Omit<TimelineEntry, 'seconds'>[]>> = {
@@ -67,6 +68,15 @@ const MOCK_TIMELINES: Partial<Record<ImageId, Omit<TimelineEntry, 'seconds'>[]>>
     { time: '00:10', label: '편의점 앞 체류' },
     { time: '06:02', label: '상단 중앙 방향으로 이동 후 화면 이탈' },
   ],
+  '59': [
+    { time: '00:00', label: '회색 후드티 착용 남성 등장, 편의점 입구 근처 체류' },
+    { time: '00:20', label: '전화하는 듯한 모습, 입구 쪽으로 이동' },
+    { time: '00:25', label: '검은색 옷 + 우산 착용 행인 도로 이동' },
+    { time: '00:40', label: '초록색 큰 우산 착용 행인 도로 이동, 검은색 SUV 서행 통과' },
+    { time: '01:10', label: '승용차 서행 통과' },
+    { time: '01:12', label: '형광색 안전 조끼 + 흰색 헬멧 착용 작업자 등장' },
+    { time: '01:30', label: '작업자 도로 가로질러 위쪽으로 이동, 화면 이탈' },
+  ],
 };
 
 const MOCK_EXIT_DIRECTIONS: Partial<Record<ImageId, string>> = {
@@ -74,6 +84,7 @@ const MOCK_EXIT_DIRECTIONS: Partial<Record<ImageId, string>> = {
   '02': '상단 중앙',
   '03': '우측 상단',
   '04': '상단 중앙',
+  '59': '상단 중앙',
 };
 
 const MOCK_BEHAVIORS: Partial<Record<ImageId, string>> = {
@@ -81,6 +92,7 @@ const MOCK_BEHAVIORS: Partial<Record<ImageId, string>> = {
   '02': '체류 후 반복 출입',
   '03': '체류 후 반복 출입',
   '04': '체류 후 반복 출입',
+  '59': '편의점 입구 근처 체류, 전화, 입구 이동',
 };
 
 const parseTimeToSeconds = (time: string): number => {

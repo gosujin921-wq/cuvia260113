@@ -43,7 +43,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // ========== 초록색 박스 관련 (프레임 추적용) ==========
+  // ========== 초록색 박스 관련 (프레임 추적용) - px 단위 사용 ==========
   const [greenBoxPosition, setGreenBoxPosition] = useState({ x: 100, y: 100 });
   const [greenBoxSize, setGreenBoxSize] = useState({ width: 80, height: 80 });
   const [showGreenBox, setShowGreenBox] = useState(false);
@@ -96,10 +96,17 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     setIsPlaying(true);
     setPlaybackRate(1);
     
-    setGreenBoxPosition({ x: 326, y: 71 });
-    setGreenBoxSize({ width: 20, height: 30 });
-    setShowGreenBox(false);
-    setIsAutoMode(true);
+    // 59번 이미지일 때만 초록색 박스 활성화
+    const imageId = getImageIdFromCaptureItem(candidate);
+    if (imageId === '59') {
+      setGreenBoxPosition({ x: 436, y: 411 });
+      setGreenBoxSize({ width: 80, height: 140 });
+      setShowGreenBox(true);
+      setIsAutoMode(true);
+    } else {
+      setShowGreenBox(false);
+      setIsAutoMode(false);
+    }
     
     setTimeout(() => {
       const video = videoRef.current;
@@ -117,10 +124,6 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     const handleLoadedMetadata = () => {
       setDuration(video.duration);
       setIsPlaying(!video.paused);
-      
-      if (video.currentTime === 0) {
-        video.currentTime = 60;
-      }
     };
 
     const handleTimeUpdate = () => {
@@ -162,30 +165,77 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     };
   }, [isOpen, candidate?.id, isDragging]);
 
+  // 초록색 박스 자동 애니메이션 (59번 전용)
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    
+    // 59번 이미지가 아니면 실행하지 않음
+    const imageId = candidate ? getImageIdFromCaptureItem(candidate) : '';
+    if (imageId !== '59') return;
 
+    // 59번 시간별 위치 데이터 (px 단위)
     const timeBasedData = [
-      { time: 71, x: 326, y: 71, width: 20, height: 30 },
-      { time: 74, x: 321, y: 81, width: 24, height: 38 },
-      { time: 78, x: 326, y: 85, width: 20, height: 36 },
-      { time: 80, x: 322, y: 87, width: 23, height: 42 },
-      { time: 89, x: 316, y: 107, width: 26, height: 46 },
-      { time: 95, x: 304, y: 148, width: 37, height: 66 },
-      { time: 97, x: 295, y: 163, width: 46, height: 82 },
-      { time: 98, x: 291, y: 175, width: 49, height: 88 },
-      { time: 99, x: 291, y: 189, width: 50, height: 90 },
-      { time: 100, x: 296, y: 211, width: 54, height: 98 },
-      { time: 102, x: 360, y: 270, width: 60, height: 110 },
-      { time: 103, x: 400, y: 290, width: 60, height: 110 },
-      { time: 106, x: 660, y: 410, width: 60, height: 110 },
+      { time: 0, x: 436, y: 411, width: 80, height: 140 },
+      { time: 0.4, x: 446, y: 321, width: 80, height: 140 },
+      { time: 0.5, x: 444, y: 313, width: 80, height: 140 },
+      { time: 0.57, x: 416, y: 341, width: 80, height: 140 },
+      { time: 0.6, x: 446, y: 321, width: 80, height: 140 },
+      { time: 0.99, x: 446, y: 321, width: 80, height: 140 },
+      { time: 1, x: 486, y: 251, width: 80, height: 140 },
+      { time: 1.05, x: 474, y: 275, width: 80, height: 140 },
+      { time: 1.12, x: 457, y: 302, width: 80, height: 140 },
+      { time: 1.5, x: 494, y: 256, width: 80, height: 140 },
+      { time: 2, x: 491, y: 237, width: 77, height: 134 },
+      { time: 3, x: 515, y: 201, width: 70, height: 120 },
+      { time: 4, x: 516, y: 171, width: 70, height: 120 },
+      { time: 6, x: 496, y: 141, width: 50, height: 90 },
+      { time: 8, x: 466, y: 101, width: 50, height: 90 },
+      { time: 10, x: 457, y: 94, width: 50, height: 90 },
+      { time: 11, x: 463, y: 108, width: 50, height: 90 },
+      { time: 12, x: 475, y: 110, width: 50, height: 90 },
+      { time: 12.41, x: 470, y: 105, width: 50, height: 90 },
+      { time: 13, x: 486, y: 121, width: 50, height: 90 },
+      { time: 13.36, x: 483, y: 125, width: 50, height: 90 },
+      { time: 13.57, x: 480, y: 126, width: 50, height: 90 },
+      { time: 14.22, x: 487, y: 134, width: 50, height: 90 },
+      { time: 15.36, x: 503, y: 164, width: 50, height: 100 },
+      { time: 15.71, x: 510, y: 168, width: 50, height: 90 },
+      { time: 16, x: 536, y: 191, width: 60, height: 100 },
+      { time: 18, x: 616, y: 211, width: 60, height: 100 },
+      { time: 19, x: 636, y: 181, width: 60, height: 100 },
+      { time: 20, x: 636, y: 181, width: 50, height: 90 },
+      { time: 22, x: 616, y: 171, width: 50, height: 80 },
+      // 22초~48.99초: 박스 사라짐
+      { time: 49, x: 616, y: 191, width: 60, height: 90 },
+      { time: 50, x: 636, y: 181, width: 60, height: 100 },
+      { time: 60, x: 566, y: 181, width: 60, height: 100 },
+      { time: 70, x: 566, y: 181, width: 60, height: 100 },
+      { time: 79, x: 572, y: 188, width: 60, height: 100 },
+      { time: 80, x: 586, y: 195, width: 60, height: 100 },
+      { time: 81, x: 606, y: 205, width: 60, height: 100 },
+      { time: 83, x: 676, y: 245, width: 60, height: 100 },
+      { time: 86, x: 663, y: 235, width: 60, height: 100 },
+      { time: 87, x: 643, y: 225, width: 60, height: 100 },
+      { time: 90, x: 656, y: 321, width: 60, height: 100 },
+      { time: 91, x: 653, y: 225, width: 60, height: 100 },
+      { time: 93, x: 653, y: 235, width: 70, height: 100 },
+      { time: 94, x: 673, y: 245, width: 70, height: 100 },
+      { time: 95, x: 693, y: 245, width: 70, height: 100 },
+      { time: 97, x: 713, y: 265, width: 70, height: 100 },
+      { time: 98, x: 733, y: 265, width: 70, height: 100 },
     ];
 
     const handleVideoTimeUpdate = () => {
       if (!isAutoMode) return;
       
       const currentTime = video.currentTime;
+      
+      // 22~49초 사이는 박스 숨김
+      if (currentTime > 22 && currentTime < 49) {
+        setShowGreenBox(false);
+        return;
+      }
       
       let prevData = timeBasedData[0];
       let nextData = timeBasedData[timeBasedData.length - 1];
@@ -198,25 +248,45 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         }
       }
       
-      if (currentTime >= timeBasedData[0].time && currentTime <= timeBasedData[timeBasedData.length - 1].time) {
+      if (currentTime >= timeBasedData[0].time) {
         setShowGreenBox(true);
         
-        const timeDiff = nextData.time - prevData.time;
-        const progress = timeDiff > 0 ? (currentTime - prevData.time) / timeDiff : 0;
-        
-        const interpolatedX = prevData.x + (nextData.x - prevData.x) * progress;
-        const interpolatedY = prevData.y + (nextData.y - prevData.y) * progress;
-        const interpolatedWidth = prevData.width + (nextData.width - prevData.width) * progress;
-        const interpolatedHeight = prevData.height + (nextData.height - prevData.height) * progress;
-        
-        setGreenBoxPosition({ 
-          x: Math.round(interpolatedX), 
-          y: Math.round(interpolatedY) 
-        });
-        setGreenBoxSize({ 
-          width: Math.round(interpolatedWidth), 
-          height: Math.round(interpolatedHeight) 
-        });
+        // 마지막 키프레임 이후에는 마지막 위치 유지
+        if (currentTime >= timeBasedData[timeBasedData.length - 1].time) {
+          const lastData = timeBasedData[timeBasedData.length - 1];
+          setGreenBoxPosition({ x: lastData.x, y: lastData.y });
+          setGreenBoxSize({ width: lastData.width, height: lastData.height });
+        } else {
+          // 현재 시간 사이의 두 키프레임 찾기
+          let prevData = timeBasedData[0];
+          let nextData = timeBasedData[1];
+          
+          for (let i = 0; i < timeBasedData.length - 1; i++) {
+            if (currentTime >= timeBasedData[i].time && currentTime < timeBasedData[i + 1].time) {
+              prevData = timeBasedData[i];
+              nextData = timeBasedData[i + 1];
+              break;
+            }
+          }
+          
+          // 두 키프레임 사이 보간
+          const timeDiff = nextData.time - prevData.time;
+          const progress = timeDiff > 0 ? (currentTime - prevData.time) / timeDiff : 0;
+          
+          const interpolatedX = prevData.x + (nextData.x - prevData.x) * progress;
+          const interpolatedY = prevData.y + (nextData.y - prevData.y) * progress;
+          const interpolatedWidth = prevData.width + (nextData.width - prevData.width) * progress;
+          const interpolatedHeight = prevData.height + (nextData.height - prevData.height) * progress;
+          
+          setGreenBoxPosition({ 
+            x: Math.round(interpolatedX), 
+            y: Math.round(interpolatedY) 
+          });
+          setGreenBoxSize({ 
+            width: Math.round(interpolatedWidth), 
+            height: Math.round(interpolatedHeight) 
+          });
+        }
       } else {
         setShowGreenBox(false);
       }
@@ -357,6 +427,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     videoSrc = '/fastsearch_img/qs_img_48_n.mov';
   } else if (imageId === '57') {
     videoSrc = '/fastsearch_img/qs_img_57_y.mov';
+  } else if (imageId === '59') {
+    videoSrc = '/fastsearch_img/qs_img_59_y.mp4';
   }
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -563,6 +635,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                 </div>
               </div>
             </div>
+            
           </div>
 
           {/* 관찰 요약 (SituationSummary 블록 스타일: bg-[#0f0f0f] 면) */}

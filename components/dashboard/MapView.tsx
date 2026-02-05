@@ -36,9 +36,10 @@ interface MapViewProps {
   leftPanelWidth?: number;
   pinOffset?: { x: number; y: number };
   focusTargetXPercent?: number; // 줌 시 포커스(화면) 위치 (기본: 50)
+  flyToLocation?: [number, number] | null; // 지도를 특정 위치로 이동시키는 좌표
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 500, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50 }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 500, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -365,6 +366,193 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           }
         }
       });
+
+      // 부천로 245번길 마커 추가
+      const bucheonRo245 = [126.784551814066, 37.5058377976002]; // 부천로 245번길 정확한 좌표
+      
+      // 컨테이너 엘리먼트 생성 (펄스 효과 포함)
+      const markerContainer = document.createElement('div');
+      markerContainer.className = 'bucheon-ro-245-container';
+      markerContainer.style.cssText = `
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      `;
+      
+      // 펄스와 마커를 담는 중앙 정렬 래퍼
+      const centerWrapper = document.createElement('div');
+      centerWrapper.style.cssText = `
+        position: relative;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      // 펄스 효과 추가 (3개의 원)
+      const pulse1 = document.createElement('div');
+      pulse1.style.cssText = `
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) translateZ(0) scale(0.8);
+        animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        animation-delay: 0s;
+        will-change: transform, opacity;
+        pointer-events: none;
+        z-index: 1;
+      `;
+      const pulseInner1 = document.createElement('div');
+      pulseInner1.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: rgba(239, 68, 68, 0.5);
+      `;
+      pulse1.appendChild(pulseInner1);
+      
+      const pulse2 = document.createElement('div');
+      pulse2.style.cssText = `
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) translateZ(0) scale(0.8);
+        animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        animation-delay: 0.2s;
+        will-change: transform, opacity;
+        pointer-events: none;
+        z-index: 1;
+      `;
+      const pulseInner2 = document.createElement('div');
+      pulseInner2.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: rgba(239, 68, 68, 0.4);
+      `;
+      pulse2.appendChild(pulseInner2);
+      
+      const pulse3 = document.createElement('div');
+      pulse3.style.cssText = `
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) translateZ(0) scale(0.8);
+        animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        animation-delay: 0.4s;
+        will-change: transform, opacity;
+        pointer-events: none;
+        z-index: 1;
+      `;
+      const pulseInner3 = document.createElement('div');
+      pulseInner3.style.cssText = `
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background-color: rgba(239, 68, 68, 0.3);
+      `;
+      pulse3.appendChild(pulseInner3);
+      
+      // 펄스 애니메이션 키프레임 추가
+      const styleEl = document.createElement('style');
+      styleEl.textContent = `
+        @keyframes circle-pulse {
+          0% {
+            transform: translate(-50%, -50%) translateZ(0) scale(0.8);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(-50%, -50%) translateZ(0) scale(2);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(styleEl);
+      
+      centerWrapper.appendChild(pulse1);
+      centerWrapper.appendChild(pulse2);
+      centerWrapper.appendChild(pulse3);
+      
+      // 마커 엘리먼트 생성 (tracking 스타일과 동일하게)
+      const markerEl = document.createElement('div');
+      markerEl.className = 'bucheon-ro-245-marker';
+      markerEl.style.cssText = `
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+        border: 2px solid #ef4444;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3);
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        position: relative;
+        z-index: 130;
+      `;
+      
+      // ring 효과 추가
+      const ringEl = document.createElement('div');
+      ringEl.style.cssText = `
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid rgba(239, 68, 68, 0.3);
+        border-radius: 14px;
+        pointer-events: none;
+      `;
+      markerEl.appendChild(ringEl);
+      
+      // 아이콘 추가 (SVG로 map-marker 아이콘)
+      const iconEl = document.createElement('div');
+      iconEl.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #f87171;">
+          <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
+        </svg>
+      `;
+      markerEl.appendChild(iconEl);
+      
+      centerWrapper.appendChild(markerEl);
+      markerContainer.appendChild(centerWrapper);
+      
+      // 주소 텍스트 박스 추가
+      const labelEl = document.createElement('div');
+      labelEl.style.cssText = `
+        margin-top: 8px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(15, 15, 15, 0.95);
+        border: 1px solid #31353a;
+        white-space: nowrap;
+        z-index: 140;
+      `;
+      labelEl.innerHTML = `
+        <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
+        <div style="font-size: 12px; font-weight: 600; color: white;">부천로 245번길</div>
+      `;
+      
+      markerContainer.appendChild(labelEl);
+
+      // 마커 추가
+      const marker = new maplibregl.Marker({ 
+        element: markerContainer,
+        anchor: 'center'
+      })
+        .setLngLat(bucheonRo245 as [number, number])
+        .addTo(map);
+
+      console.log('부천로 245번길 마커 추가됨:', bucheonRo245);
     });
 
     mapRef.current = map;
@@ -375,23 +563,41 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     };
   }, []);
 
+  // flyToLocation이 변경되면 지도를 해당 위치로 이동
   useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.easeTo({
-        pitch: is3DMode ? 60 : 0,
-        duration: 500
-      });
+    console.log('flyToLocation 변경:', flyToLocation, 'mapRef.current:', mapRef.current);
+    if (flyToLocation && mapRef.current) {
+      console.log('지도 이동 시작:', flyToLocation);
+      
+      // 지도가 로드되었는지 확인
+      if (mapRef.current.loaded()) {
+        mapRef.current.flyTo({
+          center: flyToLocation as [number, number],
+          zoom: 17,
+          pitch: 60,
+          bearing: -17.6,
+          duration: 1500,
+          essential: true
+        });
+      } else {
+        // 지도가 로드될 때까지 대기
+        mapRef.current.once('load', () => {
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: flyToLocation as [number, number],
+              zoom: 17,
+              pitch: 60,
+              bearing: -17.6,
+              duration: 1500,
+              essential: true
+            });
+          }
+        });
+      }
     }
-  }, [is3DMode]);
+  }, [flyToLocation]);
 
-  useEffect(() => {
-    if (mapRef.current) {
-      mapRef.current.easeTo({
-        bearing: mapBearing,
-        duration: 300
-      });
-    }
-  }, [mapBearing]);
+  // is3DMode와 mapBearing 변경은 이제 버튼 클릭 핸들러에서 직접 처리됨
   
   // localStorage에서 초기값 읽기 (클라이언트에서만)
   // 대시보드에서는 localStorage에 값이 없으면 기본값으로 true 설정
@@ -427,23 +633,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cctv-show-cctv', showCCTV.toString());
-    }
-  }, [showCCTV]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cctv-show-view-angle', showCCTVViewAngle.toString());
-    }
-  }, [showCCTVViewAngle]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cctv-show-name', showCCTVName.toString());
-    }
-  }, [showCCTVName]);
+  // localStorage 저장은 이제 버튼 클릭 핸들러에서 직접 처리됨
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -806,10 +996,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
+             if (mapRef.current) {
+               mapRef.current.zoomIn({ duration: 300 });
+             }
              setZoomLevel(prev => Math.min(prev + 1, 1));
            }}
-           disabled={zoomLevel >= 1}
-           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
            aria-label="확대"
          >
            <Icon icon="mdi:plus" className="w-5 h-5" />
@@ -817,10 +1009,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
+             if (mapRef.current) {
+               mapRef.current.zoomOut({ duration: 300 });
+             }
              setZoomLevel(prev => Math.max(prev - 1, 0));
            }}
-           disabled={zoomLevel <= 0}
-           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
            aria-label="축소"
          >
            <Icon icon="mdi:minus" className="w-5 h-5" />
@@ -830,6 +1024,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            onClick={(e) => {
              e.stopPropagation();
              setIs3DMode(false);
+             if (mapRef.current) {
+               mapRef.current.easeTo({
+                 pitch: 0,
+                 duration: 500
+               });
+             }
            }}
            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
              !is3DMode
@@ -844,6 +1044,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            onClick={(e) => {
              e.stopPropagation();
              setIs3DMode(true);
+             if (mapRef.current) {
+               mapRef.current.easeTo({
+                 pitch: 60,
+                 duration: 500
+               });
+             }
            }}
            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
              is3DMode
@@ -854,31 +1060,41 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          >
            <Icon icon="mdi:cube" className="w-5 h-5" />
          </button>
-         {is3DMode && (
-           <>
-             <div className="w-full h-px bg-gray-300 my-1" />
-             <button
-               onClick={(e) => {
-                 e.stopPropagation();
-                 setMapBearing(prev => prev - 15);
-               }}
-               className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-               aria-label="회전 왼쪽"
-             >
-               <Icon icon="mdi:rotate-left" className="w-5 h-5" />
-             </button>
-             <button
-               onClick={(e) => {
-                 e.stopPropagation();
-                 setMapBearing(prev => prev + 15);
-               }}
-               className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-               aria-label="회전 오른쪽"
-             >
-               <Icon icon="mdi:rotate-right" className="w-5 h-5" />
-             </button>
-           </>
-         )}
+         <div className="w-full h-px bg-gray-300 my-1" />
+         <button
+           onClick={(e) => {
+             e.stopPropagation();
+             const newBearing = mapBearing - 15;
+             setMapBearing(newBearing);
+             if (mapRef.current) {
+               mapRef.current.easeTo({
+                 bearing: newBearing,
+                 duration: 300
+               });
+             }
+           }}
+           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+           aria-label="회전 왼쪽"
+         >
+           <Icon icon="mdi:rotate-left" className="w-5 h-5" />
+         </button>
+         <button
+           onClick={(e) => {
+             e.stopPropagation();
+             const newBearing = mapBearing + 15;
+             setMapBearing(newBearing);
+             if (mapRef.current) {
+               mapRef.current.easeTo({
+                 bearing: newBearing,
+                 duration: 300
+               });
+             }
+           }}
+           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+           aria-label="회전 오른쪽"
+         >
+           <Icon icon="mdi:rotate-right" className="w-5 h-5" />
+         </button>
        </div>
 
 
@@ -897,7 +1113,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            <button
              onClick={(e) => {
                e.stopPropagation();
-               setShowCCTVName(prev => !prev);
+               const newValue = !showCCTVName;
+               setShowCCTVName(newValue);
+               if (typeof window !== 'undefined') {
+                 localStorage.setItem('cctv-show-name', newValue.toString());
+               }
              }}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               showCCTVName 
@@ -923,6 +1143,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                setShowCCTVViewAngle(false);
                setShowCCTVName(false);
              }
+             if (typeof window !== 'undefined') {
+               localStorage.setItem('cctv-show-cctv', newValue.toString());
+               localStorage.setItem('cctv-show-view-angle', newValue.toString());
+               localStorage.setItem('cctv-show-name', newValue.toString());
+             }
            }}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
             showCCTV 
@@ -942,7 +1167,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            <button
              onClick={(e) => {
                e.stopPropagation();
-               setShowCCTVViewAngle(prev => !prev);
+               const newValue = !showCCTVViewAngle;
+               setShowCCTVViewAngle(newValue);
+               if (typeof window !== 'undefined') {
+                 localStorage.setItem('cctv-show-view-angle', newValue.toString());
+               }
              }}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               showCCTVViewAngle 
@@ -964,14 +1193,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           borderWidth: '1px',
           height: '100%',
           width:
-            zoomLevel > 0 || focusDeltaPercent > 0
+            (zoomLevel > 0 || focusDeltaPercent > 0) && !flyToLocation
               ? `calc(100% + ${overscanPx * 2}px)`
               : '100%',
           left:
-            zoomLevel > 0 || focusDeltaPercent > 0
+            (zoomLevel > 0 || focusDeltaPercent > 0) && !flyToLocation
               ? `-${overscanPx}px`
               : '0',
-          transform: `scale(${mapScale}) translate(calc(${mapTranslate.x}% + ${mapTranslate.offsetX}%), ${mapTranslate.y}%) translateZ(0)`,
+          transform: flyToLocation ? 'none' : `scale(${mapScale}) translate(calc(${mapTranslate.x}% + ${mapTranslate.offsetX}%), ${mapTranslate.y}%) translateZ(0)`,
           transformOrigin: mapTransformOrigin,
           willChange: 'transform',
           transition: 'transform 0.5s ease-out, width 0.5s ease-out, left 0.5s ease-out',
@@ -1385,201 +1614,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
 
 
-        {/* 이벤트 핀들 - 추적 CCTV 아이콘으로 표시 */}
-        <div className="absolute inset-0" style={{ zIndex: 100, width: '100%', height: '100%', pointerEvents: 'none' }}>
-          {(events || []).map((event) => {
-            const position = getEventPosition(event);
-            const isHighlighted = highlightedEventId === event.id;
-            const isSelected = selectedEventId === event.id;
-
-            return (
-              <div
-                key={event.id}
-                data-event-pin
-                className="absolute flex items-center justify-center"
-                style={{
-                  left: `${position.left + (isSelected ? pinOffset.x : 0)}%`,
-                  top: `${position.top + (isSelected ? pinOffset.y : 0)}%`,
-                  transform: 'translate(-50%, -50%)',
-                  zIndex: isSelected ? 150 : isHighlighted ? 140 : 100,
-                  pointerEvents: 'auto',
-                  transition: isSelected ? 'left 0.5s ease-out, top 0.5s ease-out' : 'none',
-                }}
-              >
-                {/* 펄스·대시 — 고속검색 중·리스트 표시 시 블루 펄스, 그 외 선택 시 빨간 펄스 */}
-                {isSelected && !event.title.includes('상가 절도 의심') && !event.title.includes('현금 절취 포착') && (
-                  (showFastSearch || showFastSearchList) ? (
-                    // 블루 펄스 (고속검색 중) - 대시 스트로크와 동일하거나 작은 크기
-                    (() => {
-                      const radiusPx = (fastSearchRadius / 500) * 100;
-                      const size = Math.round(radiusPx * 2);
-                      // 대시 스트로크의 반지름이 size/2 - 1이므로, 지름은 size - 2
-                      // 블루 펄스는 대시 스트로크와 같거나 작게 설정
-                      const pulseSize = size - 2;
-                      return (
-                        <>
-                          <div
-                            className="absolute animate-blue-circle-pulse"
-                            style={{
-                              width: `${pulseSize}px`,
-                              height: `${pulseSize}px`,
-                              zIndex: 1,
-                              animationDelay: '0s',
-                              willChange: 'transform, opacity',
-                              pointerEvents: 'none',
-                            }}
-                          >
-                            <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(59, 130, 246, 0.35)' }} />
-                          </div>
-                          <div
-                            className="absolute animate-blue-circle-pulse"
-                            style={{
-                              width: `${pulseSize}px`,
-                              height: `${pulseSize}px`,
-                              zIndex: 1,
-                              animationDelay: '0.4s',
-                              willChange: 'transform, opacity',
-                              pointerEvents: 'none',
-                            }}
-                          >
-                            <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }} />
-                          </div>
-                          <div
-                            className="absolute"
-                            style={{
-                              width: `${size}px`,
-                              height: `${size}px`,
-                              zIndex: 1,
-                              pointerEvents: 'none',
-                            }}
-                          >
-                            <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
-                              <circle
-                                cx={size / 2}
-                                cy={size / 2}
-                                r={size / 2 - 1}
-                                fill="none"
-                                stroke="rgba(59, 130, 246, 0.7)"
-                                strokeWidth="2"
-                                strokeDasharray="4 4"
-                              />
-                            </svg>
-                          </div>
-                        </>
-                      );
-                    })()
-                  ) : (
-                    <>
-                      <div
-                        className="absolute animate-circle-pulse"
-                        style={{
-                          width: '120px',
-                          height: '120px',
-                          zIndex: 1,
-                          animationDelay: '0s',
-                          transform: 'translateZ(0) scale(0.8)',
-                          willChange: 'transform, opacity',
-                          opacity: 1,
-                          pointerEvents: 'none',
-                        }}
-                      >
-                        <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.5)' }} />
-                      </div>
-                      <div
-                        className="absolute animate-circle-pulse"
-                        style={{
-                          width: '120px',
-                          height: '120px',
-                          zIndex: 1,
-                          animationDelay: '0.2s',
-                          transform: 'translateZ(0) scale(0.8)',
-                          willChange: 'transform, opacity',
-                          opacity: 1,
-                          pointerEvents: 'none',
-                        }}
-                      >
-                        <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.4)' }} />
-                      </div>
-                      <div
-                        className="absolute animate-circle-pulse"
-                        style={{
-                          width: '120px',
-                          height: '120px',
-                          zIndex: 1,
-                          animationDelay: '0.4s',
-                          transform: 'translateZ(0) scale(0.8)',
-                          willChange: 'transform, opacity',
-                          opacity: 1,
-                          pointerEvents: 'none',
-                        }}
-                      >
-                        <div className="w-full h-full rounded-full" style={{ backgroundColor: 'rgba(239, 68, 68, 0.3)' }} />
-                      </div>
-                    </>
-                  )
-                )}
-                <div
-                  className="absolute cursor-pointer"
-                  style={{ zIndex: 130 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEventClick?.(event.id);
-                  }}
-                >
-                  {(() => {
-                    const samePositionEvents = events.filter(e => {
-                      const otherPosition = getEventPosition(e);
-                      const distance = Math.sqrt(
-                        Math.pow(position.left - otherPosition.left, 2) + 
-                        Math.pow(position.top - otherPosition.top, 2)
-                      );
-                      return distance < 1;
-                    });
-                    const clusterCount = samePositionEvents.length;
-                    const hasMultiple = clusterCount > 1 && zoomLevel === 0;
-                    return (
-                      <>
-                        <div className="flex flex-col items-center">
-                          <div
-                            className={`${getCCTVIconClassName('tracking')} flex items-center justify-center ${hasMultiple ? 'w-auto min-w-[28px]' : ''} relative`}
-                            style={{
-                              ...getCCTVIconBoxStyle(clusterCount, mapScale, hasMultiple),
-                              transformOrigin: 'center center',
-                            }}
-                          >
-                            <Icon
-                              icon="mdi:map-marker"
-                              className="text-red-400"
-                              width="16px"
-                              height="16px"
-                            />
-                            {hasMultiple && (
-                              <span className="text-xs font-semibold text-red-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
-                                {formatCCTVCount(clusterCount)}
-                              </span>
-                            )}
-                          </div>
-                          {isSelected && (
-                            <div
-                              className="mt-2 px-2 py-1.5 rounded-lg bg-[#0f0f0f] border border-[#31353a] whitespace-nowrap"
-                              style={{
-                                borderWidth: '1px',
-                                zIndex: 140,
-                              }}
-                            >
-                              <div className="text-[10px] text-gray-400 mb-0.5">사건 발생 지점</div>
-                              <div className="text-xs font-semibold text-white">부천로 245번길</div>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            );
-          })}
-        </div>
 
       </div>
 

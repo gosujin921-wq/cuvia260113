@@ -41,6 +41,7 @@ export default function HomeV2() {
   const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null); // 외부에서 열 후보 ID
   const [selectedMenuId, setSelectedMenuId] = useState<'fast-search' | 'object-tracking' | 'broadcast' | null>(null);
+  const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null); // 지도 이동 좌표
   const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
@@ -301,6 +302,7 @@ export default function HomeV2() {
     setShowReSearchProgress(false);
     setExcludedAttributes([]);
     setSelectedMenuId(null);
+    setFlyToLocation(null);
   };
 
   /** 에이전트 팝업 maxHeight: 팝업 top ~ 플로팅 버튼 위까지 (Agent Hub bottom 24px + 높이 56px + 여유 8px) */
@@ -326,9 +328,16 @@ export default function HomeV2() {
         const missingEvent = allConvertedEvents.find(event => 
           event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
         );
+        console.log('키보드 1 눌림, missingEvent:', missingEvent);
         if (missingEvent) {
           setHideControls(true);
-          animateToEvent(missingEvent);
+          setSelectedEventId(missingEvent.id);
+          setHighlightedEventId(missingEvent.id);
+          setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
+          // 부천로 245번길 좌표로 지도 이동
+          console.log('flyToLocation 설정 시도');
+          setFlyToLocation([126.784551814066, 37.5058377976002]);
+          // mapZoomLevel은 설정하지 않음 - flyTo가 직접 zoom 처리
         }
       } else if (e.key === '2') {
         // 고속검색 시작 (FastSearchProgress 표시)
@@ -347,15 +356,15 @@ export default function HomeV2() {
         setShowFastSearchList(true);
         setPinOffset({ x: 0, y: 0 });
       } else if (e.key === '4') {
-        // 57번 이미지 팝업 열기 (42번 카드 = qs_img_57_y)
+        // 59번 이미지 팝업 열기 (43번 카드 = qs_img_59_y)
         setPanelsSlidOut(true);
         setShowCCTV(false);
         setHideControls(true);
         setShowFastSearchList(true);
         setPinOffset({ x: 0, y: 0 });
         setShowAIAgentPopup(true);
-        // 42번 카드 자동 열기
-        setOpenCandidateId('42');
+        // 43번 카드 자동 열기
+        setOpenCandidateId('43');
       } else if (e.key === 'Escape') {
         clearSelection();
       }
@@ -396,6 +405,7 @@ export default function HomeV2() {
           leftPanelWidth={leftPanelCollapsed ? 80 : 416}
           pinOffset={pinOffset}
           focusTargetXPercent={fastSearchFocusXPercent}
+          flyToLocation={flyToLocation}
         />
       </div>
 
