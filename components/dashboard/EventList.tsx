@@ -304,7 +304,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                 }}
                 onMouseEnter={() => onEventHover?.(main.id)}
                 onMouseLeave={() => onEventHover?.(null)}
-                className={`w-full text-left border-b pt-3 pb-3 pr-3 transition-all duration-200 ${
+                className={`w-full text-left border-b py-2.5 pr-3 transition-all duration-200 ${
                   isSelected
                     ? 'bg-red-500/10 border-red-500 ring-2 ring-red-500/60'
                     : 'bg-transparent border-[#2f3136] hover:bg-[#24272d] hover:border-blue-400'

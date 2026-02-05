@@ -45,8 +45,9 @@ interface SensorData {
   pm10: { value: number; level: 'good' | 'normal' | 'bad' };
   temperature: { value: number; level: 'good' | 'normal' | 'bad' };
   humidity: { value: number; level: 'good' | 'normal' | 'bad' };
-  rainfall: { value: number; level: 'good' | 'normal' | 'bad' };
-  windSpeed: { value: number; level: 'good' | 'normal' | 'bad' };
+  formaldehyde: { value: number; level: 'good' | 'normal' | 'bad' };
+  co2: { value: number; level: 'good' | 'normal' | 'bad' };
+  co: { value: number; level: 'good' | 'normal' | 'bad' };
   lastUpdate: string; // timestamp
 }
 
@@ -64,6 +65,16 @@ interface FacilityRiskZone {
   percentage: number;
 }
 
+interface ParkingLot {
+  name: string;
+  available: number;
+  total: number;
+  percentage: number;
+  disabled: number;
+  women: number;
+  general: number;
+}
+
 interface InfrastructureStatus {
   waterLeakage: { status: 'normal' | 'warning' | 'error'; lastUpdate: string };
   powerSupply: { status: 'normal' | 'warning' | 'error'; lastUpdate: string };
@@ -76,6 +87,7 @@ interface InfrastructureStatus {
   emergencyBell: { normalCount: number; errorCount: number };
   floodRiskZones: FloodRiskZone[];
   facilityRiskZones: FacilityRiskZone[];
+  parkingLots: ParkingLot[];
 }
 
 const cctvLocalImages = [
@@ -111,15 +123,14 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [previousHeatmapData, setPreviousHeatmapData] = useState<Record<string, Record<string, number>>>({});
   const previousHeatmapDataRef = useRef<Record<string, Record<string, number>>>({});
   const [visibleHeatmapCount, setVisibleHeatmapCount] = useState(4);
-  const [trendAnimationProgress, setTrendAnimationProgress] = useState(0);
-  const [activeFloatingLabelIndex, setActiveFloatingLabelIndex] = useState(0);
   const [sensorValues, setSensorValues] = useState({
     pm25: 38,
     pm10: 72,
     temperature: 11,
     humidity: 62,
-    rainfall: 0.3,
-    windSpeed: 1.2,
+    formaldehyde: 0.02,
+    co2: 450,
+    co: 2.5,
   });
   
   const [clockTime, setClockTime] = useState<string>('');
@@ -130,8 +141,14 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [sensorLocationIndex, setSensorLocationIndex] = useState<number>(0);
   const [floodRiskZoneIndex, setFloodRiskZoneIndex] = useState<number>(0);
   const [facilityRiskZoneIndex, setFacilityRiskZoneIndex] = useState<number>(0);
+  const [parkingLotIndex, setParkingLotIndex] = useState<number>(0);
+  const [activeEnergyLabelIndex, setActiveEnergyLabelIndex] = useState<number>(0);
   
-  const sensorLocations = useMemo(() => ['내동', '소사본동', '석천초교', '오정동', '괴안동'], []);
+  const energyChartContainerRef = useRef<HTMLDivElement>(null);
+  const energyXAxisTickXMapRef = useRef<Map<number, number>>(new Map());
+  const [energyChartRect, setEnergyChartRect] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  
+  const sensorLocations = useMemo(() => ['신원동', '행신동', '식사동'], []);
   
   const weatherData = {
     icon: 'mdi:weather-partly-cloudy',
@@ -206,14 +223,14 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         pm10: Math.max(0, prev.pm10 + (Math.random() - 0.5) * 6),
         temperature: prev.temperature + (Math.random() - 0.5) * 0.5,
         humidity: Math.max(0, Math.min(100, prev.humidity + (Math.random() - 0.5) * 2)),
-        rainfall: Math.max(0, prev.rainfall + (Math.random() - 0.5) * 0.2),
-        windSpeed: Math.max(0, prev.windSpeed + (Math.random() - 0.5) * 0.3),
+        formaldehyde: Math.max(0, Math.min(0.5, prev.formaldehyde + (Math.random() - 0.5) * 0.01)),
+        co2: Math.max(350, Math.min(2000, prev.co2 + (Math.random() - 0.5) * 50)),
+        co: Math.max(0, Math.min(50, prev.co + (Math.random() - 0.5) * 1)),
       }));
       setLastUpdateTime(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }));
-      setSensorLocationIndex((prev) => (prev + 1) % sensorLocations.length);
     }, 2000);
     return () => clearInterval(interval);
-  }, [sensorLocations]);
+  }, []);
 
   const cctvStatus: CctvStatus = {
     totalRate: 96.1,
@@ -427,15 +444,21 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     return 'bad';
   };
 
-  const getRainfallLevel = (value: number): 'good' | 'normal' | 'bad' => {
-    if (value <= 0.5) return 'good';
-    if (value <= 2.0) return 'normal';
+  const getCo2Level = (value: number): 'good' | 'normal' | 'bad' => {
+    if (value <= 600) return 'good';
+    if (value <= 1000) return 'normal';
     return 'bad';
   };
 
-  const getWindSpeedLevel = (value: number): 'good' | 'normal' | 'bad' => {
-    if (value <= 2.0) return 'good';
-    if (value <= 5.0) return 'normal';
+  const getFormaldehydeLevel = (value: number): 'good' | 'normal' | 'bad' => {
+    if (value <= 0.08) return 'good';
+    if (value <= 0.15) return 'normal';
+    return 'bad';
+  };
+
+  const getCoLevel = (value: number): 'good' | 'normal' | 'bad' => {
+    if (value <= 9) return 'good';
+    if (value <= 25) return 'normal';
     return 'bad';
   };
 
@@ -448,8 +471,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     pm10: { value: sensorValues.pm10, level: getPm10Level(sensorValues.pm10) },
     temperature: { value: sensorValues.temperature, level: getTemperatureLevel(sensorValues.temperature) },
     humidity: { value: sensorValues.humidity, level: getHumidityLevel(sensorValues.humidity) },
-    rainfall: { value: sensorValues.rainfall, level: getRainfallLevel(sensorValues.rainfall) },
-    windSpeed: { value: sensorValues.windSpeed, level: getWindSpeedLevel(sensorValues.windSpeed) },
+    formaldehyde: { value: sensorValues.formaldehyde, level: getFormaldehydeLevel(sensorValues.formaldehyde) },
+    co2: { value: sensorValues.co2, level: getCo2Level(sensorValues.co2) },
+    co: { value: sensorValues.co, level: getCoLevel(sensorValues.co) },
     lastUpdate: new Date().toISOString(),
   }), [sensorValues]);
 
@@ -519,16 +543,21 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       // 안전 비상벨 운영 상태
       emergencyBell: { normalCount: 456, errorCount: 2 },
       floodRiskZones: [
-        { zone: '원미동', currentLevel: 1.2, warningLevel: 3.5, percentage: 35 },
-        { zone: '소사동', currentLevel: 2.1, warningLevel: 3.5, percentage: 60 },
-        { zone: '오정동', currentLevel: 0.8, warningLevel: 3.5, percentage: 23 },
-        { zone: '중동', currentLevel: 1.5, warningLevel: 3.5, percentage: 43 },
+        { zone: '중앙구', currentLevel: 1.2, warningLevel: 3.5, percentage: 35 },
+        { zone: '동부구', currentLevel: 2.1, warningLevel: 3.5, percentage: 60 },
+        { zone: '서부구', currentLevel: 0.8, warningLevel: 3.5, percentage: 23 },
+        { zone: '남부구', currentLevel: 1.5, warningLevel: 3.5, percentage: 43 },
       ],
       facilityRiskZones: [
-        { zone: '원미동', riskLevel: 65, maxLevel: 100, percentage: 65 },
-        { zone: '소사동', riskLevel: 45, maxLevel: 100, percentage: 45 },
-        { zone: '오정동', riskLevel: 78, maxLevel: 100, percentage: 78 },
-        { zone: '중동', riskLevel: 52, maxLevel: 100, percentage: 52 },
+        { zone: '중앙구', riskLevel: 65, maxLevel: 100, percentage: 65 },
+        { zone: '동부구', riskLevel: 45, maxLevel: 100, percentage: 45 },
+        { zone: '서부구', riskLevel: 78, maxLevel: 100, percentage: 78 },
+        { zone: '남부구', riskLevel: 52, maxLevel: 100, percentage: 52 },
+      ],
+      parkingLots: [
+        { name: 'T1 주차장', available: 142, total: 350, percentage: 41, disabled: 12, women: 25, general: 105 },
+        { name: 'T2 주차장', available: 89, total: 280, percentage: 32, disabled: 8, women: 18, general: 63 },
+        { name: 'T3 주차장', available: 203, total: 420, percentage: 48, disabled: 15, women: 32, general: 156 },
       ],
     };
   }, []);
@@ -643,168 +672,88 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     return Math.abs(hash) % (maxInclusive + 1);
   };
 
-  // 시간대별 에너지 사용량 데이터 생성 (0~24시, 30분 간격, 총 49개 포인트)
-  const trendData = useMemo(() => {
-    const seedBase = typeof window !== 'undefined' ? new Date().toISOString().slice(0, 10) : 'static';
-    const hours = Array.from({ length: 49 }, (_, index) => index * 0.5);
-    const maxValue = 260000; // 26만 MWh
-    const minValue = 120000; // 12만 MWh
-    const range = maxValue - minValue;
-
-    return hours.map((hour) => {
-      const t = hour / 24;
-      // 부드러운 곡선을 위한 파형 생성
-      const wave1 = Math.sin(t * Math.PI * 2) * 1.0;
-      const wave2 = Math.sin(t * Math.PI * 4) * 0.5;
-      const baseWave = (wave1 + wave2) / 1.4;
-      // 시드 기반 노이즈로 자연스러운 변동 추가
-      const noiseSeed = getSeededInt(`${seedBase}-${Math.floor(hour)}`, 100);
-      const noise = (noiseSeed / 100 - 0.5) * 0.04;
-      const shaped = baseWave + noise;
-      const value = minValue + (range / 2) + shaped * (range / 2);
-
-      return {
-        hour: hour % 1 === 0 ? (hour === 24 ? '24' : hour.toString().padStart(2, '0')) : '',
-        xValue: hour, // X축 위치 (0~24)
-        value: Math.round(value),
-        originalHour: hour,
-      };
-    });
+  // 10분 단위 에너지 사용량 데이터 생성 (1시간 = 6개 구간)
+  const energyBarData = useMemo(() => {
+    const now = new Date();
+    const startHour = now.getHours() - 1;
+    
+    const data = [
+      { minute: 0, value: 180000, time: `${String(startHour).padStart(2, '0')}:00` },
+      { minute: 10, value: 195000, time: `${String(startHour).padStart(2, '0')}:10` },
+      { minute: 20, value: 210000, time: `${String(startHour).padStart(2, '0')}:20` },
+      { minute: 30, value: 205000, time: `${String(startHour).padStart(2, '0')}:30` },
+      { minute: 40, value: 190000, time: `${String(startHour).padStart(2, '0')}:40` },
+      { minute: 50, value: 175000, time: `${String(startHour).padStart(2, '0')}:50` },
+    ];
+    
+    return data;
   }, []);
 
-  const X_AXIS_TICKS = [0, 3, 6, 9, 12, 15, 18, 21, 24];
-
-  const labeledTrendData = useMemo(() => {
-    return trendData
-      .map((item, index) => ({ ...item, originalIndex: index }))
-      .filter(item => {
-        if (!item.hour || item.hour === '') return false;
-        const hour = Number.parseInt(item.hour, 10);
-        return !Number.isNaN(hour) && X_AXIS_TICKS.includes(hour);
-      });
-  }, [trendData]);
-
-  // 애니메이션을 위한 데이터 (순차적으로 나타나는 효과)
-  const animatedTrendData = useMemo(() => {
-    return trendData.map((item, index) => {
-      const hasLabel = item.hour !== '';
-      if (!hasLabel) {
-        return { ...item, _opacity: 0 };
-      }
-      
-      const labelIndex = labeledTrendData.findIndex(labeled => labeled.originalIndex === index);
-      
-      if (labelIndex === -1) {
-        return { ...item, _opacity: 0 };
-      }
-      
-      // 순차적으로 나타나도록 opacity 계산
-      const totalLabels = labeledTrendData.length;
-      const pointProgress = (trendAnimationProgress * totalLabels) - labelIndex;
-      const opacity = Math.max(0, Math.min(1, pointProgress));
-      
-      return {
-        ...item,
-        _opacity: opacity,
-      };
-    });
-  }, [trendData, labeledTrendData, trendAnimationProgress]);
-
-  // X축 마지막 틱(24)의 Y 위치를 다른 틱과 맞추기 위한 ref
-  const xAxisBaselineYRef = useRef<number | null>(null);
-  // X축 각 틱의 SVG 내부 X 좌표를 저장 (플로팅 라벨 위치 계산용)
-  const xAxisTickXMapRef = useRef<Map<number, number>>(new Map());
-  // 차트 컨테이너 ref (크기 측정용)
-  const trendChartContainerRef = useRef<HTMLDivElement>(null);
-  // 차트 컨테이너의 크기 정보 (플로팅 라벨 위치 계산용)
-  const [trendChartRect, setTrendChartRect] = useState<{ left: number; width: number; top: number; height: number }>({ left: 0, width: 0, top: 0, height: 0 });
-
-  // 차트 높이에 따라 Y축 틱 동적 계산
-  const yAxisTicks = useMemo(() => {
-    const height = trendChartRect.height;
-    if (height < 250) {
-      // 작은 높이: 3개 틱
-      return [120000, 190000, 260000];
-    } else if (height < 350) {
-      // 중간 높이: 6개 틱
-      return [120000, 150000, 180000, 210000, 240000, 260000];
-    } else {
-      // 큰 높이: 8개 틱
-      return [120000, 140000, 160000, 180000, 200000, 220000, 240000, 260000];
+  // Y축 범위 계산 (데이터 최대값 기준)
+  const energyYAxisConfig = useMemo(() => {
+    const values = energyBarData.map(d => d.value);
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    
+    // 최대값을 10000 단위로 올림
+    const yMax = Math.ceil(maxValue / 10000) * 10000;
+    // 최소값을 10000 단위로 내림
+    const yMin = Math.floor(minValue / 10000) * 10000;
+    
+    // 틱 개수 계산 (약 5개 정도)
+    const range = yMax - yMin;
+    const tickInterval = Math.ceil(range / 40000) * 10000; // 10000 단위로 반올림
+    const ticks = [];
+    for (let i = yMin; i <= yMax; i += tickInterval) {
+      ticks.push(i);
     }
-  }, [trendChartRect.height]);
+    
+    return { min: yMin, max: yMax, ticks };
+  }, [energyBarData]);
 
-  // 차트 컨테이너 크기 측정 (ResizeObserver + window resize)
-  useEffect(() => {
-    const chartEl = trendChartContainerRef.current;
-    if (!chartEl) return;
-    const update = () => {
-      const cr = chartEl.getBoundingClientRect();
-      setTrendChartRect({
-        left: 0, // wrapper 내부 기준이므로 0
-        width: cr.width,
-        top: 0, // wrapper 내부 기준이므로 0
-        height: cr.height,
-      });
-    };
-    const ro = new ResizeObserver(() => requestAnimationFrame(update));
-    ro.observe(chartEl);
-    update();
-    const onResize = () => requestAnimationFrame(update);
-    window.addEventListener('resize', onResize);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', onResize);
-    };
-  }, []);
-
-  const renderTrendXAxisTick = (props: any) => {
-    const { x, y, payload } = props ?? {};
-    const raw = payload?.value;
-    if (raw === undefined || raw === null) return null;
-
-    const hour = Number(raw);
-    xAxisTickXMapRef.current.set(hour, x);
-    const label = String(hour).padStart(2, '0');
-    const isLast = hour === 24;
-
-    if (!isLast) {
-      xAxisBaselineYRef.current = y;
-    }
-    const yToUse = isLast && xAxisBaselineYRef.current != null ? xAxisBaselineYRef.current : y;
-
+  // X축 틱 렌더링 함수
+  const renderEnergyXAxisTick = (props: any) => {
+    if (!props) return null;
+    const { x, y, payload, index } = props;
+    if (x === undefined || y === undefined || !payload || payload.value === undefined) return null;
+    
+    const minute = payload.value;
+    energyXAxisTickXMapRef.current.set(minute, x);
+    
+    const now = new Date();
+    const startHour = now.getHours() - 1;
+    
+    const timeLabel = `${String(startHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    
     return (
-      <g transform={`translate(${x},${yToUse})`}>
-        <text x={0} y={0} dy={12} textAnchor="middle" fill="#9ca3af" fontSize={12}>
-          {label}
+      <g transform={`translate(${x},${y})`}>
+        <text x={0} y={0} dy={10} textAnchor="middle" fill="#9ca3af" fontSize={11}>
+          {timeLabel}
         </text>
-        {isLast ? (
-          <text x={0} y={0} dy={28} textAnchor="middle" fill="#9ca3af" fontSize={12}>
-            (시)
-          </text>
-        ) : null}
       </g>
     );
   };
 
-  const renderTrendYAxisTick = (props: any) => {
-    const { x, y, payload } = props ?? {};
-    const value = Number(payload?.value);
-    if (Number.isNaN(value)) return null;
-
-    const isTop = value === 260000;
-    const displayValue = value >= 10000 ? `${(value / 10000).toFixed(0)}만` : value;
-
+  // Y축 틱 렌더링 함수
+  const renderEnergyYAxisTick = (props: any) => {
+    if (!props) return null;
+    const { x, y, payload } = props;
+    if (x === undefined || y === undefined || !payload || payload.value === undefined) return null;
+    
+    const value = payload.value;
+    const displayValue = Math.round(value / 10000); // MWh 단위로 변환
+    const isTop = value === energyYAxisConfig.max;
+    
     return (
       <g transform={`translate(${x},${y})`}>
-        {isTop ? (
-          <text x={0} y={0} dy={-8} textAnchor="end" fill="#9ca3af" fontSize={12}>
-            (MWh)
-          </text>
-        ) : null}
-        <text x={0} y={0} dy={4} textAnchor="end" fill="#9ca3af" fontSize={12}>
+        <text x={-5} y={0} dy={4} textAnchor="end" fill="#9ca3af" fontSize={11}>
           {displayValue}
         </text>
+        {isTop && (
+          <text x={-5} y={0} dy={-10} textAnchor="end" fill="#9ca3af" fontSize={11}>
+            (MWh)
+          </text>
+        )}
       </g>
     );
   };
@@ -1020,20 +969,45 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       setHeatmapAreaOffset((prev) => (prev + visibleHeatmapCount) % allHeatmapAreas.length);
       setHeatmapAnimationKey((prev) => prev + 1);
       
-      // 침수 위험 & 노후·위험 시설 롤링
+      // 침수 위험 & 노후·위험 시설 & 주차장 롤링
       setFloodRiskZoneIndex((prev) => (prev + 1) % 4);
       setFacilityRiskZoneIndex((prev) => (prev + 1) % 4);
+      setParkingLotIndex((prev) => (prev + 1) % 3);
     }, 5000);
     return () => clearInterval(interval);
   }, [totalAreaPages, allHeatmapAreas.length, visibleHeatmapCount, heatmapData]);
 
-  // 플로팅 라벨 순차적 애니메이션 (각 라벨이 1초씩 표시)
+  // 에너지 사용량 라벨 순차 애니메이션
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveFloatingLabelIndex((prev) => (prev + 1) % X_AXIS_TICKS.length);
-    }, 1000);
+      setActiveEnergyLabelIndex((prev) => (prev + 1) % 6);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // 에너지 차트 크기 측정
+  useEffect(() => {
+    const chartEl = energyChartContainerRef.current;
+    if (!chartEl) return;
+    
+    const update = () => {
+      const rect = chartEl.getBoundingClientRect();
+      setEnergyChartRect({ width: rect.width, height: rect.height });
+    };
+    
+    const ro = new ResizeObserver(() => requestAnimationFrame(update));
+    ro.observe(chartEl);
+    update();
+    
+    const onResize = () => requestAnimationFrame(update);
+    window.addEventListener('resize', onResize);
+    
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
 
   // 돌발 정보 표시 개수 (브라우저 높이에 따라 동적 조정)
   const [visibleIncidentCount, setVisibleIncidentCount] = useState(1);
@@ -1113,339 +1087,131 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           </div>
         </div>
 
-        {/* 실시간 대기질 모니터링 */}
+        {/* 실시간 실내 공기질 */}
         <div className="rounded-lg px-4 pt-4 pb-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-white font-semibold text-sm">실시간 대기질 모니터링</h3>
-            <span className="text-gray-400 text-xs flex items-center gap-1.5">
-              마지막 업데이트: <span>{sensorLocations[sensorLocationIndex]} 기준</span>
-              <span className="text-gray-400">·</span>
-              <span>{lastUpdateTime || '--:--'}</span>
+            <h3 className="text-white font-semibold text-sm">실시간 실내 공기질</h3>
+            <span className="text-gray-400 text-xs">
+              마지막 업데이트: {lastUpdateTime || '--:--'}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2 min-w-0">
-            {/* PM2.5 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">PM2.5</span>
-                </div>
-                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.pm25.level)}
-                </span>
-              </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
-                {sensorData.pm25.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
-              </div>
-            </div>
-
-            {/* PM10 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+          <div className="grid grid-cols-4 gap-2 min-w-0">
+            {/* 1줄: 미세먼지, 초미세먼지 */}
+            {/* PM10 (미세먼지) */}
+            <div className="col-span-2 bg-[#2a2d35] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
                 <div className="flex items-center gap-1 min-w-0">
                   <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">PM10</span>
+                  <span className="text-gray-400 text-xs truncate">미세먼지</span>
                 </div>
                 <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm10.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.pm10.level)}
                 </span>
               </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
+              <div className="text-white text-base font-semibold transition-all duration-300 text-right">
                 {sensorData.pm10.value.toFixed(1)}
                 <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
               </div>
             </div>
 
+            {/* PM2.5 (초미세먼지) */}
+            <div className="col-span-2 bg-[#2a2d35] p-3 min-w-0 overflow-hidden rounded-lg">
+              <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">초미세먼지</span>
+                </div>
+                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                  {getLevelText(sensorData.pm25.level)}
+                </span>
+              </div>
+              <div className="text-white text-base font-semibold transition-all duration-300 text-right">
+                {sensorData.pm25.value.toFixed(1)}
+                <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
+              </div>
+            </div>
+
+            {/* 2줄: 온도, 습도, 포름알데히드 */}
             {/* 온도 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+            <div className="bg-[#2a2d35] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
                 <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">온도</span>
               </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
+              <div className="text-white text-base font-semibold transition-all duration-300 text-right">
                 {sensorData.temperature.value.toFixed(1)}
                 <span className="text-gray-400 text-xs ml-0.5">°C</span>
               </div>
             </div>
 
             {/* 습도 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+            <div className="bg-[#2a2d35] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
                 <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 <span className="text-gray-400 text-xs truncate">습도</span>
               </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
+              <div className="text-white text-base font-semibold transition-all duration-300 text-right">
                 {sensorData.humidity.value.toFixed(1)}
                 <span className="text-gray-400 text-xs ml-0.5">%</span>
               </div>
             </div>
 
-            {/* 강수량 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-400 text-xs truncate">강수량</span>
+            {/* 포름알데히드 */}
+            <div className="col-span-2 bg-[#2a2d35] p-3 min-w-0 overflow-hidden rounded-lg">
+              <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:flask" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">포름알데히드</span>
+                </div>
+                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.formaldehyde.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                  {getLevelText(sensorData.formaldehyde.level)}
+                </span>
               </div>
-              <div className="text-white text-sm font-semibold transition-all duration-300">
-                {sensorData.rainfall.value.toFixed(1)}
-                <span className="text-gray-400 text-[10px] ml-0.5">mm</span>
-                <span className="text-gray-400 text-[10px] ml-1">(누적량)</span>
+              <div className="text-white text-base font-semibold transition-all duration-300 text-right">
+                {sensorData.formaldehyde.value.toFixed(2)}
+                <span className="text-gray-400 text-xs ml-0.5">mg/m³</span>
               </div>
             </div>
 
-            {/* 풍속 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-400 text-xs truncate">풍속</span>
+            {/* 3줄: 이산화탄소, 일산화탄소 */}
+            {/* 이산화탄소 */}
+            <div className="col-span-2 bg-[#2a2d35] p-3 min-w-0 overflow-hidden rounded-lg">
+              <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:molecule-co2" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">이산화탄소</span>
+                </div>
+                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.co2.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                  {getLevelText(sensorData.co2.level)}
+                </span>
               </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
-                {sensorData.windSpeed.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">m/s</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 도시 안전·시설 관리 현황 */}
-        <div className="rounded-lg px-4 pt-4 pb-4 flex flex-col gap-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
-          <h3 className="text-white font-semibold text-sm">도시 안전·시설 관리 현황</h3>
-
-          {/* 침수 위험 & 노후·위험 시설 */}
-            <div className="grid grid-cols-2 gap-3 min-w-0">
-              {/* 침수 위험 관리 수준 */}
-              <div className="bg-[#393a42] px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg">
-                <div className="flex items-start justify-between mb-1" style={{ minHeight: '32px' }}>
-                  <span className="text-gray-400 text-xs font-semibold">침수 위험 관리 수준</span>
-                  <span className="text-white text-xs">{infrastructureStatus.floodRiskZones[floodRiskZoneIndex]?.zone}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="relative" style={{ width: '140px', height: '90px' }}>
-                    <svg width="140" height="90" viewBox="0 0 140 90">
-                      <defs>
-                        <linearGradient id="floodGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#10b981" />
-                          <stop offset="50%" stopColor="#f59e0b" />
-                          <stop offset="100%" stopColor="#ef4444" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* 배경 아크 */}
-                      <path
-                        d="M 20 65 A 50 50 0 0 1 120 65"
-                        fill="none"
-                        stroke="#1a1a1a"
-                        strokeWidth="12"
-                        strokeLinecap="round"
-                      />
-                      
-                      {/* 컬러 아크 */}
-                      <path
-                        d="M 20 65 A 50 50 0 0 1 120 65"
-                        fill="none"
-                        stroke="url(#floodGaugeGradient)"
-                        strokeWidth="12"
-                        strokeLinecap="round"
-                        strokeDasharray="157"
-                        strokeDashoffset={157 - (157 * ((infrastructureStatus.floodRiskZones[floodRiskZoneIndex]?.percentage || 0) / 100))}
-                        style={{ transition: 'stroke-dashoffset 1s ease-out' }}
-                      />
-                      
-                      {/* 바늘 */}
-                      <g style={{ transformOrigin: '70px 65px', transform: `rotate(${-90 + 180 * ((infrastructureStatus.floodRiskZones[floodRiskZoneIndex]?.percentage || 0) / 100)}deg)`, transition: 'transform 1s ease-out' }}>
-                        <line
-                          x1="70"
-                          y1="65"
-                          x2="70"
-                          y2="20"
-                          stroke="#fff"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                        />
-                        <circle cx="70" cy="65" r="6" fill="#fff" />
-                      </g>
-                      
-                    </svg>
-                    {/* 플로팅 상태 텍스트 */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mt-2">
-                      {(() => {
-                        const percentage = infrastructureStatus.floodRiskZones[floodRiskZoneIndex]?.percentage || 0;
-                        if (percentage < 33) {
-                          return (
-                            <div className="px-2 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                              <span className="text-green-400 text-[10px] font-medium leading-none">정상</span>
-                            </div>
-                          );
-                        } else if (percentage < 66) {
-                          return (
-                            <div className="px-2 py-1.5 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 flex items-center justify-center">
-                              <span className="text-yellow-400 text-[10px] font-medium leading-none">주의</span>
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <div className="px-2 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30 flex items-center justify-center">
-                              <span className="text-red-400 text-[10px] font-medium leading-none">위험</span>
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 노후·위험시설 관리 필요도 */}
-              <div className="bg-[#393a42] px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg">
-                <div className="flex items-start justify-between mb-1">
-                  <div className="text-gray-400 text-xs font-semibold">
-                    <div>노후·위험시설</div>
-                    <div>관리 필요도</div>
-                  </div>
-                  <span className="text-white text-xs">{infrastructureStatus.facilityRiskZones[facilityRiskZoneIndex]?.zone}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="relative" style={{ width: '140px', height: '90px' }}>
-                    <svg width="140" height="90" viewBox="0 0 140 90">
-                      <defs>
-                        <linearGradient id="facilityGaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#10b981" />
-                          <stop offset="50%" stopColor="#f59e0b" />
-                          <stop offset="100%" stopColor="#ef4444" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {/* 배경 아크 */}
-                      <path
-                        d="M 20 65 A 50 50 0 0 1 120 65"
-                        fill="none"
-                        stroke="#1a1a1a"
-                        strokeWidth="12"
-                        strokeLinecap="round"
-                      />
-                      
-                      {/* 컬러 아크 */}
-                      <path
-                        d="M 20 65 A 50 50 0 0 1 120 65"
-                        fill="none"
-                        stroke="url(#facilityGaugeGradient)"
-                        strokeWidth="12"
-                        strokeLinecap="round"
-                        strokeDasharray="157"
-                        strokeDashoffset={157 - (157 * ((infrastructureStatus.facilityRiskZones[facilityRiskZoneIndex]?.percentage || 0) / 100))}
-                        style={{ transition: 'stroke-dashoffset 1s ease-out' }}
-                      />
-                      
-                      {/* 바늘 */}
-                      <g style={{ transformOrigin: '70px 65px', transform: `rotate(${-90 + 180 * ((infrastructureStatus.facilityRiskZones[facilityRiskZoneIndex]?.percentage || 0) / 100)}deg)`, transition: 'transform 1s ease-out' }}>
-                        <line
-                          x1="70"
-                          y1="65"
-                          x2="70"
-                          y2="20"
-                          stroke="#fff"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                        />
-                        <circle cx="70" cy="65" r="6" fill="#fff" />
-                      </g>
-                      
-                    </svg>
-                    {/* 플로팅 상태 텍스트 */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 mt-2">
-                      {(() => {
-                        const percentage = infrastructureStatus.facilityRiskZones[facilityRiskZoneIndex]?.percentage || 0;
-                        if (percentage < 35) {
-                          return (
-                            <div className="px-2 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                              <span className="text-green-400 text-[10px] font-medium leading-none">낮음</span>
-                            </div>
-                          );
-                        } else if (percentage < 70) {
-                          return (
-                            <div className="px-2 py-1.5 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 flex items-center justify-center">
-                              <span className="text-yellow-400 text-[10px] font-medium leading-none">보통</span>
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <div className="px-2 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30 flex items-center justify-center">
-                              <span className="text-red-400 text-[10px] font-medium leading-none">높음</span>
-                            </div>
-                          );
-                        }
-                      })()}
-                    </div>
-                  </div>
-                </div>
+              <div className="text-white text-base font-semibold transition-all duration-300 text-right">
+                {sensorData.co2.value.toFixed(0)}
+                <span className="text-gray-400 text-xs ml-0.5">ppm</span>
               </div>
             </div>
 
-          {/* 시설물 운영 상태 */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* 도로 조명 */}
-            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-gray-400 text-xs font-semibold">도로 조명</span>
+            {/* 일산화탄소 */}
+            <div className="col-span-2 bg-[#2a2d35] p-3 min-w-0 overflow-hidden rounded-lg">
+              <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                <div className="flex items-center gap-1 min-w-0">
+                  <Icon icon="mdi:molecule-co" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">일산화탄소</span>
+                </div>
+                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.co.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                  {getLevelText(sensorData.co.level)}
+                </span>
               </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.errorCount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 교통신호 */}
-            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-gray-400 text-xs font-semibold">교통신호</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.errorCount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 안전 비상벨 */}
-            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-gray-400 text-xs font-semibold">안전 비상벨</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.errorCount}</span>
-                </div>
+              <div className="text-white text-base font-semibold transition-all duration-300 text-right">
+                {sensorData.co.value.toFixed(1)}
+                <span className="text-gray-400 text-xs ml-0.5">ppm</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 돌발 정보 */}
-        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+        {/* 돌발 정보 - 임시로 숨김 */}
+        {/* <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <h3 className="text-white text-sm font-semibold mb-3">도시 교통 돌발 정보</h3>
           <div ref={incidentContainerRef} className="flex flex-col gap-2">
             {Array.from({ length: visibleIncidentCount }).map((_, index) => {
@@ -1459,155 +1225,287 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               );
             })}
           </div>
-        </div>
+        </div> */}
 
         {/* 시간별 에너지 사용량 (X축: 시간, Y축: 에너지 사용량 MWh) */}
-        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col relative" style={{ flex: 1, minHeight: '180px', background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+        <div className="rounded-lg px-4 pt-4 pb-4 gradient-border-left-top flex flex-col relative overflow-hidden" style={{ flex: 1, minHeight: '180px', background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-white text-sm font-semibold">도시 에너지 사용량</h3>
-            <span className="text-gray-400 text-xs">지난 24시간</span>
+            <h3 className="text-white text-sm font-semibold">에너지 사용량</h3>
+            <span className="text-gray-400 text-xs">
+              마지막 업데이트: {(() => {
+                const now = new Date();
+                const currentHour = now.getHours();
+                return `${String(currentHour).padStart(2, '0')}:00`;
+              })()}
+            </span>
           </div>
-          <div className="overflow-hidden flex-1">
-            <div className="h-full">
-              <div ref={trendChartContainerRef} className="relative w-full h-full rounded-xl overflow-visible">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={animatedTrendData}
-                    margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
-                  >
+
+          {/* 에너지 게이지 */}
+          <div className="bg-[#2a2d35] rounded-lg px-3 py-2.5 mb-3">
+            <div className="flex items-center">
+              {/* 1전시장 */}
+              <div className="flex-1 flex flex-col items-center">
+                <div className="relative" style={{ width: '100px', height: '60px' }}>
+                  <svg width="100" height="60" viewBox="0 0 100 60">
                     <defs>
-                      <linearGradient id="eventWaveFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(0,102,255,0.5)" />
-                        <stop offset="100%" stopColor="rgba(15,23,42,0.15)" />
-                      </linearGradient>
-                      <linearGradient id="eventWaveStroke" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#0066FF" />
-                        <stop offset="50%" stopColor="#8A2BE2" />
-                        <stop offset="100%" stopColor="#ff8566" />
-                      </linearGradient>
-                      <filter id="neonGlow">
-                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-                        <feMerge>
-                          <feMergeNode in="coloredBlur"/>
-                          <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                      </filter>
-                      {/* 빛 반사 효과를 위한 그라디언트 */}
-                      <linearGradient id="lightReflectionStroke" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="30%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.9)" />
-                        <stop offset="70%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                        <animateTransform
-                          attributeName="gradientTransform"
-                          type="translate"
-                          values="-200 0;400 0"
-                          dur="5s"
-                          repeatCount="indefinite"
-                        />
+                      <linearGradient id="energyGaugeGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#10b981" />
+                        <stop offset="50%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#ef4444" />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="1.5 2" stroke="rgba(107, 114, 128, 0.3)" opacity={1} />
-                    <XAxis
-                      dataKey="xValue"
-                      type="number"
-                      domain={[0, 24]}
-                      ticks={[0, 3, 6, 9, 12, 15, 18, 21, 24]}
-                      tick={renderTrendXAxisTick}
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
-                      tickMargin={8}
-                    />
-                    <YAxis
-                      domain={[120000, 260000]}
-                      tick={renderTrendYAxisTick}
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
-                      ticks={yAxisTicks}
-                      width={35}
-                      allowDecimals={false}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="url(#eventWaveStroke)"
-                      strokeWidth={3}
-                      fill="url(#eventWaveFill)"
-                      fillOpacity={0.9}
-                      isAnimationActive={false}
-                      dot={false}
-                      activeDot={false}
-                    />
-                    {/* 빛 반사 효과 - 선에만 적용 */}
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="url(#lightReflectionStroke)"
-                      strokeWidth={4}
+                    
+                    {/* 배경 아크 */}
+                    <path
+                      d="M 12 48 A 38 38 0 0 1 88 48"
                       fill="none"
-                      opacity={0.7}
-                      isAnimationActive={false}
+                      stroke="#1a1a1a"
+                      strokeWidth="8"
+                      strokeLinecap="round"
                     />
-                  </AreaChart>
-                </ResponsiveContainer>
-                {/* X축 틱에 해당하는 데이터 포인트 위에 플로팅 라벨 표시 */}
-                {trendChartRect.width > 0 &&
-                  X_AXIS_TICKS.map((hourNum, index) => {
-                    // 현재 활성화된 인덱스만 표시
-                    if (index !== activeFloatingLabelIndex) return null;
                     
-                    // 해당 시간의 데이터 찾기 - animatedTrendData에서 가져오기 (실제 차트와 동일)
-                    const dataIndex = hourNum * 2; // 0.5시간 간격이므로 시간 * 2
-                    const dataPoint = animatedTrendData[dataIndex];
-                    if (!dataPoint) return null;
+                    {/* 컬러 아크 */}
+                    <path
+                      d="M 12 48 A 38 38 0 0 1 88 48"
+                      fill="none"
+                      stroke="url(#energyGaugeGradient1)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray="119"
+                      strokeDashoffset={119 - (119 * 0.25)}
+                    />
                     
-                    // X축 틱의 실제 SVG 좌표 사용
-                    const tickX = xAxisTickXMapRef.current.get(hourNum);
-                    if (tickX === undefined) return null;
+                    {/* 바늘 */}
+                    <g style={{ transformOrigin: '50px 48px', transform: `rotate(${-90 + 180 * 0.25}deg)` }}>
+                      <line
+                        x1="50"
+                        y1="48"
+                        x2="50"
+                        y2="16"
+                        stroke="#fff"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="50" cy="48" r="4" fill="#fff" />
+                    </g>
+                  </svg>
+                  {/* 플로팅 상태 텍스트 */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="px-1.5 py-0.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
+                      <span className="text-green-400 text-[10px] font-medium leading-none">정상</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center mt-1.5">
+                  <span className="text-gray-400 text-xs">1전시장</span>
+                  <div className="text-white text-base font-semibold">
+                    12.5
+                    <span className="text-gray-400 text-xs ml-0.5">MWh</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 디바이더 */}
+              <div className="w-px h-24 bg-gray-600 mx-3"></div>
+
+              {/* 2전시장 */}
+              <div className="flex-1 flex flex-col items-center">
+                <div className="relative" style={{ width: '100px', height: '60px' }}>
+                  <svg width="100" height="60" viewBox="0 0 100 60">
+                    <defs>
+                      <linearGradient id="energyGaugeGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#10b981" />
+                        <stop offset="50%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#ef4444" />
+                      </linearGradient>
+                    </defs>
                     
-                    // 차트 설정
-                    const marginTop = 30;
-                    const marginBottom = 20;
+                    {/* 배경 아크 */}
+                    <path
+                      d="M 12 48 A 38 38 0 0 1 88 48"
+                      fill="none"
+                      stroke="#1a1a1a"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                    />
                     
-                    // plot area 크기
-                    const plotHeight = trendChartRect.height - marginTop - marginBottom;
+                    {/* 컬러 아크 */}
+                    <path
+                      d="M 12 48 A 38 38 0 0 1 88 48"
+                      fill="none"
+                      stroke="url(#energyGaugeGradient2)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray="119"
+                      strokeDashoffset={119 - (119 * 0.35)}
+                    />
                     
-                    // X 위치: SVG 좌표 그대로 사용
-                    const left = tickX;
-                    
-                    // Y 위치: value를 Y축 domain [120000, 260000]에 맞춰 정확히 계산
-                    const value = dataPoint.value ?? 120000;
-                    const minDomain = 120000;
-                    const maxDomain = 260000;
-                    const valueRatio = (value - minDomain) / (maxDomain - minDomain); // 0 = 하단, 1 = 상단
-                    
-                    // 데이터 포인트의 정확한 Y 좌표 계산
-                    const dataPointY = marginTop + (plotHeight * (1 - valueRatio));
-                    
-                    // 라벨을 데이터 포인트 위에 배치
-                    const top = dataPointY - 30;
-                    
-                    // 값 포맷팅
-                    const displayValue = `${(value / 10000).toFixed(1)}`;
-                    
-                    return (
-                      <div
-                        key={`floating-${hourNum}`}
-                        className="absolute pointer-events-none -translate-x-1/2"
-                        style={{
-                          left: `${left}px`,
-                          top: `${top}px`,
-                          zIndex: 10,
-                          opacity: 1,
-                        }}
-                      >
-                        <div className="px-2 py-1 rounded-full bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 flex items-center justify-center whitespace-nowrap">
-                          <span className="text-blue-400 text-xs font-medium leading-none">{displayValue}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                    {/* 바늘 */}
+                    <g style={{ transformOrigin: '50px 48px', transform: `rotate(${-90 + 180 * 0.35}deg)` }}>
+                      <line
+                        x1="50"
+                        y1="48"
+                        x2="50"
+                        y2="16"
+                        stroke="#fff"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="50" cy="48" r="4" fill="#fff" />
+                    </g>
+                  </svg>
+                  {/* 플로팅 상태 텍스트 */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                    <div className="px-1.5 py-0.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
+                      <span className="text-green-400 text-[10px] font-medium leading-none">정상</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center mt-1.5">
+                  <span className="text-gray-400 text-xs">2전시장</span>
+                  <div className="text-white text-base font-semibold">
+                    15.8
+                    <span className="text-gray-400 text-xs ml-0.5">MWh</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 overflow-hidden" style={{ minHeight: '160px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={energyBarData}
+                  margin={{ top: 25, right: 5, left: 5, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="energyBarGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0066FF" />
+                      <stop offset="100%" stopColor="#8A2BE2" />
+                    </linearGradient>
+                  </defs>
+                  
+                  <CartesianGrid 
+                    strokeDasharray="3 3" 
+                    stroke="rgba(107, 114, 128, 0.2)" 
+                    vertical={false}
+                  />
+                  
+                  <XAxis
+                    dataKey="minute"
+                    type="number"
+                    domain={[-5, 55]}
+                    ticks={[0, 10, 20, 30, 40, 50]}
+                    tick={renderEnergyXAxisTick}
+                    tickLine={false}
+                    axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
+                  />
+                  
+                  <YAxis
+                    domain={[energyYAxisConfig.min, energyYAxisConfig.max]}
+                    ticks={energyYAxisConfig.ticks}
+                    tick={renderEnergyYAxisTick}
+                    tickLine={false}
+                    axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
+                    width={45}
+                  />
+                  
+                  <Bar
+                    dataKey="value"
+                    fill="url(#energyBarGradient)"
+                    radius={[4, 4, 0, 0]}
+                    barSize={35}
+                    isAnimationActive={false}
+                    label={(props: any) => {
+                      const { x, y, width, height, value, index } = props;
+                      
+                      // 현재 활성화된 인덱스만 표시
+                      if (index !== activeEnergyLabelIndex) return null;
+                      
+                      const displayValue = `${(value / 10000).toFixed(1)}`;
+                      
+                      return (
+                        <g>
+                          <foreignObject
+                            x={x + width / 2 - 25}
+                            y={y - 30}
+                            width={50}
+                            height={25}
+                          >
+                            <div className="flex items-center justify-center w-full h-full">
+                              <div className="px-2 py-1 rounded-full bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 flex items-center justify-center whitespace-nowrap">
+                                <span className="text-blue-400 text-[10px] font-medium leading-none">{displayValue}</span>
+                              </div>
+                            </div>
+                          </foreignObject>
+                        </g>
+                      );
+                    }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* 주차 이용 현황 */}
+        <div className="rounded-lg px-4 pt-3 pb-3 flex flex-col gap-2.5 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-white font-semibold text-sm">주차 이용 현황</h3>
+            <span className="text-blue-400 text-xs font-medium">{infrastructureStatus.parkingLots[parkingLotIndex]?.name}</span>
+          </div>
+
+          {/* 전체 / 주차 가능 카운트 */}
+          <div className="bg-[#2a2d35] px-3 py-2.5 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex items-center justify-between flex-1">
+                <span className="text-gray-400 text-xs">전체</span>
+                <span className="text-white text-2xl font-bold">{infrastructureStatus.parkingLots[parkingLotIndex]?.total}</span>
+              </div>
+              <div className="w-px h-8 bg-gray-600 mx-3"></div>
+              <div className="flex items-center justify-between flex-1">
+                <span className="text-gray-400 text-xs">주차 가능</span>
+                <span className="text-blue-400 text-2xl font-bold transition-all duration-1000">
+                  {infrastructureStatus.parkingLots[parkingLotIndex]?.available}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 잔여 주차면 */}
+          <div>
+            <div className="text-gray-400 text-xs mb-2">잔여 주차면</div>
+            <div className="grid grid-cols-3 gap-2">
+              {/* 장애인 주차면 */}
+              <div className="flex flex-col gap-1.5 bg-[#2a2d35] px-2 py-2 rounded">
+                <div className="flex items-center gap-1">
+                  <Icon icon="mdi:accessible" className="w-4 h-4 text-blue-400" />
+                  <span className="text-gray-400 text-xs">장애인</span>
+                </div>
+                <span className="text-white text-base font-semibold text-right">
+                  {infrastructureStatus.parkingLots[parkingLotIndex]?.disabled}
+                </span>
+              </div>
+
+              {/* 여성전용 주차면 */}
+              <div className="flex flex-col gap-1.5 bg-[#2a2d35] px-2 py-2 rounded">
+                <div className="flex items-center gap-1">
+                  <Icon icon="mdi:human-female" className="w-4 h-4 text-pink-400" />
+                  <span className="text-gray-400 text-xs">여성전용</span>
+                </div>
+                <span className="text-white text-base font-semibold text-right">
+                  {infrastructureStatus.parkingLots[parkingLotIndex]?.women}
+                </span>
+              </div>
+
+              {/* 일반 주차면 */}
+              <div className="flex flex-col gap-1.5 bg-[#2a2d35] px-2 py-2 rounded">
+                <div className="flex items-center gap-1">
+                  <Icon icon="mdi:car" className="w-4 h-4 text-green-400" />
+                  <span className="text-gray-400 text-xs">일반</span>
+                </div>
+                <span className="text-white text-base font-semibold text-right">
+                  {infrastructureStatus.parkingLots[parkingLotIndex]?.general}
+                </span>
               </div>
             </div>
           </div>

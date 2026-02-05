@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
-import TopControlPanel from '@/components/dashboard/HOME-v2/TopControlPanel';
 import FastSearchProgress from '@/components/dashboard/HOME-v2/FastSearchProgress';
 import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v2/FastSearchCandidateDetailPopup';
 import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
@@ -369,12 +368,12 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
 
   return (
     <>
-      <TopControlPanel isVisible={isVisible} />
       <div
-        className={`absolute left-0 top-0 bottom-0 flex flex-col transition-all duration-500 ease-out ${
+        className={`absolute top-0 bottom-0 flex flex-col transition-all duration-500 ease-out ${
           isVisible ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'
         }`}
         style={{
+          left: '80px',
           width: `${width}px`,
           zIndex: 150,
           paddingTop: '16px',

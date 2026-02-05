@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/HOME/MapView';
-import LeftPanel from '@/components/dashboard/LeftPanel';
+import LeftPanel from '@/components/dashboard/HOME/LeftPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
+import CCTVStatusPanel from '@/components/dashboard/HOME/CCTVStatusPanel';
 import AIAgentPopup from '@/components/dashboard/HOME/AIAgentPopup';
 import TopControlPanel from '@/components/dashboard/HOME/TopControlPanel';
 import { Event, EventSummary as EventSummaryType } from '@/types';
@@ -394,7 +395,8 @@ export default function Home() {
         className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
-        <HeatmapPanel />
+        <CCTVStatusPanel />
+        <HeatmapPanel areaLabelPrefix="Hall" minVisibleCount={3} className="flex-shrink-0" />
         <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <EventList
             events={eventsForList}

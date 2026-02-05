@@ -4,6 +4,7 @@ import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
+import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
@@ -39,6 +40,7 @@ export default function HomeV2() {
   /** 에이전트 팝업 최대 높이: 플로팅 버튼(Agent Hub)을 넘지 않도록 */
   const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null); // 외부에서 열 후보 ID
+  const [selectedMenuId, setSelectedMenuId] = useState<'fast-search' | 'object-tracking' | 'broadcast' | null>(null);
   const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
@@ -231,6 +233,26 @@ export default function HomeV2() {
     return 52;
   }, [showFastSearchList]);
 
+  const handleMenuSelect = (menuId: 'fast-search' | 'object-tracking' | 'broadcast') => {
+    setSelectedMenuId(menuId);
+    
+    // 메뉴별 동작 정의
+    if (menuId === 'fast-search') {
+      // 고속검색: 키보드 2번 단축키와 동일한 동작
+      setPanelsSlidOut(true);
+      setShowCCTV(false);
+      setHideControls(true);
+      setShowFastSearch(true);
+      setHideDimForFastSearch(false);
+    } else if (menuId === 'object-tracking') {
+      // 객체추적: 추후 구현 예정
+      console.log('객체추적 기능 준비중');
+    } else if (menuId === 'broadcast') {
+      // 전파: 추후 구현 예정
+      console.log('전파 기능 준비중');
+    }
+  };
+
   const handleEventAction = (eventId: string) => {
     const event = events.find((e) => e.id === eventId);
     if (event?.eventId) {
@@ -278,6 +300,7 @@ export default function HomeV2() {
     setShowFastSearch(false);
     setShowReSearchProgress(false);
     setExcludedAttributes([]);
+    setSelectedMenuId(null);
   };
 
   /** 에이전트 팝업 maxHeight: 팝업 top ~ 플로팅 버튼 위까지 (Agent Hub bottom 24px + 높이 56px + 여유 8px) */
@@ -376,9 +399,17 @@ export default function HomeV2() {
         />
       </div>
 
+      {/* 좌측 메뉴 패널 - 고속검색 시작 시 좌측에서 우측으로 슬라이드 */}
       <div 
-        className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
-        style={{ zIndex: 100 }}
+        className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${showFastSearchList ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
+        style={{ zIndex: 101 }}
+      >
+        <LeftMenuPanel onMenuSelect={handleMenuSelect} />
+      </div>
+
+      <div 
+        className={`absolute top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+        style={{ zIndex: 100, left: '0px' }}
       >
         <LeftPanel onCollapsedChange={setLeftPanelCollapsed} />
       </div>
@@ -387,7 +418,18 @@ export default function HomeV2() {
         className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
-        <HeatmapPanel />
+        <HeatmapPanel 
+          areaLabels={{
+            zone1: '중동',
+            zone2: '상동',
+            zone3: '심곡동',
+            zone4: '소사동',
+            zone5: '역곡동',
+            zone6: '송내동',
+            zone7: '오정동',
+            zone8: '원종동',
+          }}
+        />
         <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <EventList
             events={eventsForList}

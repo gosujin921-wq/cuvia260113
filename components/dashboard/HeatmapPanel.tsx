@@ -2,14 +2,17 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 
 interface HeatmapPanelProps {
   className?: string;
+  areaLabelPrefix?: string; // 'Zone', 'Hall', '동' 등
+  areaLabels?: Record<string, string>; // zone1 -> '중동', zone2 -> '상동' 등 커스텀 라벨
+  minVisibleCount?: number; // 최소 표시 개수
 }
 
-const HeatmapPanel = ({ className = '' }: HeatmapPanelProps) => {
+const HeatmapPanel = ({ className = '', areaLabelPrefix = 'Zone', areaLabels, minVisibleCount = 4 }: HeatmapPanelProps) => {
   const [heatmapAreaOffset, setHeatmapAreaOffset] = useState(0);
   const [heatmapAnimationKey, setHeatmapAnimationKey] = useState(0);
   const [previousHeatmapData, setPreviousHeatmapData] = useState<Record<string, Record<string, number>>>({});
   const previousHeatmapDataRef = useRef<Record<string, Record<string, number>>>({});
-  const [visibleHeatmapCount, setVisibleHeatmapCount] = useState(4);
+  const [visibleHeatmapCount, setVisibleHeatmapCount] = useState(minVisibleCount);
   const heatmapGridRef = useRef<HTMLDivElement>(null);
 
   // 모든 지역 목록 (zone1~zone8)
@@ -246,7 +249,7 @@ const HeatmapPanel = ({ className = '' }: HeatmapPanelProps) => {
                 }}
               >
                 <div className="w-10 text-[12px] text-gray-400 truncate" title={area}>
-                  {area.replace('zone', 'Zone')}
+                  {areaLabels ? (areaLabels[area] || area) : area.replace('zone', areaLabelPrefix)}
                 </div>
                 <div className="grid grid-cols-12 gap-1 flex-1 min-w-0">
                   {heatmapTimeSlots.map((slot, slotIndex) => {

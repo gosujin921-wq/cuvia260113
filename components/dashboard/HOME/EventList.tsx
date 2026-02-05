@@ -41,13 +41,13 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
     return `CCTV-V-${cctvNumber}`;
   };
 
-  // Zone 랜덤 선택 함수 (이벤트 ID 기반으로 일관된 Zone 할당)
-  const getZoneName = (event: Event): string => {
-    // 이벤트 ID를 기반으로 일관된 Zone 할당 (같은 이벤트는 항상 같은 Zone)
+  // Hall 랜덤 선택 함수 (이벤트 ID 기반으로 일관된 Hall 할당)
+  const getHallName = (event: Event): string => {
+    // 이벤트 ID를 기반으로 일관된 Hall 할당 (같은 이벤트는 항상 같은 Hall)
     const eventId = event.eventId || event.id;
     const hash = eventId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const zoneNumber = (hash % 8) + 1; // 1~8
-    return `Zone${zoneNumber}`;
+    const hallNumber = (hash % 8) + 1; // 1~8
+    return `Hall${hallNumber}`;
   };
 
   // 날짜 시간 포맷 함수
@@ -189,7 +189,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
           filteredEvents.map((event) => {
             const isSelected = selectedEventId === event.id;
             const cctvName = getCCTVName(event);
-            const zoneName = getZoneName(event);
+            const hallName = getHallName(event);
             const dateTime = formatDateTime(event);
             
             // 1 키로 선택된 이벤트의 제목 변경
@@ -257,7 +257,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
                 
                 {/* 위치 | CCTV 이름 */}
                 <div className="text-gray-200 text-xs flex items-center gap-2">
-                  <span>{zoneName}</span>
+                  <span>{hallName}</span>
                   <span className="text-gray-500">|</span>
                   <span>{cctvName}</span>
                 </div>
