@@ -272,12 +272,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
-      center: [126.7830, 37.5044],
+      center: [126.8136, 37.4865], // 역곡 좌표
       zoom: 15,
       pitch: 60,
       bearing: -17.6,
       attributionControl: false,
-      interactive: false,
+      interactive: true,
     });
 
     // 맵 로드 후 3D 건물 활성화
@@ -563,39 +563,450 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     };
   }, []);
 
-  // flyToLocation이 변경되면 지도를 해당 위치로 이동
+  // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
   useEffect(() => {
     console.log('flyToLocation 변경:', flyToLocation, 'mapRef.current:', mapRef.current);
-    if (flyToLocation && mapRef.current) {
-      console.log('지도 이동 시작:', flyToLocation);
+    if (!mapRef.current) return;
+    
+    const map = mapRef.current;
+    const oldEventMarker = (map as any)._eventMarker;
+    
+    if (flyToLocation) {
+      console.log('지도 이동 및 마커 생성:', flyToLocation);
       
-      // 지도가 로드되었는지 확인
-      if (mapRef.current.loaded()) {
-        mapRef.current.flyTo({
+      // 기존 이벤트 마커 제거
+      if (oldEventMarker) {
+        oldEventMarker.remove();
+      }
+      
+      // 지도 이동
+      if (map.loaded()) {
+        map.flyTo({
           center: flyToLocation as [number, number],
           zoom: 17,
+          pitch: 60,
+          bearing: -17.6 + 165, // 11번 회전 (15도 × 11 = 165도)
+          duration: 1500,
+          essential: true
+        });
+      }
+      
+      // 새 이벤트 마커 생성
+      const markerContainer = document.createElement('div');
+      markerContainer.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      `;
+      
+      const centerWrapper = document.createElement('div');
+      centerWrapper.style.cssText = `
+        position: relative;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+      
+      // 펄스 효과 3개
+      for (let i = 0; i < 3; i++) {
+        const pulse = document.createElement('div');
+        pulse.style.cssText = `
+          position: absolute;
+          width: 120px;
+          height: 120px;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) translateZ(0) scale(0.8);
+          animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          animation-delay: ${i * 0.2}s;
+          will-change: transform, opacity;
+          pointer-events: none;
+          z-index: 1;
+        `;
+        const pulseInner = document.createElement('div');
+        pulseInner.style.cssText = `
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background-color: rgba(239, 68, 68, ${0.5 - i * 0.1});
+        `;
+        pulse.appendChild(pulseInner);
+        centerWrapper.appendChild(pulse);
+      }
+      
+      // 펄스 애니메이션 keyframes 추가
+      if (!document.getElementById('circle-pulse-style')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'circle-pulse-style';
+        styleEl.textContent = `
+          @keyframes circle-pulse {
+            0% {
+              transform: translate(-50%, -50%) translateZ(0) scale(0.8);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(-50%, -50%) translateZ(0) scale(2);
+              opacity: 0;
+            }
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+      
+      // 마커 아이콘
+      const markerEl = document.createElement('div');
+      markerEl.style.cssText = `
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+        border: 2px solid #ef4444;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3);
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        position: relative;
+        z-index: 130;
+      `;
+      
+      const ringEl = document.createElement('div');
+      ringEl.style.cssText = `
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid rgba(239, 68, 68, 0.3);
+        border-radius: 14px;
+        pointer-events: none;
+      `;
+      markerEl.appendChild(ringEl);
+      
+      const iconEl = document.createElement('div');
+      iconEl.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #f87171;">
+          <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
+        </svg>
+      `;
+      markerEl.appendChild(iconEl);
+      
+      centerWrapper.appendChild(markerEl);
+      markerContainer.appendChild(centerWrapper);
+      
+      // 주소 라벨
+      const labelEl = document.createElement('div');
+      labelEl.style.cssText = `
+        margin-top: 8px;
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(15, 15, 15, 0.95);
+        border: 1px solid #31353a;
+        white-space: nowrap;
+        z-index: 140;
+      `;
+      labelEl.innerHTML = `
+        <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
+        <div style="font-size: 12px; font-weight: 600; color: white;">부천로 245번길</div>
+      `;
+      markerContainer.appendChild(labelEl);
+      
+      // 새 마커 생성 및 추가
+      const newMarker = new maplibregl.Marker({
+        element: markerContainer,
+        anchor: 'center'
+      })
+        .setLngLat(flyToLocation as [number, number])
+        .addTo(map);
+      
+      console.log('새 이벤트 마커 추가 완료');
+      
+      // 저장
+      (map as any)._eventMarker = newMarker;
+      
+    } else {
+      console.log('초기 위치로 복귀 및 마커 숨김');
+      
+      // 마커 제거
+      if (oldEventMarker) {
+        oldEventMarker.remove();
+      }
+      
+      // 초기 위치로 복귀
+      if (map.loaded()) {
+        map.flyTo({
+          center: [126.8136, 37.4865], // 역곡 좌표
+          zoom: 15,
           pitch: 60,
           bearing: -17.6,
           duration: 1500,
           essential: true
         });
-      } else {
-        // 지도가 로드될 때까지 대기
-        mapRef.current.once('load', () => {
-          if (mapRef.current) {
-            mapRef.current.flyTo({
-              center: flyToLocation as [number, number],
-              zoom: 17,
-              pitch: 60,
-              bearing: -17.6,
-              duration: 1500,
-              essential: true
-            });
-          }
-        });
       }
     }
   }, [flyToLocation]);
+
+  // 고속검색 시작 시 CCTV 생성 및 표시
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    const map = mapRef.current;
+    const shouldShowCCTV = showFastSearch || showFastSearchList;
+    
+    // 기존 CCTV 제거
+    const oldCCTVMarkers = (map as any)._cctvMarkers;
+    if (oldCCTVMarkers) {
+      oldCCTVMarkers.forEach((m: any) => m.remove());
+    }
+    
+    if (!shouldShowCCTV || !map.loaded()) return;
+    
+    console.log('CCTV 새로 생성 시작');
+    
+    // 오프셋 계산 함수
+    const getScatteredOffsets = (count: number) => {
+      const offsets = [];
+      const radius = 0.0001; // 약 10m 반경
+      
+      if (count === 1) {
+        offsets.push({ lngOffset: 0, latOffset: 0 });
+      } else if (count === 2) {
+        offsets.push({ lngOffset: -radius, latOffset: 0 });
+        offsets.push({ lngOffset: radius, latOffset: 0 });
+      } else if (count === 3) {
+        offsets.push({ lngOffset: 0, latOffset: radius });
+        offsets.push({ lngOffset: -radius * 0.866, latOffset: -radius * 0.5 });
+        offsets.push({ lngOffset: radius * 0.866, latOffset: -radius * 0.5 });
+      } else if (count === 4) {
+        offsets.push({ lngOffset: -radius, latOffset: radius });
+        offsets.push({ lngOffset: radius, latOffset: radius });
+        offsets.push({ lngOffset: radius, latOffset: -radius });
+        offsets.push({ lngOffset: -radius, latOffset: -radius });
+      } else {
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI * 2;
+          offsets.push({
+            lngOffset: Math.cos(angle) * radius,
+            latOffset: Math.sin(angle) * radius
+          });
+        }
+      }
+      return offsets;
+    };
+    
+    // CCTV 그룹 정의
+    const cctvGroups = [
+      {
+        id: 'A-230',
+        name: '원미A-230',
+        location: [126.784245, 37.5056784],
+        cameras: ['고정1', '고정2', '고정3', '고정4']
+      },
+      {
+        id: 'A-444',
+        name: '원미A-444',
+        location: [126.7828196, 37.50501939999999],
+        cameras: ['검지1', '검지2', '검지3']
+      },
+      {
+        id: 'A-481',
+        name: '원미A-481',
+        location: [126.7828168, 37.504067],
+        cameras: ['검지1', '검지2', '검지3', '검지4']
+      },
+      {
+        id: 'A-498',
+        name: '원미A-498',
+        location: [126.7843434, 37.5042779],
+        cameras: ['검지1', '검지2', '검지3', '검지4']
+      },
+      {
+        id: 'A-583',
+        name: '원미A-583',
+        location: [126.7839366, 37.5057328],
+        cameras: ['검지1 원미', '검지2 원미', '검지3 원미']
+      },
+      {
+        id: 'A-604',
+        name: '원미A-604',
+        location: [126.7858121, 37.5047548],
+        cameras: ['검지1', '검지2']
+      }
+    ];
+    
+    // 모든 CCTV 위치 계산
+    const cctvPositions: Array<{ lng: number; lat: number; name: string; groupId: string }> = [];
+    
+    cctvGroups.forEach(group => {
+      const offsets = getScatteredOffsets(group.cameras.length);
+      group.cameras.forEach((camera, index) => {
+        cctvPositions.push({
+          lng: group.location[0] + offsets[index].lngOffset,
+          lat: group.location[1] + offsets[index].latOffset,
+          name: `${group.name} ${camera}`,
+          groupId: group.id
+        });
+      });
+    });
+    
+    // 간단한 CCTV 아이콘 생성
+    const createSimpleCCTV = (name: string) => {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      `;
+      
+      const icon = document.createElement('div');
+      icon.style.cssText = `
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(135deg, rgba(74, 74, 74, 1) 0%, rgba(58, 58, 58, 1) 50%, rgba(42, 42, 42, 1) 100%);
+        border: 2px solid rgba(209, 213, 219, 0.8);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      `;
+      
+      icon.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color: #d1d5db;">
+          <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
+        </svg>
+      `;
+      
+      el.appendChild(icon);
+      
+      const label = document.createElement('div');
+      label.style.cssText = `
+        margin-top: 4px;
+        padding: 2px 6px;
+        background: rgba(26, 26, 26, 0.95);
+        border: 1px solid rgb(107, 114, 128);
+        border-radius: 4px;
+        color: white;
+        font-size: 10px;
+        white-space: nowrap;
+      `;
+      label.textContent = name;
+      el.appendChild(label);
+      
+      return el;
+    };
+    
+    // 클러스터 생성
+    const createCluster = (group: any, count: number) => {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+      `;
+      
+      const icon = document.createElement('div');
+      icon.style.cssText = `
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        background: linear-gradient(135deg, rgba(74, 74, 74, 1) 0%, rgba(58, 58, 58, 1) 50%, rgba(42, 42, 42, 1) 100%);
+        border: 2px solid rgba(209, 213, 219, 0.8);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      `;
+      
+      icon.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #d1d5db;">
+          <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
+        </svg>
+        <span style="font-size: 12px; font-weight: 600; color: #9ca3af;">${count}</span>
+      `;
+      
+      el.appendChild(icon);
+      
+      const label = document.createElement('div');
+      label.style.cssText = `
+        margin-top: 4px;
+        padding: 2px 6px;
+        background: rgba(26, 26, 26, 0.95);
+        border: 1px solid rgb(107, 114, 128);
+        border-radius: 4px;
+        color: white;
+        font-size: 10px;
+        white-space: nowrap;
+      `;
+      label.textContent = group.name;
+      el.appendChild(label);
+      
+      return el;
+    };
+    
+    // 클러스터 마커 생성
+    const newClusterMarkers = cctvGroups.map(group => {
+      const groupCCTVs = cctvPositions.filter(pos => pos.groupId === group.id);
+      const clusterCenter = [
+        groupCCTVs.reduce((sum, pos) => sum + pos.lng, 0) / groupCCTVs.length,
+        groupCCTVs.reduce((sum, pos) => sum + pos.lat, 0) / groupCCTVs.length,
+      ];
+      
+      return new maplibregl.Marker({
+        element: createCluster(group, group.cameras.length),
+        anchor: 'center'
+      })
+        .setLngLat(clusterCenter as [number, number]);
+    });
+    
+    // 개별 CCTV 마커 생성
+    const newIndividualMarkers = cctvPositions.map((pos) => {
+      return new maplibregl.Marker({
+        element: createSimpleCCTV(pos.name),
+        anchor: 'center'
+      })
+        .setLngLat([pos.lng, pos.lat] as [number, number]);
+    });
+    
+    // 줌 레벨에 따라 클러스터/개별 전환
+    const updateDisplay = () => {
+      const zoom = map.getZoom();
+      if (zoom >= 16.5) {
+        newClusterMarkers.forEach(m => m.remove());
+        newIndividualMarkers.forEach(m => m.addTo(map));
+      } else {
+        newIndividualMarkers.forEach(m => m.remove());
+        newClusterMarkers.forEach(m => m.addTo(map));
+      }
+    };
+    
+    // 초기 표시
+    updateDisplay();
+    
+    // 줌 이벤트 리스너
+    const zoomHandler = () => updateDisplay();
+    map.on('zoom', zoomHandler);
+    
+    console.log(`CCTV 클러스터 ${newClusterMarkers.length}개, 개별 ${newIndividualMarkers.length}개 생성 완료`);
+    
+    // 저장
+    (map as any)._cctvMarkers = [...newClusterMarkers, ...newIndividualMarkers];
+    (map as any)._cctvZoomHandler = zoomHandler;
+    
+    // cleanup
+    return () => {
+      map.off('zoom', zoomHandler);
+      newClusterMarkers.forEach(m => m.remove());
+      newIndividualMarkers.forEach(m => m.remove());
+    };
+    
+  }, [showFastSearch, showFastSearchList]);
 
   // is3DMode와 mapBearing 변경은 이제 버튼 클릭 핸들러에서 직접 처리됨
   
@@ -982,14 +1393,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       }}
     >
-       {/* 맵 컨트롤 버튼 */}
+       {/* 맵 컨트롤 버튼 - 고속검색 시작 시 표시 */}
+       {(showFastSearch || showFastSearchList) && (
        <div 
          className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
-           left: `${leftPanelWidth + 24}px`,
+           left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
            zIndex: 250,
-           transform: hideControls ? 'translateX(-200px)' : 'translateX(0)',
-           opacity: hideControls ? 0 : 1,
          }}
          onClick={(e) => e.stopPropagation()}
        >
@@ -1096,16 +1506,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
          </button>
        </div>
+       )}
 
 
-       {/* CCTV 컨트롤 버튼 */}
+       {/* CCTV 컨트롤 버튼 - 고속검색 시작 시 표시 */}
+       {(showFastSearch || showFastSearchList) && (
        <div 
          className="absolute top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
-           left: `${leftPanelWidth + 24}px`,
+           left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
            zIndex: 250,
-           transform: hideControls ? 'translateX(-200px) translateY(-50%)' : 'translateX(0) translateY(-50%)',
-           opacity: hideControls ? 0 : 1,
+           transform: 'translateY(-50%)',
          }}
          onClick={(e) => e.stopPropagation()}
        >
@@ -1185,6 +1596,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            </button>
          )}
        </div>
+       )}
 
       {/* 지도 - 박스 밖으로 */}
       <div
@@ -1212,7 +1624,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           style={{ zIndex: 1 }}
         />
         <div 
-          className="absolute inset-0 bg-black/5" 
+          className="absolute inset-0 bg-black/5 pointer-events-none" 
           style={{ zIndex: 2 }}
         ></div>
         
@@ -1234,383 +1646,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             animation-delay: var(--animation-delay, 0ms);
           }
         `}</style>
-        {/* 가상 CCTV 아이콘들 - 그레이 컬러 */}
-        {showCCTV && [
-          { left: 10, top: 20, count: 1, viewAngle: 45 },
-          { left: 25, top: 15, count: 3, viewAngle: 90 },
-          { left: 35, top: 30, count: 1, viewAngle: 135 },
-          { left: 55, top: 25, count: 2, viewAngle: 180 },
-          { left: 70, top: 20, count: 1, viewAngle: 225 },
-          { left: 85, top: 30, count: 4, viewAngle: 270 },
-          { left: 20, top: 50, count: 2, viewAngle: 45 },
-          { left: 40, top: 55, count: 1, viewAngle: 90 },
-          { left: 60, top: 50, count: 3, viewAngle: 135 },
-          { left: 80, top: 55, count: 1, viewAngle: 180 },
-          { left: 15, top: 75, count: 2, viewAngle: 225 },
-          { left: 30, top: 70, count: 1, viewAngle: 270 },
-          { left: 50, top: 75, count: 5, viewAngle: 45 },
-          { left: 70, top: 70, count: 2, viewAngle: 90 },
-          { left: 90, top: 75, count: 1, viewAngle: 135 },
-          { left: 10, top: 90, count: 1, viewAngle: 180 },
-          { left: 25, top: 95, count: 3, viewAngle: 225 },
-          { left: 45, top: 90, count: 2, viewAngle: 270 },
-          { left: 65, top: 95, count: 1, viewAngle: 45 },
-          { left: 85, top: 90, count: 4, viewAngle: 90 },
-        ].map((item, index) => {
-          const cctvName = `CCTV-V-${index + 1}`;
-          if (zoomLevel === 0) {
-            // 축소 모드: 클러스터 뱃지만 표시
-            return (
-              <div
-                key={`virtual-cctv-${index}`}
-                className="absolute cursor-pointer"
-                style={{ 
-                  left: `${item.left}%`, 
-                  top: `${item.top}%`, 
-                  transform: 'translate(-50%, -50%)', 
-                  zIndex: 50,
-                  transition: 'left 0.5s ease-out, top 0.5s ease-out',
-                }}
-                  onClick={() => {}}
-              >
-                <div 
-                  className={`${getCCTVIconClassName('light')} flex items-center justify-center ${item.count > 1 && zoomLevel === 0 ? 'w-auto min-w-[28px]' : ''}`} 
-                  style={getCCTVIconBoxStyle(item.count, mapScale, item.count > 1 && zoomLevel === 0, 60)}
-                >
-                  <CCTVIcon 
-                    className="!text-gray-300 drop-shadow-lg filter"
-                    style={{ color: '#d1d5db' }}
-                    width="16px"
-                    height="16px"
-                  />
-                  {/* CCTV 카메라 개수 - 축소 모드에서만 표시 */}
-                  {item.count > 1 && zoomLevel === 0 && (
-                    <span className="text-xs font-semibold text-gray-400 ml-1" style={{ whiteSpace: 'nowrap' }}>
-                      {formatCCTVCount(item.count)}
-                    </span>
-                  )}
-                </div>
-                {showCCTVName && (
-                  <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                    {cctvName}
-                  </div>
-                )}
-                {showCCTVViewAngle && (() => {
-                  const baseCctvId = `cctv-${index}`;
-                  const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
-                  const minViewAngle = 90;
-                  const maxViewAngle = 120;
-                  const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
-                  const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                  const targetViewAngle = Math.min(120, Math.max(90, dynamicViewAngle));
-                  
-                  if (zoomLevel === 0) {
-                    const patternSeed = index % 4;
-                    return Array.from({ length: item.count }, (_, i) => {
-                      let viewAngle: number;
-                      
-                      switch (patternSeed) {
-                        case 0:
-                          viewAngle = (item.viewAngle + i * 30) % 360;
-                          break;
-                        case 1:
-                          const side = Math.floor(i / 4);
-                          const pos = i % 4;
-                          viewAngle = (item.viewAngle + pos * 45 + side * 15) % 360;
-                          break;
-                        case 2:
-                          viewAngle = (item.viewAngle + i * 40 + (i % 2) * 60) % 360;
-                          break;
-                        case 3:
-                          if (i < 2) {
-                            viewAngle = (item.viewAngle + i * 90) % 360;
-                          } else {
-                            viewAngle = (item.viewAngle + (i - 2) * 50) % 360;
-                          }
-                          break;
-                        default:
-                          viewAngle = item.viewAngle;
-                      }
-                      
-                      const direction = getCCTVDirection(baseCctvId, viewAngle);
-                      const pathData = generateViewAnglePath(targetViewAngle, 50, 60, 60);
-                      
-                      return (
-                        <div 
-                          key={`cluster-view-angle-${i}`}
-                          className="absolute"
-                          style={{
-                            width: '120px',
-                            height: '120px',
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                            transformOrigin: 'center center',
-                            pointerEvents: 'none',
-                            zIndex: 30 - i,
-                            opacity: 0.7,
-                          }}
-                        >
-                          <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                            <path
-                              d={pathData}
-                              fill="rgba(156, 163, 175, 0.15)"
-                              stroke="rgba(156, 163, 175, 0.5)"
-                              strokeWidth="1.5"
-                            />
-                          </svg>
-                        </div>
-                      );
-                    });
-                  }
-                  
-                  const cctvId = baseCctvId;
-                  const direction = getCCTVDirection(cctvId, item.viewAngle);
-                  const currentViewAngle = animatingViewAngles[cctvId] ?? targetViewAngle;
-                  const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
-                  
-                  return (
-                    <div 
-                      className="absolute"
-                      style={{
-                        width: '120px',
-                        height: '120px',
-                        left: '50%',
-                        top: '50%',
-                        transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                        transformOrigin: 'center center',
-                        pointerEvents: 'none',
-                        zIndex: 30,
-                      }}
-                    >
-                      <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                        <path
-                          d={pathData}
-                          fill="rgba(156, 163, 175, 0.2)"
-                          stroke="rgba(156, 163, 175, 0.6)"
-                          strokeWidth="2"
-                        />
-                      </svg>
-                    </div>
-                  );
-                })()}
-              </div>
-            );
-          } else {
-            // 확대 모드: 개별 CCTV 아이콘 표시 - 다양한 각도와 위치로 배치
-            return Array.from({ length: item.count }, (_, i) => {
-              // 확대 모드에서도 방향과 화각 분리
-              const baseCctvId = `cctv-${index}`;
-              const baseDirection = getCCTVDirection(baseCctvId, item.viewAngle);
-              const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
-              
-              // count가 1개인 경우는 원래 위치 유지
-              if (item.count === 1) {
-                const finalDirection = baseDirection;
-                
-                return (
-                  <div
-                    key={`virtual-cctv-${index}-${i}`}
-                    className="absolute cursor-pointer"
-                    style={{ 
-                      left: `${item.left}%`, 
-                      top: `${item.top}%`, 
-                      transform: 'translate(-50%, -50%)', 
-                      zIndex: 50,
-                      transition: 'opacity 0.7s ease-out',
-                      opacity: zoomLevel > 0 ? 1 : 0,
-                    }}
-                    onClick={() => {}}
-                  >
-                    <div className={getCCTVIconClassName('light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
-                      <CCTVIcon 
-                        className="!text-gray-300"
-                        style={{ color: '#d1d5db' }}
-                        width="16px"
-                        height="16px"
-                      />
-                    </div>
-                    {showCCTVName && (
-                      <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                        CCTV-V-{index + 1}
-                      </div>
-                    )}
-                    {showCCTVViewAngle && (() => {
-                      const cctvId = `cctv-${index}-${i}`;
-                      const direction = finalDirection;
-                      
-                      if (zoomLevel === 0) {
-                        return null;
-                      }
-                      
-                      const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
-                      const minViewAngle = 90;
-                      const maxViewAngle = 120;
-                      const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
-                      const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                      const targetViewAngle = Math.min(120, Math.max(90, dynamicViewAngle));
-                      const currentViewAngle = animatingViewAngles[baseCctvId] ?? targetViewAngle;
-                      const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
-                      
-                      return (
-                        <div 
-                          className="absolute"
-                          style={{
-                            width: '120px',
-                            height: '120px',
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                            transformOrigin: 'center center',
-                            pointerEvents: 'none',
-                            zIndex: 30,
-                            transition: 'opacity 0.7s ease-out',
-                            opacity: zoomLevel > 0 ? 1 : 0,
-                          }}
-                        >
-                          <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                            <path
-                              d={pathData}
-                              fill="rgba(156, 163, 175, 0.2)"
-                              stroke="rgba(156, 163, 175, 0.6)"
-                              strokeWidth="2"
-                              style={{
-                                transition: 'd 0.016s ease-out',
-                              }}
-                            />
-                          </svg>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                );
-              }
-              
-              // count가 1개보다 많은 경우 - 기존 패턴 사용
-              const patternSeed = index % 4;
-              let angle: number;
-              let radius: number;
-              let viewAngle: number;
-              
-              switch (patternSeed) {
-                case 0:
-                  angle = (i / item.count) * 2 * Math.PI;
-                  radius = 2 + (i % 2) * 0.5;
-                  viewAngle = (item.viewAngle + i * 30) % 360;
-                  break;
-                case 1:
-                  const side = Math.floor(i / 4);
-                  const pos = i % 4;
-                  const squareRadius = 1.5 + side * 0.8;
-                  angle = (pos * Math.PI / 2) + (Math.PI / 4);
-                  radius = squareRadius;
-                  viewAngle = (item.viewAngle + pos * 45 + side * 15) % 360;
-                  break;
-                case 2:
-                  angle = (i / item.count) * 2 * Math.PI + (i % 3) * 0.3;
-                  radius = 1.5 + (i % 3) * 0.7 + Math.sin(i) * 0.5;
-                  viewAngle = (item.viewAngle + i * 40 + (i % 2) * 60) % 360;
-                  break;
-                case 3:
-                  if (i < 2) {
-                    angle = (i - 0.5) * Math.PI / 3;
-                    radius = 2.5;
-                    viewAngle = (item.viewAngle + i * 90) % 360;
-                  } else {
-                    angle = ((i - 2) / (item.count - 2)) * 2 * Math.PI;
-                    radius = 1.8 + (i % 2) * 0.6;
-                    viewAngle = (item.viewAngle + (i - 2) * 50) % 360;
-                  }
-                  break;
-                default:
-                  angle = (i / item.count) * 2 * Math.PI;
-                  radius = 2;
-                  viewAngle = item.viewAngle;
-              }
-              
-              const offsetLeft = Math.cos(angle) * radius;
-              const offsetTop = Math.sin(angle) * radius;
-              const finalDirection = (baseDirection + (viewAngle - item.viewAngle)) % 360;
-              
-              return (
-                <div
-                  key={`virtual-cctv-${index}-${i}`}
-                  className="absolute cursor-pointer"
-                  style={{ 
-                    left: `${item.left + offsetLeft}%`, 
-                    top: `${item.top + offsetTop}%`, 
-                    transform: 'translate(-50%, -50%)', 
-                    zIndex: 50,
-                    transition: 'left 0.7s ease-out, top 0.7s ease-out, opacity 0.7s ease-out',
-                    opacity: zoomLevel > 0 ? 1 : 0,
-                  }}
-                  onClick={() => {}}
-                >
-                  <div className={getCCTVIconClassName('light')} style={{ ...getCCTVIconBoxStyle(1, mapScale, false, 60) }}>
-                    <CCTVIcon 
-                      className="!text-gray-300"
-                      style={{ color: '#d1d5db' }}
-                      width="16px"
-                      height="16px"
-                    />
-                  </div>
-                  {showCCTVName && (
-                    <div className={`${getCCTVLabelClassName('default')} absolute top-full left-1/2 -translate-x-1/2 mt-1`}>
-                      CCTV-V-{index + 1}
-                    </div>
-                  )}
-                  {showCCTVViewAngle && (() => {
-                    const cctvId = `cctv-${index}-${i}`;
-                    const direction = finalDirection;
-                    
-                    if (zoomLevel === 0) {
-                      return null;
-                    }
-                    
-                    const baseViewAngle = getCCTVViewAngle(baseCctvId, 90);
-                    const minViewAngle = 90;
-                    const maxViewAngle = 120;
-                    const normalizedZoom = Math.min(1, Math.max(0, zoomLevel));
-                    const dynamicViewAngle = minViewAngle + (maxViewAngle - minViewAngle) * normalizedZoom;
-                    const targetViewAngle = Math.min(120, Math.max(90, dynamicViewAngle));
-                    const currentViewAngle = animatingViewAngles[baseCctvId] ?? targetViewAngle;
-                    const pathData = generateViewAnglePath(currentViewAngle, 50, 60, 60);
-                    
-                    return (
-                      <div 
-                        className="absolute"
-                        style={{
-                          width: '120px',
-                          height: '120px',
-                          left: '50%',
-                          top: '50%',
-                          transform: `translate(-50%, -50%) rotate(${direction}deg)`,
-                          transformOrigin: 'center center',
-                          pointerEvents: 'none',
-                          zIndex: 30,
-                          transition: 'opacity 0.7s ease-out',
-                          opacity: zoomLevel > 0 ? 1 : 0,
-                        }}
-                      >
-                        <svg width="120" height="120" viewBox="0 0 120 120" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                          <path
-                            d={pathData}
-                            fill="rgba(156, 163, 175, 0.2)"
-                            stroke="rgba(156, 163, 175, 0.6)"
-                            strokeWidth="2"
-                            style={{
-                              transition: 'd 0.016s ease-out',
-                            }}
-                          />
-                        </svg>
-                      </div>
-                    );
-                  })()}
-                </div>
-              );
-            });
-          }
-        })}
 
 
 

@@ -382,7 +382,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           paddingRight: '16px',
         }}
       >
-        <div className="flex flex-col gap-4 h-full" style={{ paddingTop: isVisible ? '60px' : '16px', minHeight: 0 }}>
+        <div className="flex flex-col gap-4 h-full" style={{ paddingTop: isVisible ? '0.5rem' : '16px', minHeight: 0 }}>
         {/* 헤더 */}
         <div
           className="rounded-lg flex-shrink-0"
@@ -453,16 +453,16 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               {openPopover === 'time' && (
                 <div
                   ref={timePopoverRef}
-                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px]"
+                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-5 shadow-xl border border-[#31353a] z-[250] min-w-[380px]"
                 >
                   <div className="text-white text-sm font-semibold mb-3">시간 범위 선택</div>
                   <div className="space-y-2">
                     {/* 듀얼 핸들 슬라이더 */}
-                    <div className="relative" style={{ height: '32px', display: 'flex', alignItems: 'center', paddingTop: '8px', paddingBottom: '8px' }}>
+                    <div className="relative" style={{ height: '40px', display: 'flex', alignItems: 'center', paddingTop: '12px', paddingBottom: '12px' }}>
                       {/* 배경 트랙 */}
                       <div 
                         ref={sliderTrackRef}
-                        className="absolute w-full h-2 rounded-full bg-[#0f0f0f]"
+                        className="absolute w-full h-3 rounded-full bg-[#0f0f0f] cursor-pointer"
                         style={{
                           zIndex: 1,
                         }}
@@ -479,29 +479,43 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                         }}
                       />
                       
-                      {/* 시작 핸들 */}
+                      {/* 시작 핸들 - 클릭 영역 확장 */}
                       <div
-                        className="absolute w-4 h-4 rounded-full bg-[#3b82f6] border-2 border-white cursor-grab active:cursor-grabbing shadow-lg"
+                        className="absolute cursor-grab active:cursor-grabbing"
                         onMouseDown={(e) => handleHandleMouseDown('start', e)}
                         style={{
-                          left: `max(0px, calc(${(timeRange[0] / 1439) * 100}% - 8px))`,
+                          left: `max(0px, calc(${(timeRange[0] / 1439) * 100}% - 16px))`,
                           top: '50%',
                           transform: 'translateY(-50%)',
                           zIndex: 3,
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
-                      />
+                      >
+                        <div className="w-5 h-5 rounded-full bg-[#3b82f6] border-3 border-white shadow-lg hover:scale-110 transition-transform" />
+                      </div>
                       
-                      {/* 종료 핸들 */}
+                      {/* 종료 핸들 - 클릭 영역 확장 */}
                       <div
-                        className="absolute w-4 h-4 rounded-full bg-[#3b82f6] border-2 border-white cursor-grab active:cursor-grabbing shadow-lg"
+                        className="absolute cursor-grab active:cursor-grabbing"
                         onMouseDown={(e) => handleHandleMouseDown('end', e)}
                         style={{
-                          left: `min(calc(100% - 16px), calc(${(timeRange[1] / 1439) * 100}% - 8px))`,
+                          left: `min(calc(100% - 32px), calc(${(timeRange[1] / 1439) * 100}% - 16px))`,
                           top: '50%',
                           transform: 'translateY(-50%)',
                           zIndex: 3,
+                          width: '32px',
+                          height: '32px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                         }}
-                      />
+                      >
+                        <div className="w-5 h-5 rounded-full bg-[#3b82f6] border-3 border-white shadow-lg hover:scale-110 transition-transform" />
+                      </div>
                     </div>
                     
                     <div className="flex items-center justify-between text-xs text-gray-400">

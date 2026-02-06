@@ -308,7 +308,7 @@ export default function HomeV2() {
   /** 에이전트 팝업 maxHeight: 팝업 top ~ 플로팅 버튼 위까지 (Agent Hub bottom 24px + 높이 56px + 여유 8px) */
   useEffect(() => {
     const updateAgentPopupMaxHeight = () => {
-      const topPx = reportPopupHeight > 0 ? 76 + reportPopupHeight + 24 : 480;
+      const topPx = reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424; // 1.25rem = 20px
       const reserveBottom = 24 + 56 + 8; // 플로팅 버튼 영역
       setAgentPopupMaxHeight(Math.max(200, window.innerHeight - topPx - reserveBottom));
     };
@@ -334,10 +334,8 @@ export default function HomeV2() {
           setSelectedEventId(missingEvent.id);
           setHighlightedEventId(missingEvent.id);
           setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-          // 부천로 245번길 좌표로 지도 이동
-          console.log('flyToLocation 설정 시도');
+          // 부천로 245번길 좌표로 지도 이동 (참사랑교회)
           setFlyToLocation([126.784551814066, 37.5058377976002]);
-          // mapZoomLevel은 설정하지 않음 - flyTo가 직접 zoom 처리
         }
       } else if (e.key === '2') {
         // 고속검색 시작 (FastSearchProgress 표시)
@@ -379,13 +377,6 @@ export default function HomeV2() {
       className="relative bg-[#0a0e14] overflow-hidden"
       style={{ width: '100vw', height: '100vh' }}
     >
-      {/* 페이지 설명 */}
-      <div
-        className="absolute left-4 top-4 z-[110] rounded px-2.5 py-1 text-xs font-medium text-gray-300 bg-black/50 backdrop-blur-sm"
-        aria-label="페이지 설명"
-      >
-        데모(실종)
-      </div>
 
       <div className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
         <MapView
@@ -476,7 +467,7 @@ export default function HomeV2() {
           }}
           showFastSearchStartButton={!showFastSearchList}
           onLayout={setReportPopupHeight}
-          position={showFastSearchList ? { top: '76px', right: '20px' } : { top: '1.25rem', right: '370px' }}
+          position={showFastSearchList ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
         />
       )}
 
@@ -514,7 +505,7 @@ export default function HomeV2() {
           onClose={() => setShowAIAgentPopup(false)}
           hideControls={hideControls}
           position={{
-            top: `${reportPopupHeight > 0 ? 76 + reportPopupHeight + 24 : 480}px`,
+            top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424}px`,
             right: '20px',
           }}
           listCardCount={listCardCount}

@@ -382,10 +382,6 @@ export default function Home() {
             {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
             <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
 
-            {/* 페이지 설명 */}
-            <div className="absolute left-4 top-4 z-[110] rounded px-2.5 py-1 text-xs font-medium text-gray-300 bg-black/50 backdrop-blur-sm" aria-label="페이지 설명">
-                투망감시
-            </div>
 
             {/* 맵 - 전체 화면 */}
             <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
