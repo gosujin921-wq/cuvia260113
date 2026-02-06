@@ -208,7 +208,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
       { time: 22, x: 616, y: 171, width: 50, height: 80 },
       // 22초~48.99초: 박스 사라짐
       { time: 49, x: 616, y: 191, width: 60, height: 90 },
-      { time: 50, x: 636, y: 181, width: 60, height: 100 },
+      { time: 50, x: 586, y: 181, width: 60, height: 100 },
       { time: 60, x: 566, y: 181, width: 60, height: 100 },
       { time: 70, x: 566, y: 181, width: 60, height: 100 },
       { time: 79, x: 572, y: 188, width: 60, height: 100 },

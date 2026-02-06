@@ -9,10 +9,12 @@ interface AIAgentPopupProps {
   position?: { top?: string; right?: string; left?: string; bottom?: string };
   /** 고속검색 리스트 카드 개수 (첫 대화 문구용) */
   listCardCount?: number;
-  /** 삭제/제거 등 delete류 문장 전송 시 호출 (딤+프로그래스 표시). rawMessage로 속성 파싱 후 리스트 숨김에 사용 */
-  onDeleteLikeRequest?: (payload: { rawMessage: string }) => void;
+  /** 삭제/제거 등 delete류 문장 전송 시 호출 (딤+프로그래스 표시). rawMessage로 속성 파싱 후 리스트 숨김에 사용. 파싱된 속성 배열 반환 */
+  onDeleteLikeRequest?: (payload: { rawMessage: string }) => string[];
   /** 축소 모드일 때 최대 높이(px). 플로팅 버튼을 넘지 않도록 부모에서 계산해 전달 */
   maxHeight?: number;
+  /** 재검색 완료 후 삭제 결과 정보 (요구조건, 삭제 건수) */
+  reSearchResult?: { excludedAttributes: string[]; deletedCount: number } | null;
 }
 
 interface ChatMessage {
@@ -42,7 +44,7 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
 
-const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false, position: positionOverride, listCardCount = 0, onDeleteLikeRequest, maxHeight: maxHeightProp }) => {
+const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false, position: positionOverride, listCardCount = 0, onDeleteLikeRequest, maxHeight: maxHeightProp, reSearchResult }) => {
   const [chatInput, setChatInput] = useState('');
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -63,6 +65,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const ignoreNextChangeRef = useRef(false);
+  const lastReSearchResultRef = useRef<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -87,6 +90,32 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
       textareaRef.current?.focus();
     }
   }, [inputKey]);
+
+  // 재검색 완료 후 결과 메시지 자동 추가
+  useEffect(() => {
+    console.log('[AIAgentPopup] reSearchResult 변경:', reSearchResult);
+    
+    if (reSearchResult && reSearchResult !== lastReSearchResultRef.current) {
+      lastReSearchResultRef.current = reSearchResult;
+      
+      const { excludedAttributes, deletedCount } = reSearchResult;
+      const attributesText = excludedAttributes.join(', ');
+      const resultMessage: ChatMessage = {
+        id: `assistant-research-${Date.now()}`,
+        role: 'assistant',
+        content: `${attributesText}이(가) ${deletedCount}건 삭제되어 결과를 재검색했습니다.`,
+        timestamp: new Date().toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+        type: 'normal',
+      };
+      
+      console.log('[AIAgentPopup] 결과 메시지 추가:', resultMessage);
+      setMessages((prev) => [...prev, resultMessage]);
+    }
+  }, [reSearchResult]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -188,7 +217,29 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
     ignoreNextChangeRef.current = true;
 
     if (isDeleteLikeMessage(text) && onDeleteLikeRequest) {
-      onDeleteLikeRequest({ rawMessage: text });
+      const parsedAttributes = onDeleteLikeRequest({ rawMessage: text });
+      
+      // 파싱된 속성이 없으면 (존재하지 않는 속성)
+      if (!parsedAttributes || parsedAttributes.length === 0) {
+        setIsResponding(true);
+        
+        // 고민하는 아이콘 표시 (700ms)
+        setTimeout(() => {
+          const errorMessage: ChatMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: `"${text}"에 대한 정보가 없습니다. 더 구체적인 속성을 입력해 주세요.`,
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'normal',
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsResponding(false);
+        }, 700);
+      }
       return;
     }
 

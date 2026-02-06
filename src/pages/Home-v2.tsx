@@ -42,6 +42,10 @@ export default function HomeV2() {
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null); // 외부에서 열 후보 ID
   const [selectedMenuId, setSelectedMenuId] = useState<'fast-search' | 'object-tracking' | 'broadcast' | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null); // 지도 이동 좌표
+  const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
+  const previousListCardCountRef = useRef<number>(0);
+  const currentExcludedAttributesRef = useRef<string[]>([]);
+  const isReSearchingRef = useRef<boolean>(false);
   const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
@@ -187,6 +191,7 @@ export default function HomeV2() {
         if (selected) return [selected, ...base];
       }
     }
+    console.log('MapView에 전달되는 events:', base.length, 'visibleEventIds size:', visibleEventIds.size);
     return base;
   }, [allConvertedEvents, visibleEventIds, showFastSearchList, selectedEventId, mockEvents]);
 
@@ -317,6 +322,38 @@ export default function HomeV2() {
     return () => window.removeEventListener('resize', updateAgentPopupMaxHeight);
   }, [reportPopupHeight]);
 
+  // 재검색 완료 후 카드 개수 변경 감지
+  useEffect(() => {
+    console.log('[Home-v2] listCardCount 변경:', {
+      isReSearching: isReSearchingRef.current,
+      previousCount: previousListCardCountRef.current,
+      currentCount: listCardCount,
+      excludedAttributes: currentExcludedAttributesRef.current,
+      showReSearchProgress,
+    });
+    
+    // 재검색 프로그래스가 끝나고 카드 개수가 변경되었을 때
+    if (!showReSearchProgress && isReSearchingRef.current) {
+      if (previousListCardCountRef.current > 0 && listCardCount < previousListCardCountRef.current) {
+        const deletedCount = previousListCardCountRef.current - listCardCount;
+        console.log('[Home-v2] 삭제 결과 계산:', {
+          excludedAttributes: currentExcludedAttributesRef.current,
+          deletedCount,
+        });
+        setReSearchResult({
+          excludedAttributes: currentExcludedAttributesRef.current,
+          deletedCount: deletedCount,
+        });
+        isReSearchingRef.current = false;
+      }
+    }
+  }, [listCardCount, showReSearchProgress]);
+
+  // showFastSearchList 상태 변경 로그
+  useEffect(() => {
+    console.log('[Home-v2] showFastSearchList 상태 변경:', showFastSearchList);
+  }, [showFastSearchList]);
+
   // 키보드 단축키 핸들러
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -338,13 +375,25 @@ export default function HomeV2() {
           setFlyToLocation([126.784551814066, 37.5058377976002]);
         }
       } else if (e.key === '2') {
-        // 고속검색 시작 (FastSearchProgress 표시)
-        // selectedEventId는 유지하여 지도 카메라 이동 가능하도록 함
-        setPanelsSlidOut(true);
-        setShowCCTV(false);
-        setHideControls(true);
-        setShowFastSearch(true);
-        setHideDimForFastSearch(false);
+        // 고속검색 완료 화면 바로 표시 (프로그래스바 생략)
+        const missingEvent = allConvertedEvents.find(event => 
+          event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+        );
+        console.log('키보드 2 눌림, missingEvent:', missingEvent);
+        if (missingEvent) {
+          setHideControls(true);
+          setSelectedEventId(missingEvent.id);
+          setHighlightedEventId(missingEvent.id);
+          setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
+          // 부천로 245번길 좌표로 지도 이동 (참사랑교회)
+          setFlyToLocation([126.784551814066, 37.5058377976002]);
+          // 고속검색 완료 화면 표시
+          setPanelsSlidOut(true);
+          setShowCCTV(false);
+          setShowFastSearchList(true);
+          setShowAIAgentPopup(true);
+          setPinOffset({ x: 0, y: 0 });
+        }
       } else if (e.key === '3') {
         // 직접 FastSearchListPanel 열기 (테스트용)
         // selectedEventId는 유지하여 지도 카메라 이동 가능하도록 함
@@ -386,7 +435,7 @@ export default function HomeV2() {
           aiDetectionEventId={aiDetectionEventId}
           onEventClick={handleEventAction}
           onAiDetectionClose={clearSelection}
-          onMapClick={clearSelection}
+          onMapClick={undefined}
           externalZoomLevel={mapZoomLevel}
           onZoomLevelChange={setMapZoomLevel}
           hideControls={hideControls}
@@ -477,6 +526,7 @@ export default function HomeV2() {
         hideDim={hideDimForFastSearch}
         onComplete={() => {
           if (!hideDimForFastSearch) {
+            console.log('프로그래스바 완료 - showFastSearchList를 true로 설정');
             setShowFastSearch(false);
             setShowFastSearchList(true);
             setShowAIAgentPopup(true);
@@ -491,8 +541,21 @@ export default function HomeV2() {
         onListCardCountChange={setListCardCount}
         onRadiusChange={setFastSearchRadius}
         showReSearchDim={showReSearchProgress}
-        onReSearchComplete={() => setShowReSearchProgress(false)}
-        onReSearchClick={() => setShowReSearchProgress(true)}
+        onReSearchComplete={() => {
+          console.log('[Home-v2] 재검색 완료');
+          setShowReSearchProgress(false);
+          isReSearchingRef.current = true;
+        }}
+        onReSearchClick={() => {
+          // 재검색 시작 시 현재 카드 개수와 제외 속성 저장
+          console.log('[Home-v2] 재검색 시작:', {
+            currentCount: listCardCount,
+            excludedAttributes,
+          });
+          previousListCardCountRef.current = listCardCount;
+          currentExcludedAttributesRef.current = excludedAttributes;
+          setShowReSearchProgress(true);
+        }}
         excludedAttributes={excludedAttributes}
         openCandidateId={openCandidateId}
         onCandidateOpened={() => setOpenCandidateId(null)}
@@ -511,12 +574,22 @@ export default function HomeV2() {
           listCardCount={listCardCount}
           onDeleteLikeRequest={({ rawMessage }) => {
             const parsed = parseExcludedAttributesFromMessage(rawMessage);
+            console.log('[Home-v2] 삭제 요청:', { rawMessage, parsed, currentCount: listCardCount });
+            
             if (parsed.length) {
+              // 재검색 시작 전에 현재 상태 저장
+              previousListCardCountRef.current = listCardCount;
+              currentExcludedAttributesRef.current = parsed;
+              isReSearchingRef.current = true; // 재검색 시작
               setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
+              setShowReSearchProgress(true);
             }
-            setShowReSearchProgress(true);
+            
+            // 파싱된 속성 배열 반환 (없으면 빈 배열)
+            return parsed;
           }}
           maxHeight={agentPopupMaxHeight}
+          reSearchResult={reSearchResult}
         />
       )}
     </div>

@@ -366,193 +366,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           }
         }
       });
-
-      // 부천로 245번길 마커 추가
-      const bucheonRo245 = [126.784551814066, 37.5058377976002]; // 부천로 245번길 정확한 좌표
-      
-      // 컨테이너 엘리먼트 생성 (펄스 효과 포함)
-      const markerContainer = document.createElement('div');
-      markerContainer.className = 'bucheon-ro-245-container';
-      markerContainer.style.cssText = `
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      `;
-      
-      // 펄스와 마커를 담는 중앙 정렬 래퍼
-      const centerWrapper = document.createElement('div');
-      centerWrapper.style.cssText = `
-        position: relative;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-      
-      // 펄스 효과 추가 (3개의 원)
-      const pulse1 = document.createElement('div');
-      pulse1.style.cssText = `
-        position: absolute;
-        width: 120px;
-        height: 120px;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) translateZ(0) scale(0.8);
-        animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        animation-delay: 0s;
-        will-change: transform, opacity;
-        pointer-events: none;
-        z-index: 1;
-      `;
-      const pulseInner1 = document.createElement('div');
-      pulseInner1.style.cssText = `
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background-color: rgba(239, 68, 68, 0.5);
-      `;
-      pulse1.appendChild(pulseInner1);
-      
-      const pulse2 = document.createElement('div');
-      pulse2.style.cssText = `
-        position: absolute;
-        width: 120px;
-        height: 120px;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) translateZ(0) scale(0.8);
-        animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        animation-delay: 0.2s;
-        will-change: transform, opacity;
-        pointer-events: none;
-        z-index: 1;
-      `;
-      const pulseInner2 = document.createElement('div');
-      pulseInner2.style.cssText = `
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background-color: rgba(239, 68, 68, 0.4);
-      `;
-      pulse2.appendChild(pulseInner2);
-      
-      const pulse3 = document.createElement('div');
-      pulse3.style.cssText = `
-        position: absolute;
-        width: 120px;
-        height: 120px;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%) translateZ(0) scale(0.8);
-        animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        animation-delay: 0.4s;
-        will-change: transform, opacity;
-        pointer-events: none;
-        z-index: 1;
-      `;
-      const pulseInner3 = document.createElement('div');
-      pulseInner3.style.cssText = `
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background-color: rgba(239, 68, 68, 0.3);
-      `;
-      pulse3.appendChild(pulseInner3);
-      
-      // 펄스 애니메이션 키프레임 추가
-      const styleEl = document.createElement('style');
-      styleEl.textContent = `
-        @keyframes circle-pulse {
-          0% {
-            transform: translate(-50%, -50%) translateZ(0) scale(0.8);
-            opacity: 1;
-          }
-          100% {
-            transform: translate(-50%, -50%) translateZ(0) scale(2);
-            opacity: 0;
-          }
-        }
-      `;
-      document.head.appendChild(styleEl);
-      
-      centerWrapper.appendChild(pulse1);
-      centerWrapper.appendChild(pulse2);
-      centerWrapper.appendChild(pulse3);
-      
-      // 마커 엘리먼트 생성 (tracking 스타일과 동일하게)
-      const markerEl = document.createElement('div');
-      markerEl.className = 'bucheon-ro-245-marker';
-      markerEl.style.cssText = `
-        width: 28px;
-        height: 28px;
-        background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
-        border: 2px solid #ef4444;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3);
-        cursor: pointer;
-        backdrop-filter: blur(4px);
-        position: relative;
-        z-index: 130;
-      `;
-      
-      // ring 효과 추가
-      const ringEl = document.createElement('div');
-      ringEl.style.cssText = `
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        border: 2px solid rgba(239, 68, 68, 0.3);
-        border-radius: 14px;
-        pointer-events: none;
-      `;
-      markerEl.appendChild(ringEl);
-      
-      // 아이콘 추가 (SVG로 map-marker 아이콘)
-      const iconEl = document.createElement('div');
-      iconEl.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #f87171;">
-          <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
-        </svg>
-      `;
-      markerEl.appendChild(iconEl);
-      
-      centerWrapper.appendChild(markerEl);
-      markerContainer.appendChild(centerWrapper);
-      
-      // 주소 텍스트 박스 추가
-      const labelEl = document.createElement('div');
-      labelEl.style.cssText = `
-        margin-top: 8px;
-        padding: 6px 8px;
-        border-radius: 8px;
-        background: rgba(15, 15, 15, 0.95);
-        border: 1px solid #31353a;
-        white-space: nowrap;
-        z-index: 140;
-      `;
-      labelEl.innerHTML = `
-        <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
-        <div style="font-size: 12px; font-weight: 600; color: white;">부천로 245번길</div>
-      `;
-      
-      markerContainer.appendChild(labelEl);
-
-      // 마커 추가
-      const marker = new maplibregl.Marker({ 
-        element: markerContainer,
-        anchor: 'center'
-      })
-        .setLngLat(bucheonRo245 as [number, number])
-        .addTo(map);
-
-      console.log('부천로 245번길 마커 추가됨:', bucheonRo245);
     });
 
     mapRef.current = map;
@@ -749,22 +562,53 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, [flyToLocation]);
 
-  // 고속검색 시작 시 CCTV 생성 및 표시
+  // 고속검색 리스트 표시 시 지도 이동 (우측으로 140px) - 프로그래스바 닫힌 후
   useEffect(() => {
     if (!mapRef.current) return;
     
     const map = mapRef.current;
-    const shouldShowCCTV = showFastSearch || showFastSearchList;
+    
+    // showFastSearchList가 true가 될 때만 이동 (프로그래스바 닫히고 리스트 표시 시)
+    if (showFastSearchList && map.loaded()) {
+      // 현재 중심점 가져오기
+      const currentCenter = map.getCenter();
+      const currentZoom = map.getZoom();
+      
+      // 140px을 경도로 변환 (줌 레벨에 따라 다름)
+      const pixelOffset = 140;
+      const metersPerPixel = 156543.03392 * Math.cos(currentCenter.lat * Math.PI / 180) / Math.pow(2, currentZoom);
+      const lngOffset = (pixelOffset * metersPerPixel) / 111320; // 경도 1도 = 약 111.32km
+      
+      // 우측으로 이동 (경도 증가)
+      map.easeTo({
+        center: [currentCenter.lng + lngOffset, currentCenter.lat],
+        duration: 800,
+        essential: true
+      });
+    }
+  }, [showFastSearchList]);
+
+  // CCTV 생성 및 표시 - 고속검색 리스트 표시 시에만
+  useEffect(() => {
+    console.log('CCTV useEffect 실행:', { showFastSearchList, mapLoaded: mapRef.current?.loaded() });
+    if (!mapRef.current || !showFastSearchList) {
+      console.log('CCTV 생성 조건 미충족:', { hasMap: !!mapRef.current, showFastSearchList });
+      return;
+    }
+    
+    const map = mapRef.current;
     
     // 기존 CCTV 제거
     const oldCCTVMarkers = (map as any)._cctvMarkers;
     if (oldCCTVMarkers) {
+      console.log('기존 CCTV 제거:', oldCCTVMarkers.length);
       oldCCTVMarkers.forEach((m: any) => m.remove());
+      (map as any)._cctvMarkers = null;
     }
     
-    if (!shouldShowCCTV || !map.loaded()) return;
-    
-    console.log('CCTV 새로 생성 시작');
+    // CCTV 생성 함수
+    const createCCTV = () => {
+      console.log('CCTV 새로 생성 시작 - 지도 로드 상태:', map.loaded());
     
     // 오프셋 계산 함수
     const getScatteredOffsets = (count: number) => {
@@ -1000,13 +844,45 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     (map as any)._cctvZoomHandler = zoomHandler;
     
     // cleanup
-    return () => {
-      map.off('zoom', zoomHandler);
-      newClusterMarkers.forEach(m => m.remove());
-      newIndividualMarkers.forEach(m => m.remove());
+      return () => {
+        map.off('zoom', zoomHandler);
+        newClusterMarkers.forEach(m => m.remove());
+        newIndividualMarkers.forEach(m => m.remove());
+      };
     };
     
-  }, [showFastSearch, showFastSearchList]);
+    // 지도 로드 확인 및 CCTV 생성
+    if (map.loaded()) {
+      console.log('지도 이미 로드됨 - 즉시 CCTV 생성');
+      return createCCTV();
+    } else {
+      console.log('지도 로드 대기 중...');
+      // 여러 번 재시도
+      let retryCount = 0;
+      const maxRetries = 10;
+      
+      const checkAndCreate = () => {
+        retryCount++;
+        console.log(`지도 로드 확인 시도 ${retryCount}/${maxRetries}`);
+        
+        if (map.loaded()) {
+          console.log('지도 로드 완료 - CCTV 생성');
+          createCCTV();
+        } else if (retryCount < maxRetries) {
+          setTimeout(checkAndCreate, 500);
+        } else {
+          console.error('지도 로드 타임아웃 - CCTV 생성 실패');
+        }
+      };
+      
+      setTimeout(checkAndCreate, 100);
+      
+      return () => {
+        console.log('CCTV useEffect cleanup');
+      };
+    }
+    
+  }, [showFastSearchList]);
 
   // is3DMode와 mapBearing 변경은 이제 버튼 클릭 핸들러에서 직접 처리됨
   
@@ -1393,8 +1269,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       }}
     >
-       {/* 맵 컨트롤 버튼 - 고속검색 시작 시 표시 */}
-       {(showFastSearch || showFastSearchList) && (
+       {/* 맵 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
+       {(!hideControls || showFastSearchList) && (
        <div 
          className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
@@ -1509,8 +1385,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
        )}
 
 
-       {/* CCTV 컨트롤 버튼 - 고속검색 시작 시 표시 */}
-       {(showFastSearch || showFastSearchList) && (
+       {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
+       {(!hideControls || showFastSearchList) && (
        <div 
          className="absolute top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 

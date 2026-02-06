@@ -345,8 +345,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
 
   useLayoutEffect(() => {
     if (!isVisible || !onListCardCountChange) return;
-    onListCardCountChange(captureList.length);
-  }, [isVisible, onListCardCountChange, captureList.length]);
+    onListCardCountChange(visibleCaptureList.length);
+  }, [isVisible, onListCardCountChange, visibleCaptureList.length]);
 
   useLayoutEffect(() => {
     if (!onRadiusChange) return;
