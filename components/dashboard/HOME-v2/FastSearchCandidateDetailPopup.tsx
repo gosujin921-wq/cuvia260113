@@ -43,7 +43,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // ========== 초록색 박스 관련 (프레임 추적용) - px 단위 사용 ==========
+  // ========== 초록색 박스 관련 (프레임 추적용) - 1920x1080 기준 좌표 ==========
+  const ORIGINAL_VIDEO_WIDTH = 1920;
+  const ORIGINAL_VIDEO_HEIGHT = 1080;
+  
   const [greenBoxPosition, setGreenBoxPosition] = useState({ x: 100, y: 100 });
   const [greenBoxSize, setGreenBoxSize] = useState({ width: 80, height: 80 });
   const [showGreenBox, setShowGreenBox] = useState(false);
@@ -174,56 +177,56 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     const imageId = candidate ? getImageIdFromCaptureItem(candidate) : '';
     if (imageId !== '59') return;
 
-    // 59번 시간별 위치 데이터 (px 단위)
+    // 59번 시간별 위치 데이터 (1920x1080 기준 좌표, 사용자 조정 반영: x+100, w+10, y+20)
     const timeBasedData = [
-      { time: 0, x: 436, y: 411, width: 80, height: 140 },
-      { time: 0.4, x: 446, y: 321, width: 80, height: 140 },
-      { time: 0.5, x: 444, y: 313, width: 80, height: 140 },
-      { time: 0.57, x: 416, y: 341, width: 80, height: 140 },
-      { time: 0.6, x: 446, y: 321, width: 80, height: 140 },
-      { time: 0.99, x: 446, y: 321, width: 80, height: 140 },
-      { time: 1, x: 486, y: 251, width: 80, height: 140 },
-      { time: 1.05, x: 474, y: 275, width: 80, height: 140 },
-      { time: 1.12, x: 457, y: 302, width: 80, height: 140 },
-      { time: 1.5, x: 494, y: 256, width: 80, height: 140 },
-      { time: 2, x: 491, y: 237, width: 77, height: 134 },
-      { time: 3, x: 515, y: 201, width: 70, height: 120 },
-      { time: 4, x: 516, y: 171, width: 70, height: 120 },
-      { time: 6, x: 496, y: 141, width: 50, height: 90 },
-      { time: 8, x: 466, y: 101, width: 50, height: 90 },
-      { time: 10, x: 457, y: 94, width: 50, height: 90 },
-      { time: 11, x: 463, y: 108, width: 50, height: 90 },
-      { time: 12, x: 475, y: 110, width: 50, height: 90 },
-      { time: 12.41, x: 470, y: 105, width: 50, height: 90 },
-      { time: 13, x: 486, y: 121, width: 50, height: 90 },
-      { time: 13.36, x: 483, y: 125, width: 50, height: 90 },
-      { time: 13.57, x: 480, y: 126, width: 50, height: 90 },
-      { time: 14.22, x: 487, y: 134, width: 50, height: 90 },
-      { time: 15.36, x: 503, y: 164, width: 50, height: 100 },
-      { time: 15.71, x: 510, y: 168, width: 50, height: 90 },
-      { time: 16, x: 536, y: 191, width: 60, height: 100 },
-      { time: 18, x: 616, y: 211, width: 60, height: 100 },
-      { time: 19, x: 636, y: 181, width: 60, height: 100 },
-      { time: 20, x: 636, y: 181, width: 50, height: 90 },
-      { time: 22, x: 616, y: 171, width: 50, height: 80 },
+      { time: 0, x: 1190, y: 1047.5, width: 210, height: 350 },
+      { time: 0.4, x: 1215, y: 822.5, width: 210, height: 350 },
+      { time: 0.5, x: 1210, y: 802.5, width: 210, height: 350 },
+      { time: 0.57, x: 1140, y: 872.5, width: 210, height: 350 },
+      { time: 0.6, x: 1215, y: 822.5, width: 210, height: 350 },
+      { time: 0.99, x: 1215, y: 822.5, width: 210, height: 350 },
+      { time: 1, x: 1315, y: 647.5, width: 210, height: 350 },
+      { time: 1.05, x: 1285, y: 707.5, width: 210, height: 350 },
+      { time: 1.12, x: 1242.5, y: 775, width: 210, height: 350 },
+      { time: 1.5, x: 1335, y: 660, width: 210, height: 350 },
+      { time: 2, x: 1327.5, y: 612.5, width: 202.5, height: 335 },
+      { time: 3, x: 1387.5, y: 522.5, width: 185, height: 300 },
+      { time: 4, x: 1390, y: 447.5, width: 185, height: 300 },
+      { time: 6, x: 1340, y: 372.5, width: 135, height: 225 },
+      { time: 8, x: 1265, y: 272.5, width: 135, height: 225 },
+      { time: 10, x: 1242.5, y: 255, width: 135, height: 225 },
+      { time: 11, x: 1257.5, y: 290, width: 135, height: 225 },
+      { time: 12, x: 1287.5, y: 295, width: 135, height: 225 },
+      { time: 12.41, x: 1275, y: 282.5, width: 135, height: 225 },
+      { time: 13, x: 1315, y: 322.5, width: 135, height: 225 },
+      { time: 13.36, x: 1307.5, y: 332.5, width: 135, height: 225 },
+      { time: 13.57, x: 1300, y: 335, width: 135, height: 225 },
+      { time: 14.22, x: 1317.5, y: 355, width: 135, height: 225 },
+      { time: 15.36, x: 1357.5, y: 430, width: 135, height: 250 },
+      { time: 15.71, x: 1375, y: 440, width: 135, height: 225 },
+      { time: 16, x: 1440, y: 497.5, width: 160, height: 250 },
+      { time: 18, x: 1640, y: 547.5, width: 160, height: 250 },
+      { time: 19, x: 1690, y: 472.5, width: 160, height: 250 },
+      { time: 20, x: 1690, y: 472.5, width: 135, height: 225 },
+      { time: 22, x: 1640, y: 447.5, width: 135, height: 200 },
       // 22초~48.99초: 박스 사라짐
-      { time: 49, x: 616, y: 191, width: 60, height: 90 },
-      { time: 50, x: 586, y: 181, width: 60, height: 100 },
-      { time: 60, x: 566, y: 181, width: 60, height: 100 },
-      { time: 70, x: 566, y: 181, width: 60, height: 100 },
-      { time: 79, x: 572, y: 188, width: 60, height: 100 },
-      { time: 80, x: 586, y: 195, width: 60, height: 100 },
-      { time: 81, x: 606, y: 205, width: 60, height: 100 },
-      { time: 83, x: 676, y: 245, width: 60, height: 100 },
-      { time: 86, x: 663, y: 235, width: 60, height: 100 },
-      { time: 87, x: 643, y: 225, width: 60, height: 100 },
-      { time: 90, x: 656, y: 321, width: 60, height: 100 },
-      { time: 91, x: 653, y: 225, width: 60, height: 100 },
-      { time: 93, x: 653, y: 235, width: 70, height: 100 },
-      { time: 94, x: 673, y: 245, width: 70, height: 100 },
-      { time: 95, x: 693, y: 245, width: 70, height: 100 },
-      { time: 97, x: 713, y: 265, width: 70, height: 100 },
-      { time: 98, x: 733, y: 265, width: 70, height: 100 },
+      { time: 49, x: 1640, y: 497.5, width: 160, height: 225 },
+      { time: 50, x: 1565, y: 472.5, width: 160, height: 250 },
+      { time: 60, x: 1515, y: 472.5, width: 160, height: 250 },
+      { time: 70, x: 1515, y: 472.5, width: 160, height: 250 },
+      { time: 79, x: 1530, y: 490, width: 160, height: 250 },
+      { time: 80, x: 1565, y: 507.5, width: 160, height: 250 },
+      { time: 81, x: 1615, y: 532.5, width: 160, height: 250 },
+      { time: 83, x: 1790, y: 632.5, width: 160, height: 250 },
+      { time: 86, x: 1757.5, y: 607.5, width: 160, height: 250 },
+      { time: 87, x: 1707.5, y: 582.5, width: 160, height: 250 },
+      { time: 90, x: 1740, y: 822.5, width: 160, height: 250 },
+      { time: 91, x: 1732.5, y: 582.5, width: 160, height: 250 },
+      { time: 93, x: 1732.5, y: 607.5, width: 185, height: 250 },
+      { time: 94, x: 1782.5, y: 632.5, width: 185, height: 250 },
+      { time: 95, x: 1832.5, y: 632.5, width: 185, height: 250 },
+      { time: 97, x: 1882.5, y: 682.5, width: 185, height: 250 },
+      { time: 98, x: 1932.5, y: 682.5, width: 185, height: 250 },
     ];
 
     const handleVideoTimeUpdate = () => {
@@ -499,8 +502,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         <div className="flex-shrink-0 p-5 border-b border-[#31353a]/50">
             <div 
               ref={containerRef}
-              className="w-full bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
-              style={{ aspectRatio: '16/9' }}
+              className="bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
+              style={{ aspectRatio: '16/9', maxWidth: '700px' }}
             >
               <video
                 ref={videoRef}
@@ -522,23 +525,43 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               />
               
               {/* 초록색 박스 오버레이 */}
-              {showGreenBox && (
-                <div
-                  className="absolute pointer-events-none"
-                  style={{
-                    left: `${greenBoxPosition.x}px`,
-                    top: `${greenBoxPosition.y}px`,
-                    width: `${greenBoxSize.width}px`,
-                    height: `${greenBoxSize.height}px`,
-                    backgroundColor: 'transparent',
-                    border: '3px solid #22c55e',
-                    borderRadius: '4px',
-                    zIndex: 5,
-                    transition: 'all 0.1s ease-out',
-                  }}
-                  aria-hidden="true"
-                />
-              )}
+              {showGreenBox && (() => {
+                const video = videoRef.current;
+                if (!video) return null;
+
+                const currentWidth = video.clientWidth;
+                const currentHeight = video.clientHeight;
+
+                if (!currentWidth || !currentHeight) return null;
+
+                // 스케일 비율 계산 (1920x1080 기준 -> 현재 크기)
+                const scaleX = currentWidth / ORIGINAL_VIDEO_WIDTH;
+                const scaleY = currentHeight / ORIGINAL_VIDEO_HEIGHT;
+
+                // 좌표 변환
+                const scaledX = greenBoxPosition.x * scaleX;
+                const scaledY = greenBoxPosition.y * scaleY;
+                const scaledWidth = greenBoxSize.width * scaleX;
+                const scaledHeight = greenBoxSize.height * scaleY;
+
+                return (
+                  <div
+                    className="absolute pointer-events-none"
+                    style={{
+                      left: `${scaledX}px`,
+                      top: `${scaledY}px`,
+                      width: `${scaledWidth}px`,
+                      height: `${scaledHeight}px`,
+                      backgroundColor: 'transparent',
+                      border: '3px solid #22c55e',
+                      borderRadius: '4px',
+                      zIndex: 5,
+                      transition: 'all 0.1s ease-out',
+                    }}
+                    aria-hidden="true"
+                  />
+                );
+              })()}
               
               {/* 비디오 컨트롤 오버레이 */}
               <div 
@@ -657,7 +680,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                 <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
               </div>
-              <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
+              <p className="text-base text-gray-300 leading-relaxed">{detail.observationSummary}</p>
             </div>
 
             {/* 타임라인 */}

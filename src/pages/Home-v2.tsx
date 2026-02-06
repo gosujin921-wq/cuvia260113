@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Icon } from '@iconify/react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/MapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
@@ -11,7 +10,7 @@ import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
 import FastSearchProgress from '@/components/dashboard/HOME-v2/FastSearchProgress';
 import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
 import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
-import { Event, EventSummary as EventSummaryType } from '@/types';
+import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
 
@@ -57,125 +56,6 @@ export default function HomeV2() {
       .filter((event) => event.processingStage !== '종결');
   }, []);
 
-  const mockEvents: Event[] = useMemo(() => {
-    const now = new Date();
-    const formatTime = (hours: number, minutes: number) => {
-      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
-    };
-    
-    return [
-      {
-        id: 'mock-1',
-        type: '112-치안',
-        title: '주차장 소음 신고',
-        priority: '일반',
-        status: 'NEW',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
-        location: { name: '관양동 주차장', coordinates: [126.98, 37.42] },
-        processingStage: '생성',
-        resolution: { category: '112', code: '001', description: '' },
-      },
-      {
-        id: 'mock-2',
-        type: '약자',
-        title: '노인 낙상 신고',
-        priority: '일반',
-        status: 'NEW',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
-        location: { name: '부천시 중앙공원', coordinates: [126.99, 37.43] },
-        processingStage: '선별',
-        resolution: { category: '약자', code: '002', description: '' },
-      },
-      {
-        id: 'mock-3',
-        type: '112-치안',
-        title: '횡단보도 신호 위반',
-        priority: '일반',
-        status: 'MONITORING',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
-        location: { name: '관양동 사거리', coordinates: [126.97, 37.41] },
-        processingStage: '착수',
-        resolution: { category: '112', code: '003', description: '' },
-      },
-      {
-        id: 'mock-4',
-        type: 'AI-배회',
-        title: '의심 행동 탐지',
-        priority: '일반',
-        status: 'NEW',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 45)),
-        location: { name: '부천역 인근', coordinates: [126.96, 37.40] },
-        processingStage: '생성',
-        resolution: { category: 'AI', code: '004', description: '' },
-      },
-      {
-        id: 'mock-5',
-        type: '112-치안',
-        title: '교통 혼잡 신고',
-        priority: '일반',
-        status: 'MONITORING',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
-        location: { name: '송내대로', coordinates: [126.95, 37.39] },
-        processingStage: '선별',
-        resolution: { category: '112', code: '005', description: '' },
-      },
-      {
-        id: 'mock-6',
-        type: '112-미아',
-        title: '아동 미아 신고',
-        priority: '주의',
-        status: 'MONITORING',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
-        location: { name: '관양초등학교 앞', coordinates: [126.98, 37.42] },
-        processingStage: '착수',
-        resolution: { category: '112', code: '006', description: '' },
-      },
-      {
-        id: 'mock-7',
-        type: '119-구조',
-        title: '교통사고 신고',
-        priority: '주의',
-        status: 'NEW',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
-        location: { name: '부천시청 앞', coordinates: [126.99, 37.43] },
-        processingStage: '생성',
-        resolution: { category: '119', code: '007', description: '' },
-      },
-      {
-        id: 'mock-8',
-        type: '112-치안',
-        title: '싸움 신고',
-        priority: '주의',
-        status: 'MONITORING',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 30)),
-        location: { name: '송내역 인근', coordinates: [126.97, 37.41] },
-        processingStage: '착수',
-        resolution: { category: '112', code: '008', description: '' },
-      },
-      {
-        id: 'mock-9',
-        type: '119-화재',
-        title: '작은 불꽃 발견',
-        priority: '경계',
-        status: 'MONITORING',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
-        location: { name: '부천시 아파트 단지', coordinates: [126.96, 37.40] },
-        processingStage: '착수',
-        resolution: { category: '119', code: '009', description: '' },
-      },
-      {
-        id: 'mock-10',
-        type: '112-치안',
-        title: '절도 의심 신고',
-        priority: '경계',
-        status: 'NEW',
-        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
-        location: { name: '관양동 상가', coordinates: [126.95, 37.39] },
-        processingStage: '선별',
-        resolution: { category: '112', code: '010', description: '' },
-      },
-    ];
-  }, []);
 
   const events: Event[] = useMemo(() => {
     const base =
@@ -185,51 +65,19 @@ export default function HomeV2() {
     if (showFastSearchList && selectedEventId) {
       const alreadyInList = base.some((e) => e.id === selectedEventId);
       if (!alreadyInList) {
-        const fromReal = allConvertedEvents.find((e) => e.id === selectedEventId);
-        const fromMock = mockEvents.find((e) => e.id === selectedEventId);
-        const selected = fromReal ?? fromMock;
+        const selected = allConvertedEvents.find((e) => e.id === selectedEventId);
         if (selected) return [selected, ...base];
       }
     }
     console.log('MapView에 전달되는 events:', base.length, 'visibleEventIds size:', visibleEventIds.size);
     return base;
-  }, [allConvertedEvents, visibleEventIds, showFastSearchList, selectedEventId, mockEvents]);
+  }, [allConvertedEvents, visibleEventIds, showFastSearchList, selectedEventId]);
 
   const eventsForList: Event[] = useMemo(() => {
-    const visibleRealEvents = visibleEventIds.size > 0
+    return visibleEventIds.size > 0
       ? allConvertedEvents.filter(event => visibleEventIds.has(event.id))
       : [];
-    
-    return [...mockEvents, ...visibleRealEvents];
-  }, [allConvertedEvents, visibleEventIds, mockEvents]);
-
-  const eventSummary: EventSummaryType = useMemo(() => {
-    const allEventsForSummary = allEvents.map((event, index) => convertToDashboardEvent(event, index));
-    
-    const pendingStages: Array<'생성' | '선별'> = ['생성', '선별'];
-    const pending = allEventsForSummary.filter((event) =>
-      pendingStages.includes(event.processingStage as any)
-    ).length;
-    
-    const inProgressStages: Array<'착수' | '사실 검증' | '추적 · 지원' | '전파'> = [
-      '착수',
-      '사실 검증',
-      '추적 · 지원',
-      '전파',
-    ];
-    const inProgress = allEventsForSummary.filter((event) =>
-      inProgressStages.includes(event.processingStage as any)
-    ).length;
-    
-    const closed = allEventsForSummary.filter((event) => event.processingStage === '종결').length;
-    
-    return {
-      total: allEventsForSummary.length,
-      pending,
-      inProgress,
-      closed,
-    };
-  }, []);
+  }, [allConvertedEvents, visibleEventIds]);
 
   // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
   // - 평상시: 50 (지도 컨테이너 정중앙)
@@ -273,25 +121,6 @@ export default function HomeV2() {
     setHighlightedEventId(eventId);
   };
 
-  // V2 프로토타입: 다른 애니메이션 로직 (필요시 수정)
-  const animateToEvent = useCallback((event: Event, callback?: () => void) => {
-    const eventId = event.id;
-    setVisibleEventIds(prev => new Set([...prev, eventId]));
-    setHighlightedEventId(eventId);
-    
-    // V2: 다른 타이밍으로 수정 가능
-    setTimeout(() => {
-      setMapZoomLevel(1);
-      
-      setTimeout(() => {
-        setSelectedEventId(eventId);
-        if (callback) {
-          callback();
-        }
-      }, 500);
-    }, 300);
-  }, []);
-
   const clearSelection = () => {
     setSelectedEventId(null);
     setHighlightedEventId(null);
@@ -310,16 +139,17 @@ export default function HomeV2() {
     setFlyToLocation(null);
   };
 
-  /** 에이전트 팝업 maxHeight: 팝업 top ~ 플로팅 버튼 위까지 (Agent Hub bottom 24px + 높이 56px + 여유 8px) */
+  /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
   useEffect(() => {
-    const updateAgentPopupMaxHeight = () => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
       const topPx = reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424; // 1.25rem = 20px
       const reserveBottom = 24 + 56 + 8; // 플로팅 버튼 영역
       setAgentPopupMaxHeight(Math.max(200, window.innerHeight - topPx - reserveBottom));
     };
-    updateAgentPopupMaxHeight();
-    window.addEventListener('resize', updateAgentPopupMaxHeight);
-    return () => window.removeEventListener('resize', updateAgentPopupMaxHeight);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, [reportPopupHeight]);
 
   // 재검색 완료 후 카드 개수 변경 감지
@@ -433,7 +263,7 @@ export default function HomeV2() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [allConvertedEvents, animateToEvent]);
+  }, [allConvertedEvents]);
 
   return (
     <div
@@ -519,7 +349,7 @@ export default function HomeV2() {
       {/* ReportPopup */}
       {selectedEventId && !showFastSearch && (
         <ReportPopup
-          event={[...allConvertedEvents, ...mockEvents].find(e => e.id === selectedEventId) || null}
+          event={allConvertedEvents.find(e => e.id === selectedEventId) || null}
           onClose={clearSelection}
           onFastSearchStart={() => {
             setPanelsSlidOut(true);
