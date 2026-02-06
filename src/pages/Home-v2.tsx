@@ -28,6 +28,7 @@ type UIState = {
   showCCTV: boolean;
   showReSearchProgress: boolean;
   showObjectTrackingConfirm: boolean;
+  showObjectTracking: boolean;
   selectedMenuId: 'fast-search' | 'object-tracking' | 'broadcast' | null;
 };
 
@@ -42,6 +43,7 @@ type UIAction =
   | { type: 'COMPLETE_RE_SEARCH' }
   | { type: 'SHOW_OBJECT_TRACKING_CONFIRM' }
   | { type: 'HIDE_OBJECT_TRACKING_CONFIRM' }
+  | { type: 'START_OBJECT_TRACKING' }
   | { type: 'SET_MENU'; payload: 'fast-search' | 'object-tracking' | 'broadcast' | null }
   | { type: 'TOGGLE_LEFT_PANEL' }
   | { type: 'CLEAR_ALL' };
@@ -96,6 +98,16 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
       return { ...state, showObjectTrackingConfirm: true };
     case 'HIDE_OBJECT_TRACKING_CONFIRM':
       return { ...state, showObjectTrackingConfirm: false };
+    case 'START_OBJECT_TRACKING':
+      return {
+        ...state,
+        showObjectTrackingConfirm: false,
+        showObjectTracking: true,
+        showFastSearchList: false,
+        showAIAgentPopup: true,
+        hideControls: true,
+        selectedMenuId: 'object-tracking',
+      };
     case 'SET_MENU':
       return { ...state, selectedMenuId: action.payload };
     case 'TOGGLE_LEFT_PANEL':
@@ -113,6 +125,7 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showCCTV: true,
         showReSearchProgress: false,
         showObjectTrackingConfirm: false,
+        showObjectTracking: false,
         selectedMenuId: null,
       };
     default:
@@ -136,6 +149,7 @@ export default function HomeV2() {
     showCCTV: true,
     showReSearchProgress: false,
     showObjectTrackingConfirm: false,
+    showObjectTracking: false,
     selectedMenuId: null,
   });
 
@@ -153,6 +167,7 @@ export default function HomeV2() {
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
+  const [showPredictedCCTV, setShowPredictedCCTV] = useState<boolean>(false);
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -325,12 +340,14 @@ export default function HomeV2() {
           pinOffset={pinOffset}
           focusTargetXPercent={fastSearchFocusXPercent}
           flyToLocation={flyToLocation}
+          externalShowCCTV={!uiState.showObjectTracking}
+          showPredictedCCTV={showPredictedCCTV}
         />
       </div>
 
-      {/* 좌측 메뉴 패널 - 고속검색 시작 시 좌측에서 우측으로 슬라이드 */}
+      {/* 좌측 메뉴 패널 - 고속검색 또는 객체 추적 시 표시 */}
       <div 
-        className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${uiState.showFastSearchList ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
+        className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${uiState.showFastSearchList || uiState.showObjectTracking ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
         style={{ zIndex: 101 }}
       >
         <LeftMenuPanel onMenuSelect={handleMenuSelect} selectedMenuId={uiState.selectedMenuId} />
@@ -387,9 +404,9 @@ export default function HomeV2() {
           event={allConvertedEvents.find(e => e.id === uiState.selectedEventId) || null}
           onClose={clearSelection}
           onFastSearchStart={() => dispatch({ type: 'START_FAST_SEARCH' })}
-          showFastSearchStartButton={!uiState.showFastSearchList}
+          showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking}
           onLayout={setReportPopupHeight}
-          position={uiState.showFastSearchList ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
+          position={uiState.showFastSearchList || uiState.showObjectTracking ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
         />
       )}
 
@@ -405,7 +422,7 @@ export default function HomeV2() {
 
       {/* FastSearchListPanel - 재검색 시 리스트 박스 전체(상단 버튼 포함) 딤 + 프로그래스 중앙 */}
       <FastSearchListPanel
-        isVisible={uiState.showFastSearchList}
+        isVisible={uiState.showFastSearchList && !uiState.showObjectTracking}
         onListCardCountChange={setListCardCount}
         onRadiusChange={setFastSearchRadius}
         showReSearchDim={uiState.showReSearchProgress}
@@ -430,12 +447,12 @@ export default function HomeV2() {
         message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.\n객체 추적 검사를 시작하시겠습니까?`}
         confirmText="시작"
         cancelText="취소"
-        onConfirm={() => dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' })}
+        onConfirm={() => dispatch({ type: 'START_OBJECT_TRACKING' })}
         onCancel={() => dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' })}
       />
 
       {/* 에이전트 팝업: 고속검색 리스트 시 신고팝업 아래 여백(24px) 유지, 사건팝업 높이 변동에 따라 위치 조정 */}
-      {uiState.showFastSearchList && uiState.showAIAgentPopup && (
+      {uiState.showAIAgentPopup && (
         <AIAgentPopup
           isOpen={uiState.showAIAgentPopup}
           onClose={() => dispatch({ type: 'COMPLETE_FAST_SEARCH' })}
@@ -460,6 +477,11 @@ export default function HomeV2() {
           }}
           maxHeight={agentPopupMaxHeight}
           reSearchResult={reSearchResult}
+          isObjectTracking={uiState.showObjectTracking}
+          onObjectTrackingComplete={() => {
+            console.log('[Home-v2] 객체 추적 완료, 파란색 핀 표시');
+            setShowPredictedCCTV(true);
+          }}
         />
       )}
     </div>

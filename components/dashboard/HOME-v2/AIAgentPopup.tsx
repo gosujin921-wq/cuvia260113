@@ -15,6 +15,10 @@ interface AIAgentPopupProps {
   maxHeight?: number;
   /** 재검색 완료 후 삭제 결과 정보 (요구조건, 삭제 건수) */
   reSearchResult?: { excludedAttributes: string[]; deletedCount: number } | null;
+  /** 객체 추적 상태 여부 */
+  isObjectTracking?: boolean;
+  /** 객체 추적 완료 시 호출 */
+  onObjectTrackingComplete?: () => void;
 }
 
 interface ChatMessage {
@@ -44,10 +48,17 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
 
-const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false, position: positionOverride, listCardCount = 0, onDeleteLikeRequest, maxHeight: maxHeightProp, reSearchResult }) => {
+const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideControls = false, position: positionOverride, listCardCount = 0, onDeleteLikeRequest, maxHeight: maxHeightProp, reSearchResult, isObjectTracking = false, onObjectTrackingComplete }) => {
   const [chatInput, setChatInput] = useState('');
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // 객체 추적 상태일 때 입력폼에 텍스트 설정
+  useEffect(() => {
+    if (isObjectTracking) {
+      setChatInput('검색된 내용으로 객체 추적을 시작해 주세요.');
+    }
+  }, [isObjectTracking]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -139,7 +150,27 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
     return deleteKeywords.some(kw => t.includes(kw));
   };
 
+  const isObjectTrackingMessage = (text: string): boolean => {
+    return text.includes('객체 추적을 시작해 주세요') || text.includes('객체 추적');
+  };
+
   const generateAssistantReply = (prompt: string): ChatMessage => {
+    if (isObjectTrackingMessage(prompt)) {
+      return {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV를 예측하겠습니다.',
+        timestamp: new Date().toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+        type: 'analyzing',
+        progress: 0,
+        currentStep: 1,
+        totalSteps: 5,
+      };
+    }
     if (isPositiveResponse(prompt)) {
       const processingTime = 19.2;
       const transmissionTime = 0.7;
@@ -251,12 +282,27 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
       setIsResponding(false);
 
       if (assistantMessage.type === 'analyzing') {
+        const isObjectTracking = assistantMessage.totalSteps === 5;
+        const stepDuration = isObjectTracking ? 1000 : 1000; // 각 단계당 1초
+        const totalDuration = isObjectTracking ? 5000 : 5000;
+        
         const progressInterval = setInterval(() => {
           setMessages((prev) => {
             const updated = prev.map((msg) => {
               if (msg.id === assistantMessage.id && msg.type === 'analyzing') {
                 const newProgress = Math.min((msg.progress || 0) + 0.02, 1);
-                return { ...msg, progress: newProgress };
+                let newStep = msg.currentStep || 1;
+                
+                // 객체 추적일 경우 단계별 진행
+                if (isObjectTracking && msg.totalSteps === 5) {
+                  const progressPercent = newProgress * 100;
+                  if (progressPercent >= 20 && newStep < 2) newStep = 2;
+                  if (progressPercent >= 40 && newStep < 3) newStep = 3;
+                  if (progressPercent >= 60 && newStep < 4) newStep = 4;
+                  if (progressPercent >= 80 && newStep < 5) newStep = 5;
+                }
+                
+                return { ...msg, progress: newProgress, currentStep: newStep };
               }
               return msg;
             });
@@ -266,7 +312,37 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
 
         setTimeout(() => {
           clearInterval(progressInterval);
-        }, 5000);
+          
+          // 객체 추적 완료 시 프로그래스바 제거하고 완료 메시지 추가
+          if (isObjectTracking) {
+            setTimeout(() => {
+              setMessages((prev) => {
+                // 프로그래스바 메시지 제거
+                const withoutProgress = prev.filter(msg => msg.id !== assistantMessage.id);
+                
+                // 완료 메시지 추가
+                const completionMessage: ChatMessage = {
+                  id: `assistant-complete-${Date.now()}`,
+                  role: 'assistant',
+                  content: '객체 추적이 완료되었습니다. 원미A-444 CCTV에서 다음 포착 가능성이 높습니다.',
+                  timestamp: new Date().toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  }),
+                  type: 'normal',
+                };
+                
+                return [...withoutProgress, completionMessage];
+              });
+              
+              // 부모 컴포넌트에 완료 알림
+              if (onObjectTrackingComplete) {
+                onObjectTrackingComplete();
+              }
+            }, 500);
+          }
+        }, totalDuration);
       }
     }, 700);
   };
@@ -333,9 +409,36 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                               <div className="mb-3">
                                 <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
                                 <p className="text-sm text-gray-700 leading-relaxed">
-                                  {message.content} (처리 : {message.processingTime}초, 전송 : {message.transmissionTime}초)
+                                  {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
                                 </p>
                               </div>
+                              
+                              {/* 객체 추적 단계별 표시 */}
+                              {message.totalSteps === 5 && (
+                                <div className="space-y-2 mb-3 text-xs">
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
+                                    <span>1. 대표 후보 기준점 설정 {message.currentStep === 1 && '✅'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 2 ? 'mdi:check-circle' : message.currentStep === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 2 ? 'animate-spin' : ''}`} />
+                                    <span>2. 유사 후보 재탐색 {message.currentStep === 2 && '⏳'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 3 ? 'mdi:check-circle' : message.currentStep === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 3 ? 'animate-spin' : ''}`} />
+                                    <span>3. 시간순 정렬 및 경로 연결 {message.currentStep === 3 && '…'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 4 ? 'mdi:check-circle' : message.currentStep === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 4 ? 'animate-spin' : ''}`} />
+                                    <span>4. 이동 방향/시간대 반영 {message.currentStep === 4 && '…'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 5 ? 'mdi:check-circle' : message.currentStep === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 5 ? 'animate-spin' : ''}`} />
+                                    <span>5. 다음 포착 후보 CCTV 생성 {message.currentStep === 5 && '…'}</span>
+                                  </div>
+                                </div>
+                              )}
+                              
                               <div className="mb-2">
                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                                   <div
@@ -571,9 +674,36 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                               <div className="mb-3">
                                 <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
                                 <p className="text-sm text-gray-700 leading-relaxed">
-                                  {message.content} (처리 : {message.processingTime}초, 전송 : {message.transmissionTime}초)
+                                  {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
                                 </p>
                               </div>
+                              
+                              {/* 객체 추적 단계별 표시 */}
+                              {message.totalSteps === 5 && (
+                                <div className="space-y-2 mb-3 text-xs">
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
+                                    <span>1. 대표 후보 기준점 설정 {message.currentStep === 1 && '✅'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 2 ? 'mdi:check-circle' : message.currentStep === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 2 ? 'animate-spin' : ''}`} />
+                                    <span>2. 유사 후보 재탐색 {message.currentStep === 2 && '⏳'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 3 ? 'mdi:check-circle' : message.currentStep === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 3 ? 'animate-spin' : ''}`} />
+                                    <span>3. 시간순 정렬 및 경로 연결 {message.currentStep === 3 && '…'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 4 ? 'mdi:check-circle' : message.currentStep === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 4 ? 'animate-spin' : ''}`} />
+                                    <span>4. 이동 방향/시간대 반영 {message.currentStep === 4 && '…'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${message.currentStep >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    <Icon icon={message.currentStep > 5 ? 'mdi:check-circle' : message.currentStep === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 5 ? 'animate-spin' : ''}`} />
+                                    <span>5. 다음 포착 후보 CCTV 생성 {message.currentStep === 5 && '…'}</span>
+                                  </div>
+                                </div>
+                              )}
+                              
                               <div className="mb-2">
                                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                                   <div

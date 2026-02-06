@@ -37,13 +37,23 @@ interface MapViewProps {
   pinOffset?: { x: number; y: number };
   focusTargetXPercent?: number; // 줌 시 포커스(화면) 위치 (기본: 50)
   flyToLocation?: [number, number] | null; // 지도를 특정 위치로 이동시키는 좌표
+  externalShowCCTV?: boolean; // 외부에서 CCTV 표시 제어
+  showPredictedCCTV?: boolean; // 예측된 CCTV 파란색 핀 표시
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, showPredictedCCTV = false }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
   const [showCCTV, setShowCCTV] = useState(true);
+  
+  // 외부에서 CCTV 표시 제어
+  useEffect(() => {
+    if (externalShowCCTV !== undefined) {
+      setShowCCTV(externalShowCCTV);
+    }
+  }, [externalShowCCTV]);
+  
   const [currentCCTVIndex, setCurrentCCTVIndex] = useState(0);
   const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
   const [showCCTVName, setShowCCTVName] = useState(true);
@@ -1167,6 +1177,125 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const containerRef = useRef<HTMLDivElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+
+  // showCCTV 변경 시 CCTV 마커 표시/숨김 (예측된 CCTV 제외)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    
+    const cctvMarkers = (map as any)._cctvMarkers;
+    if (cctvMarkers) {
+      cctvMarkers.forEach((marker: any) => {
+        const element = marker.getElement();
+        if (element && !element.classList.contains('predicted-cctv-marker')) {
+          element.style.display = showCCTV ? 'block' : 'none';
+        }
+      });
+    }
+  }, [showCCTV]);
+
+  // 예측된 CCTV 파란색 핀 표시
+  useEffect(() => {
+    const map = mapRef.current;
+    const container = mapContainerRef.current;
+    console.log('[MapView] showPredictedCCTV:', showPredictedCCTV, 'map:', !!map, 'container:', !!container);
+    
+    if (!map || !container || !showPredictedCCTV) return;
+    
+    const addPredictedPin = () => {
+      if (!map.loaded()) {
+        console.log('[MapView] 맵이 아직 로드되지 않음, 대기 중...');
+        setTimeout(addPredictedPin, 100);
+        return;
+      }
+      
+      // 원미A-444 좌표
+      const predictedLocation: [number, number] = [126.7828196, 37.50501939999999];
+      console.log('[MapView] 파란색 핀 생성 시작:', predictedLocation);
+      
+      // 해당 위치로 지도 이동 (부드럽게)
+      map.flyTo({
+        center: predictedLocation,
+        zoom: 17,
+        duration: 2000,
+        essential: true
+      });
+      
+      // 지도 이동 완료 후 마커 추가
+      map.once('moveend', () => {
+        console.log('[MapView] 지도 이동 완료, 마커 추가 시작');
+        
+        // 파란색 핀 생성 (이벤트 핀과 동일한 디자인)
+        const el = document.createElement('div');
+        el.className = 'predicted-cctv-marker';
+        el.style.cssText = `
+          width: 28px;
+          height: 28px;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+          border: 2px solid #3b82f6;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3);
+          cursor: pointer;
+          backdrop-filter: blur(4px);
+          position: relative;
+        `;
+        
+        // 외곽 링
+        const ringEl = document.createElement('div');
+        ringEl.style.cssText = `
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          border: 2px solid rgba(59, 130, 246, 0.3);
+          border-radius: 14px;
+          pointer-events: none;
+        `;
+        el.appendChild(ringEl);
+        
+        // 아이콘
+        const iconEl = document.createElement('div');
+        iconEl.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #60a5fa;">
+            <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
+          </svg>
+        `;
+        el.appendChild(iconEl);
+        
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat(predictedLocation)
+          .addTo(map);
+        
+        // 마커의 부모 요소에 z-index 설정
+        const markerElement = marker.getElement();
+        if (markerElement) {
+          markerElement.style.zIndex = '99999';
+          console.log('[MapView] 마커 z-index 설정:', markerElement.style.zIndex);
+        }
+        
+        console.log('[MapView] 파란색 핀 생성 완료, marker:', marker);
+        
+        // 마커를 맵에 저장
+        (map as any)._predictedMarker = marker;
+      });
+    };
+    
+    addPredictedPin();
+    
+    // cleanup
+    return () => {
+      console.log('[MapView] 파란색 핀 제거');
+      const marker = (map as any)._predictedMarker;
+      if (marker) {
+        marker.remove();
+        (map as any)._predictedMarker = null;
+      }
+    };
+  }, [showPredictedCCTV]);
 
   // 일반 이벤트 ID 목록 (event-26부터 event-33)
   const generalEventIds = new Set([
