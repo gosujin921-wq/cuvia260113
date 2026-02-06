@@ -118,7 +118,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
               </div>
               <div>
                 <div className="text-xs text-gray-400 mb-1">실종 장소/시간</div>
-                <div className="text-sm text-gray-200">부천로 245번길 일원, 09:30경</div>
+                <div className="text-sm text-gray-200">춘의동 125-46 일원, 09:30경</div>
               </div>
             </div>
           </div>

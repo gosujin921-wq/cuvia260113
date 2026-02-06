@@ -3,13 +3,11 @@ import { useState } from 'react';
 
 interface LeftMenuPanelProps {
   onMenuSelect?: (menuId: 'fast-search' | 'object-tracking' | 'broadcast') => void;
+  selectedMenuId?: 'fast-search' | 'object-tracking' | 'broadcast' | null;
 }
 
-const LeftMenuPanel = ({ onMenuSelect }: LeftMenuPanelProps) => {
-  const [selectedMenu, setSelectedMenu] = useState<'fast-search' | 'object-tracking' | 'broadcast' | null>(null);
-
+const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null }: LeftMenuPanelProps) => {
   const handleMenuClick = (menuId: 'fast-search' | 'object-tracking' | 'broadcast') => {
-    setSelectedMenu(menuId);
     onMenuSelect?.(menuId);
   };
 
@@ -56,7 +54,7 @@ const LeftMenuPanel = ({ onMenuSelect }: LeftMenuPanelProps) => {
       {/* 메뉴 아이템들 */}
       <div className="flex flex-col items-center gap-3 w-full">
         {menuItems.map((item) => {
-          const isActive = selectedMenu === item.id;
+          const isActive = selectedMenuId === item.id;
           return (
             <button
               key={item.id}

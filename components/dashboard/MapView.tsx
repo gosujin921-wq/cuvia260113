@@ -39,7 +39,7 @@ interface MapViewProps {
   flyToLocation?: [number, number] | null; // 지도를 특정 위치로 이동시키는 좌표
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 500, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -422,31 +422,33 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         justify-content: center;
       `;
       
-      // 펄스 효과 3개
-      for (let i = 0; i < 3; i++) {
-        const pulse = document.createElement('div');
-        pulse.style.cssText = `
-          position: absolute;
-          width: 120px;
-          height: 120px;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%) translateZ(0) scale(0.8);
-          animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          animation-delay: ${i * 0.2}s;
-          will-change: transform, opacity;
-          pointer-events: none;
-          z-index: 1;
-        `;
-        const pulseInner = document.createElement('div');
-        pulseInner.style.cssText = `
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          background-color: rgba(239, 68, 68, ${0.5 - i * 0.1});
-        `;
-        pulse.appendChild(pulseInner);
-        centerWrapper.appendChild(pulse);
+      // 펄스 효과 3개 (고속검색 리스트 표시 시에는 펄스 제거)
+      if (!showFastSearchList) {
+        for (let i = 0; i < 3; i++) {
+          const pulse = document.createElement('div');
+          pulse.style.cssText = `
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50()) translateZ(0) scale(0.8);
+            animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            animation-delay: ${i * 0.2}s;
+            will-change: transform, opacity;
+            pointer-events: none;
+            z-index: 1;
+          `;
+          const pulseInner = document.createElement('div');
+          pulseInner.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(239, 68, 68, ${0.5 - i * 0.1});
+          `;
+          pulse.appendChild(pulseInner);
+          centerWrapper.appendChild(pulse);
+        }
       }
       
       // 펄스 애니메이션 keyframes 추가
@@ -523,7 +525,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       `;
       labelEl.innerHTML = `
         <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
-        <div style="font-size: 12px; font-weight: 600; color: white;">부천로 245번길</div>
+        <div style="font-size: 12px; font-weight: 600; color: white;">춘의동 125-46</div>
       `;
       markerContainer.appendChild(labelEl);
       
@@ -534,6 +536,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       })
         .setLngLat(flyToLocation as [number, number])
         .addTo(map);
+      
+      // 이벤트 마커 z-index 설정 (반경 원보다 위)
+      const eventMarkerElement = newMarker.getElement();
+      if (eventMarkerElement) {
+        eventMarkerElement.style.zIndex = '100';
+      }
       
       console.log('새 이벤트 마커 추가 완료');
       
@@ -560,24 +568,37 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         });
       }
     }
-  }, [flyToLocation]);
+  }, [flyToLocation, showFastSearchList]);
 
-  // 고속검색 리스트 표시 시 지도 이동 (우측으로 140px) - 프로그래스바 닫힌 후
+  // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
   useEffect(() => {
+    console.log('🗺️ [지도 이동 useEffect] showFastSearchList:', showFastSearchList, 'mapRef:', !!mapRef.current);
     if (!mapRef.current) return;
     
     const map = mapRef.current;
     
-    // showFastSearchList가 true가 될 때만 이동 (프로그래스바 닫히고 리스트 표시 시)
-    if (showFastSearchList && map.loaded()) {
+    if (!showFastSearchList) return;
+    
+    // 지도 이동 함수
+    const moveMap = () => {
+      if (!map.loaded()) {
+        console.log('🗺️ [지도 이동] 지도 로드 대기 중... 재시도');
+        setTimeout(moveMap, 300);
+        return;
+      }
+      
       // 현재 중심점 가져오기
       const currentCenter = map.getCenter();
       const currentZoom = map.getZoom();
       
-      // 140px을 경도로 변환 (줌 레벨에 따라 다름)
-      const pixelOffset = 140;
+      console.log('🗺️ [지도 이동] 시작 - 현재 중심:', currentCenter, 'zoom:', currentZoom);
+      
+      // 130px을 경도로 변환 (줌 레벨에 따라 다름)
+      const pixelOffset = 130;
       const metersPerPixel = 156543.03392 * Math.cos(currentCenter.lat * Math.PI / 180) / Math.pow(2, currentZoom);
       const lngOffset = (pixelOffset * metersPerPixel) / 111320; // 경도 1도 = 약 111.32km
+      
+      console.log('🗺️ [지도 이동] 계산 - pixelOffset:', pixelOffset, 'lngOffset:', lngOffset);
       
       // 우측으로 이동 (경도 증가)
       map.easeTo({
@@ -585,7 +606,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         duration: 800,
         essential: true
       });
-    }
+      
+      console.log('🗺️ [지도 이동] 완료 - 새 중심:', [currentCenter.lng + lngOffset, currentCenter.lat]);
+    };
+    
+    moveMap();
   }, [showFastSearchList]);
 
   // CCTV 생성 및 표시 - 고속검색 리스트 표시 시에만
@@ -802,20 +827,36 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         groupCCTVs.reduce((sum, pos) => sum + pos.lat, 0) / groupCCTVs.length,
       ];
       
-      return new maplibregl.Marker({
+      const marker = new maplibregl.Marker({
         element: createCluster(group, group.cameras.length),
         anchor: 'center'
       })
         .setLngLat(clusterCenter as [number, number]);
+      
+      // CCTV 클러스터 마커 z-index 설정 (반경 원보다 위)
+      const markerEl = marker.getElement();
+      if (markerEl) {
+        markerEl.style.zIndex = '50';
+      }
+      
+      return marker;
     });
     
     // 개별 CCTV 마커 생성
     const newIndividualMarkers = cctvPositions.map((pos) => {
-      return new maplibregl.Marker({
+      const marker = new maplibregl.Marker({
         element: createSimpleCCTV(pos.name),
         anchor: 'center'
       })
         .setLngLat([pos.lng, pos.lat] as [number, number]);
+      
+      // 개별 CCTV 마커 z-index 설정 (반경 원보다 위)
+      const markerEl = marker.getElement();
+      if (markerEl) {
+        markerEl.style.zIndex = '50';
+      }
+      
+      return marker;
     });
     
     // 줌 레벨에 따라 클러스터/개별 전환
@@ -883,6 +924,191 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
     
   }, [showFastSearchList]);
+
+  // 고속검색 반경 원 마커 생성 - 실제 지도 좌표에 고정, 바닥에 눕힘
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    const map = mapRef.current;
+    const radiusCenter: [number, number] = [126.783853180335, 37.5049838114765];
+    
+    // showFastSearchList가 false면 기존 마커 제거
+    if (!showFastSearchList) {
+      const oldRadiusMarker = (map as any)._radiusMarker;
+      if (oldRadiusMarker) {
+        oldRadiusMarker.remove();
+        (map as any)._radiusMarker = null;
+      }
+      return;
+    }
+    
+    if (!fastSearchRadius || fastSearchRadius <= 0) return;
+    
+    // 기존 반경 마커 제거
+    const oldRadiusMarker = (map as any)._radiusMarker;
+    if (oldRadiusMarker) {
+      oldRadiusMarker.remove();
+    }
+    
+    // 지도 로드 확인 및 마커 생성
+    const createRadiusMarker = () => {
+      if (!map.loaded()) {
+        setTimeout(createRadiusMarker, 500);
+        return;
+      }
+      
+      // 미터를 픽셀로 변환
+      const zoom = map.getZoom();
+      const lat = radiusCenter[1];
+      const metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+      const radiusInPixels = fastSearchRadius / metersPerPixel;
+      const diameter = radiusInPixels * 2;
+      
+      // 반경 원 컨테이너
+      const radiusContainer = document.createElement('div');
+      radiusContainer.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        z-index: 1;
+      `;
+      
+      const radiusWrapper = document.createElement('div');
+      const currentPitch = map.getPitch();
+      radiusWrapper.style.cssText = `
+        position: relative;
+        width: ${diameter}px;
+        height: ${diameter}px;
+      `;
+      
+      // radius-pulse 애니메이션 keyframes 추가
+      if (!document.getElementById('radius-pulse-style')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'radius-pulse-style';
+        styleEl.textContent = `
+          @keyframes radius-pulse {
+            0% {
+              transform: translate(-50%, -50%) translateZ(0) scale(0.5);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(-50%, -50%) translateZ(0) scale(1);
+              opacity: 0;
+            }
+          }
+        `;
+        document.head.appendChild(styleEl);
+      }
+      
+      // 하늘색 펄스 3개
+      for (let i = 0; i < 3; i++) {
+        const pulse = document.createElement('div');
+        pulse.style.cssText = `
+          position: absolute;
+          width: ${diameter - 4}px;
+          height: ${diameter - 4}px;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) translateZ(0) scale(0.5);
+          animation: radius-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          animation-delay: ${i * 0.4}s;
+          will-change: transform, opacity;
+          pointer-events: none;
+          z-index: 1;
+        `;
+        const pulseInner = document.createElement('div');
+        pulseInner.style.cssText = `
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background-color: rgba(59, 130, 246, ${0.4 - i * 0.08});
+        `;
+        pulse.appendChild(pulseInner);
+        radiusWrapper.appendChild(pulse);
+      }
+      
+      // 반경 원 SVG (대시 라인)
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('width', `${diameter}px`);
+      svg.setAttribute('height', `${diameter}px`);
+      svg.style.cssText = `
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+      `;
+      
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', '50%');
+      circle.setAttribute('cy', '50%');
+      circle.setAttribute('r', `${radiusInPixels - 2}px`);
+      circle.setAttribute('fill', 'none');
+      circle.setAttribute('stroke', 'rgba(59, 130, 246, 0.8)');
+      circle.setAttribute('stroke-width', '4');
+      circle.setAttribute('stroke-dasharray', '8 4');
+      
+      svg.appendChild(circle);
+      radiusWrapper.appendChild(svg);
+      radiusContainer.appendChild(radiusWrapper);
+      
+      // 마커 생성 - pitchAlignment: 'map'으로 바닥에 눕힘
+      const radiusMarker = new maplibregl.Marker({
+        element: radiusContainer,
+        anchor: 'center',
+        pitchAlignment: 'map',
+        rotationAlignment: 'map'
+      })
+        .setLngLat(radiusCenter)
+        .addTo(map);
+      
+      // z-index 설정 (이벤트 핀, CCTV보다 아래)
+      const markerElement = radiusMarker.getElement();
+      if (markerElement) {
+        markerElement.style.zIndex = '1';
+      }
+      
+      // 저장
+      (map as any)._radiusMarker = radiusMarker;
+      
+      // zoom 변경 시 크기 업데이트
+      const zoomHandler = () => {
+        const newZoom = map.getZoom();
+        const newMetersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, newZoom);
+        const newRadiusInPixels = fastSearchRadius / newMetersPerPixel;
+        const newDiameter = newRadiusInPixels * 2;
+        
+        radiusWrapper.style.width = `${newDiameter}px`;
+        radiusWrapper.style.height = `${newDiameter}px`;
+        
+        const pulses = radiusWrapper.querySelectorAll('div[style*="animation"]');
+        pulses.forEach((pulse: any) => {
+          pulse.style.width = `${newDiameter - 4}px`;
+          pulse.style.height = `${newDiameter - 4}px`;
+        });
+        
+        svg.setAttribute('width', `${newDiameter}px`);
+        svg.setAttribute('height', `${newDiameter}px`);
+        circle.setAttribute('r', `${newRadiusInPixels - 2}px`);
+      };
+      
+      map.on('zoom', zoomHandler);
+      
+      (map as any)._radiusCleanup = () => {
+        map.off('zoom', zoomHandler);
+        radiusMarker.remove();
+      };
+    };
+    
+    createRadiusMarker();
+    
+    return () => {
+      const cleanup = (map as any)._radiusCleanup;
+      if (cleanup) cleanup();
+    };
+    
+  }, [showFastSearchList, fastSearchRadius]);
 
   // is3DMode와 mapBearing 변경은 이제 버튼 클릭 핸들러에서 직접 처리됨
   

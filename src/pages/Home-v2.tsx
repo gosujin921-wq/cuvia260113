@@ -29,7 +29,7 @@ export default function HomeV2() {
   const [showFastSearchList, setShowFastSearchList] = useState<boolean>(false);
   const [showAIAgentPopup, setShowAIAgentPopup] = useState<boolean>(false);
   const [listCardCount, setListCardCount] = useState<number>(0);
-  const [fastSearchRadius, setFastSearchRadius] = useState<number>(500);
+  const [fastSearchRadius, setFastSearchRadius] = useState<number>(300);
   const [reportPopupHeight, setReportPopupHeight] = useState<number>(0);
   const [pinOffset, setPinOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hideDimForFastSearch, setHideDimForFastSearch] = useState<boolean>(false);
@@ -349,9 +349,12 @@ export default function HomeV2() {
     }
   }, [listCardCount, showReSearchProgress]);
 
-  // showFastSearchList 상태 변경 로그
+  // showFastSearchList 상태 변경 로그 및 메뉴 선택 상태 동기화
   useEffect(() => {
     console.log('[Home-v2] showFastSearchList 상태 변경:', showFastSearchList);
+    if (showFastSearchList) {
+      setSelectedMenuId('fast-search');
+    }
   }, [showFastSearchList]);
 
   // 키보드 단축키 핸들러
@@ -371,8 +374,8 @@ export default function HomeV2() {
           setSelectedEventId(missingEvent.id);
           setHighlightedEventId(missingEvent.id);
           setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-          // 부천로 245번길 좌표로 지도 이동 (참사랑교회)
-          setFlyToLocation([126.784551814066, 37.5058377976002]);
+          // 춘의동 125-46 좌표로 지도 이동
+          setFlyToLocation([126.783853180335, 37.5049838114765]);
         }
       } else if (e.key === '2') {
         // 고속검색 완료 화면 바로 표시 (프로그래스바 생략)
@@ -385,8 +388,8 @@ export default function HomeV2() {
           setSelectedEventId(missingEvent.id);
           setHighlightedEventId(missingEvent.id);
           setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-          // 부천로 245번길 좌표로 지도 이동 (참사랑교회)
-          setFlyToLocation([126.784551814066, 37.5058377976002]);
+          // 춘의동 125-46 좌표로 지도 이동
+          setFlyToLocation([126.783853180335, 37.5049838114765]);
           // 고속검색 완료 화면 표시
           setPanelsSlidOut(true);
           setShowCCTV(false);
@@ -413,7 +416,18 @@ export default function HomeV2() {
         // 43번 카드 자동 열기
         setOpenCandidateId('43');
       } else if (e.key === 'Escape') {
-        clearSelection();
+        // 고속검색 리스트가 열려있으면 닫기만 하고, 아니면 전체 초기화
+        if (showFastSearchList) {
+          setShowFastSearchList(false);
+          setShowAIAgentPopup(false);
+          setPanelsSlidOut(false);
+          setShowCCTV(true);
+          setHideControls(false);
+          setShowFastSearch(false);
+          setSelectedMenuId(null);
+        } else {
+          clearSelection();
+        }
       }
     };
 
@@ -454,7 +468,7 @@ export default function HomeV2() {
         className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${showFastSearchList ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
         style={{ zIndex: 101 }}
       >
-        <LeftMenuPanel onMenuSelect={handleMenuSelect} />
+        <LeftMenuPanel onMenuSelect={handleMenuSelect} selectedMenuId={selectedMenuId} />
       </div>
 
       <div 

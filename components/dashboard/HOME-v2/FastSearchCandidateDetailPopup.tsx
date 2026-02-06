@@ -445,60 +445,62 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
       onClick={handleOverlayClick}
     >
       <div
-        className="gradient-border-right-bottom w-full max-w-3xl flex flex-col rounded-lg shadow-lg"
+        className="gradient-border-right-bottom w-full max-w-3xl flex flex-col rounded-lg shadow-lg overflow-hidden"
         style={{
           maxHeight: '90vh',
-          height: 'auto',
-          background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
-          backdropFilter: 'blur(2px)',
-          WebkitBackdropFilter: 'blur(2px)',
+          height: '90vh',
+          background: 'linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(23,23,23,0.95) 100%)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
           borderWidth: '1px',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 헤더 (AIDetectionPopup / SituationSummary와 동일: p-4 border-b, 면 배경 없음) */}
-        <div className="flex flex-wrap items-start justify-between gap-3 p-4 flex-shrink-0 border-b border-[#31353a]">
-          <div className="flex flex-col gap-1.5 min-w-0">
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="text-white font-semibold text-sm">{candidate.cctvId}</span>
-              <span className="text-gray-400 text-sm">·</span>
-              <span className="text-gray-300 text-sm truncate">{candidate.location}</span>
+        {/* 헤더 - 고정 */}
+        <div className="flex items-center justify-between gap-3 p-5 flex-shrink-0 border-b border-[#31353a]/50">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div 
+              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+              }}
+            >
+              <Icon icon="mdi:cctv" className="w-5 h-5 text-white" />
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-              <span className="text-gray-400">시간 범위</span>
-              <span className="text-gray-300">{timeRange}</span>
-              <span className="text-gray-500">|</span>
-              <span className="text-gray-400">후보 점수</span>
-              <span className="text-white font-semibold">{candidate.confidence}%</span>
-              <div
-                className="h-2 rounded-full bg-[#0f0f0f] overflow-hidden border border-[#31353a]"
-                style={{ width: 100 }}
-                role="progressbar"
-                aria-valuenow={candidate.confidence}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <div
-                  className="h-full rounded-full bg-blue-500"
-                  style={{ width: `${candidate.confidence}%` }}
-                />
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-bold text-base">{candidate.cctvId}</span>
+                <span 
+                  className="px-2 py-0.5 rounded text-xs font-semibold text-white"
+                  style={{
+                    background: candidate.confidence >= 80 
+                      ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+                      : candidate.confidence >= 60
+                      ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                      : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  }}
+                >
+                  {candidate.confidence}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <Icon icon="mdi:map-marker" className="w-3 h-3" />
+                <span className="truncate">{candidate.location}</span>
               </div>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
+            className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#31353a]/50"
             aria-label="닫기"
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 컨텐츠 (SituationSummary 동일: overflow-y-auto p-4 space-y-4, 면 배경 없음) */}
-        <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
-          {/* 클립 영상 (AIDetectionPopup / CCTVMesh 동일: p-4 > bg-[#0f0f0f] 면) */}
-          <div>
+        {/* 영상 영역 - 고정 (스크롤 안 됨) */}
+        <div className="flex-shrink-0 p-5 border-b border-[#31353a]/50">
             <div 
               ref={containerRef}
               className="w-full bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
@@ -638,77 +640,115 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             
           </div>
 
-          {/* 관찰 요약 (SituationSummary 블록 스타일: bg-[#0f0f0f] 면) */}
-          <section className="bg-[#0f0f0f] border border-[#31353a] rounded-xl p-4" style={{ borderWidth: '1px' }}>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">관찰 요약</h3>
-            <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
-          </section>
-
-          {/* 타임라인 (동일 면 처리) */}
-          <section className="bg-[#0f0f0f] border border-[#31353a] rounded-xl p-4" style={{ borderWidth: '1px' }}>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">시간 기반 관찰 기록</h3>
-            <ul className="space-y-1">
-              {detail.timeline.map((entry, idx) => (
-                <li key={idx}>
-                  <button
-                    type="button"
-                    onClick={() => handleTimelineClick(entry)}
-                    className="w-full text-left flex items-baseline gap-2 text-sm text-gray-300 hover:text-white hover:bg-[#1a1a1a] rounded px-2 py-1.5 -mx-2 transition-colors focus:outline-none focus:ring-1 focus:ring-[#31353a] focus:ring-inset"
-                  >
-                    <span className="text-gray-500 font-mono shrink-0">{entry.time}</span>
-                    <span>{entry.label}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* 접힘: 후보 메타정보 (패널 칩 스타일) */}
-          <section>
-            <button
-              type="button"
-              onClick={() => setMetaOpen((o) => !o)}
-              className="w-full flex items-center justify-between text-left py-2 px-4 rounded-lg bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] border border-[#31353a] hover:border-[#3d4046] transition-colors focus:outline-none focus:ring-1 focus:ring-[#31353a] focus:ring-inset"
-              aria-expanded={metaOpen}
-              aria-controls="candidate-meta"
-            >
-              <span className="text-sm font-medium">후보 메타정보</span>
-              <Icon icon={metaOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} className="w-5 h-5 text-gray-500" aria-hidden />
-            </button>
-            <div id="candidate-meta" className="overflow-hidden" hidden={!metaOpen}>
-              {metaOpen && (
-                <div className="mt-2 p-4 rounded-lg bg-[#1a1a1a] border border-[#31353a] space-y-2 text-sm">
-                  <div className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1">
-                    <span className="text-gray-500">카메라 ID</span>
-                    <span className="text-gray-300">{detail.meta.cameraId}</span>
-                    <span className="text-gray-500">감지 객체</span>
-                    <span className="text-gray-300">{detail.meta.detectedObject}</span>
-                    <span className="text-gray-500">주요 속성</span>
-                    <span className="text-gray-300">{detail.meta.mainAttributes}</span>
-                    <span className="text-gray-500">행동 특징</span>
-                    <span className="text-gray-300">{detail.meta.behavior}</span>
-                    <span className="text-gray-500">이탈 방향</span>
-                    <span className="text-gray-300">{detail.meta.exitDirection}</span>
-                    <span className="text-gray-500">후보 점수</span>
-                    <span className="text-gray-300">{detail.meta.score}/100</span>
-                  </div>
-                </div>
-              )}
+        {/* 정보 영역 - 스크롤 가능 */}
+        <div className="flex-1 overflow-y-auto min-h-0 px-5 pb-5" style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#31353a #0f0f0f',
+        }}>
+          <div className="space-y-4 pt-4">
+            {/* 시간 범위 카드 */}
+            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl p-4 backdrop-blur">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon icon="mdi:clock-outline" className="w-4 h-4 text-blue-400" />
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">시간 범위</h3>
+              </div>
+              <p className="text-sm text-white font-medium">{timeRange}</p>
             </div>
-          </section>
+
+            {/* 관찰 요약 */}
+            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl p-4 backdrop-blur">
+              <div className="flex items-center gap-2 mb-3">
+                <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
+            </div>
+
+            {/* 타임라인 */}
+            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl p-4 backdrop-blur">
+              <div className="flex items-center gap-2 mb-3">
+                <Icon icon="mdi:timeline-text-outline" className="w-4 h-4 text-green-400" />
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">시간 기반 관찰 기록</h3>
+              </div>
+              <ul className="space-y-1.5">
+                {detail.timeline.map((entry, idx) => (
+                  <li key={idx}>
+                    <button
+                      type="button"
+                      onClick={() => handleTimelineClick(entry)}
+                      className="w-full text-left flex items-center gap-3 text-sm text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 rounded-lg px-3 py-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 group"
+                    >
+                      <span className="text-blue-400 font-mono text-xs shrink-0 bg-[#1a1a1a] px-2 py-1 rounded group-hover:bg-blue-500/20 transition-colors">
+                        {entry.time}
+                      </span>
+                      <span className="flex-1">{entry.label}</span>
+                      <Icon icon="mdi:play-circle-outline" className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 후보 메타정보 (접힘) */}
+            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl overflow-hidden backdrop-blur">
+              <button
+                type="button"
+                onClick={() => setMetaOpen((o) => !o)}
+                className="w-full flex items-center justify-between text-left p-4 text-gray-300 hover:bg-[#1a1a1a]/50 transition-colors focus:outline-none"
+                aria-expanded={metaOpen}
+                aria-controls="candidate-meta"
+              >
+                <div className="flex items-center gap-2">
+                  <Icon icon="mdi:information-outline" className="w-4 h-4 text-orange-400" />
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">후보 메타정보</span>
+                </div>
+                <Icon 
+                  icon={metaOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} 
+                  className="w-5 h-5 text-gray-500 transition-transform" 
+                  aria-hidden 
+                />
+              </button>
+              <div id="candidate-meta" className="overflow-hidden" hidden={!metaOpen}>
+                {metaOpen && (
+                  <div className="px-4 pb-4 space-y-3 text-sm">
+                    {[
+                      { icon: 'mdi:cctv', label: '카메라 ID', value: detail.meta.cameraId },
+                      { icon: 'mdi:account-outline', label: '감지 객체', value: detail.meta.detectedObject },
+                      { icon: 'mdi:palette-outline', label: '주요 속성', value: detail.meta.mainAttributes },
+                      { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
+                      { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
+                      { icon: 'mdi:star-outline', label: '후보 점수', value: `${detail.meta.score}/100` },
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#1a1a1a]/30 transition-colors">
+                        <Icon icon={item.icon} className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-gray-500 mb-0.5">{item.label}</div>
+                          <div className="text-gray-300">{item.value}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 푸터 (AIDetectionPopup 동일: p-4 border-t, 면 배경 없음) */}
-        <div className="flex flex-wrap items-center justify-end gap-2 p-4 flex-shrink-0 border-t border-[#31353a]">
+        {/* 푸터 - 고정 */}
+        <div className="flex flex-wrap items-center justify-end gap-2 p-5 flex-shrink-0 border-t border-[#31353a]/50 bg-[#0a0a0a]/50 backdrop-blur">
           <button
             type="button"
             onClick={() => {
               onAnalyze?.(candidate);
               onClose();
             }}
-            className="px-4 py-2 rounded-lg text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-[#0a0e14]"
+            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-2"
+            style={{
+              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+            }}
             aria-label="이 후보 분석하기"
           >
+            <Icon icon="mdi:chart-line" className="w-4 h-4" />
             이 후보 분석하기
           </button>
           <button
@@ -717,19 +757,11 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               onShowOnMap?.(candidate);
               onClose();
             }}
-            className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#31353a] hover:bg-[#3d4046] border border-[#31353a] transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-[#0a0e14] flex items-center gap-2"
+            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#31353a] hover:border-[#3d4046] transition-all focus:outline-none focus:ring-2 focus:ring-gray-400/50 flex items-center gap-2"
             aria-label="지도에서 위치 보기"
           >
-            <Icon icon="mdi:map-marker" className="w-4 h-4" aria-hidden />
+            <Icon icon="mdi:map-marker" className="w-4 h-4" />
             지도에서 위치 보기
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#31353a] hover:bg-[#3d4046] border border-[#31353a] transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:ring-offset-[#0a0e14]"
-            aria-label="닫기"
-          >
-            닫기
           </button>
         </div>
       </div>

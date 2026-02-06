@@ -40,7 +40,7 @@ interface CaptureItem {
 
 /** 신고 위치로부터의 거리(m) 계산 (mock) - 위치별 가상 거리 */
 const LOCATION_DISTANCE_MAP: Record<string, number> = {
-  '원미구 부천로 245번길 15 (참사랑교회)': 0,
+  '원미구 춘의동 125-46': 0,
   '원미구 부천로 245번길 41': 30,
   '길주로363번길 48': 150,
   '길주로391번길 29': 280,
@@ -95,7 +95,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   openCandidateId,
   onCandidateOpened,
 }) => {
-  const [radius, setRadius] = useState<number>(500); // 반경 (m)
+  const [radius, setRadius] = useState<number>(300); // 반경 (m)
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60)
   const [selectedZones, setSelectedZones] = useState<string[]>([]); // 다중 선택 구역 (기본값: 전체)
   
