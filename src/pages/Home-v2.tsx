@@ -10,6 +10,7 @@ import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
 import FastSearchProgress from '@/components/dashboard/HOME-v2/FastSearchProgress';
 import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
 import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
+import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
@@ -42,6 +43,7 @@ export default function HomeV2() {
   const [selectedMenuId, setSelectedMenuId] = useState<'fast-search' | 'object-tracking' | 'broadcast' | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null); // 지도 이동 좌표
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
+  const [showObjectTrackingConfirm, setShowObjectTrackingConfirm] = useState(false);
   const previousListCardCountRef = useRef<number>(0);
   const currentExcludedAttributesRef = useRef<string[]>([]);
   const isReSearchingRef = useRef<boolean>(false);
@@ -99,8 +101,12 @@ export default function HomeV2() {
       setShowFastSearch(true);
       setHideDimForFastSearch(false);
     } else if (menuId === 'object-tracking') {
-      // 객체추적: 추후 구현 예정
-      console.log('객체추적 기능 준비중');
+      // 객체추적: 고속검색 패널이 떠 있을 때만 다이얼로그 표시
+      if (showFastSearchList) {
+        setShowObjectTrackingConfirm(true);
+      } else {
+        console.log('객체추적 기능 - 고속검색 패널이 필요합니다');
+      }
     } else if (menuId === 'broadcast') {
       // 전파: 추후 구현 예정
       console.log('전파 기능 준비중');
@@ -403,6 +409,23 @@ export default function HomeV2() {
         excludedAttributes={excludedAttributes}
         openCandidateId={openCandidateId}
         onCandidateOpened={() => setOpenCandidateId(null)}
+      />
+
+      {/* 객체 추적 확인 다이얼로그 */}
+      <ConfirmDialog
+        isOpen={showObjectTrackingConfirm}
+        title="객체 추적 검사"
+        message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.\n객체 추적 검사를 시작하시겠습니까?`}
+        confirmText="시작"
+        cancelText="취소"
+        onConfirm={() => {
+          setShowObjectTrackingConfirm(false);
+          console.log('객체추적 시작');
+          // TODO: 객체추적 로직 구현
+        }}
+        onCancel={() => {
+          setShowObjectTrackingConfirm(false);
+        }}
       />
 
       {/* 에이전트 팝업: 고속검색 리스트 시 신고팝업 아래 여백(24px) 유지, 사건팝업 높이 변동에 따라 위치 조정 */}

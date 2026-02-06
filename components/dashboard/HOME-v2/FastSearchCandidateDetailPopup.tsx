@@ -35,6 +35,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [metaOpen, setMetaOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'timeline' | 'detail'>('timeline');
   const playCountRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -102,7 +103,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     // 59번 이미지일 때만 초록색 박스 활성화
     const imageId = getImageIdFromCaptureItem(candidate);
     if (imageId === '59') {
-      setGreenBoxPosition({ x: 436, y: 411 });
+      setGreenBoxPosition({ x: 436, y: 461 });
       setGreenBoxSize({ width: 80, height: 140 });
       setShowGreenBox(true);
       setIsAutoMode(true);
@@ -177,21 +178,21 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     const imageId = candidate ? getImageIdFromCaptureItem(candidate) : '';
     if (imageId !== '59') return;
 
-    // 59번 시간별 위치 데이터 (1920x1080 기준 좌표, 사용자 조정 반영: x+100, w+10, y+20)
+    // 59번 시간별 위치 데이터 (1920x1080 기준 좌표, 사용자 조정 반영: x+100, w+10, y+70)
     const timeBasedData = [
-      { time: 0, x: 1190, y: 1047.5, width: 210, height: 350 },
-      { time: 0.4, x: 1215, y: 822.5, width: 210, height: 350 },
-      { time: 0.5, x: 1210, y: 802.5, width: 210, height: 350 },
-      { time: 0.57, x: 1140, y: 872.5, width: 210, height: 350 },
-      { time: 0.6, x: 1215, y: 822.5, width: 210, height: 350 },
-      { time: 0.99, x: 1215, y: 822.5, width: 210, height: 350 },
-      { time: 1, x: 1315, y: 647.5, width: 210, height: 350 },
-      { time: 1.05, x: 1285, y: 707.5, width: 210, height: 350 },
-      { time: 1.12, x: 1242.5, y: 775, width: 210, height: 350 },
-      { time: 1.5, x: 1335, y: 660, width: 210, height: 350 },
-      { time: 2, x: 1327.5, y: 612.5, width: 202.5, height: 335 },
-      { time: 3, x: 1387.5, y: 522.5, width: 185, height: 300 },
-      { time: 4, x: 1390, y: 447.5, width: 185, height: 300 },
+      { time: 0, x: 1190, y: 1097.5, width: 210, height: 350 },
+      { time: 0.4, x: 1215, y: 872.5, width: 210, height: 350 },
+      { time: 0.5, x: 1210, y: 852.5, width: 210, height: 350 },
+      { time: 0.57, x: 1140, y: 922.5, width: 210, height: 350 },
+      { time: 0.6, x: 1215, y: 872.5, width: 210, height: 350 },
+      { time: 0.99, x: 1215, y: 872.5, width: 210, height: 350 },
+      { time: 1, x: 1315, y: 697.5, width: 210, height: 350 },
+      { time: 1.05, x: 1285, y: 757.5, width: 210, height: 350 },
+      { time: 1.12, x: 1242.5, y: 825, width: 210, height: 350 },
+      { time: 1.5, x: 1335, y: 710, width: 210, height: 350 },
+      { time: 2, x: 1327.5, y: 662.5, width: 202.5, height: 335 },
+      { time: 3, x: 1387.5, y: 572.5, width: 185, height: 300 },
+      { time: 4, x: 1390, y: 497.5, width: 185, height: 300 },
       { time: 6, x: 1340, y: 372.5, width: 135, height: 225 },
       { time: 8, x: 1265, y: 272.5, width: 135, height: 225 },
       { time: 10, x: 1242.5, y: 255, width: 135, height: 225 },
@@ -205,28 +206,28 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
       { time: 15.36, x: 1357.5, y: 430, width: 135, height: 250 },
       { time: 15.71, x: 1375, y: 440, width: 135, height: 225 },
       { time: 16, x: 1440, y: 497.5, width: 160, height: 250 },
-      { time: 18, x: 1640, y: 547.5, width: 160, height: 250 },
-      { time: 19, x: 1690, y: 472.5, width: 160, height: 250 },
-      { time: 20, x: 1690, y: 472.5, width: 135, height: 225 },
-      { time: 22, x: 1640, y: 447.5, width: 135, height: 200 },
+      { time: 18, x: 1640, y: 597.5, width: 160, height: 250 },
+      { time: 19, x: 1690, y: 522.5, width: 160, height: 250 },
+      { time: 20, x: 1690, y: 522.5, width: 135, height: 225 },
+      { time: 22, x: 1640, y: 497.5, width: 135, height: 200 },
       // 22초~48.99초: 박스 사라짐
-      { time: 49, x: 1640, y: 497.5, width: 160, height: 225 },
-      { time: 50, x: 1565, y: 472.5, width: 160, height: 250 },
-      { time: 60, x: 1515, y: 472.5, width: 160, height: 250 },
-      { time: 70, x: 1515, y: 472.5, width: 160, height: 250 },
-      { time: 79, x: 1530, y: 490, width: 160, height: 250 },
-      { time: 80, x: 1565, y: 507.5, width: 160, height: 250 },
-      { time: 81, x: 1615, y: 532.5, width: 160, height: 250 },
-      { time: 83, x: 1790, y: 632.5, width: 160, height: 250 },
-      { time: 86, x: 1757.5, y: 607.5, width: 160, height: 250 },
-      { time: 87, x: 1707.5, y: 582.5, width: 160, height: 250 },
-      { time: 90, x: 1740, y: 822.5, width: 160, height: 250 },
-      { time: 91, x: 1732.5, y: 582.5, width: 160, height: 250 },
-      { time: 93, x: 1732.5, y: 607.5, width: 185, height: 250 },
-      { time: 94, x: 1782.5, y: 632.5, width: 185, height: 250 },
-      { time: 95, x: 1832.5, y: 632.5, width: 185, height: 250 },
-      { time: 97, x: 1882.5, y: 682.5, width: 185, height: 250 },
-      { time: 98, x: 1932.5, y: 682.5, width: 185, height: 250 },
+      { time: 49, x: 1640, y: 547.5, width: 160, height: 225 },
+      { time: 50, x: 1565, y: 522.5, width: 160, height: 250 },
+      { time: 60, x: 1515, y: 522.5, width: 160, height: 250 },
+      { time: 70, x: 1515, y: 522.5, width: 160, height: 250 },
+      { time: 79, x: 1530, y: 540, width: 160, height: 250 },
+      { time: 80, x: 1565, y: 557.5, width: 160, height: 250 },
+      { time: 81, x: 1615, y: 582.5, width: 160, height: 250 },
+      { time: 83, x: 1790, y: 682.5, width: 160, height: 250 },
+      { time: 86, x: 1757.5, y: 657.5, width: 160, height: 250 },
+      { time: 87, x: 1707.5, y: 632.5, width: 160, height: 250 },
+      { time: 90, x: 1740, y: 872.5, width: 160, height: 250 },
+      { time: 91, x: 1732.5, y: 632.5, width: 160, height: 250 },
+      { time: 93, x: 1732.5, y: 657.5, width: 185, height: 250 },
+      { time: 94, x: 1782.5, y: 682.5, width: 185, height: 250 },
+      { time: 95, x: 1832.5, y: 682.5, width: 185, height: 250 },
+      { time: 97, x: 1882.5, y: 732.5, width: 185, height: 250 },
+      { time: 98, x: 1932.5, y: 732.5, width: 185, height: 250 },
     ];
 
     const handleVideoTimeUpdate = () => {
@@ -448,13 +449,14 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
       onClick={handleOverlayClick}
     >
       <div
-        className="gradient-border-right-bottom w-full max-w-3xl flex flex-col rounded-lg shadow-lg overflow-hidden"
+        className="gradient-border-right-bottom w-full flex flex-col rounded-lg shadow-lg overflow-hidden"
         style={{
-          maxHeight: '90vh',
-          height: '90vh',
-          background: 'linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(23,23,23,0.95) 100%)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
+          maxWidth: '1100px',
+          maxHeight: '75vh',
+          height: '75vh',
+          background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
           borderWidth: '1px',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -471,7 +473,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               <span className="text-gray-400">시간 범위</span>
               <span className="text-gray-300">{timeRange}</span>
               <span className="text-gray-500">|</span>
-              <span className="text-gray-400">후보 점수</span>
+              <span className="text-gray-400">유사도</span>
               <span className="text-white font-semibold">{candidate.confidence}%</span>
               <div
                 className="h-2 rounded-full bg-[#0f0f0f] overflow-hidden border border-[#31353a]"
@@ -498,12 +500,14 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
           </button>
         </div>
 
-        {/* 영상 영역 - 고정 (스크롤 안 됨) */}
-        <div className="flex-shrink-0 p-5 border-b border-[#31353a]/50">
+        {/* 2컬럼 레이아웃: 좌측 영상, 우측 정보 */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* 좌측: 영상 + 관찰요약 영역 */}
+          <div className="flex-shrink-0 p-4 border-r border-[#31353a]/50 flex flex-col gap-3" style={{ width: '65%' }}>
             <div 
               ref={containerRef}
               className="bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
-              style={{ aspectRatio: '16/9', maxWidth: '700px' }}
+              style={{ aspectRatio: '16/9', width: '100%', maxHeight: '100%' }}
             >
               <video
                 ref={videoRef}
@@ -559,7 +563,19 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                       transition: 'all 0.1s ease-out',
                     }}
                     aria-hidden="true"
-                  />
+                  >
+                    <div
+                      className="absolute px-3 py-1 text-xs font-semibold text-white"
+                      style={{
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderRadius: '999px',
+                        top: '-28px',
+                        left: '0px',
+                      }}
+                    >
+                      {scaledWidth < 100 ? '95%' : '유사도 95%'}
+                    </div>
+                  </div>
                 );
               })()}
               
@@ -657,117 +673,220 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               </div>
             </div>
             
-          </div>
-
-        {/* 정보 영역 - 스크롤 가능 */}
-        <div className="flex-1 overflow-y-auto min-h-0 px-5 pb-5" style={{
-          scrollbarWidth: 'thin',
-          scrollbarColor: '#31353a #0f0f0f',
-        }}>
-          <div className="space-y-4 pt-4">
-            {/* 시간 범위 카드 */}
-            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl p-4 backdrop-blur">
+            {/* 관찰 요약 - 영상 아래 */}
+            <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
               <div className="flex items-center gap-2 mb-2">
-                <Icon icon="mdi:clock-outline" className="w-4 h-4 text-blue-400" />
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">시간 범위</h3>
-              </div>
-              <p className="text-sm text-white font-medium">{timeRange}</p>
-            </div>
-
-            {/* 관찰 요약 */}
-            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl p-4 backdrop-blur">
-              <div className="flex items-center gap-2 mb-3">
                 <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
               </div>
-              <p className="text-base text-gray-300 leading-relaxed">{detail.observationSummary}</p>
+              <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
             </div>
+          </div>
 
-            {/* 타임라인 */}
-            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl p-4 backdrop-blur">
-              <div className="flex items-center gap-2 mb-3">
-                <Icon icon="mdi:timeline-text-outline" className="w-4 h-4 text-green-400" />
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">시간 기반 관찰 기록</h3>
-              </div>
-              <ul className="space-y-1.5">
-                {detail.timeline.map((entry, idx) => (
-                  <li key={idx}>
-                    <button
-                      type="button"
-                      onClick={() => handleTimelineClick(entry)}
-                      className="w-full text-left flex items-center gap-3 text-sm text-gray-300 hover:text-white hover:bg-[#1a1a1a]/50 rounded-lg px-3 py-2 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 group"
-                    >
-                      <span className="text-blue-400 font-mono text-xs shrink-0 bg-[#1a1a1a] px-2 py-1 rounded group-hover:bg-blue-500/20 transition-colors">
-                        {entry.time}
-                      </span>
-                      <span className="flex-1">{entry.label}</span>
-                      <Icon icon="mdi:play-circle-outline" className="w-4 h-4 text-gray-500 group-hover:text-blue-400 transition-colors" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* 후보 메타정보 (접힘) */}
-            <div className="bg-[#0f0f0f]/50 border border-[#31353a]/50 rounded-xl overflow-hidden backdrop-blur">
-              <button
-                type="button"
-                onClick={() => setMetaOpen((o) => !o)}
-                className="w-full flex items-center justify-between text-left p-4 text-gray-300 hover:bg-[#1a1a1a]/50 transition-colors focus:outline-none"
-                aria-expanded={metaOpen}
-                aria-controls="candidate-meta"
-              >
-                <div className="flex items-center gap-2">
-                  <Icon icon="mdi:information-outline" className="w-4 h-4 text-orange-400" />
-                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">후보 메타정보</span>
-                </div>
-                <Icon 
-                  icon={metaOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} 
-                  className="w-5 h-5 text-gray-500 transition-transform" 
-                  aria-hidden 
+          {/* 우측: 정보 영역 - 탭 + 스크롤 가능 */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* 탭 헤더 - 캡슐 안에 캡슐 스타일 */}
+            <div className="p-3 bg-[#0a0a0a]/50 flex-shrink-0">
+              <div className="relative bg-[#1a1a1a] rounded-full p-1 flex">
+                {/* 슬라이딩 배경 - 어두운 그레이 */}
+                <div
+                  className="absolute top-1 bottom-1 bg-[#2a2a2a] rounded-full transition-all duration-300 ease-out"
+                  style={{
+                    left: activeTab === 'timeline' ? '4px' : '50%',
+                    right: activeTab === 'timeline' ? '50%' : '4px',
+                  }}
                 />
-              </button>
-              <div id="candidate-meta" className="overflow-hidden" hidden={!metaOpen}>
-                {metaOpen && (
-                  <div className="px-4 pb-4 space-y-3 text-sm">
-                    {[
-                      { icon: 'mdi:cctv', label: '카메라 ID', value: detail.meta.cameraId },
-                      { icon: 'mdi:account-outline', label: '감지 객체', value: detail.meta.detectedObject },
-                      { icon: 'mdi:palette-outline', label: '주요 속성', value: detail.meta.mainAttributes },
-                      { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
-                      { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
-                      { icon: 'mdi:star-outline', label: '후보 점수', value: `${detail.meta.score}/100` },
-                    ].map((item, idx) => (
-                      <div key={idx} className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#1a1a1a]/30 transition-colors">
-                        <Icon icon={item.icon} className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                
+                {/* 탭 버튼들 */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('timeline')}
+                  className={`relative flex-1 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300 z-10 ${
+                    activeTab === 'timeline'
+                      ? 'text-blue-400'
+                      : 'text-gray-500 hover:text-gray-400'
+                  }`}
+                >
+                  시간 기반 관찰 기록
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('detail')}
+                  className={`relative flex-1 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300 z-10 ${
+                    activeTab === 'detail'
+                      ? 'text-blue-400'
+                      : 'text-gray-500 hover:text-gray-400'
+                  }`}
+                >
+                  후보 메타 정보
+                </button>
+              </div>
+            </div>
+
+            {/* 탭 컨텐츠 */}
+            <div className="flex-1 overflow-y-auto min-h-0 p-4" style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#31353a #0f0f0f',
+            }}>
+              {activeTab === 'timeline' && (
+                <div>
+                  {/* 타임라인 - 박스 없이 */}
+                  <ul className="relative">
+                {/* 전체 세로 연결선 - 첫 원 중심부터 마지막에서 두번째 원 중심까지만 */}
+                <div 
+                  className="absolute w-[1px] bg-gray-600"
+                  style={{ 
+                    left: '6px',
+                    top: '14px',
+                    height: `calc(100% - 14px - 32px)`
+                  }}
+                />
+                
+                {detail.timeline.map((entry, idx) => {
+                  // 현재 재생 중인 구간인지 확인
+                  const isActive = currentTime >= entry.seconds && 
+                    (idx === detail.timeline.length - 1 || currentTime < detail.timeline[idx + 1].seconds);
+                  
+                  return (
+                    <li key={idx} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => handleTimelineClick(entry)}
+                        className="w-full text-left flex items-start gap-3 hover:bg-[#1a1a1a]/50 rounded-lg py-2 transition-all focus:outline-none group"
+                      >
+                        {/* 둥근 사각형 인디케이터 */}
+                        <div className="relative flex items-center justify-center flex-shrink-0 mt-[3px]" style={{ width: '13px' }}>
+                          <div 
+                            className={`transition-all z-10 ${
+                              isActive 
+                                ? 'bg-blue-400' 
+                                : 'bg-[#1a1a1a] border-2 border-gray-600'
+                            }`}
+                            style={{ width: '13px', height: '13px', borderRadius: '5px' }}
+                          />
+                        </div>
+                        
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                          <span className={`font-mono text-sm font-semibold transition-colors leading-tight ${
+                            isActive ? 'text-blue-400' : 'text-gray-500'
+                          }`}>
+                            {entry.time}
+                          </span>
+                          <span className="text-sm text-gray-300 group-hover:text-white">
+                            {entry.label}
+                          </span>
+                        </div>
+                      </button>
+                    </li>
+                );
+              })}
+                  </ul>
+                </div>
+              )}
+
+              {activeTab === 'detail' && (
+                <div className="space-y-2.5">
+                  {/* 후보 메타정보 - 카드 형태 */}
+                  {[
+                    { icon: 'mdi:cctv', label: '카메라 ID', value: detail.meta.cameraId },
+                    { icon: 'mdi:account-outline', label: '감지 객체', value: detail.meta.detectedObject },
+                    { icon: 'mdi:palette-outline', label: '주요 속성', value: detail.meta.mainAttributes },
+                    { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
+                    { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
+                      <div className="flex items-start gap-3">
+                        <Icon icon={item.icon} className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-gray-500 mb-0.5">{item.label}</div>
-                          <div className="text-gray-300">{item.value}</div>
+                          <div className="text-xs text-gray-400 mb-1">{item.label}</div>
+                          <div className="text-sm text-white">{item.value}</div>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                  
+                  {/* 유사도 카드 - 확장형 */}
+                  <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
+                    <div className="flex items-start gap-3 mb-3">
+                      <Icon icon="mdi:star-outline" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-400 mb-1">유사도</div>
+                        <div className="text-sm text-white">{detail.meta.score}/100</div>
+                      </div>
+                    </div>
+                    
+                    {/* 디바이더 */}
+                    <div className="border-t border-[#3a3a3a] my-3"></div>
+                    
+                    {/* 후보 근거 */}
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-400 mb-2">후보 근거</div>
+                      
+                      {/* 각 분석 항목 */}
+                      {[
+                        { category: '의류(상의)', missing: '회색 후드', captured: '회색 후드티', match: true },
+                        { category: '의류(하의)', missing: '청바지', captured: '흑색/청색 계열 하의', match: true },
+                        { category: '헤어스타일', missing: '흑색 짧은 머리', captured: '흑색 짧은 머리', match: true },
+                        { category: '소지품/행동', missing: '-', captured: '휴대폰 조작', match: 'special' },
+                      ].map((item, idx) => (
+                        <div key={idx} className="bg-[#1a1a1a]/50 rounded p-2.5 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-300 font-medium">{item.category}</span>
+                            {item.match === 'special' ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                특이점
+                              </span>
+                            ) : item.match ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                                일치
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                                불일치
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div>
+                              <div className="text-gray-500 mb-0.5">실종자 정보</div>
+                              <div className="text-gray-300">{item.missing}</div>
+                            </div>
+                            <div>
+                              <div className="text-gray-500 mb-0.5">포착 인물 정보</div>
+                              <div className="text-gray-300">{item.captured}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* 최종 유사도 */}
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2.5 flex items-center justify-between mt-3">
+                        <span className="text-xs text-blue-300 font-semibold">최종 유사도</span>
+                        <span className="text-sm text-blue-400 font-bold">95.0%</span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* 푸터 - 고정 */}
-        <div className="flex flex-wrap items-center justify-end gap-2 p-5 flex-shrink-0 border-t border-[#31353a]/50 bg-[#0a0a0a]/50 backdrop-blur">
+        <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 flex-shrink-0 border-t border-[#31353a] bg-[#0a0a0a]/50" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
           <button
             type="button"
             onClick={() => {
               onAnalyze?.(candidate);
               onClose();
             }}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-2"
+            className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-1.5"
             style={{
               background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             }}
             aria-label="이 후보 분석하기"
           >
-            <Icon icon="mdi:chart-line" className="w-4 h-4" />
+            <Icon icon="mdi:chart-line" className="w-3.5 h-3.5" />
             이 후보 분석하기
           </button>
           <button
@@ -776,10 +895,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               onShowOnMap?.(candidate);
               onClose();
             }}
-            className="px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#31353a] hover:border-[#3d4046] transition-all focus:outline-none focus:ring-2 focus:ring-gray-400/50 flex items-center gap-2"
+            className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#31353a] hover:border-[#3d4046] transition-all focus:outline-none focus:ring-2 focus:ring-gray-400/50 flex items-center gap-1.5"
             aria-label="지도에서 위치 보기"
           >
-            <Icon icon="mdi:map-marker" className="w-4 h-4" />
+            <Icon icon="mdi:map-marker" className="w-3.5 h-3.5" />
             지도에서 위치 보기
           </button>
         </div>
