@@ -457,42 +457,38 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 - 고정 */}
-        <div className="flex items-center justify-between gap-3 p-5 flex-shrink-0 border-b border-[#31353a]/50">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div 
-              className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              }}
-            >
-              <Icon icon="mdi:cctv" className="w-5 h-5 text-white" />
+        <div className="flex flex-wrap items-start justify-between gap-3 p-4 flex-shrink-0 border-b border-[#31353a]">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="text-white font-semibold text-sm">{candidate.cctvId}</span>
+              <span className="text-gray-400 text-sm">·</span>
+              <span className="text-gray-300 text-sm truncate">{candidate.location}</span>
             </div>
-            <div className="flex flex-col gap-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-bold text-base">{candidate.cctvId}</span>
-                <span 
-                  className="px-2 py-0.5 rounded text-xs font-semibold text-white"
-                  style={{
-                    background: candidate.confidence >= 80 
-                      ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
-                      : candidate.confidence >= 60
-                      ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                      : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                  }}
-                >
-                  {candidate.confidence}%
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <Icon icon="mdi:map-marker" className="w-3 h-3" />
-                <span className="truncate">{candidate.location}</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+              <span className="text-gray-400">시간 범위</span>
+              <span className="text-gray-300">{timeRange}</span>
+              <span className="text-gray-500">|</span>
+              <span className="text-gray-400">후보 점수</span>
+              <span className="text-white font-semibold">{candidate.confidence}%</span>
+              <div
+                className="h-2 rounded-full bg-[#0f0f0f] overflow-hidden border border-[#31353a]"
+                style={{ width: 100 }}
+                role="progressbar"
+                aria-valuenow={candidate.confidence}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="h-full rounded-full bg-blue-500"
+                  style={{ width: `${candidate.confidence}%` }}
+                />
               </div>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#31353a]/50"
+            className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
             aria-label="닫기"
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
