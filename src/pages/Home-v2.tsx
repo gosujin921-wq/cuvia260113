@@ -168,6 +168,7 @@ export default function HomeV2() {
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
   const [showPredictedCCTV, setShowPredictedCCTV] = useState<boolean>(false);
+  const [visibleTrackingPins, setVisibleTrackingPins] = useState<number>(0); // 0~4: 보이는 핀 개수
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -193,6 +194,11 @@ export default function HomeV2() {
 
   // MapView용 이벤트 (선택된 이벤트를 맨 앞에 추가)
   const events: Event[] = useMemo(() => {
+    // 객체 추적 중이거나 추적 핀이 표시되고 있으면 이벤트 핀 숨김
+    if (uiState.showObjectTracking || visibleTrackingPins > 0) {
+      return [];
+    }
+    
     if (uiState.showFastSearchList && uiState.selectedEventId) {
       const alreadyInList = visibleEvents.some((e) => e.id === uiState.selectedEventId);
       if (!alreadyInList) {
@@ -201,7 +207,7 @@ export default function HomeV2() {
       }
     }
     return visibleEvents;
-  }, [visibleEvents, uiState.showFastSearchList, uiState.selectedEventId, allConvertedEvents]);
+  }, [visibleEvents, uiState.showFastSearchList, uiState.selectedEventId, allConvertedEvents, uiState.showObjectTracking, visibleTrackingPins]);
 
   // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
   const fastSearchFocusXPercent = uiState.showFastSearchList ? 52 : 50;
@@ -243,6 +249,61 @@ export default function HomeV2() {
     setPinOffset({ x: 0, y: 0 });
     setExcludedAttributes([]);
     setFlyToLocation(null);
+  }, []);
+
+  // 객체 추적 시퀀스 시작 핸들러
+  const handleStartTrackingSequence = useCallback(() => {
+    console.log('[Home-v2] 객체 추적 시퀀스 시작');
+    
+    // 기존 이벤트 핀 숨기기
+    setVisibleEventIds(new Set());
+    dispatch({ type: 'SET_SELECTED_EVENT', payload: null });
+    
+    // 기존 추적 핀 초기화
+    setVisibleTrackingPins(0);
+    setShowPredictedCCTV(false);
+    
+    // 추적 경로 좌표
+    const trackingSequence = [
+      [126.783853180335, 37.5049838114765], // 1번: 사건 발생 지점
+      [126.7843434, 37.5042779],            // 2번: 춘의동 126-18
+      [126.7828196, 37.50501939999999],     // 3번: 춘의동 125-46
+      [126.7828168, 37.504067],             // 4번: 춘의동 125-32
+    ];
+    
+    // 1단계: 1번 핀 표시 및 줌인 (초기화 후 약간의 딜레이)
+    setTimeout(() => {
+      console.log('[Home-v2] 1단계: 1번 핀 표시');
+      setVisibleTrackingPins(1);
+      setFlyToLocation(trackingSequence[0] as [number, number]);
+    }, 100);
+    
+    // 2단계: 2번 핀 표시 및 이동 (2.1초 후)
+    setTimeout(() => {
+      console.log('[Home-v2] 2단계: 2번 핀 표시');
+      setVisibleTrackingPins(2);
+      setFlyToLocation(trackingSequence[1] as [number, number]);
+    }, 2100);
+    
+    // 3단계: 3번 핀 표시 및 이동 (4.1초 후)
+    setTimeout(() => {
+      console.log('[Home-v2] 3단계: 3번 핀 표시');
+      setVisibleTrackingPins(3);
+      setFlyToLocation(trackingSequence[2] as [number, number]);
+    }, 4100);
+    
+    // 4단계: 4번 핀 표시 및 이동 (6.1초 후)
+    setTimeout(() => {
+      console.log('[Home-v2] 4단계: 4번 핀 표시');
+      setVisibleTrackingPins(4);
+      setFlyToLocation(trackingSequence[3] as [number, number]);
+    }, 6100);
+    
+    // 5단계: 줌 아웃 (8.1초 후)
+    setTimeout(() => {
+      console.log('[Home-v2] 5단계: 줌 아웃');
+      setShowPredictedCCTV(true);
+    }, 8100);
   }, []);
 
   /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
@@ -295,8 +356,8 @@ export default function HomeV2() {
       setFlyToLocation([126.783853180335, 37.5049838114765]);
       setPinOffset({ x: 0, y: 0 });
     } else if (e.key === '3') {
-      dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
-      setPinOffset({ x: 0, y: 0 });
+      console.log('[Home-v2] 3번 키 - 객체 추적 시작');
+      handleStartTrackingSequence();
     } else if (e.key === '4') {
       dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
       setPinOffset({ x: 0, y: 0 });
@@ -308,7 +369,7 @@ export default function HomeV2() {
         clearSelection();
       }
     }
-  }, [allConvertedEvents, uiState.showFastSearchList, clearSelection]);
+  }, [allConvertedEvents, uiState.showFastSearchList, clearSelection, handleStartTrackingSequence]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -342,6 +403,7 @@ export default function HomeV2() {
           flyToLocation={flyToLocation}
           externalShowCCTV={!uiState.showObjectTracking}
           showPredictedCCTV={showPredictedCCTV}
+          visibleTrackingPins={visibleTrackingPins}
         />
       </div>
 
@@ -447,7 +509,10 @@ export default function HomeV2() {
         message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.\n객체 추적 검사를 시작하시겠습니까?`}
         confirmText="시작"
         cancelText="취소"
-        onConfirm={() => dispatch({ type: 'START_OBJECT_TRACKING' })}
+        onConfirm={() => {
+          dispatch({ type: 'START_OBJECT_TRACKING' });
+          handleStartTrackingSequence();
+        }}
         onCancel={() => dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' })}
       />
 
@@ -478,10 +543,7 @@ export default function HomeV2() {
           maxHeight={agentPopupMaxHeight}
           reSearchResult={reSearchResult}
           isObjectTracking={uiState.showObjectTracking}
-          onObjectTrackingComplete={() => {
-            console.log('[Home-v2] 객체 추적 완료, 파란색 핀 표시');
-            setShowPredictedCCTV(true);
-          }}
+          onObjectTrackingComplete={handleStartTrackingSequence}
         />
       )}
     </div>
