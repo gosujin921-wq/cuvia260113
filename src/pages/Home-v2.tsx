@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'r
 import { useNavigate } from 'react-router-dom';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/MapView';
+import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
@@ -169,6 +170,12 @@ export default function HomeV2() {
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
   const [showPredictedCCTV, setShowPredictedCCTV] = useState<boolean>(false);
   const [visibleTrackingPins, setVisibleTrackingPins] = useState<number>(0); // 0~4: 보이는 핀 개수
+  const [lastMapState, setLastMapState] = useState<{ center: [number, number]; zoom: number; pitch: number; bearing: number }>({
+    center: [126.8136, 37.4865],
+    zoom: 15,
+    pitch: 60,
+    bearing: -17.6
+  });
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -219,7 +226,10 @@ export default function HomeV2() {
     if (menuId === 'fast-search') {
       dispatch({ type: 'START_FAST_SEARCH' });
     } else if (menuId === 'object-tracking') {
+      // 객체 추적 메뉴 선택 시 바로 ObjectTrackingMapView로 전환
+      dispatch({ type: 'START_OBJECT_TRACKING' });
       if (uiState.showFastSearchList) {
+        // 고속검색 리스트가 있으면 확인 다이얼로그 표시
         dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
       }
     }
@@ -383,28 +393,36 @@ export default function HomeV2() {
     >
 
       <div className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
-        <MapView
-          events={events}
-          highlightedEventId={uiState.highlightedEventId}
-          selectedEventId={uiState.selectedEventId}
-          aiDetectionEventId={aiDetectionEventId}
-          onEventClick={handleEventAction}
-          onAiDetectionClose={clearSelection}
-          onMapClick={undefined}
-          externalZoomLevel={mapZoomLevel}
-          onZoomLevelChange={setMapZoomLevel}
-          hideControls={uiState.hideControls}
-          showFastSearch={uiState.showFastSearch}
-          showFastSearchList={uiState.showFastSearchList}
-          fastSearchRadius={fastSearchRadius}
-          leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
-          pinOffset={pinOffset}
-          focusTargetXPercent={fastSearchFocusXPercent}
-          flyToLocation={flyToLocation}
-          externalShowCCTV={!uiState.showObjectTracking}
-          showPredictedCCTV={showPredictedCCTV}
-          visibleTrackingPins={visibleTrackingPins}
-        />
+        {uiState.showObjectTracking ? (
+          <ObjectTrackingMapView
+            visibleTrackingPins={visibleTrackingPins}
+            flyToLocation={flyToLocation}
+            showPredictedCCTV={showPredictedCCTV}
+            initialMapState={lastMapState}
+          />
+        ) : (
+          <MapView
+            events={events}
+            highlightedEventId={uiState.highlightedEventId}
+            selectedEventId={uiState.selectedEventId}
+            aiDetectionEventId={aiDetectionEventId}
+            onEventClick={handleEventAction}
+            onAiDetectionClose={clearSelection}
+            onMapClick={undefined}
+            externalZoomLevel={mapZoomLevel}
+            onZoomLevelChange={setMapZoomLevel}
+            hideControls={uiState.hideControls}
+            showFastSearch={uiState.showFastSearch}
+            showFastSearchList={uiState.showFastSearchList}
+            fastSearchRadius={fastSearchRadius}
+            leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
+            pinOffset={pinOffset}
+            focusTargetXPercent={fastSearchFocusXPercent}
+            flyToLocation={flyToLocation}
+            externalShowCCTV={!uiState.showObjectTracking}
+            onMapStateChange={setLastMapState}
+          />
+        )}
       </div>
 
       {/* 좌측 메뉴 패널 - 고속검색 또는 객체 추적 시 표시 */}
@@ -510,7 +528,7 @@ export default function HomeV2() {
         confirmText="시작"
         cancelText="취소"
         onConfirm={() => {
-          dispatch({ type: 'START_OBJECT_TRACKING' });
+          dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' });
           handleStartTrackingSequence();
         }}
         onCancel={() => dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' })}

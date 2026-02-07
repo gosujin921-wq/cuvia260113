@@ -38,11 +38,10 @@ interface MapViewProps {
   focusTargetXPercent?: number; // 줌 시 포커스(화면) 위치 (기본: 50)
   flyToLocation?: [number, number] | null; // 지도를 특정 위치로 이동시키는 좌표
   externalShowCCTV?: boolean; // 외부에서 CCTV 표시 제어
-  showPredictedCCTV?: boolean; // 예측된 CCTV 파란색 핀 표시
-  visibleTrackingPins?: number; // 보이는 추적 핀 개수 (0~4)
+  onMapStateChange?: (state: { center: [number, number]; zoom: number; pitch: number; bearing: number }) => void; // 지도 상태 변경 콜백
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, showPredictedCCTV = false, visibleTrackingPins = 0 }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -381,11 +380,30 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     mapRef.current = map;
 
+    // 지도 이동 시 상태 업데이트
+    const updateMapState = () => {
+      if (onMapStateChange) {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        const pitch = map.getPitch();
+        const bearing = map.getBearing();
+        onMapStateChange({
+          center: [center.lng, center.lat],
+          zoom,
+          pitch,
+          bearing
+        });
+      }
+    };
+
+    map.on('moveend', updateMapState);
+
     return () => {
+      map.off('moveend', updateMapState);
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [onMapStateChange]);
 
   // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
   useEffect(() => {
@@ -396,38 +414,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const oldEventMarker = (map as any)._eventMarker;
     
     if (flyToLocation) {
-      console.log('지도 이동:', flyToLocation, 'visibleTrackingPins:', visibleTrackingPins);
+      console.log('지도 이동:', flyToLocation);
       
-      // 객체 추적 중일 때는 마커 생성 스킵, 지도만 이동
-      if (visibleTrackingPins > 0) {
-        console.log('[MapView] 객체 추적 중 - 지도만 이동');
-        
-        if (map.loaded()) {
-          const currentZoom = map.getZoom();
-          
-          if (currentZoom >= 17) {
-            // 이미 줌인 상태면 줌 유지하며 이동
-            map.easeTo({
-              center: flyToLocation as [number, number],
-              duration: 1500,
-              essential: true
-            });
-          } else {
-            // 첫 줌인
-            map.flyTo({
-              center: flyToLocation as [number, number],
-              zoom: 17,
-              pitch: 60,
-              bearing: -17.6 + 165,
-              duration: 1500,
-              essential: true
-            });
-          }
-        }
-        return; // 마커 생성 로직 실행 안함
-      }
-      
-      // 일반 모드 - 기존 이벤트 마커 제거
+      // 기존 이벤트 마커 제거
       if (oldEventMarker) {
         oldEventMarker.remove();
       }
@@ -462,8 +451,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         justify-content: center;
       `;
       
-      // 펄스 효과 3개 (고속검색 리스트 표시 시 또는 객체 추적 시에는 펄스 제거)
-      if (!showFastSearchList && !showPredictedCCTV && visibleTrackingPins === 0) {
+      // 펄스 효과 3개 (고속검색 리스트 표시 시에는 펄스 제거)
+      if (!showFastSearchList) {
         for (let i = 0; i < 3; i++) {
           const pulse = document.createElement('div');
           pulse.style.cssText = `
@@ -510,23 +499,18 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         document.head.appendChild(styleEl);
       }
       
-      // 마커 아이콘 (객체 추적 상태일 때 회색으로 변경)
+      // 마커 아이콘
       const markerEl = document.createElement('div');
-      const isGray = showPredictedCCTV;
       markerEl.style.cssText = `
         width: 28px;
         height: 28px;
-        background: ${isGray 
-          ? 'linear-gradient(135deg, rgba(100, 100, 100, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)' 
-          : 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)'};
-        border: 2px solid ${isGray ? '#6b7280' : '#ef4444'};
+        background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+        border: 2px solid #ef4444;
         border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: ${isGray 
-          ? '0 0 20px rgba(107, 114, 128, 0.5), 0 0 40px rgba(107, 114, 128, 0.3)' 
-          : '0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3)'};
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3);
         cursor: pointer;
         backdrop-filter: blur(4px);
         position: relative;
@@ -540,7 +524,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         left: -2px;
         right: -2px;
         bottom: -2px;
-        border: 2px solid ${isGray ? 'rgba(107, 114, 128, 0.3)' : 'rgba(239, 68, 68, 0.3)'};
+        border: 2px solid rgba(239, 68, 68, 0.3);
         border-radius: 14px;
         pointer-events: none;
       `;
@@ -548,7 +532,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       
       const iconEl = document.createElement('div');
       iconEl.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: ${isGray ? '#9ca3af' : '#f87171'};">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #f87171;">
           <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
         </svg>
       `;
@@ -613,7 +597,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         });
       }
     }
-  }, [flyToLocation, showFastSearchList, showPredictedCCTV, visibleTrackingPins]);
+  }, [flyToLocation, showFastSearchList]);
 
   // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
   useEffect(() => {
@@ -1229,482 +1213,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, [showCCTV]);
 
-  // 객체 추적 핀 생성 및 visibility 제어
+  // CCTV 마커 표시/숨김 제어
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     
-    console.log('[MapView] 추적 핀 useEffect:', visibleTrackingPins);
-    
-    // visibleTrackingPins가 0이면 기존 마커 제거
-    if (visibleTrackingPins === 0) {
-      const existingMarkers = (map as any)._trackingPinsMarkers;
-      if (existingMarkers) {
-        console.log('[MapView] 기존 추적 핀 제거');
-        existingMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
-        (map as any)._trackingPinsMarkers = null;
-      }
-      return;
-    }
-    
-    // 객체 추적 시작 시 기존 이벤트 마커 제거
-    if (visibleTrackingPins === 1) {
-      const eventMarker = (map as any)._eventMarker;
-      if (eventMarker) {
-        console.log('[MapView] 기존 이벤트 마커 제거');
-        eventMarker.remove();
-        (map as any)._eventMarker = null;
-      }
-    }
-    
-    // 모든 추적 핀 정의
-    const allTrackingPins = [
-      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '춘의동 125-46', name: '사건 발생 지점', color: 'gray' },
-      { location: [126.7843434, 37.5042779] as [number, number], address: '춘의동 126-18', name: '원미A-498', color: 'blue' },
-      { location: [126.7828196, 37.50501939999999] as [number, number], address: '춘의동 125-46', name: '원미A-444', color: 'blue' },
-      { location: [126.7828168, 37.504067] as [number, number], address: '춘의동 125-32', name: '원미A-481', color: 'red' },
-    ];
-    
-    const initPins = () => {
-      if (!map.loaded()) {
-        setTimeout(initPins, 100);
-        return;
-      }
-      
-      // 이미 초기화되었는지 확인
-      let markers = (map as any)._trackingPinsMarkers;
-      
-      if (!markers) {
-        // 처음 생성
-        console.log('[MapView] 추적 핀 초기 생성');
-        markers = [];
-        
-        allTrackingPins.forEach((pin, index) => {
-          // 핀 컬러 설정
-          let bgGradient, borderColor, shadowColor, ringColor, iconColor;
-          
-          if (pin.color === 'gray') {
-            bgGradient = 'linear-gradient(135deg, rgba(100, 100, 100, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
-            borderColor = '#6b7280';
-            shadowColor = '0 0 20px rgba(107, 114, 128, 0.5), 0 0 40px rgba(107, 114, 128, 0.3)';
-            ringColor = 'rgba(107, 114, 128, 0.3)';
-            iconColor = '#9ca3af';
-          } else if (pin.color === 'red') {
-            bgGradient = 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
-            borderColor = '#ef4444';
-            shadowColor = '0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3)';
-            ringColor = 'rgba(239, 68, 68, 0.3)';
-            iconColor = '#f87171';
-          } else {
-            bgGradient = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
-            borderColor = '#3b82f6';
-            shadowColor = '0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)';
-            ringColor = 'rgba(59, 130, 246, 0.3)';
-            iconColor = '#60a5fa';
-          }
-          
-          const markerContainer = document.createElement('div');
-          markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
-          
-          const centerWrapper = document.createElement('div');
-          centerWrapper.style.cssText = 'position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; z-index: 1;';
-          
-          const el = document.createElement('div');
-          el.style.cssText = `width: 28px; height: 28px; background: ${bgGradient}; border: 2px solid ${borderColor}; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: ${shadowColor}; cursor: pointer; backdrop-filter: blur(4px); position: relative; z-index: 10;`;
-          
-          const ringEl = document.createElement('div');
-          ringEl.style.cssText = `position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border: 2px solid ${ringColor}; border-radius: 14px; pointer-events: none;`;
-          el.appendChild(ringEl);
-          
-          const iconEl = document.createElement('div');
-          iconEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: ${iconColor};"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" /></svg>`;
-          el.appendChild(iconEl);
-          
-          centerWrapper.appendChild(el);
-          markerContainer.appendChild(centerWrapper);
-          
-          const labelEl = document.createElement('div');
-          labelEl.style.cssText = 'margin-top: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(15, 15, 15, 0.95); border: 1px solid #31353a; white-space: nowrap; z-index: 140;';
-          
-          const currentTime = new Date();
-          const hours = String(currentTime.getHours()).padStart(2, '0');
-          const minutes = String(currentTime.getMinutes()).padStart(2, '0');
-          const timeString = `${hours}:${minutes}`;
-          const labelType = index === 0 ? '사건 발생 지점' : '예측 포착 지점';
-          
-          labelEl.innerHTML = `<div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">${labelType} · ${timeString}</div><div style="font-size: 12px; font-weight: 600; color: white;">${pin.address}</div>`;
-          markerContainer.appendChild(labelEl);
-          
-          const marker = new maplibregl.Marker({ element: markerContainer, anchor: 'center' }).setLngLat(pin.location).addTo(map);
-          
-          const markerElement = marker.getElement();
-          if (markerElement) {
-            markerElement.style.opacity = '0';
-            markerElement.style.visibility = 'hidden';
-            markerElement.style.transition = 'opacity 0.5s ease';
-            markerElement.style.zIndex = '99999';
-          }
-          
-          markers.push(marker);
-        });
-        
-        (map as any)._trackingPinsMarkers = markers;
-        console.log('[MapView] 추적 핀 4개 생성 완료');
-      }
-      
-      // visibility 업데이트
-      markers.forEach((marker: maplibregl.Marker, index: number) => {
-        const markerElement = marker.getElement();
-        if (!markerElement) return;
-        
-        if (index < visibleTrackingPins) {
-          markerElement.style.opacity = '1';
-          markerElement.style.visibility = 'visible';
-          console.log(`[MapView] 핀 ${index + 1} 표시`);
+    const cctvMarkers = (map as any)._cctvMarkers;
+    if (cctvMarkers) {
+      cctvMarkers.forEach((marker: maplibregl.Marker) => {
+        const element = marker.getElement();
+        if (element && !element.classList.contains('predicted-cctv-marker')) {
+          element.style.display = showCCTV ? 'block' : 'none';
         }
       });
-      
-      // 선과 연결점 업데이트
-      if (visibleTrackingPins >= 2) {
-        const coordinates = allTrackingPins.slice(0, visibleTrackingPins).map(p => p.location);
-        
-        const lineSource = map.getSource('tracking-line') as maplibregl.GeoJSONSource;
-        const pointsSource = map.getSource('tracking-points') as maplibregl.GeoJSONSource;
-        
-        if (lineSource) {
-          lineSource.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } });
-        } else {
-          map.addSource('tracking-line', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } } });
-          map.addLayer({ id: 'tracking-line-layer', type: 'line', source: 'tracking-line', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#3b82f6', 'line-width': 4, 'line-dasharray': [2, 4], 'line-opacity': 0.8 } });
-        }
-        
-        if (pointsSource) {
-          pointsSource.setData({ type: 'FeatureCollection', features: coordinates.map(coord => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: coord } })) });
-        } else {
-          map.addSource('tracking-points', { type: 'geojson', data: { type: 'FeatureCollection', features: coordinates.map(coord => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: coord } })) } });
-          map.addLayer({ id: 'tracking-points-layer', type: 'circle', source: 'tracking-points', paint: { 'circle-radius': 6, 'circle-color': '#3b82f6', 'circle-stroke-width': 2, 'circle-stroke-color': '#1e40af', 'circle-opacity': 0.9 } });
-        }
-      }
-    };
-    
-    initPins();
-  }, [visibleTrackingPins]);
-
-  // showPredictedCCTV가 true이면 모든 핀이 보이도록 줌 아웃
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !showPredictedCCTV || visibleTrackingPins < 2) return;
-    
-    console.log('[MapView] 줌 아웃 - 모든 핀 표시');
-    
-    const allTrackingPins = [
-      { location: [126.783853180335, 37.5049838114765] as [number, number] },
-      { location: [126.7843434, 37.5042779] as [number, number] },
-      { location: [126.7828196, 37.50501939999999] as [number, number] },
-      { location: [126.7828168, 37.504067] as [number, number] },
-    ];
-    
-    const coordinates = allTrackingPins.slice(0, visibleTrackingPins).map(p => p.location);
-    const bounds = coordinates.reduce((bounds, coord) => bounds.extend(coord as [number, number]), new maplibregl.LngLatBounds(coordinates[0], coordinates[0]));
-    
-    if (map.loaded()) {
-      map.fitBounds(bounds, { padding: { top: 100, bottom: 100, left: 100, right: 100 }, duration: 2000, essential: true });
     }
-  }, [showPredictedCCTV, visibleTrackingPins]);
-
-  // 예측된 CCTV 파란색 핀 표시
-  useEffect(() => {
-    const map = mapRef.current;
-    const container = mapContainerRef.current;
-    console.log('[MapView] showPredictedCCTV:', showPredictedCCTV, 'map:', !!map, 'container:', !!container);
-    
-    if (!map || !container || !showPredictedCCTV) return;
-    
-    const addPredictedPin = () => {
-      if (!map.loaded()) {
-        console.log('[MapView] 맵이 아직 로드되지 않음, 대기 중...');
-        setTimeout(addPredictedPin, 100);
-        return;
-      }
-      
-      // 예측된 CCTV 좌표들
-      const predictedLocations: Array<{ name: string; location: [number, number]; address: string }> = [
-        { name: '원미A-444', location: [126.7828196, 37.50501939999999], address: '춘의동 125-46' },
-        { name: '원미A-481', location: [126.7828168, 37.504067], address: '춘의동 125-32' },
-        { name: '원미A-498', location: [126.7843434, 37.5042779], address: '춘의동 126-18' },
-      ];
-      
-      console.log('[MapView] 파란색 핀 생성 시작:', predictedLocations);
-      
-      // 첫 번째 위치(원미A-444)로 지도 이동
-      map.flyTo({
-        center: predictedLocations[0].location,
-        zoom: 17,
-        duration: 2000,
-        essential: true
-      });
-      
-      // 지도 이동 완료 후 모든 마커 추가
-      map.once('moveend', () => {
-        console.log('[MapView] 지도 이동 완료, 마커 추가 시작');
-        
-        const markers: maplibregl.Marker[] = [];
-        
-        predictedLocations.forEach((predicted, index) => {
-          // 원미A-481(춘의동 125-32)은 빨간색으로 표시
-          const isA481 = predicted.name === '원미A-481';
-          
-          // 마커 컨테이너 생성
-          const markerContainer = document.createElement('div');
-          markerContainer.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-          `;
-          
-          // 중앙 래퍼 (핀용)
-          const centerWrapper = document.createElement('div');
-          centerWrapper.style.cssText = `
-            position: relative;
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1;
-          `;
-          
-          // 펄스 효과 제거
-          
-          // 핀 생성 (원미A-481은 빨간색, 나머지는 파란색)
-          const el = document.createElement('div');
-          el.className = 'predicted-cctv-marker';
-          el.style.cssText = `
-            width: 28px;
-            height: 28px;
-            background: ${isA481 
-              ? 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)' 
-              : 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)'};
-            border: 2px solid ${isA481 ? '#ef4444' : '#3b82f6'};
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: ${isA481 
-              ? '0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3)' 
-              : '0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)'};
-            cursor: pointer;
-            backdrop-filter: blur(4px);
-            position: relative;
-            z-index: 10;
-          `;
-          
-          // 외곽 링
-          const ringEl = document.createElement('div');
-          ringEl.style.cssText = `
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border: 2px solid ${isA481 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.3)'};
-            border-radius: 14px;
-            pointer-events: none;
-          `;
-          el.appendChild(ringEl);
-          
-          // 아이콘
-          const iconEl = document.createElement('div');
-          iconEl.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: ${isA481 ? '#f87171' : '#60a5fa'};">
-              <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
-            </svg>
-          `;
-          el.appendChild(iconEl);
-          
-          centerWrapper.appendChild(el);
-          markerContainer.appendChild(centerWrapper);
-          
-          // 주소 라벨 (초기에는 숨김)
-          const labelEl = document.createElement('div');
-          labelEl.style.cssText = `
-            margin-top: 8px;
-            padding: 6px 8px;
-            border-radius: 8px;
-            background: rgba(15, 15, 15, 0.95);
-            border: 1px solid #31353a;
-            white-space: nowrap;
-            z-index: 140;
-            opacity: 0;
-            transform: translateY(-5px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            pointer-events: none;
-          `;
-          
-          // 시간 정보 (예측 시간)
-          const currentTime = new Date();
-          const hours = String(currentTime.getHours()).padStart(2, '0');
-          const minutes = String(currentTime.getMinutes()).padStart(2, '0');
-          const timeString = `${hours}:${minutes}`;
-          
-          labelEl.innerHTML = `
-            <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">예측 포착 지점 · ${timeString}</div>
-            <div style="font-size: 12px; font-weight: 600; color: white;">${predicted.address}</div>
-          `;
-          markerContainer.appendChild(labelEl);
-          
-          // 호버 이벤트
-          el.addEventListener('mouseenter', () => {
-            labelEl.style.opacity = '1';
-            labelEl.style.transform = 'translateY(0)';
-          });
-          
-          el.addEventListener('mouseleave', () => {
-            labelEl.style.opacity = '0';
-            labelEl.style.transform = 'translateY(-5px)';
-          });
-          
-          const marker = new maplibregl.Marker({ element: markerContainer, anchor: 'center' })
-            .setLngLat(predicted.location)
-            .addTo(map);
-          
-          // 마커의 부모 요소에 z-index 설정
-          const markerElement = marker.getElement();
-          if (markerElement) {
-            markerElement.style.zIndex = '99999';
-          }
-          
-          markers.push(marker);
-          console.log(`[MapView] ${predicted.name} 파란색 핀 생성 완료`);
-        });
-        
-        // 모든 마커를 맵에 저장
-        (map as any)._predictedMarkers = markers;
-        
-        // 추적 경로 좌표들 (사건발생지점부터 시작)
-        const eventLocation: [number, number] = [126.783853180335, 37.5049838114765]; // 사건발생지점
-        const A498Location: [number, number] = [126.7843434, 37.5042779]; // 원미A-498 (춘의동 126-18)
-        const A444Location: [number, number] = [126.7828196, 37.50501939999999]; // 원미A-444 (춘의동 125-46)
-        const A481Location: [number, number] = [126.7828168, 37.504067]; // 원미A-481 (춘의동 125-32)
-        
-        // GeoJSON 소스가 없으면 추가
-        if (!map.getSource('tracking-line')) {
-          map.addSource('tracking-line', {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: [eventLocation, A498Location, A444Location, A481Location]
-              }
-            }
-          });
-          
-          // 선 레이어 추가 (점선 효과)
-          map.addLayer({
-            id: 'tracking-line-layer',
-            type: 'line',
-            source: 'tracking-line',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': '#3b82f6', // 파란색
-              'line-width': 4,
-              'line-dasharray': [2, 4], // 점선 패턴
-              'line-opacity': 0.8
-            }
-          });
-          
-          // 연결 지점에 원 추가 (시작점, 중간점, 끝점 모두)
-          map.addSource('tracking-points', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: [
-                {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'Point',
-                    coordinates: eventLocation
-                  }
-                },
-                {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'Point',
-                    coordinates: A498Location
-                  }
-                },
-                {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'Point',
-                    coordinates: A444Location
-                  }
-                },
-                {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'Point',
-                    coordinates: A481Location
-                  }
-                }
-              ]
-            }
-          });
-          
-          // 원 레이어 추가
-          map.addLayer({
-            id: 'tracking-points-layer',
-            type: 'circle',
-            source: 'tracking-points',
-            paint: {
-              'circle-radius': 6,
-              'circle-color': '#3b82f6',
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#1e40af',
-              'circle-opacity': 0.9
-            }
-          });
-          
-          console.log('[MapView] 추적 경로 선 및 연결점 추가 완료 (사건발생지점 → 원미A-498 → 원미A-444 → 원미A-481)');
-        }
-      });
-    };
-    
-    addPredictedPin();
-    
-    // cleanup
-    return () => {
-      console.log('[MapView] 파란색 핀 제거');
-      const markers = (map as any)._predictedMarkers;
-      if (markers) {
-        markers.forEach((marker: maplibregl.Marker) => marker.remove());
-        (map as any)._predictedMarkers = null;
-      }
-      
-      // 추적 경로 선 및 연결점 제거
-      if (map.getLayer('tracking-points-layer')) {
-        map.removeLayer('tracking-points-layer');
-      }
-      if (map.getSource('tracking-points')) {
-        map.removeSource('tracking-points');
-      }
-      if (map.getLayer('tracking-line-layer')) {
-        map.removeLayer('tracking-line-layer');
-      }
-      if (map.getSource('tracking-line')) {
-        map.removeSource('tracking-line');
-      }
-    };
-  }, [showPredictedCCTV]);
+  }, [showCCTV]);
 
   // 일반 이벤트 ID 목록 (event-26부터 event-33)
   const generalEventIds = new Set([
