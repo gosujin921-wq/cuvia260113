@@ -168,7 +168,6 @@ export default function HomeV2() {
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
-  const [showPredictedCCTV, setShowPredictedCCTV] = useState<boolean>(false);
   const [visibleTrackingPins, setVisibleTrackingPins] = useState<number>(0); // 0~4: 보이는 핀 개수
   const [lastMapState, setLastMapState] = useState<{ center: [number, number]; zoom: number; pitch: number; bearing: number }>({
     center: [126.8136, 37.4865],
@@ -271,7 +270,6 @@ export default function HomeV2() {
     
     // 기존 추적 핀 초기화
     setVisibleTrackingPins(0);
-    setShowPredictedCCTV(false);
     
     // 추적 경로 좌표
     const trackingSequence = [
@@ -308,12 +306,6 @@ export default function HomeV2() {
       setVisibleTrackingPins(4);
       setFlyToLocation(trackingSequence[3] as [number, number]);
     }, 6100);
-    
-    // 5단계: 줌 아웃 (8.1초 후)
-    setTimeout(() => {
-      console.log('[Home-v2] 5단계: 줌 아웃');
-      setShowPredictedCCTV(true);
-    }, 8100);
   }, []);
 
   /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
@@ -393,15 +385,16 @@ export default function HomeV2() {
     >
 
       <div className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
-        {uiState.showObjectTracking ? (
-          <ObjectTrackingMapView
-            visibleTrackingPins={visibleTrackingPins}
-            flyToLocation={flyToLocation}
-            showPredictedCCTV={showPredictedCCTV}
-            initialMapState={lastMapState}
-          />
-        ) : (
-          <MapView
+        {(() => {
+          console.log('[Home-v2] MapView 렌더링 - showObjectTracking:', uiState.showObjectTracking);
+          return uiState.showObjectTracking ? (
+            <ObjectTrackingMapView
+              visibleTrackingPins={visibleTrackingPins}
+              flyToLocation={flyToLocation}
+              initialMapState={lastMapState}
+            />
+          ) : (
+            <MapView
             events={events}
             highlightedEventId={uiState.highlightedEventId}
             selectedEventId={uiState.selectedEventId}
@@ -422,7 +415,8 @@ export default function HomeV2() {
             externalShowCCTV={!uiState.showObjectTracking}
             onMapStateChange={setLastMapState}
           />
-        )}
+          );
+        })()}
       </div>
 
       {/* 좌측 메뉴 패널 - 고속검색 또는 객체 추적 시 표시 */}
