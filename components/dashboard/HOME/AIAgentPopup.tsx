@@ -62,16 +62,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const ignoreNextChangeRef = useRef(false);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                onClose();
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose]);
+    // Escape 키는 Home.tsx에서 일괄 처리하므로 여기서는 처리하지 않음
 
     useEffect(() => {
         if (bottomRef.current) {
