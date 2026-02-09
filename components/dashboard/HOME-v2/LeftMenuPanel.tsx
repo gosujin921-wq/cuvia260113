@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface LeftMenuPanelProps {
   onMenuSelect?: (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast') => void;
@@ -9,8 +10,14 @@ interface LeftMenuPanelProps {
 }
 
 const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, showNotification = false }: LeftMenuPanelProps) => {
+  const navigate = useNavigate();
+  
   const handleMenuClick = (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast') => {
-    onMenuSelect?.(menuId);
+    if (menuId === 'broadcast') {
+      window.open('/propagation', '_blank');
+    } else {
+      onMenuSelect?.(menuId);
+    }
   };
 
   const menuItems = [
@@ -37,7 +44,7 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
     },
     {
       id: 'broadcast' as const,
-      icon: 'mdi:broadcast',
+      icon: 'mdi:send',
       label: '전파',
     },
   ];

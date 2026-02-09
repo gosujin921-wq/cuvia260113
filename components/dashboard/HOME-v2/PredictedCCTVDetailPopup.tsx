@@ -17,7 +17,7 @@ interface PredictedCCTVDetailPopupProps {
   isOpen: boolean;
   onClose: () => void;
   cctv: PredictedCCTVItem | null;
-  onAddCapture?: (cctvName: string, location: string, confidence: number) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string) => void;
 }
 
 const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
@@ -69,11 +69,11 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정
   useEffect(() => {
     if (!cctv) return;
-    setVideoSrc(getRandomCCTVVideo()); // CCTV 변경 시에만 새 비디오 선택
+    setVideoSrc(cctv.thumbnailUrl); // 리스트에서 할당된 비디오 사용
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(true);
-  }, [cctv?.id]);
+  }, [cctv?.id, cctv?.thumbnailUrl]);
 
   // 비디오 이벤트 핸들러
   useEffect(() => {
@@ -161,6 +161,43 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     onClose();
   };
 
+  // 마크다운 분석결과 생성 함수
+  const generateAnalysisMarkdown = (cctvItem: PredictedCCTVItem): string => {
+    return `# 객체 추적 분석 결과
+
+## 1. 예측 정보
+
+**예상 이동 거리**: 약 ${cctvItem.distance}m (이전 위치 기준)
+
+**이동 추세**: ${cctvItem.direction} (최근 3프레임 평균)
+
+**예상 도달 시각**: ${cctvItem.predictedTime} (현재 시각 +30초)
+
+**경로 적합도**: ${cctvItem.confidence}점
+
+---
+
+## 2. 경로 예측 상세 근거
+
+### 이동 방향
+마지막 프레임 기준 북동 방향을 유지하며 이동 중임.
+
+### 이동 속도
+정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.
+
+### 보행로 구조
+하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.
+
+### CCTV 연계
+인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.
+
+### 이전 경로
+특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.
+
+### 유사 사례
+해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.`;
+  };
+
   const handleCaptureTarget = () => {
     if (!cctv || !videoRef.current || !videoContainerRef.current) return;
     
@@ -199,10 +236,20 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
         imageData,
       });
       
+      // 원미A-638인 경우 마크다운 분석결과 생성
+      const analysisResult = cctv.cctvName === '원미A-638' ? generateAnalysisMarkdown(cctv) : undefined;
+      
       // 포착 목록에 추가 (썸네일 애니메이션 시작 후)
       setTimeout(() => {
         if (onAddCapture) {
-          onAddCapture(cctv.cctvName, cctv.location, cctv.confidence);
+          // imageData(썸네일), analysisResult(분석결과) 전달
+          if (analysisResult) {
+            // 원미A-638: 썸네일 + 분석결과
+            onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData, analysisResult);
+          } else {
+            // 다른 CCTV: 썸네일만
+            onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData);
+          }
         }
       }, 300);
       
@@ -395,6 +442,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                   { icon: 'mdi:map-marker-distance', label: '예상 이동 거리', value: `약 ${cctv.distance}m (이전 위치 기준)` },
                   { icon: 'mdi:navigation', label: '이동 추세', value: `${cctv.direction} (최근 3프레임 평균)` },
                   { icon: 'mdi:clock-outline', label: '예상 도달 시각', value: `${cctv.predictedTime} (현재 시각 +30초)` },
+                  { icon: 'mdi:chart-timeline-variant', label: '경로 적합도', value: `${cctv.confidence}점` },
                 ].map((item, idx) => (
                   <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
                     <div className="flex items-start gap-3">
@@ -407,17 +455,17 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                   </div>
                 ))}
                 
-                {/* 경로 적합도 - 토글 가능 */}
+                {/* 경로 예측 상세 근거 - 토글 가능 */}
                 <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
                   <button
                     type="button"
                     onClick={() => setIsRouteScoreOpen(!isRouteScoreOpen)}
                     className="w-full p-3 flex items-start gap-3 text-left"
                   >
-                    <Icon icon="mdi:chart-timeline-variant" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                    <Icon icon="mdi:map-marker-path" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-gray-400 mb-1">경로 적합도</div>
-                      <div className="text-sm text-white">{cctv.confidence}점</div>
+                      <div className="text-xs text-gray-400 mb-1">경로 예측 상세 근거</div>
+                      <div className="text-sm text-white">6개 항목 분석 완료</div>
                     </div>
                     <Icon 
                       icon={isRouteScoreOpen ? "mdi:chevron-up" : "mdi:chevron-down"} 
@@ -433,28 +481,22 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                       {/* 각 분석 항목 */}
                       <div className="p-3 space-y-2">
                         {[
-                          { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향 유지' },
-                          { category: '이동 속도', analysis: '평균 보행 속도 범위 유지 (정지·급가속 없음)' },
-                          { category: '보행로 구조', analysis: '하천 산책로·보행자 전용 동선과 직접 연결' },
-                          { category: 'CCTV 연계', analysis: '인접 CCTV 3대 커버리지 중첩 구간 존재' },
-                          { category: '이전 경로', analysis: '체류 후 동일 방향 이탈 패턴 반복' },
-                          { category: '유사 사례', analysis: '동일 시간대 유사 사례의 하천 방향 이동 비율 높음' },
+                          { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향을 유지하며 이동 중임.' },
+                          { category: '이동 속도', analysis: '정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.' },
+                          { category: '보행로 구조', analysis: '하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.' },
+                          { category: 'CCTV 연계', analysis: '인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.' },
+                          { category: '이전 경로', analysis: '특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.' },
+                          { category: '유사 사례', analysis: '해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.' },
                         ].map((item, idx) => (
                           <div key={idx} className="bg-[#1a1a1a]/50 rounded p-3 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-gray-300 font-medium">{item.category}</span>
                             </div>
-                            <div className="text-sm text-gray-400">
-                              → {item.analysis}
+                            <div className="text-sm text-gray-400 leading-relaxed">
+                              {item.analysis}
                             </div>
                           </div>
                         ))}
-                        
-                        {/* 경로 적합도 점수 */}
-                        <div className="bg-blue-500/10 border border-blue-500/30 rounded p-3 flex items-center justify-between mt-3">
-                          <span className="text-sm text-blue-300 font-semibold">경로 적합도</span>
-                          <span className="text-base text-blue-400 font-bold">{cctv.confidence}점</span>
-                        </div>
                       </div>
                     </>
                   )}

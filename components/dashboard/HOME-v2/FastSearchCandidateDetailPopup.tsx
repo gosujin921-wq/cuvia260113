@@ -4,9 +4,10 @@ import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import {
   getCandidateDetailData,
   addMinutesToTime,
+  generateMarkdownAnalysis,
   type TimelineEntry,
 } from '@/lib/fast-search-candidate-detail';
-import { getImageIdFromCaptureItem } from '@/lib/fast-search-image-attributes';
+import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes';
 
 export interface CandidateCard {
   id: string;
@@ -21,7 +22,7 @@ interface FastSearchCandidateDetailPopupProps {
   isOpen: boolean;
   onClose: () => void;
   candidate: CandidateCard | null;
-  onAddCapture?: (cctvName: string, location: string, confidence: number) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string) => void;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
@@ -418,9 +419,27 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const handleCaptureTarget = () => {
     if (!candidate) return;
     
-    // 포착 목록에 바로 추가
+    // 썸네일 URL 가져오기
+    const thumbnailUrl = getPathForCaptureItem(candidate);
+    
+    // 이미지 ID 가져오기
+    const imageId = getImageIdFromCaptureItem(candidate);
+    
+    // 비디오 URL 가져오기 (있는 경우)
+    const videoUrl = getVideoPathForImageId(imageId);
+    
+    // 마크다운 분석결과 생성
+    const analysisResult = generateMarkdownAnalysis(
+      imageId,
+      candidate.cctvName,
+      candidate.location,
+      candidate.timestamp,
+      candidate.confidence
+    );
+    
+    // 포착 목록에 바로 추가 (비디오 URL도 함께 전달)
     if (onAddCapture) {
-      onAddCapture(candidate.cctvName, candidate.location, candidate.confidence);
+      onAddCapture(candidate.cctvName, candidate.location, candidate.confidence, thumbnailUrl, analysisResult, videoUrl);
     }
     
     // 팝업 닫기

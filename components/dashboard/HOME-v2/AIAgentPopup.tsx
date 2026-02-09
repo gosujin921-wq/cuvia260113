@@ -29,6 +29,8 @@ interface AIAgentPopupProps {
   onReSearchStart?: () => void;
   /** 재검색 완료 콜백 */
   onReSearchComplete?: () => void;
+  /** 포착 알림 메시지 */
+  captureNotificationMessage?: string;
 }
 
 interface ChatMessage {
@@ -349,6 +351,7 @@ interface ChatInputFormProps {
   inputKey: number;
   ignoreNextChangeRef: React.MutableRefObject<boolean>;
   isExpanded: boolean;
+  placeholder?: string;
 }
 
 const ChatInputForm: React.FC<ChatInputFormProps> = ({
@@ -360,6 +363,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   inputKey,
   ignoreNextChangeRef,
   isExpanded,
+  placeholder = "검색 조건을 자연어로 입력해 주세요.",
 }) => {
   return (
     <div className={isExpanded ? 'bg-white flex-shrink-0' : 'p-4 border-t border-gray-200 flex-shrink-0 bg-white'}>
@@ -393,7 +397,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
                 handleSendMessage();
               }
             }}
-            placeholder="검색 조건을 자연어로 입력해 주세요."
+            placeholder={placeholder}
             className={`flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none ${
               isExpanded ? 'overflow-hidden self-center' : 'overflow-y-auto'
             }`}
@@ -446,15 +450,16 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onFastSearchComplete, 
   onReSearchStart, 
   onReSearchComplete,
+  captureNotificationMessage = '',
 }) => {
   const [chatInput, setChatInput] = useState('');
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // 객체 추적 상태일 때 입력폼에 텍스트 설정 및 프로그래스 메시지 추가
+  // 객체 추적 상태일 때 프로그래스 메시지 추가
   useEffect(() => {
     if (isObjectTracking) {
-      setChatInput('검색된 내용으로 객체 추적을 시작해 주세요.');
+      setChatInput('');
       
       // 이미 프로그래스 메시지가 있는지 확인
       setMessages((prev) => {
@@ -572,6 +577,55 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       textareaRef.current?.focus();
     }
   }, [inputKey]);
+
+  // 포착 알림 메시지 처리
+  useEffect(() => {
+    if (!captureNotificationMessage) return;
+    
+    const captureMessage: ChatMessage = {
+      id: `capture-notification-${Date.now()}`,
+      role: 'assistant',
+      content: captureNotificationMessage,
+      timestamp: new Date().toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+      type: 'normal',
+      isTyping: true,
+      displayedContent: '',
+    };
+    
+    setMessages((prev) => [...prev, captureMessage]);
+    
+    // 타이핑 애니메이션
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      currentIndex++;
+      
+      if (currentIndex <= captureNotificationMessage.length) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === captureMessage.id
+              ? { ...msg, displayedContent: captureNotificationMessage.substring(0, currentIndex) }
+              : msg
+          )
+        );
+      } else {
+        // 타이핑 완료
+        clearInterval(typingInterval);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === captureMessage.id
+              ? { ...msg, isTyping: false, displayedContent: captureNotificationMessage }
+              : msg
+          )
+        );
+      }
+    }, 30);
+    
+    return () => clearInterval(typingInterval);
+  }, [captureNotificationMessage]);
 
   // 고속검색 프로그래스 애니메이션
   useEffect(() => {
@@ -1011,9 +1065,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       
       // 프로그래스바가 있는 경우 (analyzing 타입)
       if (assistantMessage.type === 'analyzing') {
-        setMessages((prev) => [...prev, assistantMessage]);
-        setIsResponding(false);
-        
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsResponding(false);
+
         const isObjectTracking = assistantMessage.totalSteps === 5;
         const stepDuration = isObjectTracking ? 1000 : 1000; // 각 단계당 1초
         const totalDuration = isObjectTracking ? 5000 : 5000;
@@ -1207,6 +1261,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
               isExpanded={true}
+              placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
             />
           </div>
         </div>
@@ -1261,6 +1316,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
               isExpanded={false}
+              placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
             />
           </div>
         </div>

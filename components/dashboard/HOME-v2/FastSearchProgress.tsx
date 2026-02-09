@@ -39,7 +39,7 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
     }
 
     // 각 단계를 순차적으로 진행
-    const stepIntervalMs = 650;
+    const stepIntervalMs = 400; // 650ms → 400ms (약 1.6배 빠르게)
     const stepInterval = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev < steps.length - 1) {
@@ -51,24 +51,24 @@ const FastSearchProgress: React.FC<FastSearchProgressProps> = ({
             setIsSearching(true);
             // 카메라 카운트 애니메이션
             let count = 0;
-            const countIntervalMs = 80;
+            const countIntervalMs = 50; // 80ms → 50ms (약 1.6배 빠르게)
             const countInterval = setInterval(() => {
-              count += Math.floor(Math.random() * 3) + 1;
+              count += Math.floor(Math.random() * 4) + 2; // 증가량 늘림 (2~5)
               if (count >= 37) {
                 count = 37;
                 clearInterval(countInterval);
                 setCameraCount(count);
-                // 37에 도달한 후 1초 더 표시
+                // 37에 도달한 후 0.5초만 표시
                 if (onComplete) {
                   setTimeout(() => {
                     onComplete();
-                  }, 1000);
+                  }, 500); // 1000ms → 500ms
                 }
               } else {
                 setCameraCount(count);
               }
             }, countIntervalMs);
-          }, 280);
+          }, 150); // 280ms → 150ms
           return prev;
         }
       });

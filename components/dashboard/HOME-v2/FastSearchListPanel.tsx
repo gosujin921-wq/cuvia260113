@@ -26,7 +26,7 @@ interface FastSearchListPanelProps {
   /** 스켈레톤 로딩 표시 여부 */
   showSkeleton?: boolean;
   /** 대상 포착 시 호출 */
-  onAddCapture?: (cctvName: string, location: string, confidence: number) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string) => void;
 }
 
 interface CaptureItem {
@@ -99,7 +99,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
   const [selectedZones, setSelectedZones] = useState<string[]>([]); // 다중 선택 구역 (기본값: 전체)
   
-  // 임시 값 (팝오버에서 선택 중인 값)
+  // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
   const [tempRadius, setTempRadius] = useState<number>(300);
   const [tempTimeRange, setTempTimeRange] = useState<[number, number]>([0, 60]);
   
@@ -356,6 +356,12 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     if (!onRadiusChange) return;
     onRadiusChange(radius);
   }, [onRadiusChange, radius]);
+  
+  // 임시 반경 변경 시 부모에 전달 (실시간 미리보기)
+  useLayoutEffect(() => {
+    if (!onRadiusChange) return;
+    onRadiusChange(tempRadius);
+  }, [onRadiusChange, tempRadius]);
 
   // 외부에서 특정 후보 열기
   useEffect(() => {
@@ -420,7 +426,19 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   ref={radiusPopoverRef}
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px]"
                 >
-                  <div className="text-white text-sm font-semibold mb-3">검색 반경 설정</div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-white text-sm font-semibold">검색 반경 설정</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRadius(tempRadius);
+                        setOpenPopover(null);
+                      }}
+                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
+                    >
+                      확인
+                    </button>
+                  </div>
                   <div className="space-y-3">
                     <div className="relative">
                       <input
@@ -443,30 +461,6 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     </div>
                     <div className="text-[10px] text-gray-400">
                       반경을 넓히면 더 많은 CCTV를 탐색하지만 분석 시간이 길어질 수 있습니다.
-                    </div>
-                    
-                    {/* 확인 버튼 */}
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRadius(tempRadius);
-                          setOpenPopover(null);
-                        }}
-                        className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors"
-                      >
-                        확인
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTempRadius(radius);
-                          setOpenPopover(null);
-                        }}
-                        className="px-3 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300 text-xs font-medium rounded transition-colors"
-                      >
-                        취소
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -497,7 +491,19 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   ref={timePopoverRef}
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-5 shadow-xl border border-[#31353a] z-[250] min-w-[380px]"
                 >
-                  <div className="text-white text-sm font-semibold mb-3">시간 범위 선택</div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-white text-sm font-semibold">시간 범위 선택</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTimeRange([tempTimeRange[0], tempTimeRange[1]]);
+                        setOpenPopover(null);
+                      }}
+                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
+                    >
+                      확인
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {/* 듀얼 핸들 슬라이더 */}
                     <div className="relative" style={{ height: '40px', display: 'flex', alignItems: 'center', paddingTop: '12px', paddingBottom: '12px' }}>
@@ -567,30 +573,6 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     </div>
                     <div className="text-[10px] text-gray-400 mt-1">
                       시간 범위를 조정하여 검색할 시간대를 선택할 수 있습니다.
-                    </div>
-                    
-                    {/* 확인 버튼 */}
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTimeRange([tempTimeRange[0], tempTimeRange[1]]);
-                          setOpenPopover(null);
-                        }}
-                        className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors"
-                      >
-                        확인
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTempTimeRange([timeRange[0], timeRange[1]]);
-                          setOpenPopover(null);
-                        }}
-                        className="px-3 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300 text-xs font-medium rounded transition-colors"
-                      >
-                        취소
-                      </button>
                     </div>
                   </div>
                 </div>

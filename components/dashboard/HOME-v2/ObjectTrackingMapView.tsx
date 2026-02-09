@@ -10,6 +10,7 @@ interface ObjectTrackingMapViewProps {
   onCCTVHover?: (cctvId: string | null, showLabel?: boolean) => void; // CCTV 마커 호버 시 콜백
   hoveredCCTVId?: string | null; // 외부에서 전달받은 호버 CCTV ID
   showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
+  pulseRadius?: number; // 펄스 반경 (m)
 }
 
 const ObjectTrackingMapView = ({ 
@@ -19,7 +20,8 @@ const ObjectTrackingMapView = ({
   onTrackingComplete,
   onCCTVHover,
   hoveredCCTVId,
-  showCCTVLabel = false
+  showCCTVLabel = false,
+  pulseRadius = 100
 }: ObjectTrackingMapViewProps) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -98,6 +100,25 @@ const ObjectTrackingMapView = ({
         existingMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
         (map as any)._trackingPinsMarkers = null;
       }
+      
+      // 펄스 마커 제거
+      const pulseMarker = (map as any)._pin4PulseMarker;
+      if (pulseMarker) {
+        console.log('[ObjectTrackingMapView] 펄스 마커 제거');
+        pulseMarker.remove();
+        (map as any)._pin4PulseMarker = null;
+        (map as any)._pin4PulseWrapper = null;
+        (map as any)._pin4PulseSvg = null;
+        (map as any)._pin4PulseCircle = null;
+        
+        // zoom 핸들러 제거
+        const zoomHandler = (map as any)._pin4PulseZoomHandler;
+        if (zoomHandler) {
+          map.off('zoom', zoomHandler);
+          (map as any)._pin4PulseZoomHandler = null;
+        }
+      }
+      
       zoomOutTriggeredRef.current = false; // 리셋
       return;
     }
@@ -107,7 +128,7 @@ const ObjectTrackingMapView = ({
       { location: [126.783853180335, 37.5049838114765] as [number, number], address: '춘의동 125-46', name: '원미A-230', color: 'gray' },
       { location: [126.7843434, 37.5042779] as [number, number], address: '춘의동 126-18', name: '원미A-444', color: 'gray' },
       { location: [126.7828196, 37.50501939999999] as [number, number], address: '춘의동 125-46', name: '원미A-481', color: 'gray' },
-      { location: [126.7828168, 37.504067] as [number, number], address: '춘의동 125-32', name: '원미A-498', color: 'red' },
+      { location: [126.7828168, 37.504067] as [number, number], address: '춘의동 125-32', name: '원미A-498', color: 'blue' },
     ];
     
     const initPins = () => {
@@ -134,12 +155,6 @@ const ObjectTrackingMapView = ({
             shadowColor = '0 0 20px rgba(107, 114, 128, 0.5), 0 0 40px rgba(107, 114, 128, 0.3)';
             ringColor = 'rgba(107, 114, 128, 0.3)';
             iconColor = '#9ca3af';
-          } else if (pin.color === 'red') {
-            bgGradient = 'linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
-            borderColor = '#ef4444';
-            shadowColor = '0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3)';
-            ringColor = 'rgba(239, 68, 68, 0.3)';
-            iconColor = '#f87171';
           } else {
             bgGradient = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
             borderColor = '#3b82f6';
@@ -300,48 +315,152 @@ const ObjectTrackingMapView = ({
         return;
       }
       
-      // 펄스 원 소스 추가 (지도 레이어로)
-      if (!map.getSource('pin4-pulse')) {
-      // 60m 반경을 위도/경도로 변환 (대략적)
-      const radiusInMeters = 60;
-      const radiusInDegrees = radiusInMeters / 111320; // 1도 = 약 111.32km
-      
-      // 원을 그리기 위한 다각형 생성 (64개 점)
-      const points = 64;
-      const coordinates = [];
-      for (let i = 0; i <= points; i++) {
-        const angle = (i / points) * 2 * Math.PI;
-        const lng = pin4Location[0] + radiusInDegrees * Math.cos(angle) / Math.cos(pin4Location[1] * Math.PI / 180);
-        const lat = pin4Location[1] + radiusInDegrees * Math.sin(angle);
-        coordinates.push([lng, lat]);
-      }
-      
-      map.addSource('pin4-pulse', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Polygon',
-            coordinates: [coordinates]
-          }
+      // 펄스 마커 추가 (고속검색과 동일한 스타일)
+      if (!(map as any)._pin4PulseMarker) {
+        console.log('[ObjectTrackingMapView] 4번 핀 블루 펄스 마커 생성');
+        
+        // 현재 줌 레벨에서 반경을 픽셀로 변환
+        const zoom = map.getZoom();
+        const lat = pin4Location[1];
+        const metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+        const radiusInPixels = pulseRadius / metersPerPixel;
+        const diameter = radiusInPixels * 2;
+        
+        // 반경 원 컨테이너
+        const radiusContainer = document.createElement('div');
+        radiusContainer.style.cssText = `
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+          z-index: 1;
+        `;
+        
+        const radiusWrapper = document.createElement('div');
+        radiusWrapper.style.cssText = `
+          position: relative;
+          width: ${diameter}px;
+          height: ${diameter}px;
+        `;
+        
+        // radius-pulse 애니메이션 keyframes 추가 (아직 없으면)
+        if (!document.getElementById('radius-pulse-style-tracking')) {
+          const styleEl = document.createElement('style');
+          styleEl.id = 'radius-pulse-style-tracking';
+          styleEl.textContent = `
+            @keyframes radius-pulse-tracking {
+              0% {
+                transform: translate(-50%, -50%) translateZ(0) scale(0.5);
+                opacity: 1;
+              }
+              100% {
+                transform: translate(-50%, -50%) translateZ(0) scale(1);
+                opacity: 0;
+              }
+            }
+          `;
+          document.head.appendChild(styleEl);
         }
-      });
-      
-      // 펄스 레이어 3개 추가 (투명도 다르게)
-      for (let i = 0; i < 3; i++) {
-        map.addLayer({
-          id: `pin4-pulse-layer-${i}`,
-          type: 'fill',
-          source: 'pin4-pulse',
-          paint: {
-            'fill-color': '#ef4444',
-            'fill-opacity': 0.15 - i * 0.03
-          }
-        });
-      }
-      
-      console.log('[ObjectTrackingMapView] 4번 핀 범위 펄스 레이어 추가 완료');
+        
+        // 블루 펄스 3개
+        for (let i = 0; i < 3; i++) {
+          const pulse = document.createElement('div');
+          pulse.style.cssText = `
+            position: absolute;
+            width: ${diameter - 4}px;
+            height: ${diameter - 4}px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateZ(0) scale(0.5);
+            animation: radius-pulse-tracking 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            animation-delay: ${i * 0.4}s;
+            will-change: transform, opacity;
+            pointer-events: none;
+            z-index: 1;
+          `;
+          const pulseInner = document.createElement('div');
+          pulseInner.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(59, 130, 246, ${0.4 - i * 0.08});
+          `;
+          pulse.appendChild(pulseInner);
+          radiusWrapper.appendChild(pulse);
+        }
+        
+        // 반경 원 SVG (대시 라인)
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', `${diameter}px`);
+        svg.setAttribute('height', `${diameter}px`);
+        svg.style.cssText = `
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 2;
+        `;
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '50%');
+        circle.setAttribute('cy', '50%');
+        circle.setAttribute('r', `${radiusInPixels - 2}px`);
+        circle.setAttribute('fill', 'none');
+        circle.setAttribute('stroke', 'rgba(59, 130, 246, 0.8)');
+        circle.setAttribute('stroke-width', '4');
+        circle.setAttribute('stroke-dasharray', '8 4');
+        
+        svg.appendChild(circle);
+        radiusWrapper.appendChild(svg);
+        radiusContainer.appendChild(radiusWrapper);
+        
+        // 마커 생성 - pitchAlignment: 'map'으로 바닥에 눕힘
+        const radiusMarker = new maplibregl.Marker({
+          element: radiusContainer,
+          anchor: 'center',
+          pitchAlignment: 'map',
+          rotationAlignment: 'map'
+        })
+          .setLngLat(pin4Location)
+          .addTo(map);
+        
+        // z-index 설정
+        const markerElement = radiusMarker.getElement();
+        if (markerElement) {
+          markerElement.style.zIndex = '1';
+        }
+        
+        // 저장
+        (map as any)._pin4PulseMarker = radiusMarker;
+        (map as any)._pin4PulseWrapper = radiusWrapper;
+        (map as any)._pin4PulseSvg = svg;
+        (map as any)._pin4PulseCircle = circle;
+        
+        // zoom 변경 시 크기 업데이트
+        const zoomHandler = () => {
+          const newZoom = map.getZoom();
+          const newMetersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, newZoom);
+          const newRadiusInPixels = pulseRadius / newMetersPerPixel;
+          const newDiameter = newRadiusInPixels * 2;
+          
+          radiusWrapper.style.width = `${newDiameter}px`;
+          radiusWrapper.style.height = `${newDiameter}px`;
+          
+          const pulses = radiusWrapper.querySelectorAll('div[style*="animation"]');
+          pulses.forEach((pulse: any) => {
+            pulse.style.width = `${newDiameter - 4}px`;
+            pulse.style.height = `${newDiameter - 4}px`;
+          });
+          
+          svg.setAttribute('width', `${newDiameter}px`);
+          svg.setAttribute('height', `${newDiameter}px`);
+          circle.setAttribute('r', `${newRadiusInPixels - 2}px`);
+        };
+        
+        map.on('zoom', zoomHandler);
+        (map as any)._pin4PulseZoomHandler = zoomHandler;
+        
+        console.log('[ObjectTrackingMapView] 4번 핀 블루 펄스 마커 추가 완료');
       }
       
       // 4번 핀 표시 후 이동 애니메이션 완료를 기다린 후 줌 아웃 + 2D 전환
@@ -365,13 +484,14 @@ const ObjectTrackingMapView = ({
           bounds.extend(location as [number, number]);
         });
         
-        // 2D 전환하면서 모든 핀이 보이도록 (우측 패널 고려하여 좌측으로 200px 이동)
+        // 2D 전환하면서 모든 핀이 보이도록 (우측 패널 고려하여 좌측으로 250px 이동)
         map.fitBounds(bounds, {
-          padding: { top: 100, bottom: 100, left: 100, right: 500 },
+          padding: { top: 100, bottom: 100, left: 150, right: 500 },
           pitch: 0,
           bearing: currentBearing,
           duration: 1200,
-          essential: true
+          essential: true,
+          offset: [-50, 0] // 좌측으로 50px 추가 이동
         });
         
         console.log('[ObjectTrackingMapView] flyTo 호출 완료 - 목표 pitch: 0');
@@ -635,6 +755,40 @@ const ObjectTrackingMapView = ({
       }
     }
   }, [hoveredCCTVId, showCCTVLabel]);
+
+  // pulseRadius 변경 시 반경 업데이트
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.loaded() || visibleTrackingPins !== 4) return;
+    
+    const pin4Location: [number, number] = [126.7828168, 37.504067];
+    const radiusWrapper = (map as any)._pin4PulseWrapper;
+    const svg = (map as any)._pin4PulseSvg;
+    const circle = (map as any)._pin4PulseCircle;
+    
+    if (radiusWrapper && svg && circle) {
+      console.log('[ObjectTrackingMapView] 펄스 반경 업데이트:', pulseRadius);
+      
+      const zoom = map.getZoom();
+      const lat = pin4Location[1];
+      const metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+      const radiusInPixels = pulseRadius / metersPerPixel;
+      const diameter = radiusInPixels * 2;
+      
+      radiusWrapper.style.width = `${diameter}px`;
+      radiusWrapper.style.height = `${diameter}px`;
+      
+      const pulses = radiusWrapper.querySelectorAll('div[style*="animation"]');
+      pulses.forEach((pulse: any) => {
+        pulse.style.width = `${diameter - 4}px`;
+        pulse.style.height = `${diameter - 4}px`;
+      });
+      
+      svg.setAttribute('width', `${diameter}px`);
+      svg.setAttribute('height', `${diameter}px`);
+      circle.setAttribute('r', `${radiusInPixels - 2}px`);
+    }
+  }, [pulseRadius, visibleTrackingPins]);
 
   return (
     <div 

@@ -5,9 +5,11 @@ import PredictedCCTVDetailPopup from './PredictedCCTVDetailPopup';
 interface PredictedCCTVListPanelProps {
   isVisible: boolean;
   width?: number;
-  onAddCapture?: (cctvName: string, location: string, confidence: number) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string) => void;
   hoveredCCTVId?: string | null;
   onCCTVHover?: (cctvId: string | null) => void;
+  /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
+  onRadiusChange?: (radius: number) => void;
 }
 
 export interface PredictedCCTVItem {
@@ -21,6 +23,19 @@ export interface PredictedCCTVItem {
   thumbnailUrl: string;
 }
 
+// CCTV 비디오 파일 목록
+const CCTV_VIDEOS = [
+  '/cctv_img/cctv1.mov',
+  '/cctv_img/cctv2.mov',
+  '/cctv_img/cctv3.mov',
+  '/cctv_img/cctv4.mov',
+];
+
+// 무작위 비디오 URL 가져오기
+const getRandomVideoUrl = () => {
+  return CCTV_VIDEOS[Math.floor(Math.random() * CCTV_VIDEOS.length)];
+};
+
 // Mock 데이터 - 4번 핀(춘의동 125-32) 근처 CCTV 10개
 const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
@@ -31,7 +46,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:15',
     confidence: 92,
     direction: '북동쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: '/fastsearch_img/qs_img_48_n.mov',
   },
   {
     id: '2',
@@ -41,7 +56,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:30',
     confidence: 88,
     direction: '북서쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
   {
     id: '3',
@@ -51,7 +66,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:45',
     confidence: 85,
     direction: '동쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
   {
     id: '4',
@@ -61,7 +76,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:00',
     confidence: 83,
     direction: '남서쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: '/fastsearch_img/qs_img_57_y.mov',
   },
   {
     id: '5',
@@ -71,7 +86,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:15',
     confidence: 80,
     direction: '남동쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
   {
     id: '6',
@@ -81,7 +96,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:30',
     confidence: 78,
     direction: '서쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
   {
     id: '7',
@@ -91,7 +106,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:45',
     confidence: 75,
     direction: '동쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
   {
     id: '8',
@@ -101,7 +116,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:00',
     confidence: 73,
     direction: '북쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
   {
     id: '9',
@@ -111,7 +126,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:15',
     confidence: 70,
     direction: '남서쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
   {
     id: '10',
@@ -121,7 +136,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:30',
     confidence: 68,
     direction: '남동쪽',
-    thumbnailUrl: '/images/cctv-placeholder.jpg',
+    thumbnailUrl: getRandomVideoUrl(),
   },
 ];
 
@@ -131,12 +146,20 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   onAddCapture,
   hoveredCCTVId: externalHoveredCCTVId,
   onCCTVHover,
+  onRadiusChange,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
-  const [openPopover, setOpenPopover] = useState<'sort' | null>(null);
+  const [openPopover, setOpenPopover] = useState<'sort' | 'radius' | null>(null);
   const sortPopoverRef = React.useRef<HTMLDivElement>(null);
+  const radiusPopoverRef = React.useRef<HTMLDivElement>(null);
   const cctvMarkersRef = React.useRef<Map<string, HTMLElement>>(new Map());
+  
+  // 반경 필터 상태
+  const [radius, setRadius] = React.useState<number>(100); // 반경 (m) - 실제 적용된 값
+  
+  // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
+  const [tempRadius, setTempRadius] = React.useState<number>(100);
   
   // 외부에서 받은 hoveredCCTVId 사용
   const hoveredCCTVId = externalHoveredCCTVId;
@@ -144,7 +167,10 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   // 팝오버 외부 클릭 감지
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (sortPopoverRef.current && !sortPopoverRef.current.contains(event.target as Node)) {
+      if (openPopover === 'sort' && sortPopoverRef.current && !sortPopoverRef.current.contains(event.target as Node)) {
+        setOpenPopover(null);
+      }
+      if (openPopover === 'radius' && radiusPopoverRef.current && !radiusPopoverRef.current.contains(event.target as Node)) {
         setOpenPopover(null);
       }
     };
@@ -154,6 +180,18 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [openPopover]);
+  
+  // 반경 변경 시 부모에 전달 (확정된 값)
+  React.useEffect(() => {
+    if (!onRadiusChange) return;
+    onRadiusChange(radius);
+  }, [onRadiusChange, radius]);
+  
+  // 임시 반경 변경 시 부모에 전달 (실시간 미리보기)
+  React.useEffect(() => {
+    if (!onRadiusChange) return;
+    onRadiusChange(tempRadius);
+  }, [onRadiusChange, tempRadius]);
 
 
   return (
@@ -182,18 +220,71 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
           >
             {/* 필터 칩들 */}
             <div className="flex items-center gap-2 flex-wrap relative">
-              {/* 경로 적합도 칩 */}
-              <div className="px-4 py-2 rounded-full text-xs font-medium bg-[#1a1a1a] text-gray-300 flex items-center gap-2 border border-[#31353a]">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span>경로 적합도: 평균 82점</span>
+              {/* 반경 칩 */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    if (openPopover === 'radius') {
+                      setOpenPopover(null);
+                    } else {
+                      setTempRadius(radius);
+                      setOpenPopover('radius');
+                    }
+                  }}
+                  className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
+                >
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  <span>반경: {radius}m</span>
+                  <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'radius' ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {/* 반경 팝오버 */}
+                {openPopover === 'radius' && (
+                  <div
+                    ref={radiusPopoverRef}
+                    className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px]"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-white text-sm font-semibold">검색 반경 설정</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRadius(tempRadius);
+                          setOpenPopover(null);
+                        }}
+                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
+                      >
+                        확인
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <input
+                          type="range"
+                          min="100"
+                          max="3000"
+                          step="100"
+                          value={tempRadius}
+                          onChange={(e) => setTempRadius(Number(e.target.value))}
+                          className="w-full h-2 bg-[#0f0f0f] rounded-full appearance-none cursor-pointer slider"
+                          style={{
+                            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((tempRadius - 100) / 2900) * 100}%, #0f0f0f ${((tempRadius - 100) / 2900) * 100}%, #0f0f0f 100%)`
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <span>100m</span>
+                        <span className="text-white font-semibold">{tempRadius}m</span>
+                        <span>3000m</span>
+                      </div>
+                      <div className="text-[10px] text-gray-400">
+                        반경을 넓히면 더 많은 CCTV를 탐색하지만 분석 시간이 길어질 수 있습니다.
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              {/* 거리 칩 */}
-              <div className="px-4 py-2 rounded-full text-xs font-medium bg-[#1a1a1a] text-gray-300 flex items-center gap-2 border border-[#31353a]">
-                <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                <span>거리: 15~35m</span>
-              </div>
-              
+
               {/* 정렬 칩 */}
               <div className="relative">
                 <button
@@ -267,37 +358,6 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
               overflow: 'hidden',
             }}
           >
-            {/* 상단 액션 버튼 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#31353a]">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1.5 rounded text-xs font-medium transition-colors text-gray-300 hover:text-white hover:bg-[#2a2a2a] border border-[#31353a]"
-                  aria-label="전체 선택"
-                >
-                  전체 선택
-                </button>
-                <button
-                  type="button"
-                  className="px-3 py-1.5 rounded text-xs font-medium transition-colors text-gray-300 hover:text-white hover:bg-[#2a2a2a] border border-[#31353a]"
-                  aria-label="선택 해제"
-                >
-                  선택 해제
-                </button>
-              </div>
-              
-              <button
-                type="button"
-                className="px-4 py-1.5 rounded-lg text-xs font-medium transition-colors text-white bg-blue-500 hover:bg-blue-600"
-                aria-label="선택한 CCTV 분석"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Icon icon="mdi:play" className="w-3.5 h-3.5" />
-                  <span>선택 영상 재생</span>
-                </div>
-              </button>
-            </div>
-            
             <div
               className="flex-1 overflow-y-auto"
               style={{
@@ -319,7 +379,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                     {/* 썸네일 - CCTV 영상 */}
                     <div className="relative w-full bg-black" style={{ paddingTop: '56.25%' }}>
                       <video
-                        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                        src={item.thumbnailUrl}
                         autoPlay
                         loop
                         muted

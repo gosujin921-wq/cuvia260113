@@ -652,3 +652,12 @@ export const shouldHideCaptureItem = (
   const imageId = getImageIdFromCaptureItem(item);
   return imageHasAnyExcludedAttribute(imageId, excludedAttributes);
 };
+
+/** 이미지 ID로 비디오 경로 반환 (비디오가 있는 경우) */
+export const getVideoPathForImageId = (imageId: ImageId): string | undefined => {
+  const videoMap: Partial<Record<ImageId, string>> = {
+    '48': '/fastsearch_img/qs_img_48_n.mov',
+    '59': '/fastsearch_img/qs_img_59_y.mp4',
+  };
+  return videoMap[imageId];
+};
