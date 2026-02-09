@@ -42,6 +42,7 @@ type UIAction =
   | { type: 'SET_SELECTED_EVENT'; payload: string | null }
   | { type: 'SET_HIGHLIGHTED_EVENT'; payload: string | null }
   | { type: 'START_FAST_SEARCH' }
+  | { type: 'START_FAST_SEARCH_WITH_PROGRESS' }
   | { type: 'COMPLETE_FAST_SEARCH' }
   | { type: 'SHOW_FAST_SEARCH_LIST' }
   | { type: 'HIDE_FAST_SEARCH_LIST' }
@@ -75,7 +76,23 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showFastSearchList: true,
         selectedMenuId: 'fast-search',
         showAIAgentPopup: true,
+        showFastSearchProgress: false,
+        showObjectTracking: false,
+        showCaptureList: false,
+      };
+    case 'START_FAST_SEARCH_WITH_PROGRESS':
+      return {
+        ...state,
+        panelsSlidOut: true,
+        showCCTV: false,
+        hideControls: true,
+        showFastSearch: false,
+        showFastSearchList: true,
+        selectedMenuId: 'fast-search',
+        showAIAgentPopup: true,
         showFastSearchProgress: true,
+        showObjectTracking: false,
+        showCaptureList: false,
       };
     case 'COMPLETE_FAST_SEARCH_PROGRESS':
       return {
@@ -281,11 +298,29 @@ export default function HomeV2() {
 
   // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
   const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast') => {
+    console.log('[Home-v2] 메뉴 선택:', menuId);
     dispatch({ type: 'SET_MENU', payload: menuId });
     
     if (menuId === 'net-monitoring') {
       dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
     } else if (menuId === 'fast-search') {
+      console.log('[Home-v2] 고속검색 시작');
+      // 예측 CCTV 리스트 패널 닫기
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      setVisibleTrackingPins(0);
+      // 고속검색 시작 시 신고 팝업을 위한 이벤트 선택
+      const missingEvent = allConvertedEvents.find(event => 
+        event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+      );
+      console.log('[Home-v2] 찾은 이벤트:', missingEvent);
+      if (missingEvent) {
+        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+        // 이벤트 핀을 지도에 표시하기 위해 visibleEventIds에 추가
+        setVisibleEventIds(new Set([missingEvent.id]));
+        // 이벤트 위치로 지도 이동
+        setFlyToLocation([126.783853180335, 37.5049838114765]);
+      }
       dispatch({ type: 'START_FAST_SEARCH' });
     } else if (menuId === 'object-tracking') {
       // 객체 추적 메뉴 선택 시 - 에이전트 팝업과 동일한 로직
@@ -294,7 +329,7 @@ export default function HomeV2() {
     } else if (menuId === 'capture-list') {
       dispatch({ type: 'SHOW_CAPTURE_LIST' });
     }
-  }, []);
+  }, [allConvertedEvents]);
 
   // 포착 아이템 추가 핸들러
   const handleAddCaptureItem = useCallback((
@@ -639,7 +674,7 @@ export default function HomeV2() {
               clearSelection();
             }
           }}
-          onFastSearchStart={() => dispatch({ type: 'START_FAST_SEARCH' })}
+          onFastSearchStart={() => dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' })}
           showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList}
           onLayout={setReportPopupHeight}
           position={uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}

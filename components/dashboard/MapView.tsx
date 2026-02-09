@@ -451,33 +451,31 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         justify-content: center;
       `;
       
-      // 펄스 효과 3개 (고속검색 리스트 표시 시에는 펄스 제거)
-      if (!showFastSearchList) {
-        for (let i = 0; i < 3; i++) {
-          const pulse = document.createElement('div');
-          pulse.style.cssText = `
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50()) translateZ(0) scale(0.8);
-            animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            animation-delay: ${i * 0.2}s;
-            will-change: transform, opacity;
-            pointer-events: none;
-            z-index: 1;
-          `;
-          const pulseInner = document.createElement('div');
-          pulseInner.style.cssText = `
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background-color: rgba(239, 68, 68, ${0.5 - i * 0.1});
-          `;
-          pulse.appendChild(pulseInner);
-          centerWrapper.appendChild(pulse);
-        }
+      // 펄스 효과 3개
+      for (let i = 0; i < 3; i++) {
+        const pulse = document.createElement('div');
+        pulse.style.cssText = `
+          position: absolute;
+          width: 120px;
+          height: 120px;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) translateZ(0) scale(0.8);
+          animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+          animation-delay: ${i * 0.2}s;
+          will-change: transform, opacity;
+          pointer-events: none;
+          z-index: 1;
+        `;
+        const pulseInner = document.createElement('div');
+        pulseInner.style.cssText = `
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background-color: rgba(239, 68, 68, ${0.5 - i * 0.1});
+        `;
+        pulse.appendChild(pulseInner);
+        centerWrapper.appendChild(pulse);
       }
       
       // 펄스 애니메이션 keyframes 추가
