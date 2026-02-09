@@ -284,8 +284,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
       center: [126.8136, 37.4865], // 역곡 좌표
       zoom: 15,
-      pitch: 60,
-      bearing: -17.6,
+      pitch: 45,
+      bearing: 0,
       attributionControl: false,
       interactive: true,
     });
@@ -590,8 +590,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         map.flyTo({
           center: [126.8136, 37.4865], // 역곡 좌표
           zoom: 15,
-          pitch: 60,
-          bearing: -17.6,
+          pitch: 45,
+          bearing: 0,
           duration: 1500,
           essential: true
         });

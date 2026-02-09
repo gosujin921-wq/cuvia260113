@@ -52,6 +52,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const [greenBoxSize, setGreenBoxSize] = useState({ width: 80, height: 80 });
   const [showGreenBox, setShowGreenBox] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(true);
+  const [isSimilarityOpen, setIsSimilarityOpen] = useState(false);
   
   const moveGreenBox = (direction: 'up' | 'down' | 'left' | 'right') => {
     setIsAutoMode(false);
@@ -805,66 +806,83 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                     </div>
                   ))}
                   
-                  {/* 유사도 카드 - 확장형 */}
-                  <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
-                    <div className="flex items-start gap-3 mb-3">
+                  {/* 유사도 카드 - 토글 가능 */}
+                  <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setIsSimilarityOpen(!isSimilarityOpen)}
+                      className="w-full p-3 flex items-start gap-3 text-left"
+                    >
                       <Icon icon="mdi:star-outline" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-gray-400 mb-1">유사도</div>
-                        <div className="text-sm text-white">{detail.meta.score}/100</div>
+                        <div className="text-sm text-white">{detail.meta.score}점</div>
                       </div>
-                    </div>
+                      <Icon 
+                        icon={isSimilarityOpen ? "mdi:chevron-up" : "mdi:chevron-down"} 
+                        className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0 transition-transform" 
+                      />
+                    </button>
                     
-                    {/* 디바이더 */}
-                    <div className="border-t border-[#3a3a3a] my-3"></div>
-                    
-                    {/* 후보 근거 */}
-                    <div className="space-y-2">
-                      <div className="text-xs text-gray-400 mb-2">후보 근거</div>
-                      
-                      {/* 각 분석 항목 */}
-                      {[
-                        { category: '의류(상의)', missing: '회색 후드', captured: '회색 후드티', match: true },
-                        { category: '의류(하의)', missing: '청바지', captured: '흑색/청색 계열 하의', match: true },
-                        { category: '헤어스타일', missing: '흑색 짧은 머리', captured: '흑색 짧은 머리', match: true },
-                        { category: '소지품/행동', missing: '-', captured: '휴대폰 조작', match: 'special' },
-                      ].map((item, idx) => (
-                        <div key={idx} className="bg-[#1a1a1a]/50 rounded p-2.5 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-300 font-medium">{item.category}</span>
-                            {item.match === 'special' ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                                특이점
-                              </span>
-                            ) : item.match ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
-                                일치
-                              </span>
-                            ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
-                                불일치
-                              </span>
-                            )}
+                    {isSimilarityOpen && (
+                      <>
+                        {/* 디바이더 */}
+                        <div className="border-t border-[#3a3a3a]"></div>
+                        
+                        {/* 후보 근거 - 테이블 형식 */}
+                        <div className="p-3">
+                          <div className="bg-[#1a1a1a]/50 rounded overflow-hidden">
+                            {/* 테이블 헤더 */}
+                            <div className="grid grid-cols-4 gap-2 bg-[#0f0f0f] p-3 border-b border-[#3a3a3a]">
+                              <div className="text-xs text-gray-400 font-medium">항목</div>
+                              <div className="text-xs text-gray-400 font-medium">실종자 정보</div>
+                              <div className="text-xs text-gray-400 font-medium">포착 인물 정보</div>
+                              <div className="text-xs text-gray-400 font-medium text-center">일치 여부</div>
+                            </div>
+                            
+                            {/* 테이블 바디 */}
+                            {[
+                              { category: '의류(상의)', missing: '회색 후드', captured: '회색 후드티', match: true },
+                              { category: '의류(하의)', missing: '청바지', captured: '흑색/청색 계열 하의', match: true },
+                              { category: '헤어스타일', missing: '흑색 짧은 머리', captured: '흑색 짧은 머리', match: true },
+                              { category: '소지품/행동', missing: '-', captured: '휴대폰 조작', match: 'special' },
+                            ].map((item, idx) => (
+                              <div 
+                                key={idx} 
+                                className={`grid grid-cols-4 gap-2 p-3 ${
+                                  idx !== 3 ? 'border-b border-[#3a3a3a]' : ''
+                                }`}
+                              >
+                                <div className="text-sm text-gray-300 font-medium">{item.category}</div>
+                                <div className="text-sm text-gray-400">{item.missing}</div>
+                                <div className="text-sm text-gray-400">{item.captured}</div>
+                                <div className="flex items-center justify-center">
+                                  {item.match === 'special' ? (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                      특이점
+                                    </span>
+                                  ) : item.match ? (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                                      일치
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                                      불일치
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-[11px]">
-                            <div>
-                              <div className="text-gray-500 mb-0.5">실종자 정보</div>
-                              <div className="text-gray-300">{item.missing}</div>
-                            </div>
-                            <div>
-                              <div className="text-gray-500 mb-0.5">포착 인물 정보</div>
-                              <div className="text-gray-300">{item.captured}</div>
-                            </div>
+                          
+                          {/* 최종 유사도 */}
+                          <div className="bg-blue-500/10 border border-blue-500/30 rounded p-3 flex items-center justify-between mt-3">
+                            <span className="text-sm text-blue-300 font-semibold">최종 유사도</span>
+                            <span className="text-base text-blue-400 font-bold">95.0점</span>
                           </div>
                         </div>
-                      ))}
-                      
-                      {/* 최종 유사도 */}
-                      <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2.5 flex items-center justify-between mt-3">
-                        <span className="text-xs text-blue-300 font-semibold">최종 유사도</span>
-                        <span className="text-sm text-blue-400 font-bold">95.0%</span>
-                      </div>
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}

@@ -27,6 +27,8 @@ interface FastSearchListPanelProps {
   openCandidateId?: string | null;
   /** 후보가 열렸을 때 호출 */
   onCandidateOpened?: () => void;
+  /** 스켈레톤 로딩 표시 여부 */
+  showSkeleton?: boolean;
 }
 
 interface CaptureItem {
@@ -94,6 +96,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   onShowOnMap,
   openCandidateId,
   onCandidateOpened,
+  showSkeleton = false,
 }) => {
   const [radius, setRadius] = useState<number>(300); // 반경 (m)
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60)
@@ -382,7 +385,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           paddingRight: '16px',
         }}
       >
-        <div className="flex flex-col gap-4 h-full" style={{ paddingTop: isVisible ? '0.5rem' : '16px', minHeight: 0 }}>
+        <div className="flex flex-col gap-3 h-full" style={{ paddingTop: isVisible ? '0.5rem' : '16px', minHeight: 0 }}>
         {/* 헤더 */}
         <div
           className="rounded-lg flex-shrink-0"
@@ -531,105 +534,63 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               )}
             </div>
 
-            {/* 구역 칩 */}
-            <div className="relative">
+            {/* 정렬 칩 */}
+            <div className="relative" ref={sortPopoverRef}>
               <button
-                onClick={() => setOpenPopover(openPopover === 'zone' ? null : 'zone')}
-                onMouseEnter={() => {
-                  if (selectedZones.length > 0 && !openPopover) {
-                    setIsZoneHovered(true);
-                  }
-                }}
-                onMouseLeave={() => setIsZoneHovered(false)}
+                type="button"
+                onClick={() => setOpenPopover(openPopover === 'sort' ? null : 'sort')}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
+                aria-label="정렬 옵션"
+                aria-expanded={openPopover === 'sort'}
+                aria-haspopup="listbox"
               >
                 <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                <span>구역: {getZoneDisplayText()}</span>
-                <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'zone' ? 'rotate-180' : ''}`} />
+                <span>정렬: {
+                  sortOption === 'confidence-desc' ? '유사도순' :
+                  sortOption === 'confidence-asc' ? '유사도 낮은순' :
+                  sortOption === 'distance-asc' ? '거리순' : '거리 먼순'
+                }</span>
+                <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`} />
               </button>
               
-              {/* 호버 툴팁 */}
-              {isZoneHovered && selectedZones.length > 0 && !openPopover && (
-                <div 
-                  className="absolute px-3 py-2 bg-[#0f0f0f] border border-[#31353a] rounded-lg shadow-xl text-xs text-gray-300"
-                  style={{
-                    top: 'calc(100% + 8px)',
-                    left: '0',
-                    zIndex: 10000,
-                    pointerEvents: 'none',
-                    maxWidth: '400px',
-                    whiteSpace: 'normal',
-                  }}
-                >
-                  {selectedZones.join(', ')}
-                </div>
-              )}
-              
-              {/* 구역 선택 팝오버 */}
-              {openPopover === 'zone' && (
+              {/* 정렬 옵션 팝오버 */}
+              {openPopover === 'sort' && (
                 <div
-                  ref={zonePopoverRef}
-                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px] max-h-[400px] overflow-y-auto"
+                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-3 shadow-xl border border-[#31353a] z-[250] min-w-[200px]"
+                  role="listbox"
+                  aria-label="정렬 기준 선택"
                 >
-                  <div className="text-white text-sm font-semibold mb-3">구역 선택</div>
+                  <div className="text-white text-sm font-semibold mb-2">정렬 기준</div>
                   <div className="space-y-1">
-                    {/* 전체 옵션 */}
-                    <button
-                      onClick={() => toggleZone('전체')}
-                      className={`w-full px-3 py-2 rounded text-xs font-medium transition-colors text-left flex items-center gap-2 ${
-                        isAllSelected
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-[#0f0f0f] text-gray-300 hover:bg-[#2a2a2a]'
-                      }`}
-                    >
-                      {isAllSelected && (
-                        <Icon icon="mdi:check" className="w-4 h-4" />
-                      )}
-                      <span>전체</span>
-                    </button>
-                    
-                    {Object.keys(zoneData).map((gu) => (
-                      <div key={gu}>
-                        {/* 1depth: 구 */}
-                        <button
-                          onClick={() => toggleGu(gu)}
-                          className="w-full px-3 py-2 rounded text-xs font-medium transition-colors text-left flex items-center justify-between bg-[#0f0f0f] text-gray-300 hover:bg-[#2a2a2a]"
-                        >
-                          <span>{gu}</span>
-                          <Icon 
-                            icon={expandedGu === gu ? "mdi:chevron-up" : "mdi:chevron-down"} 
-                            className="w-4 h-4" 
-                          />
-                        </button>
-                        
-                        {/* 2depth: 동 */}
-                        {expandedGu === gu && (
-                          <div className="pl-4 pt-1 space-y-1">
-                            {zoneData[gu as keyof typeof zoneData].map((dong) => (
-                              <button
-                                key={dong}
-                                onClick={() => toggleZone(dong)}
-                                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-colors text-left flex items-center gap-2 ${
-                                  selectedZones.includes(dong)
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-[#0f0f0f] text-gray-300 hover:bg-[#2a2a2a]'
-                                }`}
-                              >
-                                {selectedZones.includes(dong) && (
-                                  <Icon icon="mdi:check" className="w-4 h-4" />
-                                )}
-                                <span>{dong}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                    {([
+                      { value: 'confidence-desc', label: '유사도 높은 순' },
+                      { value: 'confidence-asc', label: '유사도 낮은 순' },
+                      { value: 'distance-asc', label: '신고 위치와 가까운 순' },
+                      { value: 'distance-desc', label: '신고 위치와 먼 순' },
+                    ] as { value: SortOption; label: string }[]).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="option"
+                        aria-selected={sortOption === opt.value}
+                        onClick={() => {
+                          setSortOption(opt.value);
+                          setOpenPopover(null);
+                        }}
+                        className={`w-full px-3 py-2 rounded text-xs transition-colors text-left ${
+                          sortOption === opt.value
+                            ? 'bg-blue-500/20 text-blue-300'
+                            : 'text-gray-400 hover:bg-[#2a2a2a]'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-
+            
             {/* 필터 초기화 버튼 */}
             <button
               onClick={() => {
@@ -676,73 +637,12 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               />
             </>
           )}
-          {/* 리스트 상단 고정: 정렬 / 결과 재검색 */}
+          {/* 리스트 상단 고정: 결과 재검색 */}
           <div
-            className="flex items-center justify-between gap-2 flex-shrink-0 px-4 py-3 border-b border-[#31353a]"
+            className="flex items-center justify-end gap-2 flex-shrink-0 px-4 py-3 border-b border-[#31353a]"
             style={{ background: 'rgba(0,0,0,0.2)' }}
           >
-            {/* 정렬 버튼 + 팝오버 (좌측) */}
-            <div className="relative" ref={sortPopoverRef}>
-              <button
-                type="button"
-                onClick={() => setOpenPopover(openPopover === 'sort' ? null : 'sort')}
-                className="px-3 py-2 rounded-lg text-xs font-medium transition-colors text-white bg-[#31353a] hover:bg-[#3d4046] border border-[#31353a] flex items-center gap-2"
-                aria-label="정렬 옵션"
-                aria-expanded={openPopover === 'sort'}
-                aria-haspopup="listbox"
-              >
-                <Icon icon="mdi:sort" className="w-4 h-4 flex-shrink-0" />
-                <span>정렬</span>
-                <span className="text-gray-500">|</span>
-                <span className="text-gray-300">
-                  {sortOption === 'confidence-desc' && '유사도 높은 순'}
-                  {sortOption === 'confidence-asc' && '유사도 낮은 순'}
-                  {sortOption === 'distance-asc' && '신고 위치와 가까운 순'}
-                  {sortOption === 'distance-desc' && '신고 위치와 먼 순'}
-                </span>
-                <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {/* 정렬 옵션 팝오버 */}
-              {openPopover === 'sort' && (
-                <div
-                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-2 shadow-xl border border-[#31353a] z-[250] min-w-[200px]"
-                  role="listbox"
-                  aria-label="정렬 기준 선택"
-                >
-                  <div className="text-gray-400 text-[10px] font-medium px-3 py-1.5 uppercase tracking-wider">정렬 기준</div>
-                  {([
-                    { value: 'confidence-desc', label: '유사도 높은 순' },
-                    { value: 'confidence-asc', label: '유사도 낮은 순' },
-                    { value: 'distance-asc', label: '신고 위치와 가까운 순' },
-                    { value: 'distance-desc', label: '신고 위치와 먼 순' },
-                  ] as { value: SortOption; label: string }[]).map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      role="option"
-                      aria-selected={sortOption === opt.value}
-                      onClick={() => {
-                        setSortOption(opt.value);
-                        setOpenPopover(null);
-                      }}
-                      className={`w-full px-3 py-2 rounded text-xs font-medium transition-colors text-left flex items-center gap-2 ${
-                        sortOption === opt.value
-                          ? 'bg-blue-500 text-white'
-                          : 'text-gray-300 hover:bg-[#2a2a2a]'
-                      }`}
-                    >
-                      {sortOption === opt.value && (
-                        <Icon icon="mdi:check" className="w-4 h-4 flex-shrink-0" />
-                      )}
-                      <span className={sortOption === opt.value ? '' : 'pl-6'}>{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* 결과 재검색 (우측) */}
+            {/* 결과 재검색 */}
             <button
               type="button"
               onClick={() => {
@@ -762,7 +662,61 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             }}
           >
             <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
-            {visibleCaptureList.map((item) => {
+            {showSkeleton ? (
+              // 스켈레톤 로딩 (9개 카드)
+              Array.from({ length: 9 }).map((_, idx) => (
+                <div
+                  key={`skeleton-${idx}`}
+                  className="bg-[#393a42] rounded-lg overflow-hidden flex flex-col"
+                >
+                  {/* 썸네일 스켈레톤 */}
+                  <div className="relative w-full bg-[#2a2b32]" style={{ height: '160px' }}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Icon icon="mdi:image-outline" className="w-12 h-12 text-gray-600" />
+                    </div>
+                  </div>
+                  
+                  {/* 정보 스켈레톤 */}
+                  <div className="flex-1 min-w-0 p-3 space-y-2">
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded"
+                      style={{
+                        animation: `skeleton-width-${idx % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1}s`
+                      }}
+                    ></div>
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded"
+                      style={{
+                        animation: `skeleton-width-${(idx + 1) % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1 + 0.2}s`
+                      }}
+                    ></div>
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded"
+                      style={{
+                        animation: `skeleton-width-${(idx + 2) % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1 + 0.4}s`
+                      }}
+                    ></div>
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded mt-2"
+                      style={{
+                        animation: `skeleton-width-${idx % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1 + 0.6}s`
+                      }}
+                    ></div>
+                  </div>
+                  
+                  {/* 버튼 스켈레톤 */}
+                  <div className="px-3 pb-2 flex gap-1.5">
+                    <div className="flex-1 h-8 bg-[#2a2b32] rounded"></div>
+                    <div className="flex-1 h-8 bg-[#2a2b32] rounded"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              visibleCaptureList.map((item) => {
               const isMatched = matchedIds.has(item.id);
               const isWrong = wrongIds.has(item.id);
               return (
@@ -878,7 +832,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 </div>
               </div>
             );
-            })}
+            })
+            )}
             </div>
           </div>
         </div>
