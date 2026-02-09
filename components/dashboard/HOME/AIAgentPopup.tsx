@@ -169,7 +169,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
         setInputKey((k) => k + 1);
         ignoreNextChangeRef.current = true;
         setIsResponding(true);
-
+        setIsExpanded(true)
         setTimeout(() => {
             const assistantMessage = generateAssistantReply(text);
             setMessages((prev) => [...prev, assistantMessage]);
@@ -180,7 +180,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                     setMessages((prev) => {
                         const updated = prev.map((msg) => {
                             if (msg.id === assistantMessage.id && msg.type === "analyzing") {
-                                const newProgress = Math.min((msg.progress || 0) + 0.02, 1);
+                                const newProgress = Math.min((msg.progress || 0) + 0.05, 1);
                                 return { ...msg, progress: newProgress };
                             }
                             return msg;
@@ -191,7 +191,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
 
                 setTimeout(() => {
                     clearInterval(progressInterval);
-                }, 5000);
+                }, 2000);
             }
         }, 700);
     };
