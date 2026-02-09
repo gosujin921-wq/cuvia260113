@@ -110,17 +110,17 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                     {/* 재검색 단계별 표시 */}
                     {message.id === 're-search-progress' && message.totalSteps === 3 && (
                       <div className="space-y-2 mb-3 text-xs">
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 1 ? 'mdi:check-circle' : message.currentStep === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 1 ? 'animate-spin' : ''}`} />
-                          <span>1. 조건 필터링 {message.currentStep === 1 && '⏳'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
+                          <span>1. 조건 필터링 {(message.currentStep || 0) === 1 && '⏳'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 2 ? 'mdi:check-circle' : message.currentStep === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. 결과 재정렬 {message.currentStep === 2 && '⏳'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                          <span>2. 결과 재정렬 {(message.currentStep || 0) === 2 && '⏳'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 3 ? 'mdi:check-circle' : message.currentStep === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 화면 업데이트 {message.currentStep === 3 && '⏳'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                          <span>3. 화면 업데이트 {(message.currentStep || 0) === 3 && '⏳'}</span>
                         </div>
                       </div>
                     )}
@@ -128,29 +128,29 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                     {/* 고속검색 단계별 표시 */}
                     {message.id === 'fast-search-progress' && message.totalSteps === 5 && (
                       <div className="space-y-2 mb-3 text-xs">
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
-                          <span>1. 사건 위치 기준 검색 범위 설정 {message.currentStep === 1 && '✅'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
+                          <span>1. 사건 위치 기준 검색 범위 설정 {(message.currentStep || 0) === 1 && '✅'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 2 ? 'mdi:check-circle' : message.currentStep === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. CCTV 목록 불러오기 {message.currentStep === 2 && '✅'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                          <span>2. CCTV 목록 불러오기 {(message.currentStep || 0) === 2 && '✅'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 3 ? 'mdi:check-circle' : message.currentStep === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 특징 조건 적용(신고 내용) {message.currentStep === 3 && '⏳'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                          <span>3. 특징 조건 적용(신고 내용) {(message.currentStep || 0) === 3 && '⏳'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 4 ? 'mdi:check-circle' : message.currentStep === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 4 ? 'animate-spin' : ''}`} />
-                          <span>4. 후보 탐색 및 유사도 점수 계산 {message.currentStep === 4 && '…'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
+                          <span>4. 후보 탐색 및 유사도 점수 계산 {(message.currentStep || 0) === 4 && '…'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 5 ? 'mdi:check-circle' : message.currentStep === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 5 ? 'animate-spin' : ''}`} />
-                          <span>5. 결과 정렬 및 화면 준비 {message.currentStep === 5 && '…'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 5 ? 'mdi:check-circle' : (message.currentStep || 0) === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 5 ? 'animate-spin' : ''}`} />
+                          <span>5. 결과 정렬 및 화면 준비 {(message.currentStep || 0) === 5 && '…'}</span>
                         </div>
                         
                         {/* 5단계에서 카메라 카운트 표시 */}
-                        {message.currentStep === 5 && cameraCount > 0 && (
+                        {(message.currentStep || 0) === 5 && cameraCount > 0 && (
                           <div className="mt-2 text-blue-600 font-medium">
                             후보를 탐색하고 있습니다… (카메라 {cameraCount}대 확인 중)
                           </div>
@@ -161,25 +161,25 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                     {/* 객체 추적 단계별 표시 */}
                     {message.id !== 'fast-search-progress' && message.totalSteps === 5 && (
                       <div className="space-y-2 mb-3 text-xs">
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
-                          <span>1. 대표 후보 기준점 설정 {message.currentStep === 1 && '✅'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
+                          <span>1. 대표 후보 기준점 설정 {(message.currentStep || 0) === 1 && '✅'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 2 ? 'mdi:check-circle' : message.currentStep === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. 경로 적합도 기반 재탐색 {message.currentStep === 2 && '⏳'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                          <span>2. 경로 적합도 기반 재탐색 {(message.currentStep || 0) === 2 && '⏳'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 3 ? 'mdi:check-circle' : message.currentStep === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 시간순 정렬 및 경로 연결 {message.currentStep === 3 && '…'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                          <span>3. 시간순 정렬 및 경로 연결 {(message.currentStep || 0) === 3 && '…'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 4 ? 'mdi:check-circle' : message.currentStep === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 4 ? 'animate-spin' : ''}`} />
-                          <span>4. 이동 방향/시간대 반영 {message.currentStep === 4 && '…'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
+                          <span>4. 이동 방향/시간대 반영 {(message.currentStep || 0) === 4 && '…'}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${message.currentStep >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={message.currentStep > 5 ? 'mdi:check-circle' : message.currentStep === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${message.currentStep === 5 ? 'animate-spin' : ''}`} />
-                          <span>5. 다음 포착 후보 CCTV 생성 {message.currentStep === 5 && '…'}</span>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 5 ? 'mdi:check-circle' : (message.currentStep || 0) === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 5 ? 'animate-spin' : ''}`} />
+                          <span>5. 다음 포착 후보 CCTV 생성 {(message.currentStep || 0) === 5 && '…'}</span>
                         </div>
                       </div>
                     )}
@@ -347,7 +347,7 @@ interface ChatInputFormProps {
   setChatInput: (value: string) => void;
   handleSendMessage: () => void;
   isResponding: boolean;
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   inputKey: number;
   ignoreNextChangeRef: React.MutableRefObject<boolean>;
   isExpanded: boolean;
@@ -520,7 +520,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       };
     }
   }, [isObjectTracking]);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome-msg',
@@ -1151,11 +1151,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   );
                 }
               }, 30);
-              
-              // 부모 컴포넌트에 완료 알림
-              if (onObjectTrackingComplete) {
-                onObjectTrackingComplete();
-              }
             }, 500);
           }
         }, totalDuration);

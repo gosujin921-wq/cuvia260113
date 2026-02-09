@@ -731,8 +731,8 @@ const ObjectTrackingMapView = ({
         marker.infoLabel.style.opacity = '0';
         const svg = marker.iconEl.querySelector('svg');
         if (svg) {
-          (svg as HTMLElement).style.filter = 'none';
-          (svg as HTMLElement).style.color = '#60a5fa';
+          (svg as unknown as HTMLElement).style.filter = 'none';
+          (svg as unknown as HTMLElement).style.color = '#60a5fa';
         }
       }
     });
@@ -749,8 +749,8 @@ const ObjectTrackingMapView = ({
         marker.infoLabel.style.opacity = showCCTVLabel ? '1' : '0';
         const svg = marker.iconEl.querySelector('svg');
         if (svg) {
-          (svg as HTMLElement).style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))';
-          (svg as HTMLElement).style.color = '#3b82f6';
+          (svg as unknown as HTMLElement).style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))';
+          (svg as unknown as HTMLElement).style.color = '#3b82f6';
         }
       }
     }
