@@ -19,16 +19,14 @@ interface FastSearchListPanelProps {
   onReSearchClick?: () => void;
   /** 에이전트 "속성 삭제"로 제외할 속성 목록. 해당 속성 이미지 카드는 리스트에서 숨김 */
   excludedAttributes?: string[];
-  /** 후보 상세 > "이 후보 분석하기" 클릭 시 */
-  onAnalyzeCandidate?: (candidate: CaptureItem) => void;
-  /** 후보 상세 > "지도에서 위치 보기" 클릭 시 */
-  onShowOnMap?: (candidate: CaptureItem) => void;
   /** 외부에서 열 후보 ID (예: '42' = qs_img_57_y) */
   openCandidateId?: string | null;
   /** 후보가 열렸을 때 호출 */
   onCandidateOpened?: () => void;
   /** 스켈레톤 로딩 표시 여부 */
   showSkeleton?: boolean;
+  /** 대상 포착 시 호출 */
+  onAddCapture?: (cctvName: string, location: string, confidence: number) => void;
 }
 
 interface CaptureItem {
@@ -92,15 +90,18 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   onReSearchComplete,
   onReSearchClick,
   excludedAttributes = [],
-  onAnalyzeCandidate,
-  onShowOnMap,
   openCandidateId,
   onCandidateOpened,
   showSkeleton = false,
+  onAddCapture,
 }) => {
-  const [radius, setRadius] = useState<number>(300); // 반경 (m)
-  const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60)
+  const [radius, setRadius] = useState<number>(300); // 반경 (m) - 실제 적용된 값
+  const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
   const [selectedZones, setSelectedZones] = useState<string[]>([]); // 다중 선택 구역 (기본값: 전체)
+  
+  // 임시 값 (팝오버에서 선택 중인 값)
+  const [tempRadius, setTempRadius] = useState<number>(300);
+  const [tempTimeRange, setTempTimeRange] = useState<[number, number]>([0, 60]);
   
   // 부천시 행정구역 데이터 (2depth)
   const zoneData = {
@@ -214,8 +215,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     setExpandedGu(prev => prev === gu ? null : gu);
   };
   
-  // 시간 범위 업데이트 (최소 1시간 간격 유지)
-  const updateTimeRange = (newStart: number, newEnd: number, preserveStart: boolean = false, preserveEnd: boolean = false) => {
+  // 시간 범위 업데이트 (최소 1시간 간격 유지) - 임시 값 업데이트
+  const updateTempTimeRange = (newStart: number, newEnd: number, preserveStart: boolean = false, preserveEnd: boolean = false) => {
     const minDiff = 60; // 최소 1시간 (60분)
     const maxTime = 1439; // 23:59
     
@@ -229,7 +230,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
         newStart = Math.max(0, newEnd - minDiff);
       } else {
         // 범위 드래그
-        if (newStart < timeRange[0]) {
+        if (newStart < tempTimeRange[0]) {
           newEnd = newStart + minDiff;
         } else {
           newStart = newEnd - minDiff;
@@ -247,7 +248,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       if (!preserveStart) newStart = Math.max(0, newEnd - minDiff);
     }
     
-    setTimeRange([newStart, newEnd]);
+    setTempTimeRange([newStart, newEnd]);
   };
   
   // 슬라이더 값 계산
@@ -263,7 +264,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     e.stopPropagation();
     isDraggingRef.current = type;
     dragStartXRef.current = e.clientX;
-    dragStartRangeRef.current = [timeRange[0], timeRange[1]];
+    dragStartRangeRef.current = [tempTimeRange[0], tempTimeRange[1]];
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isDraggingRef.current || !sliderTrackRef.current) return;
@@ -271,9 +272,9 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       const newTime = getTimeFromPosition(moveEvent.clientX);
       
       if (isDraggingRef.current === 'start') {
-        updateTimeRange(newTime, timeRange[1], false, true); // 종료점 유지
+        updateTempTimeRange(newTime, tempTimeRange[1], false, true); // 종료점 유지
       } else if (isDraggingRef.current === 'end') {
-        updateTimeRange(timeRange[0], newTime, true, false); // 시작점 유지
+        updateTempTimeRange(tempTimeRange[0], newTime, true, false); // 시작점 유지
       }
     };
     
@@ -292,7 +293,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     e.stopPropagation();
     isDraggingRef.current = 'range';
     dragStartXRef.current = e.clientX;
-    dragStartRangeRef.current = [timeRange[0], timeRange[1]];
+    dragStartRangeRef.current = [tempTimeRange[0], tempTimeRange[1]];
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isDraggingRef.current || !sliderTrackRef.current) return;
@@ -304,7 +305,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       const newEnd = dragStartRangeRef.current[1] + deltaTime;
       
       if (newStart >= 0 && newEnd <= 1439) {
-        updateTimeRange(newStart, newEnd);
+        updateTempTimeRange(newStart, newEnd);
       }
     };
     
@@ -398,7 +399,14 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             {/* 반경 칩 */}
             <div className="relative">
               <button
-                onClick={() => setOpenPopover(openPopover === 'radius' ? null : 'radius')}
+                onClick={() => {
+                  if (openPopover === 'radius') {
+                    setOpenPopover(null);
+                  } else {
+                    setTempRadius(radius);
+                    setOpenPopover('radius');
+                  }
+                }}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -413,28 +421,52 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px]"
                 >
                   <div className="text-white text-sm font-semibold mb-3">검색 반경 설정</div>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="relative">
                       <input
                         type="range"
                         min="100"
                         max="3000"
                         step="100"
-                        value={radius}
-                        onChange={(e) => setRadius(Number(e.target.value))}
+                        value={tempRadius}
+                        onChange={(e) => setTempRadius(Number(e.target.value))}
                         className="w-full h-2 bg-[#0f0f0f] rounded-full appearance-none cursor-pointer slider"
                         style={{
-                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((radius - 100) / 2900) * 100}%, #0f0f0f ${((radius - 100) / 2900) * 100}%, #0f0f0f 100%)`
+                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((tempRadius - 100) / 2900) * 100}%, #0f0f0f ${((tempRadius - 100) / 2900) * 100}%, #0f0f0f 100%)`
                         }}
                       />
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <span>100m</span>
-                      <span className="text-white font-semibold">{radius}m</span>
+                      <span className="text-white font-semibold">{tempRadius}m</span>
                       <span>3000m</span>
                     </div>
-                    <div className="text-[10px] text-gray-400 mt-1">
+                    <div className="text-[10px] text-gray-400">
                       반경을 넓히면 더 많은 CCTV를 탐색하지만 분석 시간이 길어질 수 있습니다.
+                    </div>
+                    
+                    {/* 확인 버튼 */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRadius(tempRadius);
+                          setOpenPopover(null);
+                        }}
+                        className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors"
+                      >
+                        확인
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempRadius(radius);
+                          setOpenPopover(null);
+                        }}
+                        className="px-3 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300 text-xs font-medium rounded transition-colors"
+                      >
+                        취소
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -444,7 +476,14 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             {/* 시간 칩 */}
             <div className="relative">
               <button
-                onClick={() => setOpenPopover(openPopover === 'time' ? null : 'time')}
+                onClick={() => {
+                  if (openPopover === 'time') {
+                    setOpenPopover(null);
+                  } else {
+                    setTempTimeRange([timeRange[0], timeRange[1]]);
+                    setOpenPopover('time');
+                  }
+                }}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -476,8 +515,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                         className="absolute h-2 rounded-full bg-[#3b82f6] cursor-move"
                         onMouseDown={handleRangeMouseDown}
                         style={{
-                          left: `${(timeRange[0] / 1439) * 100}%`,
-                          width: `${((timeRange[1] - timeRange[0]) / 1439) * 100}%`,
+                          left: `${(tempTimeRange[0] / 1439) * 100}%`,
+                          width: `${((tempTimeRange[1] - tempTimeRange[0]) / 1439) * 100}%`,
                           zIndex: 2,
                         }}
                       />
@@ -487,7 +526,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                         className="absolute cursor-grab active:cursor-grabbing"
                         onMouseDown={(e) => handleHandleMouseDown('start', e)}
                         style={{
-                          left: `max(0px, calc(${(timeRange[0] / 1439) * 100}% - 16px))`,
+                          left: `max(0px, calc(${(tempTimeRange[0] / 1439) * 100}% - 16px))`,
                           top: '50%',
                           transform: 'translateY(-50%)',
                           zIndex: 3,
@@ -506,7 +545,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                         className="absolute cursor-grab active:cursor-grabbing"
                         onMouseDown={(e) => handleHandleMouseDown('end', e)}
                         style={{
-                          left: `min(calc(100% - 32px), calc(${(timeRange[1] / 1439) * 100}% - 16px))`,
+                          left: `min(calc(100% - 32px), calc(${(tempTimeRange[1] / 1439) * 100}% - 16px))`,
                           top: '50%',
                           transform: 'translateY(-50%)',
                           zIndex: 3,
@@ -523,11 +562,35 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <span>00:00</span>
-                      <span className="text-white font-semibold">{formatTime(timeRange[0])} ~ {formatTime(timeRange[1])}</span>
+                      <span className="text-white font-semibold">{formatTime(tempTimeRange[0])} ~ {formatTime(tempTimeRange[1])}</span>
                       <span>23:59</span>
                     </div>
                     <div className="text-[10px] text-gray-400 mt-1">
                       시간 범위를 조정하여 검색할 시간대를 선택할 수 있습니다.
+                    </div>
+                    
+                    {/* 확인 버튼 */}
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTimeRange([tempTimeRange[0], tempTimeRange[1]]);
+                          setOpenPopover(null);
+                        }}
+                        className="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors"
+                      >
+                        확인
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempTimeRange([timeRange[0], timeRange[1]]);
+                          setOpenPopover(null);
+                        }}
+                        className="px-3 py-2 bg-[#2a2a2a] hover:bg-[#3a3a3a] text-gray-300 text-xs font-medium rounded transition-colors"
+                      >
+                        취소
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -844,8 +907,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
         isOpen={!!selectedCandidate}
         onClose={() => setSelectedCandidate(null)}
         candidate={selectedCandidate}
-        onAnalyze={onAnalyzeCandidate}
-        onShowOnMap={onShowOnMap}
+        onAddCapture={onAddCapture}
       />
     </>
   );

@@ -7,18 +7,25 @@ interface ObjectTrackingMapViewProps {
   flyToLocation: [number, number] | null; // 지도 이동 좌표
   initialMapState: { center: [number, number]; zoom: number; pitch: number; bearing: number }; // 초기 지도 상태
   onTrackingComplete?: () => void; // 추적 애니메이션 완료 시 콜백
+  onCCTVHover?: (cctvId: string | null, showLabel?: boolean) => void; // CCTV 마커 호버 시 콜백
+  hoveredCCTVId?: string | null; // 외부에서 전달받은 호버 CCTV ID
+  showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
 }
 
 const ObjectTrackingMapView = ({ 
   visibleTrackingPins, 
   flyToLocation,
   initialMapState,
-  onTrackingComplete
+  onTrackingComplete,
+  onCCTVHover,
+  hoveredCCTVId,
+  showCCTVLabel = false
 }: ObjectTrackingMapViewProps) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const zoomOutTriggeredRef = useRef<boolean>(false);
   const initialMapStateRef = useRef(initialMapState);
+  const cctvMarkersRef = useRef<Map<string, { container: HTMLElement; el: HTMLElement; iconEl: HTMLElement; infoLabel: HTMLElement }>>(new Map());
 
   // 지도 초기화 (한 번만)
   useEffect(() => {
@@ -97,10 +104,10 @@ const ObjectTrackingMapView = ({
     
     // 모든 추적 핀 정의
     const allTrackingPins = [
-      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '춘의동 125-46', name: '초기 목격 지점', color: 'gray' },
-      { location: [126.7843434, 37.5042779] as [number, number], address: '춘의동 126-18', name: '원미A-498', color: 'gray' },
-      { location: [126.7828196, 37.50501939999999] as [number, number], address: '춘의동 125-46', name: '원미A-444', color: 'gray' },
-      { location: [126.7828168, 37.504067] as [number, number], address: '춘의동 125-32', name: '원미A-481', color: 'red' },
+      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '춘의동 125-46', name: '원미A-230', color: 'gray' },
+      { location: [126.7843434, 37.5042779] as [number, number], address: '춘의동 126-18', name: '원미A-444', color: 'gray' },
+      { location: [126.7828196, 37.50501939999999] as [number, number], address: '춘의동 125-46', name: '원미A-481', color: 'gray' },
+      { location: [126.7828168, 37.504067] as [number, number], address: '춘의동 125-32', name: '원미A-498', color: 'red' },
     ];
     
     const initPins = () => {
@@ -464,7 +471,24 @@ const ObjectTrackingMapView = ({
           });
           
           // 블루 CCTV 마커 추가 (4번 핀 근처)
-          blueCCTV.forEach((location) => {
+          // CCTV 정보 배열 (예측 CCTV 리스트와 동일)
+          const cctvInfoList = [
+            { cctvName: '원미A-583', location: '원미구 춘의동 125-32', confidence: 92 },
+            { cctvName: '원미A-604', location: '원미구 춘의동 125-32', confidence: 88 },
+            { cctvName: '원미A-621', location: '원미구 춘의동 125-32', confidence: 85 },
+            { cctvName: '원미A-638', location: '원미구 춘의동 125-32', confidence: 83 },
+            { cctvName: '원미A-655', location: '원미구 춘의동 125-32', confidence: 80 },
+            { cctvName: '원미A-672', location: '원미구 춘의동 125-32', confidence: 78 },
+            { cctvName: '원미A-689', location: '원미구 춘의동 125-32', confidence: 75 },
+            { cctvName: '원미A-706', location: '원미구 춘의동 125-32', confidence: 73 },
+            { cctvName: '원미A-723', location: '원미구 춘의동 125-32', confidence: 70 },
+            { cctvName: '원미A-740', location: '원미구 춘의동 125-32', confidence: 68 },
+          ];
+          
+          blueCCTV.forEach((location, index) => {
+            const cctvId = String(index + 1); // 1~10
+            const cctvInfo = cctvInfoList[index];
+            
             const markerContainer = document.createElement('div');
             markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
             
@@ -482,15 +506,65 @@ const ObjectTrackingMapView = ({
               backdrop-filter: blur(4px);
               position: relative;
               z-index: 50;
+              cursor: pointer;
+              transition: all 0.2s ease;
             `;
             
             const iconEl = document.createElement('div');
             iconEl.innerHTML = `
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #60a5fa;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #60a5fa; transition: all 0.2s ease;">
                 <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
               </svg>
             `;
             el.appendChild(iconEl);
+            
+            // 정보 라벨 생성 (처음에는 숨김)
+            const infoLabel = document.createElement('div');
+            infoLabel.style.cssText = `
+              margin-top: 8px;
+              padding: 8px 12px;
+              border-radius: 8px;
+              background: rgba(15, 15, 15, 0.95);
+              border: 1px solid #31353a;
+              white-space: nowrap;
+              z-index: 9999;
+              opacity: 0;
+              pointer-events: none;
+              transition: opacity 0.2s ease;
+            `;
+            infoLabel.innerHTML = `
+              <div style="font-size: 13px; font-weight: 600; color: white; margin-bottom: 4px;">${cctvInfo.cctvName}</div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">${cctvInfo.location}</div>
+              <div style="font-size: 11px; color: #60a5fa;">경로 적합도: ${cctvInfo.confidence}점</div>
+            `;
+            markerContainer.appendChild(infoLabel);
+            
+            // 호버 이벤트 추가
+            markerContainer.addEventListener('mouseenter', () => {
+              el.style.transform = 'scale(1.5)';
+              el.style.zIndex = '9999';
+              el.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)';
+              iconEl.querySelector('svg')!.style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))';
+              iconEl.querySelector('svg')!.style.color = '#3b82f6';
+              infoLabel.style.opacity = '1';
+              if (onCCTVHover) {
+                console.log('[ObjectTrackingMapView] CCTV 마커 호버:', cctvId);
+                onCCTVHover(cctvId, true); // showLabel = true
+              }
+            });
+            
+            markerContainer.addEventListener('mouseleave', () => {
+              el.style.transform = 'scale(1)';
+              el.style.zIndex = '50';
+              el.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+              iconEl.querySelector('svg')!.style.filter = 'none';
+              iconEl.querySelector('svg')!.style.color = '#60a5fa';
+              infoLabel.style.opacity = '0';
+              if (onCCTVHover) {
+                console.log('[ObjectTrackingMapView] CCTV 마커 호버 해제');
+                onCCTVHover(null, false);
+              }
+            });
             
             markerContainer.appendChild(el);
             
@@ -502,6 +576,9 @@ const ObjectTrackingMapView = ({
             if (markerElement) {
               markerElement.style.zIndex = '50';
             }
+            
+            // 마커 참조 저장 (외부 호버용)
+            cctvMarkersRef.current.set(cctvId, { container: markerContainer, el, iconEl, infoLabel });
             
             markers.push(marker);
           });
@@ -521,6 +598,43 @@ const ObjectTrackingMapView = ({
     waitForMapAndAddPulse();
   }, [visibleTrackingPins, onTrackingComplete]);
 
+  // 외부 호버 상태에 따라 CCTV 마커 하이라이트
+  useEffect(() => {
+    console.log('[ObjectTrackingMapView] 외부 호버 상태 변경:', hoveredCCTVId, 'showLabel:', showCCTVLabel);
+    
+    // 모든 마커 초기화
+    cctvMarkersRef.current.forEach((marker, id) => {
+      if (id !== hoveredCCTVId) {
+        marker.el.style.transform = 'scale(1)';
+        marker.el.style.zIndex = '50';
+        marker.el.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+        marker.infoLabel.style.opacity = '0';
+        const svg = marker.iconEl.querySelector('svg');
+        if (svg) {
+          (svg as HTMLElement).style.filter = 'none';
+          (svg as HTMLElement).style.color = '#60a5fa';
+        }
+      }
+    });
+
+    // 호버된 마커 하이라이트
+    if (hoveredCCTVId) {
+      const marker = cctvMarkersRef.current.get(hoveredCCTVId);
+      if (marker) {
+        console.log('[ObjectTrackingMapView] 마커 하이라이트:', hoveredCCTVId);
+        marker.el.style.transform = 'scale(1.5)';
+        marker.el.style.zIndex = '9999';
+        marker.el.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)';
+        // showCCTVLabel이 true일 때만 라벨 표시
+        marker.infoLabel.style.opacity = showCCTVLabel ? '1' : '0';
+        const svg = marker.iconEl.querySelector('svg');
+        if (svg) {
+          (svg as HTMLElement).style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))';
+          (svg as HTMLElement).style.color = '#3b82f6';
+        }
+      }
+    }
+  }, [hoveredCCTVId, showCCTVLabel]);
 
   return (
     <div 

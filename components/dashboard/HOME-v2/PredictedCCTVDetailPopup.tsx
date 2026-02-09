@@ -37,6 +37,13 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   const [videoSrc, setVideoSrc] = useState<string>('');
   const [isRouteScoreOpen, setIsRouteScoreOpen] = useState(false);
   const [isCaptureAnimating, setIsCaptureAnimating] = useState(false);
+  const [flyingThumbnail, setFlyingThumbnail] = useState<{
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    imageData: string;
+  } | null>(null);
 
   // 현재 시간 업데이트 (라이브)
   useEffect(() => {
@@ -155,13 +162,54 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   };
 
   const handleCaptureTarget = () => {
-    if (!cctv) return;
+    if (!cctv || !videoRef.current || !videoContainerRef.current) return;
     
     setIsCaptureAnimating(true);
     
-    // 포착 목록에 추가
-    if (onAddCapture) {
-      onAddCapture(cctv.cctvName, cctv.location, cctv.confidence);
+    // 비디오에서 썸네일 캡처
+    const canvas = document.createElement('canvas');
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      
+      // 비디오 컨테이너의 위치 가져오기
+      const rect = videoContainerRef.current.getBoundingClientRect();
+      
+      // 포착 목록 메뉴 위치 찾기 (원래 메뉴 또는 오버레이에서)
+      const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
+      let endX = 40;
+      let endY = 250;
+      
+      if (captureMenuButton) {
+        const menuRect = captureMenuButton.getBoundingClientRect();
+        endX = menuRect.left + menuRect.width / 2;
+        endY = menuRect.top + menuRect.height / 2;
+      }
+      
+      // 날아가는 썸네일 시작
+      setFlyingThumbnail({
+        startX: rect.left + rect.width / 2,
+        startY: rect.top + rect.height / 2,
+        endX,
+        endY,
+        imageData,
+      });
+      
+      // 포착 목록에 추가 (썸네일 애니메이션 시작 후)
+      setTimeout(() => {
+        if (onAddCapture) {
+          onAddCapture(cctv.cctvName, cctv.location, cctv.confidence);
+        }
+      }, 300);
+      
+      // 썸네일 애니메이션 종료
+      setTimeout(() => {
+        setFlyingThumbnail(null);
+      }, 600);
     }
     
     setTimeout(() => {
@@ -170,13 +218,14 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
-      role="dialog"
-      aria-modal="true"
-      aria-label="예측 CCTV 상세"
-      onClick={handleOverlayClick}
-    >
+    <>
+      <div
+        className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
+        role="dialog"
+        aria-modal="true"
+        aria-label="예측 CCTV 상세"
+        onClick={handleOverlayClick}
+      >
       <div
         className="gradient-border-right-bottom w-full flex flex-col rounded-lg shadow-lg overflow-hidden"
         style={{
@@ -417,7 +466,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
         </div>
 
         {/* 푸터 - 고정 */}
-        <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
+        <div className="flex items-center justify-end px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
           <button
             type="button"
             onClick={handleCaptureTarget}
@@ -430,17 +479,34 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
             <Icon icon="mdi:account-check" className="w-3.5 h-3.5" />
             대상 발견
           </button>
-          <button
-            type="button"
-            className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#31353a] hover:border-[#3d4046] transition-all focus:outline-none focus:ring-2 focus:ring-gray-400/50 flex items-center gap-1.5"
-            aria-label="지도에서 위치 보기"
-          >
-            <Icon icon="mdi:map-marker" className="w-3.5 h-3.5" />
-            지도에서 위치 보기
-          </button>
         </div>
       </div>
     </div>
+
+    {/* 날아가는 썸네일 애니메이션 */}
+    {flyingThumbnail && (
+      <div
+        className="fixed pointer-events-none z-[10001]"
+        style={{
+          left: `${flyingThumbnail.startX}px`,
+          top: `${flyingThumbnail.startY}px`,
+          transform: 'translate(-50%, -50%)',
+        }}
+      >
+        <img
+          src={flyingThumbnail.imageData}
+          alt="캡처 썸네일"
+          className="w-32 h-20 object-cover rounded-lg shadow-2xl"
+          style={{
+            boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',
+            animation: `fly-to-menu-dynamic 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
+            '--end-x': `${flyingThumbnail.endX - flyingThumbnail.startX}px`,
+            '--end-y': `${flyingThumbnail.endY - flyingThumbnail.startY}px`,
+          } as React.CSSProperties}
+        />
+      </div>
+    )}
+  </>
   );
 };
 

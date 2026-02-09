@@ -701,42 +701,48 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         id: 'A-230',
         name: '원미A-230',
         location: [126.784245, 37.5056784],
-        cameras: ['고정1', '고정2', '고정3', '고정4']
+        cameras: ['고정1', '고정2', '고정3', '고정4'],
+        directions: [0, 90, 180, 270]
       },
       {
         id: 'A-444',
         name: '원미A-444',
         location: [126.7828196, 37.50501939999999],
-        cameras: ['검지1', '검지2', '검지3']
+        cameras: ['검지1', '검지2', '검지3'],
+        directions: [45, 135, 225]
       },
       {
         id: 'A-481',
         name: '원미A-481',
         location: [126.7828168, 37.504067],
-        cameras: ['검지1', '검지2', '검지3', '검지4']
+        cameras: ['검지1', '검지2', '검지3', '검지4'],
+        directions: [0, 90, 180, 270]
       },
       {
         id: 'A-498',
         name: '원미A-498',
         location: [126.7843434, 37.5042779],
-        cameras: ['검지1', '검지2', '검지3', '검지4']
+        cameras: ['검지1', '검지2', '검지3', '검지4'],
+        directions: [45, 135, 225, 315]
       },
       {
         id: 'A-583',
         name: '원미A-583',
         location: [126.7839366, 37.5057328],
-        cameras: ['검지1 원미', '검지2 원미', '검지3 원미']
+        cameras: ['검지1 원미', '검지2 원미', '검지3 원미'],
+        directions: [60, 150, 240]
       },
       {
         id: 'A-604',
         name: '원미A-604',
         location: [126.7858121, 37.5047548],
-        cameras: ['검지1', '검지2']
+        cameras: ['검지1', '검지2'],
+        directions: [90, 270]
       }
     ];
     
     // 모든 CCTV 위치 계산
-    const cctvPositions: Array<{ lng: number; lat: number; name: string; groupId: string }> = [];
+    const cctvPositions: Array<{ lng: number; lat: number; name: string; groupId: string; direction: number }> = [];
     
     cctvGroups.forEach(group => {
       const offsets = getScatteredOffsets(group.cameras.length);
@@ -745,19 +751,52 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           lng: group.location[0] + offsets[index].lngOffset,
           lat: group.location[1] + offsets[index].latOffset,
           name: `${group.name} ${camera}`,
-          groupId: group.id
+          groupId: group.id,
+          direction: group.directions[index] || 0
         });
       });
     });
     
     // 간단한 CCTV 아이콘 생성
-    const createSimpleCCTV = (name: string) => {
+    const createSimpleCCTV = (name: string, direction: number = 0) => {
       const el = document.createElement('div');
       el.style.cssText = `
         display: flex;
         flex-direction: column;
         align-items: center;
       `;
+      
+      // 시야각 컨테이너 (아이콘 뒤)
+      const iconContainer = document.createElement('div');
+      iconContainer.style.cssText = `
+        position: relative;
+        width: 24px;
+        height: 24px;
+      `;
+      
+      // 시야각 (아이콘 뒤에 배치)
+      if (showCCTVViewAngle) {
+        const viewAngleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        viewAngleSvg.style.cssText = `
+          position: absolute;
+          width: 80px;
+          height: 80px;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(${direction - 90}deg);
+          pointer-events: none;
+          z-index: 0;
+        `;
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M 40 40 L 20 10 A 35 35 0 0 1 60 10 Z');
+        path.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
+        path.setAttribute('stroke', 'rgba(59, 130, 246, 0.4)');
+        path.setAttribute('stroke-width', '1.5');
+        
+        viewAngleSvg.appendChild(path);
+        iconContainer.appendChild(viewAngleSvg);
+      }
       
       const icon = document.createElement('div');
       icon.style.cssText = `
@@ -770,6 +809,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         align-items: center;
         justify-content: center;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        position: relative;
+        z-index: 1;
       `;
       
       icon.innerHTML = `
@@ -778,21 +819,25 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         </svg>
       `;
       
-      el.appendChild(icon);
+      iconContainer.appendChild(icon);
+      el.appendChild(iconContainer);
       
-      const label = document.createElement('div');
-      label.style.cssText = `
-        margin-top: 4px;
-        padding: 2px 6px;
-        background: rgba(26, 26, 26, 0.95);
-        border: 1px solid rgb(107, 114, 128);
-        border-radius: 4px;
-        color: white;
-        font-size: 10px;
-        white-space: nowrap;
-      `;
-      label.textContent = name;
-      el.appendChild(label);
+      // 라벨
+      if (showCCTVName) {
+        const label = document.createElement('div');
+        label.style.cssText = `
+          margin-top: 4px;
+          padding: 2px 6px;
+          background: rgba(26, 26, 26, 0.95);
+          border: 1px solid rgb(107, 114, 128);
+          border-radius: 4px;
+          color: white;
+          font-size: 10px;
+          white-space: nowrap;
+        `;
+        label.textContent = name;
+        el.appendChild(label);
+      }
       
       return el;
     };
@@ -874,7 +919,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     // 개별 CCTV 마커 생성
     const newIndividualMarkers = cctvPositions.map((pos) => {
       const marker = new maplibregl.Marker({
-        element: createSimpleCCTV(pos.name),
+        element: createSimpleCCTV(pos.name, pos.direction),
         anchor: 'center'
       })
         .setLngLat([pos.lng, pos.lat] as [number, number]);
@@ -952,7 +997,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       };
     }
     
-  }, [showFastSearchList]);
+  }, [showFastSearchList, showCCTVName, showCCTVViewAngle]);
 
   // 고속검색 반경 원 마커 생성 - 실제 지도 좌표에 고정, 바닥에 눕힘
   useEffect(() => {
@@ -1672,94 +1717,90 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
        )}
 
 
-       {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
-       {(!hideControls || showFastSearchList) && (
-       <div 
-         className="absolute top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
-         style={{ 
-           left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
-           zIndex: 250,
-           transform: 'translateY(-50%)',
-         }}
-         onClick={(e) => e.stopPropagation()}
-       >
-         {showCCTV && (
-           <button
-             onClick={(e) => {
-               e.stopPropagation();
-               const newValue = !showCCTVName;
-               setShowCCTVName(newValue);
-               if (typeof window !== 'undefined') {
-                 localStorage.setItem('cctv-show-name', newValue.toString());
-               }
-             }}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-              showCCTVName 
-                ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-[0_0_15px_rgba(251,146,60,0.5)]' 
-                : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]'
-            }`}
-             style={{ borderWidth: '1px', borderColor: 'rgba(59, 130, 246, 0.3)' }}
-             aria-label="CCTV 명 켜기"
-           >
-             <Icon icon="mdi:label" className="w-5 h-5" />
-           </button>
-         )}
-         
-         <button
-           onClick={(e) => {
-             e.stopPropagation();
-             const newValue = !showCCTV;
-             setShowCCTV(newValue);
-             if (newValue) {
-               setShowCCTVViewAngle(true);
-               setShowCCTVName(true);
-             } else {
-               setShowCCTVViewAngle(false);
-               setShowCCTVName(false);
-             }
-             if (typeof window !== 'undefined') {
-               localStorage.setItem('cctv-show-cctv', newValue.toString());
-               localStorage.setItem('cctv-show-view-angle', newValue.toString());
-               localStorage.setItem('cctv-show-name', newValue.toString());
-             }
-           }}
+      {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
+      {(!hideControls || showFastSearchList) && (
+      <div 
+        className="absolute bottom-[calc(50%-140px)] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+        style={{ 
+          left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
+          zIndex: 250,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* CCTV 아이콘 토글 */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const newValue = !showCCTV;
+            setShowCCTV(newValue);
+            if (newValue) {
+              setShowCCTVViewAngle(true);
+              setShowCCTVName(true);
+            } else {
+              setShowCCTVViewAngle(false);
+              setShowCCTVName(false);
+            }
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('cctv-show-cctv', newValue.toString());
+              localStorage.setItem('cctv-show-view-angle', newValue.toString());
+              localStorage.setItem('cctv-show-name', newValue.toString());
+            }
+          }}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
             showCCTV 
-              ? 'bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6),0_0_40px_rgba(59,130,246,0.3)] ring-2 ring-[rgba(59,130,246,0.3)]' 
-              : 'bg-gradient-to-br from-[#2a2a2a] via-[#1a1a1a] to-[#0f0f0f] hover:from-[#3a3a3a] hover:via-[#2a2a2a] hover:to-[#1a1a1a] text-gray-300 border-2 hover:shadow-[0_0_20px_rgba(59,130,246,0.5),0_0_40px_rgba(59,130,246,0.2)]'
+              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
           }`}
-           style={{ 
-             borderWidth: showCCTV ? '0px' : '2px', 
-             borderColor: 'rgba(59, 130, 246, 0.3)'
-           }}
-           aria-label="CCTV"
-         >
-           <CCTVIcon className={`w-5 h-5 text-white ${showCCTV ? 'drop-shadow-lg' : ''}`} />
-         </button>
-         
-         {showCCTV && (
-           <button
-             onClick={(e) => {
-               e.stopPropagation();
-               const newValue = !showCCTVViewAngle;
-               setShowCCTVViewAngle(newValue);
-               if (typeof window !== 'undefined') {
-                 localStorage.setItem('cctv-show-view-angle', newValue.toString());
-               }
-             }}
+          aria-label="CCTV"
+        >
+          <CCTVIcon className="w-5 h-5" />
+        </button>
+        
+        {/* CCTV 라벨 토글 */}
+        {showCCTV && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newValue = !showCCTVName;
+              setShowCCTVName(newValue);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cctv-show-name', newValue.toString());
+              }
+            }}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              showCCTVName 
+                ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
+                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+            }`}
+            aria-label="CCTV 라벨"
+          >
+            <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? 'text-blue-600' : 'text-gray-800'}`} />
+          </button>
+        )}
+        
+        {/* 시야각 토글 */}
+        {showCCTV && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newValue = !showCCTVViewAngle;
+              setShowCCTVViewAngle(newValue);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cctv-show-view-angle', newValue.toString());
+              }
+            }}
             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               showCCTVViewAngle 
-                ? 'bg-green-600 hover:bg-green-700 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]' 
-                : 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]'
+                ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
+                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
             }`}
-             style={{ borderWidth: '1px', borderColor: 'rgba(59, 130, 246, 0.3)' }}
-             aria-label="시야각 켜기"
-           >
-             <Icon icon="mdi:angle-acute" className="w-5 h-5" />
-           </button>
-         )}
-       </div>
-       )}
+            aria-label="CCTV 시야각"
+          >
+            <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
+          </button>
+        )}
+      </div>
+      )}
 
       {/* 지도 - 박스 밖으로 */}
       <div

@@ -699,3 +699,55 @@ input[type="range"].slider::-moz-range-thumb {
 .animate-capture-badge-pop {
   animation: capture-badge-pop 0.8s ease-out;
 }
+
+/* 포착 아이콘 바운스 애니메이션 */
+@keyframes icon-bounce {
+  0% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.15);
+  }
+  30% {
+    transform: scale(0.95);
+  }
+  45% {
+    transform: scale(1.1);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  75% {
+    transform: scale(1.05);
+  }
+  90% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-icon-bounce {
+  animation: icon-bounce 0.8s ease-out;
+}
+
+/* 썸네일이 포착 목록 메뉴로 날아가는 애니메이션 (동적 위치) */
+@keyframes fly-to-menu-dynamic {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(calc(-50% + var(--end-x) * 0.7), calc(-50% + var(--end-y) * 0.7)) scale(0.6);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(calc(-50% + var(--end-x) * 0.8), calc(-50% + var(--end-y) * 0.8)) scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(0.4);
+    opacity: 0;
+  }
+}

@@ -17,6 +17,19 @@ export interface CaptureItem {
   videoUrl?: string;
   memo?: string;
   trackingPinNumber?: number; // 몇 번 핀에서 포착되었는지 (1~4)
+  analysisResult?: {
+    conclusion: string;
+    summary: {
+      time: string;
+      location: string;
+      personnel: string;
+      features?: string;
+      status: string;
+      riskLevel: string;
+    };
+    evidence: string[];
+    recommendations: string[];
+  };
 }
 
 const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
@@ -50,6 +63,130 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
 
   return (
     <>
+      {/* 포착 상세 팝업 */}
+      {selectedCapture && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]"
+          onClick={() => setSelectedCapture(null)}
+        >
+          <div
+            className="bg-[#1a1a1a] rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#31353a]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
+                  <Icon icon="mdi:cctv" className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{selectedCapture.cctvName}</h3>
+                  <p className="text-sm text-gray-400">{selectedCapture.location} · {selectedCapture.timestamp}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedCapture(null)}
+                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#2a2a2a] rounded-lg transition-colors"
+              >
+                <Icon icon="mdi:close" className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 컨텐츠 */}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-2 gap-6">
+                {/* 영상 영역 */}
+                <div className="space-y-4">
+                  <div className="bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                    {selectedCapture.videoUrl ? (
+                      <video
+                        src={selectedCapture.videoUrl}
+                        controls
+                        className="w-full h-full"
+                        poster={selectedCapture.thumbnailUrl}
+                      />
+                    ) : (
+                      <img
+                        src={selectedCapture.thumbnailUrl}
+                        alt={selectedCapture.cctvName}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* 분석 결과 영역 */}
+                <div className="space-y-4">
+                  {selectedCapture.analysisResult ? (
+                    <>
+                      {/* 한 줄 결론 */}
+                      <div className="bg-[#2a2a2a] border border-[#31353a] rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-500" />
+                          <h4 className="text-white font-semibold text-sm">1. 한 줄 결론</h4>
+                        </div>
+                        <p className="text-gray-300 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedCapture.analysisResult.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                      </div>
+
+                      {/* 사건 요약 */}
+                      <div className="bg-[#2a2a2a] border border-[#31353a] rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-500" />
+                          <h4 className="text-white font-semibold text-sm">2. 사건 요약</h4>
+                        </div>
+                        <div className="space-y-1.5 text-sm">
+                          <div className="text-gray-300">
+                            <span className="text-gray-400">- 관측 시간대:</span> {selectedCapture.analysisResult.summary.time}
+                          </div>
+                          <div className="text-gray-300">
+                            <span className="text-gray-400">- 위치/카메라:</span> {selectedCapture.analysisResult.summary.location}
+                          </div>
+                          <div className="text-gray-300">
+                            <span className="text-gray-400">- 대상 인물(추정):</span> {selectedCapture.analysisResult.summary.personnel}
+                          </div>
+                          {selectedCapture.analysisResult.summary.features && (
+                            <div className="text-gray-300">
+                              <span className="text-gray-400">- 주요 특징:</span> {selectedCapture.analysisResult.summary.features}
+                            </div>
+                          )}
+                          <div className="text-gray-300">
+                            <span className="text-gray-400">- 행동 상태:</span> {selectedCapture.analysisResult.summary.status}
+                          </div>
+                          <div className="text-gray-300">
+                            <span className="text-gray-400">- 위험도:</span> <span dangerouslySetInnerHTML={{ __html: selectedCapture.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 관측 근거 (요약) */}
+                      <div className="bg-[#2a2a2a] border border-[#31353a] rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-500" />
+                          <h4 className="text-white font-semibold text-sm">3. 관측 근거 (요약)</h4>
+                        </div>
+                        <ul className="space-y-1.5">
+                          {selectedCapture.analysisResult.evidence.map((item, idx) => (
+                            <li key={idx} className="text-gray-300 text-sm leading-relaxed flex items-start">
+                              <span className="text-gray-500 mr-2">-</span>
+                              <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-[#2a2a2a] border border-[#31353a] rounded-lg p-6 flex flex-col items-center justify-center text-gray-400">
+                      <Icon icon="mdi:information-outline" className="w-12 h-12 mb-3 opacity-50" />
+                      <p className="text-sm">분석 결과가 없습니다.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         className={`absolute top-0 bottom-0 flex flex-col transition-all duration-500 ease-out ${
           isVisible ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 pointer-events-none'

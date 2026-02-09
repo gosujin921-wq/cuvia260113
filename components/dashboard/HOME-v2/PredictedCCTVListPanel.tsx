@@ -6,6 +6,8 @@ interface PredictedCCTVListPanelProps {
   isVisible: boolean;
   width?: number;
   onAddCapture?: (cctvName: string, location: string, confidence: number) => void;
+  hoveredCCTVId?: string | null;
+  onCCTVHover?: (cctvId: string | null) => void;
 }
 
 export interface PredictedCCTVItem {
@@ -23,7 +25,7 @@ export interface PredictedCCTVItem {
 const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '1',
-    cctvName: '춘의동 125-32 CCTV-1',
+    cctvName: '원미A-583',
     location: '원미구 춘의동 125-32',
     distance: 15,
     predictedTime: '09:35:15',
@@ -33,7 +35,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '2',
-    cctvName: '춘의동 125-32 CCTV-2',
+    cctvName: '원미A-604',
     location: '원미구 춘의동 125-32',
     distance: 20,
     predictedTime: '09:35:30',
@@ -43,7 +45,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '3',
-    cctvName: '춘의동 125-32 CCTV-3',
+    cctvName: '원미A-621',
     location: '원미구 춘의동 125-32',
     distance: 18,
     predictedTime: '09:35:45',
@@ -53,7 +55,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '4',
-    cctvName: '춘의동 125-32 CCTV-4',
+    cctvName: '원미A-638',
     location: '원미구 춘의동 125-32',
     distance: 22,
     predictedTime: '09:36:00',
@@ -63,7 +65,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '5',
-    cctvName: '춘의동 125-32 CCTV-5',
+    cctvName: '원미A-655',
     location: '원미구 춘의동 125-32',
     distance: 25,
     predictedTime: '09:36:15',
@@ -73,7 +75,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '6',
-    cctvName: '춘의동 125-32 CCTV-6',
+    cctvName: '원미A-672',
     location: '원미구 춘의동 125-32',
     distance: 25,
     predictedTime: '09:36:30',
@@ -83,7 +85,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '7',
-    cctvName: '춘의동 125-32 CCTV-7',
+    cctvName: '원미A-689',
     location: '원미구 춘의동 125-32',
     distance: 28,
     predictedTime: '09:36:45',
@@ -93,7 +95,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '8',
-    cctvName: '춘의동 125-32 CCTV-8',
+    cctvName: '원미A-706',
     location: '원미구 춘의동 125-32',
     distance: 30,
     predictedTime: '09:37:00',
@@ -103,7 +105,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '9',
-    cctvName: '춘의동 125-32 CCTV-9',
+    cctvName: '원미A-723',
     location: '원미구 춘의동 125-32',
     distance: 32,
     predictedTime: '09:37:15',
@@ -113,7 +115,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '10',
-    cctvName: '춘의동 125-32 CCTV-10',
+    cctvName: '원미A-740',
     location: '원미구 춘의동 125-32',
     distance: 30,
     predictedTime: '09:37:30',
@@ -127,11 +129,17 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   isVisible,
   width = 700,
   onAddCapture,
+  hoveredCCTVId: externalHoveredCCTVId,
+  onCCTVHover,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
   const [openPopover, setOpenPopover] = useState<'sort' | null>(null);
   const sortPopoverRef = React.useRef<HTMLDivElement>(null);
+  const cctvMarkersRef = React.useRef<Map<string, HTMLElement>>(new Map());
+  
+  // 외부에서 받은 hoveredCCTVId 사용
+  const hoveredCCTVId = externalHoveredCCTVId;
   
   // 팝오버 외부 클릭 감지
   React.useEffect(() => {
@@ -146,6 +154,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [openPopover]);
+
 
   return (
     <>
@@ -301,7 +310,11 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                   <div
                     key={item.id}
                     onClick={() => setSelectedCCTV(item)}
-                    className="relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group"
+                    onMouseEnter={() => onCCTVHover?.(item.id)}
+                    onMouseLeave={() => onCCTVHover?.(null)}
+                    className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group ${
+                      hoveredCCTVId === item.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-105' : ''
+                    }`}
                   >
                     {/* 썸네일 - CCTV 영상 */}
                     <div className="relative w-full bg-black" style={{ paddingTop: '56.25%' }}>

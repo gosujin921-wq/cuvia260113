@@ -21,16 +21,14 @@ interface FastSearchCandidateDetailPopupProps {
   isOpen: boolean;
   onClose: () => void;
   candidate: CandidateCard | null;
-  onAnalyze?: (candidate: CandidateCard) => void;
-  onShowOnMap?: (candidate: CandidateCard) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number) => void;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
   isOpen,
   onClose,
   candidate,
-  onAnalyze,
-  onShowOnMap,
+  onAddCapture,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -417,6 +415,18 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleCaptureTarget = () => {
+    if (!candidate) return;
+    
+    // 포착 목록에 바로 추가
+    if (onAddCapture) {
+      onAddCapture(candidate.cctvName, candidate.location, candidate.confidence);
+    }
+    
+    // 팝업 닫기
+    onClose();
+  };
+
   if (!isOpen || !candidate) return null;
 
   const imageId = getImageIdFromCaptureItem(candidate);
@@ -442,6 +452,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   };
 
   return (
+    <>
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
       role="dialog"
@@ -891,37 +902,23 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         </div>
 
         {/* 푸터 - 고정 */}
-        <div className="flex flex-wrap items-center justify-end gap-2 px-4 py-3 flex-shrink-0 border-t border-[#31353a] bg-[#0a0a0a]/50" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+        <div className="flex items-center justify-end px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
           <button
             type="button"
-            onClick={() => {
-              onAnalyze?.(candidate);
-              onClose();
-            }}
+            onClick={handleCaptureTarget}
             className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-1.5"
             style={{
               background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             }}
-            aria-label="이 후보 분석하기"
+            aria-label="대상 포착"
           >
-            <Icon icon="mdi:chart-line" className="w-3.5 h-3.5" />
-            이 후보 분석하기
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onShowOnMap?.(candidate);
-              onClose();
-            }}
-            className="px-4 py-2 rounded-lg text-xs font-medium text-white bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#31353a] hover:border-[#3d4046] transition-all focus:outline-none focus:ring-2 focus:ring-gray-400/50 flex items-center gap-1.5"
-            aria-label="지도에서 위치 보기"
-          >
-            <Icon icon="mdi:map-marker" className="w-3.5 h-3.5" />
-            지도에서 위치 보기
+            <Icon icon="mdi:account-check" className="w-3.5 h-3.5" />
+            대상 포착
           </button>
         </div>
       </div>
     </div>
+    </>
   );
 };
 

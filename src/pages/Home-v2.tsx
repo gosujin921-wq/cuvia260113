@@ -228,6 +228,8 @@ export default function HomeV2() {
     pitch: 60,
     bearing: -17.6
   });
+  const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
+  const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -289,7 +291,7 @@ export default function HomeV2() {
   }, []);
 
   // 포착 아이템 추가 핸들러
-  const handleAddCaptureItem = useCallback((cctvName: string, location: string, confidence: number) => {
+  const handleAddCaptureItem = useCallback((cctvName: string, location: string, confidence: number, analysisResult?: any) => {
     const newItem: CaptureItem = {
       id: `capture-${Date.now()}`,
       cctvName,
@@ -300,6 +302,8 @@ export default function HomeV2() {
         second: '2-digit',
       }),
       thumbnailUrl: '/images/cctv-placeholder.jpg',
+      videoUrl: '/videos/sample-cctv.mp4', // TODO: 실제 영상 URL로 교체
+      analysisResult,
     };
     
     setCaptureItems((prev) => [newItem, ...prev]);
@@ -481,6 +485,12 @@ export default function HomeV2() {
               flyToLocation={flyToLocation}
               initialMapState={lastMapState}
               onTrackingComplete={handleTrackingComplete}
+              onCCTVHover={(cctvId, showLabel) => {
+                setHoveredCCTVId(cctvId);
+                setShowCCTVLabel(showLabel || false);
+              }}
+              hoveredCCTVId={hoveredCCTVId}
+              showCCTVLabel={showCCTVLabel}
             />
           ) : (
             <MapView
@@ -594,12 +604,18 @@ export default function HomeV2() {
         openCandidateId={openCandidateId}
         onCandidateOpened={() => setOpenCandidateId(null)}
         showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress}
+        onAddCapture={handleAddCaptureItem}
       />
 
       {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}
       <PredictedCCTVListPanel
         isVisible={showPredictedCCTVList && !uiState.showCaptureList}
         onAddCapture={handleAddCaptureItem}
+        hoveredCCTVId={hoveredCCTVId}
+        onCCTVHover={(cctvId) => {
+          setHoveredCCTVId(cctvId);
+          setShowCCTVLabel(false); // 썸네일 호버 시 라벨 표시 안함
+        }}
       />
 
       {/* CaptureListPanel - 포착 목록 */}
@@ -687,6 +703,60 @@ export default function HomeV2() {
             isReSearchingRef.current = true;
           }}
         />
+      )}
+
+      {/* 포착 목록 아이콘 오버레이 - 딤 위에 표시 */}
+      {showCaptureNotification && (
+        <div
+          id="capture-menu-overlay"
+          className="fixed"
+          style={{ 
+            left: '80px',
+            top: '0',
+            zIndex: 10000,
+            pointerEvents: 'none',
+            transform: 'translateX(-80px)',
+          }}
+        >
+          <div className="py-6 px-3" style={{ width: '80px' }}>
+            {/* 로고 영역 */}
+            <div className="mb-4 pb-4 border-b border-gray-700/50 w-full flex justify-center">
+              <div className="h-8 w-8" />
+            </div>
+
+            {/* 메뉴 아이템들 */}
+            <div className="flex flex-col items-center gap-3 w-full">
+              {/* 빈 메뉴 3개 */}
+              <div style={{ height: '52px' }} />
+              <div style={{ height: '52px' }} />
+              <div style={{ height: '52px' }} />
+              
+              {/* 포착목록 아이콘 */}
+              <button className="flex flex-col items-center justify-center w-full group relative">
+                <div className={`relative ${showCaptureNotification ? 'animate-icon-bounce' : ''}`}>
+                  <svg className="w-7 h-7 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M1 5h2v14H1zm4 0h2v14H5zm17 0H10a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1M11 17l2.5-3.15L15.29 16l2.5-3.22L21 17z" />
+                  </svg>
+                  
+                  {captureItems.length > 0 && (
+                    <div
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold animate-capture-badge-pop"
+                      style={{
+                        boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
+                      }}
+                    >
+                      {captureItems.length}
+                    </div>
+                  )}
+                </div>
+                
+                <span className="text-[10px] font-medium mt-1.5 text-gray-400">
+                  포착목록
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
