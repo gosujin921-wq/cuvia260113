@@ -706,7 +706,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
                 return;
             }
-            
+
             if (e.key === "c" || e.key === "C") {
                 setToggleCctvSetting((prev) => !prev);
                 return;
@@ -924,7 +924,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                 }}>
                                 {sortedCCTVs.map((cctv, idx) => {
                                     const cctvIndexForTitle = cctv.index + 1;
-                                    console.log(cctvIndexForTitle, openedCCTVPopups);
                                     if (!openedCCTVPopups.has(cctvIndexForTitle)) {
                                         return null;
                                     }

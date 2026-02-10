@@ -384,13 +384,11 @@ export default function Home() {
             {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
             <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
 
-
             {/* 맵 - 전체 화면 */}
             <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
                 {isUnityMode ? (
                     <UnityMapView
                         events={events}
-                        highlightedEventId={highlightedEventId}
                         selectedEventId={selectedEventId}
                         aiDetectionEventId={aiDetectionEventId}
                         cctvIndex={cctvIndex}
