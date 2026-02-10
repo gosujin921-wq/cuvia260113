@@ -1,21 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { useNavigate } from 'react-router-dom';
 import type { CaptureItem } from './CaptureListPanel';
 
 interface PropagationPackagePopupProps {
   isOpen: boolean;
   onClose: () => void;
   selectedItems: CaptureItem[];
+  onSendPropagation?: () => void;
 }
 
 const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
   isOpen,
   onClose,
   selectedItems,
+  onSendPropagation,
 }) => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'summary' | 'preview'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'preview'>('preview');
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -23,6 +23,52 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [editableContent, setEditableContent] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+
+  // 초기 컨텐츠 설정
+  useEffect(() => {
+    if (isOpen) {
+      const initialContent = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
+
+1. 대상자 정보
+- 성명/나이: 김도연 / 22세(남)
+- 인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg
+- 실종 접수: 09:30경 춘의동 125-46 일원
+
+2. 관제 확인 범위
+- 시간: 09:30~현재
+- 범위: 춘의동 125-46 인근 및 인접 구간 반경 10km 확인
+- 상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
+
+3. 포착 현황
+- (고속검색) 10:35:56 / 원미A-230 / 춘의동 125-46 / 유사도 95%
+  · 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
+- (추적연계) 10:35:54 / 원미A-444 / 길주로363번길 48
+  · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
+- (추적연계) 10:35:51 / 원미A-498 / 계남로301번길 54
+  · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
+- (추적연계) 10:12:31 / 원미A-604 / 춘의동 125-32
+  · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
+
+4. 추적 판단 요약
+- 남서 방향 이동 지속 추정(경로 적합도 83)
+- 인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능
+- 체류 후 동일 방향 이탈 패턴 반복 관측
+
+5. 상호 협조
+- 112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면 해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행
+- 추가 포착 또는 동선 변경 확인 시 바로 재전파
+
+6. 첨부
+- 원미A-230/444/498/604 포착 썸네일 및 클립
+- 동선 지도(4지점 표시)
+
+※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
+관제 담당: 김쿠도/032-266-3454`;
+      setEditableContent(initialContent);
+    }
+  }, [isOpen]);
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -111,9 +157,17 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose();
+    }, 300); // 애니메이션 시간과 동일
+  };
+
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
 
@@ -180,14 +234,19 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
+      className={`fixed inset-0 bg-black/70 flex items-center justify-center px-6 transition-opacity duration-300 ${
+        isClosing ? 'opacity-0' : 'opacity-100'
+      }`}
+      style={{ zIndex: 10003 }}
       role="dialog"
       aria-modal="true"
       aria-label="전파 패키지"
       onClick={handleOverlayClick}
     >
       <div
-        className="gradient-border-right-bottom w-full flex flex-col rounded-lg shadow-lg overflow-hidden"
+        className={`gradient-border-right-bottom w-full flex flex-col rounded-lg shadow-lg overflow-hidden transition-all duration-300 ${
+          isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
+        }`}
         style={{
           maxWidth: '1100px',
           maxHeight: '75vh',
@@ -210,7 +269,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
             aria-label="닫기"
           >
@@ -230,7 +289,8 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
             >
               <video
                 ref={videoRef}
-                src={currentItem.videoUrl || currentItem.thumbnailUrl}
+                src={currentItem.videoUrl}
+                poster={currentItem.thumbnailUrl}
                 className="w-full h-full object-contain"
                 muted
                 playsInline
@@ -300,10 +360,12 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                     currentVideoIndex === index ? 'border-blue-500 ring-2 ring-blue-500/50' : 'border-[#31353a] hover:border-blue-400'
                   }`}
                 >
-                  <img
-                    src={item.thumbnailUrl}
-                    alt={item.cctvName}
-                    className="w-full h-full object-cover"
+                  <video
+                    src={item.videoUrl}
+                    poster={item.thumbnailUrl}
+                    className="w-full h-full object-cover pointer-events-none"
+                    muted
+                    playsInline
                   />
                 </button>
               ))}
@@ -319,23 +381,12 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                 <div
                   className="absolute top-1 bottom-1 bg-[#2a2a2a] rounded-full transition-all duration-300 ease-out"
                   style={{
-                    left: activeTab === 'summary' ? '4px' : '50%',
-                    right: activeTab === 'summary' ? '50%' : '4px',
+                    left: activeTab === 'preview' ? '4px' : '50%',
+                    right: activeTab === 'preview' ? '50%' : '4px',
                   }}
                 />
                 
                 {/* 탭 버튼들 */}
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('summary')}
-                  className={`relative flex-1 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300 z-10 ${
-                    activeTab === 'summary'
-                      ? 'text-blue-400'
-                      : 'text-gray-500 hover:text-gray-400'
-                  }`}
-                >
-                  전파 내용 확인하기
-                </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('preview')}
@@ -347,6 +398,17 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                 >
                   전파 내용 미리보기
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('summary')}
+                  className={`relative flex-1 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300 z-10 ${
+                    activeTab === 'summary'
+                      ? 'text-blue-400'
+                      : 'text-gray-500 hover:text-gray-400'
+                  }`}
+                >
+                  상세 보기
+                </button>
               </div>
             </div>
 
@@ -355,8 +417,33 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
               scrollbarWidth: 'thin',
               scrollbarColor: '#31353a #0f0f0f',
             }}>
-              {activeTab === 'summary' ? (
-                // 전파 내용 확인하기 - 카드 스타일
+              {activeTab === 'preview' ? (
+                // 전파 내용 미리보기 - 수정 가능한 텍스트 영역
+                <div className="h-full flex flex-col gap-3">
+                  {/* 안내 문구 */}
+                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
+                    <Icon icon="mdi:information" className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <p className="text-blue-300 text-xs leading-relaxed">
+                      AI 로 생성된 전파문 초안입니다. 상세내용을 확인하신 후 필요 사항 수정·보완 후 전파해 주세요.
+                    </p>
+                  </div>
+                  
+                  {/* 수정 가능한 텍스트 영역 */}
+                  <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4 flex-1 min-h-0" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                    <textarea
+                      value={editableContent}
+                      onChange={(e) => setEditableContent(e.target.value)}
+                      className="w-full h-full bg-transparent text-gray-300 text-sm leading-relaxed whitespace-pre-wrap font-sans border-none focus:outline-none resize-none"
+                      style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#31353a #0f0f0f',
+                      }}
+                      placeholder="전파 내용을 입력하세요..."
+                    />
+                  </div>
+                </div>
+              ) : (
+                // 상세 보기 - 카드 스타일
                 <div className="space-y-3">
                   {/* 전파 대상 */}
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
@@ -496,13 +583,6 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                     </p>
                   </div>
                 </div>
-              ) : (
-                // 전파 내용 미리보기 - 텍스트 스타일
-                <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-                  <pre className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap font-sans">
-                    {generatePropagationContent()}
-                  </pre>
-                </div>
               )}
             </div>
           </div>
@@ -512,7 +592,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
         <div className="flex items-center justify-end gap-2 px-4 py-3 flex-shrink-0 border-t border-[#31353a]">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 rounded-lg text-xs font-medium text-gray-300 bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-colors"
           >
             취소
@@ -520,20 +600,19 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
           <button
             type="button"
             onClick={() => {
-              const propagationContent = generatePropagationContent();
-              const title = selectedItems.length > 0 
-                ? `원미구 일대 동일 인물 추정 객체 (${selectedItems.length}건 포착)`
-                : '새 전파';
-              
               console.log('전파 패키지 전송 클릭');
-              console.log('생성된 내용:', propagationContent);
-              console.log('제목:', title);
               console.log('선택된 아이템:', selectedItems);
               
-              onClose();
-              
-              // 새 탭으로 전파 페이지 열기 (state 전달은 새 탭에서 불가능하므로 기본 더미 데이터 사용)
-              window.open('/propagation', '_blank');
+              setIsClosing(true);
+              setTimeout(() => {
+                setIsClosing(false);
+                onClose();
+                
+                // 전파 패널 열기
+                if (onSendPropagation) {
+                  onSendPropagation();
+                }
+              }, 300);
             }}
             className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all"
             style={{

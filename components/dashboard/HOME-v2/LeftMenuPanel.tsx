@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface LeftMenuPanelProps {
-  onMenuSelect?: (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast') => void;
-  selectedMenuId?: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast' | null;
+  onMenuSelect?: (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => void;
+  selectedMenuId?: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast' | null;
   captureCount?: number; // 포착 목록 개수 (뱃지 표시용)
   showNotification?: boolean; // 포착 알림 애니메이션
 }
@@ -12,12 +12,8 @@ interface LeftMenuPanelProps {
 const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, showNotification = false }: LeftMenuPanelProps) => {
   const navigate = useNavigate();
   
-  const handleMenuClick = (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast') => {
-    if (menuId === 'broadcast') {
-      window.open('/propagation', '_blank');
-    } else {
-      onMenuSelect?.(menuId);
-    }
+  const handleMenuClick = (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
+    onMenuSelect?.(menuId);
   };
 
   const menuItems = [
@@ -43,7 +39,7 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
       badge: captureCount,
     },
     {
-      id: 'broadcast' as const,
+      id: 'propagation' as const,
       icon: 'mdi:send',
       label: '전파',
     },

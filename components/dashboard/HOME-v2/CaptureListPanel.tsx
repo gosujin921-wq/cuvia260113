@@ -191,17 +191,22 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
     }
   }, [selectedCapture]);
 
-  // 선택된 아이템들 가져오기
-  const selectedItems = captureItems.filter(item => selectedIds.has(item.id));
+  // 선택된 아이템들 가져오기 (선택이 없으면 모든 아이템)
+  const selectedItems = selectedIds.size > 0 
+    ? captureItems.filter(item => selectedIds.has(item.id))
+    : captureItems;
 
   return (
     <>
       {/* 전파 패키지 팝업 */}
-      <PropagationPackagePopup
-        isOpen={showPropagationPopup}
-        onClose={() => setShowPropagationPopup(false)}
-        selectedItems={selectedItems}
-      />
+      {showPropagationPopup && (
+        <PropagationPackagePopup
+          isOpen={showPropagationPopup}
+          onClose={() => setShowPropagationPopup(false)}
+          selectedItems={selectedItems}
+          onSendPropagation={onCreatePropagationPackage}
+        />
+      )}
 
       {/* 포착 상세 팝업 */}
       {selectedCapture && (
@@ -574,13 +579,13 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
               
               <button
                 type="button"
-                onClick={() => setShowPropagationPopup(true)}
-                disabled={selectedIds.size === 0}
-                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  selectedIds.size > 0
-                    ? 'text-white bg-blue-500 hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/20 border border-blue-400/50'
-                    : 'text-gray-500 bg-[#0f0f0f]/30 border border-[#31353a]/50 cursor-not-allowed opacity-50'
-                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('[CaptureListPanel] 전파 패키지 생성 버튼 클릭');
+                  setShowPropagationPopup(true);
+                }}
+                className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-white bg-blue-500 hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/20 border border-blue-400/50"
                 aria-label="전파 패키지 생성"
               >
                 <div className="flex items-center gap-1.5">
