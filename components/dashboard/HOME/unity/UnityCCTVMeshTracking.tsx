@@ -11,9 +11,6 @@ interface UnityCCTVMeshTrackingProps {
     position?: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string };
     width?: number;
     hideControls?: boolean;
-    isAutoMode?: boolean;
-    isProgressComplete?: boolean;
-    viewAngleAnimationProgress?: number;
     highlighted?: boolean;
     onHover?: (cctvId: string | null) => void;
     cctvId?: string;

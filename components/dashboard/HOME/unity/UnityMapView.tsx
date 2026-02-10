@@ -2,9 +2,7 @@ import { Event } from "@/types";
 import { Icon } from "@iconify/react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import CCTVIcon from "@/components/common/CCTVIcon";
-import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
 import BottomPanel from "../../BottomPanel";
 import { sendToUnity, subscribeUnityToReact } from "@/lib/unity/unityBridge";
@@ -57,16 +55,12 @@ const initialBridgeSlots: BridgeSlot[] = [
     { bridgeId: "CCTV-V-11", assignedCctvId: "카메라11", isGrouped: true, isMain: true },
 ];
 
-const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: UnityMapViewProps) => {
+const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, onAiDetectionClose, hideControls = false, leftPanelWidth = 480 }: UnityMapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [showCCTV, setShowCCTV] = useState(true);
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
     const [showCCTVName, setShowCCTVName] = useState(true);
-    const [is3DMode, setIs3DMode] = useState(true);
-    const [mapBearing, setMapBearing] = useState(-17.6);
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
-    const [isProgressComplete, setIsProgressComplete] = useState(false);
-    const [viewAngleAnimationProgress, setViewAngleAnimationProgress] = useState(0);
     const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null);
 
     // CCTV 관련 상태
@@ -95,73 +89,19 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
     const isUserScrollingRef = useRef(false);
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    useEffect(() => {
-        if (externalZoomLevel !== undefined) {
-            setZoomLevel(externalZoomLevel);
-        }
-    }, [externalZoomLevel]);
-
-    useEffect(() => {
-        onZoomLevelChange?.(zoomLevel);
-    }, [zoomLevel, onZoomLevelChange]);
-
-    useEffect(() => {
-        const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
-
-        if (isEvent1Selected && zoomLevel > 1) {
-            setIsProgressComplete(false);
-            setViewAngleAnimationProgress(0);
-
-            // 3초 후 카드 페이드 아웃 및 프로그래스 완료, 화각 애니메이션 시작
-            const timer = setTimeout(() => {
-                setIsProgressComplete(true);
-
-                const angleDuration = 600;
-                const angleStartTime = Date.now();
-                setViewAngleAnimationProgress(0);
-
-                const angleAnimate = () => {
-                    const angleElapsed = Date.now() - angleStartTime;
-                    const angleProgress = Math.min(angleElapsed / angleDuration, 1);
-                    const easedProgress = 1 - Math.pow(1 - angleProgress, 3);
-                    setViewAngleAnimationProgress(easedProgress);
-
-                    if (angleProgress < 1) {
-                        requestAnimationFrame(angleAnimate);
-                    } else {
-                        setViewAngleAnimationProgress(1);
-                    }
-                };
-
-                requestAnimationFrame(angleAnimate);
-            }, 3000);
-
-            return () => clearTimeout(timer);
-        } else if (!isEvent1Selected || zoomLevel <= 1) {
-            setIsProgressComplete(false);
-            setViewAngleAnimationProgress(0);
-        }
-    }, [selectedEventId, zoomLevel, events]);
-
-    useEffect(() => {
-        if (!isAutoMode) {
-            setViewAngleAnimationProgress(0);
-        }
-    }, [isAutoMode]);
-
     // 투망감시 모드 시작 시 모든 블루 CCTV 팝업 및 CCTV-V-11 팝업 열기
     useEffect(() => {
         const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
-        if (isEvent1Selected && isProgressComplete && viewAngleAnimationProgress > 0) {
+        if (isEvent1Selected) {
             // 블루 CCTV 인덱스: [0, 8, 1, 7, 6, 9, 5, 4] -> CCTV 인덱스: [1, 9, 2, 8, 7, 10, 6, 5]
             // CCTV-V-11도 포함
             const blueCCTVIndices = cctvList.filter((cctv) => cctv.isGrouped).map((cctv) => cctv.bridgeId);
             console.log(new Set(blueCCTVIndices));
             setOpenedCCTVPopups(new Set(blueCCTVIndices));
-        } else if (!isEvent1Selected || zoomLevel <= 1) {
+        } else if (!isEvent1Selected) {
             setOpenedCCTVPopups(new Set());
         }
-    }, [isProgressComplete, viewAngleAnimationProgress, selectedEventId, zoomLevel, events, cctvList]);
+    }, [selectedEventId, events, cctvList]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -174,219 +114,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
-    const prevZoomLevelRef = useRef(zoomLevel);
-    const animationFrameRef = useRef<number | null>(null);
-
-    useEffect(() => {
-        const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
-
-        if (zoomLevel > 1 && prevZoomLevelRef.current === 1 && showCCTV && showCCTVViewAngle && !isEvent1Selected) {
-            const cctvPositions = [
-                { left: 34, top: 40, count: 1, viewAngle: 45 },
-                { left: 40, top: 38, count: 1, viewAngle: 90 },
-                { left: 48, top: 40, count: 1, viewAngle: 135 },
-                { left: 52, top: 46, count: 1, viewAngle: 180 },
-                { left: 50, top: 56, count: 1, viewAngle: 225 },
-                { left: 42, top: 58, count: 1, viewAngle: 270 },
-                { left: 34, top: 56, count: 1, viewAngle: 315 },
-                { left: 32, top: 48, count: 1, viewAngle: 0 },
-                { left: 38, top: 42, count: 1, viewAngle: 60 },
-                { left: 48, top: 50, count: 1, viewAngle: 120 },
-            ];
-
-            const startAngles: Record<string, number> = {};
-            const targetAngles: Record<string, number> = {};
-
-            const homeViewAngle = 90;
-            cctvPositions.forEach((item, index) => {
-                const cctvId = `cctv-${index}`;
-                startAngles[cctvId] = homeViewAngle;
-                targetAngles[cctvId] = homeViewAngle + 10;
-            });
-
-            const duration = 600;
-            const startTime = performance.now();
-
-            const animate = (currentTime: number) => {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(1, elapsed / duration);
-
-                if (progress < 1) {
-                    animationFrameRef.current = requestAnimationFrame(animate);
-                } else {
-                    animationFrameRef.current = null;
-                }
-            };
-
-            animationFrameRef.current = requestAnimationFrame(animate);
-            prevZoomLevelRef.current = zoomLevel;
-
-            return () => {
-                if (animationFrameRef.current !== null) {
-                    cancelAnimationFrame(animationFrameRef.current);
-                    animationFrameRef.current = null;
-                }
-            };
-        } else if (zoomLevel === 1) {
-            prevZoomLevelRef.current = zoomLevel;
-        } else {
-            prevZoomLevelRef.current = zoomLevel;
-        }
-    }, [zoomLevel, showCCTV, showCCTVViewAngle, selectedEventId, events]);
-
-    useEffect(() => {
-        if (!mapContainerRef.current || mapRef.current) return;
-
-        const map = new maplibregl.Map({
-            container: mapContainerRef.current,
-            style: "https://api.maptiler.com/maps/019bdf7d-b868-75ba-b003-3005177ff4fa/style.json?key=WPWmpNf4y5nzKDA7mQXe",
-            center: [126.783, 37.5044],
-            zoom: 15,
-            pitch: 60,
-            bearing: -17.6,
-            attributionControl: false,
-            interactive: false,
-        });
-
-        map.on("load", () => {
-            const style = map.getStyle();
-            if (!style || !style.layers) return;
-
-            const layers = style.layers;
-
-            layers.forEach((layer: any) => {
-                const layerId = layer.id.toLowerCase();
-                const isBuildingLayer = layerId.includes("building") || layerId.includes("건물") || layerId.includes("extrusion") || layer.type === "fill-extrusion";
-
-                if (isBuildingLayer) {
-                    try {
-                        if (layer.type === "fill-extrusion") {
-                            if (map.getLayer(layer.id)) {
-                                map.setPaintProperty(layer.id, "fill-extrusion-height", ["case", ["has", "height"], ["*", ["to-number", ["get", "height"]], 1], ["has", "render_height"], ["*", ["to-number", ["get", "render_height"]], 1], ["has", "building:levels"], ["*", ["to-number", ["get", "building:levels"]], 3], 15]);
-                                map.setPaintProperty(layer.id, "fill-extrusion-base", ["case", ["has", "min_height"], ["to-number", ["get", "min_height"]], 0]);
-                            }
-                        } else if (layer.type === "fill" && layer.source) {
-                            const sourceId = layer.source;
-                            const sourceLayer = layer["source-layer"];
-
-                            if (map.getSource(sourceId)) {
-                                if (map.getLayer(layer.id)) {
-                                    map.removeLayer(layer.id);
-                                }
-
-                                map.addLayer({
-                                    id: `${layer.id}-3d`,
-                                    type: "fill-extrusion",
-                                    source: sourceId,
-                                    "source-layer": sourceLayer,
-                                    paint: {
-                                        "fill-extrusion-height": ["case", ["has", "height"], ["*", ["to-number", ["get", "height"]], 1], ["has", "building:levels"], ["*", ["to-number", ["get", "building:levels"]], 3], 15],
-                                        "fill-extrusion-base": ["case", ["has", "min_height"], ["to-number", ["get", "min_height"]], 0],
-                                    },
-                                    filter: layer.filter || ["has", "height"],
-                                });
-                            }
-                        }
-                    } catch (e) {
-                        console.warn("건물 레이어 설정 실패:", layer.id, e);
-                    }
-                }
-            });
-        });
-
-        mapRef.current = map;
-
-        return () => {
-            map.remove();
-            mapRef.current = null;
-        };
-    }, []);
-
-    useEffect(() => {
-        if (mapRef.current) {
-            mapRef.current.easeTo({
-                pitch: is3DMode ? 60 : 0,
-                duration: 500,
-            });
-        }
-    }, [is3DMode]);
-
-    useEffect(() => {
-        if (mapRef.current) {
-            mapRef.current.easeTo({
-                bearing: mapBearing,
-                duration: 300,
-            });
-        }
-    }, [mapBearing]);
-
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const savedCCTV = localStorage.getItem("cctv-show-cctv");
-            if (savedCCTV === "true") {
-                setShowCCTV(true);
-            } else if (savedCCTV === null || savedCCTV === "false") {
-                setShowCCTV(true);
-                setShowCCTVViewAngle(true);
-                setShowCCTVName(true);
-                localStorage.setItem("cctv-show-cctv", "true");
-                localStorage.setItem("cctv-show-view-angle", "true");
-                localStorage.setItem("cctv-show-name", "true");
-            }
-            const savedViewAngle = localStorage.getItem("cctv-show-view-angle");
-            if (savedViewAngle === "true") {
-                setShowCCTVViewAngle(true);
-            } else if (savedViewAngle === null || savedViewAngle === "false") {
-                setShowCCTVViewAngle(true);
-                localStorage.setItem("cctv-show-view-angle", "true");
-            }
-            const savedName = localStorage.getItem("cctv-show-name");
-            if (savedName === "true") {
-                setShowCCTVName(true);
-            } else if (savedName === null || savedName === "false") {
-                setShowCCTVName(true);
-                localStorage.setItem("cctv-show-name", "true");
-            }
-        }
-    }, []);
-
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("cctv-show-cctv", showCCTV.toString());
-        }
-    }, [showCCTV]);
-
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("cctv-show-view-angle", showCCTVViewAngle.toString());
-        }
-    }, [showCCTVViewAngle]);
-
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("cctv-show-name", showCCTVName.toString());
-        }
-    }, [showCCTVName]);
-
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === "cctv-show-cctv") {
-                setShowCCTV(e.newValue === "true");
-            } else if (e.key === "cctv-show-view-angle") {
-                setShowCCTVViewAngle(e.newValue === "true");
-            } else if (e.key === "cctv-show-name") {
-                setShowCCTVName(e.newValue === "true");
-            }
-        };
-
-        window.addEventListener("storage", handleStorageChange);
-        return () => window.removeEventListener("storage", handleStorageChange);
-    }, []);
     const containerRef = useRef<HTMLDivElement>(null);
-    const mapContainerRef = useRef<HTMLDivElement>(null);
-    const mapRef = useRef<maplibregl.Map | null>(null);
 
     const seededRandom = (seed: string) => {
         let hash = 0;
@@ -518,16 +246,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         setCachedPositions((prev) => ({ ...prev, ...newPositions }));
     }, [events.map((e) => e.id).join(",")]);
 
-    const positionsById = useMemo(() => {
-        const result: Record<string, { left: number; top: number }> = {};
-        events.forEach((event) => {
-            if (cachedPositions[event.id]) {
-                result[event.id] = cachedPositions[event.id];
-            }
-        });
-        return result;
-    }, [events, cachedPositions]);
-
     const handleZoomLevelChange = (level: number) => {
         setZoomLevel(level);
         const eventToUnity: EventToUnity = {
@@ -540,20 +258,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         console.log("eventToUnity", eventToUnity);
     };
 
-    const handle3DModeChange = (mode: boolean) => {
-        setIs3DMode(mode);
-        const eventToUnity: EventToUnity = {
-            methodName: "3DMode",
-            payload: {
-                viewMode: mode ? "3d" : "2d",
-            },
-        };
-        sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
-    };
-
     const handleMapBearingChange = (bearing: number) => {
-        setMapBearing(bearing);
         const eventToUnity: EventToUnity = {
             methodName: "mapBearing",
             payload: {
@@ -745,45 +450,21 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        handle3DModeChange(false);
+                        handleMapBearingChange(-30);
                     }}
-                    disabled
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${!is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"}`}
-                    aria-label="2D">
-                    <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                    aria-label="회전 왼쪽">
+                    <Icon icon="mdi:rotate-left" className="w-5 h-5" />
                 </button>
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        handle3DModeChange(true);
+                        handleMapBearingChange(30);
                     }}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                    aria-label="3D">
-                    <Icon icon="mdi:cube" className="w-5 h-5" />
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                    aria-label="회전 오른쪽">
+                    <Icon icon="mdi:rotate-right" className="w-5 h-5" />
                 </button>
-                {is3DMode && (
-                    <>
-                        <div className="w-full h-px bg-gray-300 my-1" />
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleMapBearingChange(-30);
-                            }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                            aria-label="회전 왼쪽">
-                            <Icon icon="mdi:rotate-left" className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleMapBearingChange(30);
-                            }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                            aria-label="회전 오른쪽">
-                            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
-                        </button>
-                    </>
-                )}
             </div>
 
             <div
@@ -863,10 +544,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                     bottom: undefined,
                                 }}
                                 hideControls={hideControls}
-                                isAutoMode={isAutoMode}
-                                isProgressComplete={isProgressComplete}
                                 cctvName={mainCctv.cctvName}
-                                viewAngleAnimationProgress={viewAngleAnimationProgress}
                                 highlighted={hoveredCCTVId === mainCctv.bridgeId}
                                 isMain={true}
                                 onHover={handleHoverCctv}
@@ -897,22 +575,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                                 height: "fit-content",
                                                 pointerEvents: "auto",
                                             }}>
-                                            <UnityCCTVMeshTracking
-                                                event={events.find((e) => e.id === aiDetectionEventId) || null}
-                                                onClose={() => {}}
-                                                isMain={false}
-                                                cctvId={cctv.bridgeId}
-                                                cctvName={cctv.cctvName}
-                                                cctvRtspURL={cctv.rtspURL}
-                                                position={undefined}
-                                                width={gridPopupWidth}
-                                                hideControls={hideControls}
-                                                isAutoMode={isAutoMode}
-                                                isProgressComplete={isProgressComplete}
-                                                viewAngleAnimationProgress={viewAngleAnimationProgress}
-                                                highlighted={hoveredCCTVId === cctv.bridgeId}
-                                                onHover={handleHoverCctv}
-                                            />
+                                            <UnityCCTVMeshTracking event={events.find((e) => e.id === aiDetectionEventId) || null} onClose={() => {}} isMain={false} cctvId={cctv.bridgeId} cctvName={cctv.cctvName} cctvRtspURL={cctv.rtspURL} position={undefined} width={gridPopupWidth} hideControls={hideControls} highlighted={hoveredCCTVId === cctv.bridgeId} onHover={handleHoverCctv} />
                                         </div>
                                     );
                                 })}
