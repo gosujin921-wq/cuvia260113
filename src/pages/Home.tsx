@@ -387,20 +387,7 @@ export default function Home() {
             {/* 맵 - 전체 화면 */}
             <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
                 {isUnityMode ? (
-                    <UnityMapView
-                        events={events}
-                        selectedEventId={selectedEventId}
-                        aiDetectionEventId={aiDetectionEventId}
-                        cctvIndex={cctvIndex}
-                        onEventClick={handleEventAction}
-                        onAiDetectionClose={clearSelection}
-                        onMapClick={() => {}}
-                        externalZoomLevel={mapZoomLevel}
-                        onZoomLevelChange={setMapZoomLevel}
-                        hideControls={hideControls}
-                        leftPanelWidth={leftPanelCollapsed ? 80 : 416}
-                        isAutoMode={isAutoMode}
-                    />
+                    <UnityMapView events={events} selectedEventId={selectedEventId} aiDetectionEventId={aiDetectionEventId} cctvIndex={cctvIndex} onAiDetectionClose={clearSelection} onMapClick={() => {}} externalZoomLevel={mapZoomLevel} onZoomLevelChange={setMapZoomLevel} hideControls={hideControls} leftPanelWidth={leftPanelCollapsed ? 80 : 416} isAutoMode={isAutoMode} />
                 ) : (
                     <MapView
                         events={events}
