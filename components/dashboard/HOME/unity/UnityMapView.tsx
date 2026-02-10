@@ -1,24 +1,20 @@
 import { Event } from "@/types";
 import { Icon } from "@iconify/react";
 import { useMemo, useState, useRef, useEffect } from "react";
-import { getCCTVIconClassName, getCCTVLabelClassName } from "@/components/shared/styles";
 import CCTVIcon from "@/components/common/CCTVIcon";
-import { CCTV_TITLES } from "../cctv-titles";
 import CCTVMeshTracking from "../CCTVMeshTracking";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { getCCTVViewAngle as getCCTVViewAngleUtil, generateViewAnglePath, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
-import { getRandomCCTVVideo } from "@/lib/cctv-video-utils";
+import { getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
 import BottomPanel from "../../BottomPanel";
 import { sendToUnity, subscribeUnityToReact } from "@/lib/unity/unityBridge";
 import { EventToUnity } from "@/lib/unity/types";
 import UnityCanvas from "../../UnityCanvas";
+import CameraListPopup from "./ConfigurePopup";
 
 interface UnityMapViewProps {
     events: Event[];
-    highlightedEventId?: string | null;
-    onEventClick?: (eventId: string) => void;
     selectedEventId?: string | null;
     aiDetectionEventId?: string | null;
     cctvIndex?: number | null;
@@ -42,9 +38,7 @@ const requestedCCTVs = [
     { cctvId: "CCTV-V-10", name: "CCTV-V-10", index: 9, position: { left: 48, top: 50 } },
 ];
 
-const cctvList = ["CCTV-V-1", "CCTV-V-2", "CCTV-V-5", "CCTV-V-6", "CCTV-V-7", "CCTV-V-8", "CCTV-V-9", "CCTV-V-10"];
-
-const UnityMapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: UnityMapViewProps) => {
+const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: UnityMapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
     const [showCCTV, setShowCCTV] = useState(true);
@@ -56,10 +50,10 @@ const UnityMapView = ({ events, highlightedEventId, onEventClick, selectedEventI
     const [isProgressComplete, setIsProgressComplete] = useState(false);
     const [viewAngleAnimationProgress, setViewAngleAnimationProgress] = useState(0);
     const [showEventCard, setShowEventCard] = useState(false);
-    const [hoveredCCTVIndex, setHoveredCCTVIndex] = useState<number | null>(null);
     const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null);
 
     const [openedCCTVPopups, setOpenedCCTVPopups] = useState<Set<number>>(new Set());
+    const [toggleCctvSetting, setToggleCctvSetting] = useState(false);
     const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isUserScrollingRef = useRef(false);
@@ -122,27 +116,6 @@ const UnityMapView = ({ events, highlightedEventId, onEventClick, selectedEventI
             localStorage.setItem("cctv-view-angles", JSON.stringify(cctvViewAngles));
         }
     }, [cctvViewAngles]);
-
-    const getCCTVViewAngle = (cctvId: string, defaultViewAngle: number): number => {
-        if (cctvViewAngles[cctvId] !== undefined) {
-            return cctvViewAngles[cctvId];
-        }
-        return getCCTVViewAngleUtil(cctvId, defaultViewAngle);
-    };
-
-    const formatCCTVCount = (count: number): string => {
-        return count > 999 ? "999+" : count.toString();
-    };
-
-    const getCCTVIconBoxStyle = (count: number, scale: number, hasMultiple: boolean, zIndex: number = 110) => {
-        return {
-            zIndex,
-            position: "relative" as const,
-            transform: `scale(${scale})`,
-            paddingLeft: hasMultiple ? "4px" : undefined,
-            paddingRight: hasMultiple ? "4px" : undefined,
-        };
-    };
 
     useEffect(() => {
         if (externalZoomLevel !== undefined) {
@@ -586,46 +559,6 @@ const UnityMapView = ({ events, highlightedEventId, onEventClick, selectedEventI
         return result;
     }, [events, cachedPositions]);
 
-    const getRandomCCTVDirection = (index: number, subIndex?: number): number => {
-        const n = subIndex !== undefined ? index * 13 + subIndex * 7 : index * 13;
-        return (n * 97) % 360;
-    };
-
-    const getZoomedCCTVDirection = (index: number): number => {
-        if (index === 0) return 150;
-        if (index === 4) return -70;
-        if (index === 5) return -30;
-        if (index === 6) return 60;
-        if (index === 7) return 120;
-        if (index === 8) return 150;
-        if (index === 9) return -120;
-        return getRandomCCTVDirection(index);
-    };
-
-    const mapTranslate = useMemo(() => {
-        if (zoomLevel === 1 || !selectedEventId) {
-            return { x: 0, y: 0, offsetX: 0 };
-        }
-
-        const selectedEvent = events.find((e) => e.id === selectedEventId);
-        if (!selectedEvent) {
-            return { x: 0, y: 0, offsetX: 0 };
-        }
-
-        const eventPosition = positionsById[selectedEvent.id] || { left: centerX, top: centerY };
-        const translateX = (50 - eventPosition.left) * mapScale - 5;
-        const translateY = (50 - eventPosition.top) * mapScale;
-        const screenWidth = typeof window !== "undefined" ? window.innerWidth : windowWidth;
-        const offsetXPx = 100;
-        const offsetXPercent = (offsetXPx / screenWidth) * 100;
-
-        return { x: translateX, y: translateY, offsetX: offsetXPercent };
-    }, [zoomLevel, selectedEventId, events, mapScale, positionsById, windowWidth]);
-
-    const getEventPosition = (event: Event) => {
-        return positionsById[event.id] || { left: centerX, top: centerY };
-    };
-
     const handleZoomLevelChange = (level: number) => {
         setZoomLevel(level);
         const eventToUnity: EventToUnity = {
@@ -765,6 +698,23 @@ const UnityMapView = ({ events, highlightedEventId, onEventClick, selectedEventI
         return () => {
             unsubscribe();
         };
+    }, []);
+
+    useEffect(() => {
+        const handleKeyPress = (e: KeyboardEvent) => {
+            // 입력 필드에서는 동작하지 않도록 처리
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+            
+            if (e.key === "c" || e.key === "C") {
+                setToggleCctvSetting((prev) => !prev);
+                return;
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyPress);
+        return () => window.removeEventListener("keydown", handleKeyPress);
     }, []);
 
     return (
@@ -936,11 +886,8 @@ const UnityMapView = ({ events, highlightedEventId, onEventClick, selectedEventI
                         })
                         .sort((a, b) => a.distance - b.distance);
 
-                    const mainPopupWidth = 420;
                     const gridPopupWidth = 320;
                     const padding = 20;
-                    const screenWidth = typeof window !== "undefined" ? window.innerWidth : windowWidth;
-                    const remainingWidth = screenWidth - mainPopupWidth - padding * 3;
 
                     return (
                         <>
@@ -1061,6 +1008,8 @@ const UnityMapView = ({ events, highlightedEventId, onEventClick, selectedEventI
                     </div>
                 );
             })()}
+
+            {toggleCctvSetting && <CameraListPopup onClose={() => setToggleCctvSetting(false)} />}
         </div>
     );
 };

@@ -8,7 +8,7 @@ interface UnityCanvasProps {
 }
 
 const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
-    const { unityProvider, isLoaded, loadingProgression, requestFullscreen, sendMessage, unload } = useUnityContext({
+    const { unityProvider, isLoaded, loadingProgression, sendMessage, unload } = useUnityContext({
         loaderUrl: "/Build/public.loader.js",
         dataUrl: "/Build/public.data",
         frameworkUrl: "/Build/public.framework.js",
@@ -51,19 +51,6 @@ const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
             }
         };
     }, [unload, isLoaded]);
-
-    const handleFullscreen = () => {
-        if (!isLoaded) {
-            console.warn("[UnityCanvas] Unity가 아직 로드되지 않았습니다.");
-            return;
-        }
-
-        try {
-            requestFullscreen(true);
-        } catch (error) {
-            console.error("[UnityCanvas] requestFullscreen 호출 에러:", error);
-        }
-    };
 
     useEffect(() => {
         // ✅ Unity → React 이벤트 수신 설정
