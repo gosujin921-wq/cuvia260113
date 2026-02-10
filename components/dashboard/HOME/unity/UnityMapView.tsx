@@ -2,7 +2,6 @@ import { Event } from "@/types";
 import { Icon } from "@iconify/react";
 import { useMemo, useState, useRef, useEffect } from "react";
 import CCTVIcon from "@/components/common/CCTVIcon";
-import CCTVMeshTracking from "../CCTVMeshTracking";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
@@ -11,7 +10,8 @@ import BottomPanel from "../../BottomPanel";
 import { sendToUnity, subscribeUnityToReact } from "@/lib/unity/unityBridge";
 import { EventToUnity } from "@/lib/unity/types";
 import UnityCanvas from "../../UnityCanvas";
-import CameraListPopup from "./ConfigurePopup";
+import CameraListPopup, { RealCCTV, BridgeSlot, CCTVInfo } from "./ConfigurePopup";
+import UnityCCTVMeshTracking from "./UnityCCTVMeshTracking";
 
 interface UnityMapViewProps {
     events: Event[];
@@ -27,20 +27,38 @@ interface UnityMapViewProps {
     isAutoMode?: boolean;
 }
 
-const requestedCCTVs = [
-    { cctvId: "CCTV-V-1", name: "CCTV-V-1", index: 0, position: { left: 34, top: 40 } },
-    { cctvId: "CCTV-V-2", name: "CCTV-V-2", index: 1, position: { left: 40, top: 38 } },
-    { cctvId: "CCTV-V-5", name: "CCTV-V-5", index: 4, position: { left: 50, top: 56 } },
-    { cctvId: "CCTV-V-6", name: "CCTV-V-6", index: 5, position: { left: 42, top: 58 } },
-    { cctvId: "CCTV-V-7", name: "CCTV-V-7", index: 6, position: { left: 34, top: 56 } },
-    { cctvId: "CCTV-V-8", name: "CCTV-V-8", index: 7, position: { left: 32, top: 48 } },
-    { cctvId: "CCTV-V-9", name: "CCTV-V-9", index: 8, position: { left: 38, top: 42 } },
-    { cctvId: "CCTV-V-10", name: "CCTV-V-10", index: 9, position: { left: 48, top: 50 } },
+// 사용 가능한 실제 CCTV 목록
+const initialAvailableCCTVs: RealCCTV[] = [
+    { cctvId: "카메라01", cctvName: "1번 카메라", rtspURL: "/public/cctv_img/cctv1.mov" },
+    { cctvId: "카메라02", cctvName: "2번 카메라", rtspURL: "/public/cctv_img/cctv2.mov" },
+    { cctvId: "카메라03", cctvName: "3번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
+    { cctvId: "카메라04", cctvName: "4번 카메라", rtspURL: "/public/cctv_img/cctv4.mov" },
+    { cctvId: "카메라05", cctvName: "5번 카메라", rtspURL: "/public/cctv_img/cctv1.mov" },
+    { cctvId: "카메라06", cctvName: "6번 카메라", rtspURL: "/public/cctv_img/cctv2.mov" },
+    { cctvId: "카메라07", cctvName: "7번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
+    { cctvId: "카메라08", cctvName: "8번 카메라", rtspURL: "/public/cctv_img/cctv4.mov" },
+    { cctvId: "카메라09", cctvName: "9번 카메라", rtspURL: "/public/cctv_img/cctv1.mov" },
+    { cctvId: "카메라10", cctvName: "10번 카메라", rtspURL: "/public/cctv_img/cctv2.mov" },
+    { cctvId: "카메라11", cctvName: "11번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
+];
+
+// Unity Bridge 슬롯 초기값 (CCTV-V-1 ~ CCTV-V-11)
+const initialBridgeSlots: BridgeSlot[] = [
+    { bridgeId: "CCTV-V-1", assignedCctvId: "카메라01", isGrouped: true, isMain: false },
+    { bridgeId: "CCTV-V-2", assignedCctvId: "카메라02", isGrouped: false, isMain: false },
+    { bridgeId: "CCTV-V-3", assignedCctvId: "카메라03", isGrouped: false, isMain: false },
+    { bridgeId: "CCTV-V-4", assignedCctvId: "카메라04", isGrouped: false, isMain: false },
+    { bridgeId: "CCTV-V-5", assignedCctvId: "카메라05", isGrouped: false, isMain: false },
+    { bridgeId: "CCTV-V-6", assignedCctvId: "카메라06", isGrouped: true, isMain: false },
+    { bridgeId: "CCTV-V-7", assignedCctvId: "카메라07", isGrouped: false, isMain: false },
+    { bridgeId: "CCTV-V-8", assignedCctvId: "카메라08", isGrouped: true, isMain: false },
+    { bridgeId: "CCTV-V-9", assignedCctvId: "카메라09", isGrouped: true, isMain: false },
+    { bridgeId: "CCTV-V-10", assignedCctvId: "카메라10", isGrouped: false, isMain: false },
+    { bridgeId: "CCTV-V-11", assignedCctvId: "카메라11", isGrouped: true, isMain: true },
 ];
 
 const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isAutoMode = true }: UnityMapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(1);
-    const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
     const [showCCTV, setShowCCTV] = useState(true);
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
     const [showCCTVName, setShowCCTVName] = useState(true);
@@ -49,73 +67,33 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
     const [isProgressComplete, setIsProgressComplete] = useState(false);
     const [viewAngleAnimationProgress, setViewAngleAnimationProgress] = useState(0);
-    const [showEventCard, setShowEventCard] = useState(false);
     const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null);
 
-    const [openedCCTVPopups, setOpenedCCTVPopups] = useState<Set<number>>(new Set());
+    // CCTV 관련 상태
+    const [availableCCTVs] = useState<RealCCTV[]>(initialAvailableCCTVs);
+    const [bridgeSlots, setBridgeSlots] = useState<BridgeSlot[]>(initialBridgeSlots);
+
+    // Bridge 슬롯과 실제 CCTV 정보를 결합한 목록 (렌더링용)
+    const cctvList: CCTVInfo[] = useMemo(() => {
+        return bridgeSlots.map((slot) => {
+            const realCctv = availableCCTVs.find((cctv) => cctv.cctvId === slot.assignedCctvId);
+            return {
+                bridgeId: slot.bridgeId,
+                cctvId: realCctv?.cctvId || "",
+                cctvName: realCctv?.cctvName || "",
+                rtspURL: realCctv?.rtspURL || "",
+                isGrouped: slot.isGrouped,
+                isMain: slot.isMain,
+            };
+        });
+    }, [bridgeSlots, availableCCTVs]);
+
+    const [openedCCTVPopups, setOpenedCCTVPopups] = useState<Set<string>>(new Set());
     const [toggleCctvSetting, setToggleCctvSetting] = useState(false);
     const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isUserScrollingRef = useRef(false);
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const configMap = getCCTVConfigMap();
-            const defaultAngles: Record<string, number> = {};
-            Object.keys(configMap).forEach((cctvId) => {
-                defaultAngles[cctvId] = configMap[cctvId].viewAngle;
-            });
-
-            const saved = localStorage.getItem("cctv-view-angles");
-            if (saved) {
-                try {
-                    const savedAngles = JSON.parse(saved);
-                    setCctvViewAngles({ ...defaultAngles, ...savedAngles });
-                } catch (e) {
-                    console.warn("Failed to load CCTV view angles:", e);
-                    setCctvViewAngles(defaultAngles);
-                }
-            } else {
-                setCctvViewAngles(defaultAngles);
-            }
-
-            const handleViewAngleChange = (e: CustomEvent) => {
-                const { cctvId, viewAngle, cctvIds, all } = e.detail;
-                if (all) {
-                    const newAngles: Record<string, number> = {};
-                    Object.keys(configMap).forEach((id) => {
-                        newAngles[id] = viewAngle;
-                    });
-                    setCctvViewAngles(newAngles);
-                } else if (cctvIds) {
-                    setCctvViewAngles((prev) => {
-                        const updated = { ...prev };
-                        cctvIds.forEach((id: string) => {
-                            updated[id] = viewAngle;
-                        });
-                        return updated;
-                    });
-                } else if (cctvId) {
-                    setCctvViewAngles((prev) => ({
-                        ...prev,
-                        [cctvId]: viewAngle,
-                    }));
-                }
-            };
-
-            window.addEventListener("cctv-view-angle-changed", handleViewAngleChange as EventListener);
-            return () => {
-                window.removeEventListener("cctv-view-angle-changed", handleViewAngleChange as EventListener);
-            };
-        }
-    }, []);
-
-    useEffect(() => {
-        if (typeof window !== "undefined" && Object.keys(cctvViewAngles).length > 0) {
-            localStorage.setItem("cctv-view-angles", JSON.stringify(cctvViewAngles));
-        }
-    }, [cctvViewAngles]);
 
     useEffect(() => {
         if (externalZoomLevel !== undefined) {
@@ -133,11 +111,9 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         if (isEvent1Selected && zoomLevel > 1) {
             setIsProgressComplete(false);
             setViewAngleAnimationProgress(0);
-            setShowEventCard(true);
 
             // 3초 후 카드 페이드 아웃 및 프로그래스 완료, 화각 애니메이션 시작
             const timer = setTimeout(() => {
-                setShowEventCard(false);
                 setIsProgressComplete(true);
 
                 const angleDuration = 600;
@@ -164,7 +140,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         } else if (!isEvent1Selected || zoomLevel <= 1) {
             setIsProgressComplete(false);
             setViewAngleAnimationProgress(0);
-            setShowEventCard(false);
         }
     }, [selectedEventId, zoomLevel, events]);
 
@@ -177,17 +152,16 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
     // 투망감시 모드 시작 시 모든 블루 CCTV 팝업 및 CCTV-V-11 팝업 열기
     useEffect(() => {
         const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
-        console.log("openedCCTVPopups check:", { isEvent1Selected: !!isEvent1Selected, isProgressComplete, viewAngleAnimationProgress, zoomLevel });
         if (isEvent1Selected && isProgressComplete && viewAngleAnimationProgress > 0) {
             // 블루 CCTV 인덱스: [0, 8, 1, 7, 6, 9, 5, 4] -> CCTV 인덱스: [1, 9, 2, 8, 7, 10, 6, 5]
             // CCTV-V-11도 포함
-            const blueCCTVIndices = [1, 9, 2, 8, 7, 10, 6, 5, 11];
-            console.log("Setting openedCCTVPopups:", blueCCTVIndices);
+            const blueCCTVIndices = cctvList.filter((cctv) => cctv.isGrouped).map((cctv) => cctv.bridgeId);
+            console.log(new Set(blueCCTVIndices));
             setOpenedCCTVPopups(new Set(blueCCTVIndices));
         } else if (!isEvent1Selected || zoomLevel <= 1) {
             setOpenedCCTVPopups(new Set());
         }
-    }, [isProgressComplete, viewAngleAnimationProgress, selectedEventId, zoomLevel, events]);
+    }, [isProgressComplete, viewAngleAnimationProgress, selectedEventId, zoomLevel, events, cctvList]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -236,7 +210,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             const animate = (currentTime: number) => {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(1, elapsed / duration);
-                const easedProgress = 1 - Math.pow(1 - progress, 3);
 
                 if (progress < 1) {
                     animationFrameRef.current = requestAnimationFrame(animate);
@@ -260,10 +233,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             prevZoomLevelRef.current = zoomLevel;
         }
     }, [zoomLevel, showCCTV, showCCTVViewAngle, selectedEventId, events]);
-
-    const mapScale = 1 + (zoomLevel - 1) * 0.15;
-
-    const mapTransformOrigin = "center center";
 
     useEffect(() => {
         if (!mapContainerRef.current || mapRef.current) return;
@@ -643,8 +612,8 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         }
     };
 
-    const handleHoverCctv = (cctvIndex: number | null, cctvId?: string) => {
-        if (cctvIndex === null || !cctvId) {
+    const handleHoverCctv = (cctvId: string | null) => {
+        if (!cctvId) {
             if (hoveredCCTVId) {
                 const eventToUnity: EventToUnity = {
                     methodName: "exitHover",
@@ -877,25 +846,16 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 cctvIndex !== null &&
                 cctvIndex !== undefined &&
                 (() => {
-                    const cctvV11Position = { left: 34, top: 40 };
-
-                    const sortedCCTVs = requestedCCTVs
-                        .map((cctv) => {
-                            const distance = Math.sqrt(Math.pow(cctv.position.left - cctvV11Position.left, 2) + Math.pow(cctv.position.top - cctvV11Position.top, 2));
-                            return { ...cctv, distance };
-                        })
-                        .sort((a, b) => a.distance - b.distance);
-
                     const gridPopupWidth = 320;
                     const padding = 20;
-
+                    const mainCctv = cctvList.find((cctv) => cctv.isMain) as CCTVInfo;
                     return (
                         <>
-                            <CCTVMeshTracking
+                            <UnityCCTVMeshTracking
                                 event={events.find((e) => e.id === aiDetectionEventId) || null}
                                 onClose={() => onAiDetectionClose?.()}
-                                cctvIndex={11}
-                                cctvId="CCTV-V-11"
+                                cctvId={mainCctv.bridgeId}
+                                cctvRtspURL={mainCctv.rtspURL}
                                 position={{
                                     top: `${padding}px`,
                                     right: `${padding}px`,
@@ -905,8 +865,10 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                 hideControls={hideControls}
                                 isAutoMode={isAutoMode}
                                 isProgressComplete={isProgressComplete}
+                                cctvName={mainCctv.cctvName}
                                 viewAngleAnimationProgress={viewAngleAnimationProgress}
-                                highlighted={hoveredCCTVId === "CCTV-V-11"}
+                                highlighted={hoveredCCTVId === mainCctv.bridgeId}
+                                isMain={true}
                                 onHover={handleHoverCctv}
                             />
 
@@ -922,38 +884,33 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                     pointerEvents: "none",
                                     zIndex: 1000,
                                 }}>
-                                {sortedCCTVs.map((cctv, idx) => {
-                                    const cctvIndexForTitle = cctv.index + 1;
-                                    if (!openedCCTVPopups.has(cctvIndexForTitle)) {
+                                {cctvList.map((cctv, idx) => {
+                                    if (!openedCCTVPopups.has(cctv.bridgeId) || cctv.isMain) {
                                         return null;
                                     }
 
                                     return (
                                         <div
-                                            key={`${cctv.cctvId}-${idx}`}
+                                            key={`${cctv.bridgeId}-${idx}`}
                                             style={{
                                                 width: `${gridPopupWidth}px`,
                                                 height: "fit-content",
                                                 pointerEvents: "auto",
                                             }}>
-                                            <CCTVMeshTracking
+                                            <UnityCCTVMeshTracking
                                                 event={events.find((e) => e.id === aiDetectionEventId) || null}
-                                                onClose={() => {
-                                                    setOpenedCCTVPopups((prev) => {
-                                                        const newSet = new Set(prev);
-                                                        newSet.delete(cctvIndexForTitle);
-                                                        return newSet;
-                                                    });
-                                                }}
-                                                cctvIndex={cctvIndexForTitle}
-                                                cctvId={cctv.cctvId}
+                                                onClose={() => {}}
+                                                isMain={false}
+                                                cctvId={cctv.bridgeId}
+                                                cctvName={cctv.cctvName}
+                                                cctvRtspURL={cctv.rtspURL}
                                                 position={undefined}
                                                 width={gridPopupWidth}
                                                 hideControls={hideControls}
                                                 isAutoMode={isAutoMode}
                                                 isProgressComplete={isProgressComplete}
                                                 viewAngleAnimationProgress={viewAngleAnimationProgress}
-                                                highlighted={hoveredCCTVId === cctv.cctvId}
+                                                highlighted={hoveredCCTVId === cctv.bridgeId}
                                                 onHover={handleHoverCctv}
                                             />
                                         </div>
@@ -1008,7 +965,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 );
             })()}
 
-            {toggleCctvSetting && <CameraListPopup onClose={() => setToggleCctvSetting(false)} />}
+            {toggleCctvSetting && <CameraListPopup onClose={() => setToggleCctvSetting(false)} availableCCTVs={availableCCTVs} bridgeSlots={bridgeSlots} onBridgeSlotsChange={setBridgeSlots} />}
         </div>
     );
 };

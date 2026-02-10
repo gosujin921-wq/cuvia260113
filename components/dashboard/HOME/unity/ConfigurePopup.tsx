@@ -3,12 +3,34 @@ import { useState } from "react";
 
 interface ConfigurePopupProps {
     onClose: () => void;
+    availableCCTVs: RealCCTV[]; // 사용 가능한 모든 CCTV 목록
+    bridgeSlots: BridgeSlot[]; // Unity Bridge 슬롯 목록
+    onBridgeSlotsChange: (slots: BridgeSlot[]) => void; // Bridge 슬롯 변경 핸들러
 }
 
+// 실제 CCTV 정보 (사용 가능한 카메라 목록)
+export interface RealCCTV {
+    cctvId: string; // 카메라01, 카메라02 등
+    cctvName: string; // 1번 카메라, 2번 카메라 등
+    rtspURL: string; // RTSP 주소
+}
+
+// Unity Bridge 슬롯 (CCTV-V-1 ~ CCTV-V-11)
+export interface BridgeSlot {
+    bridgeId: string; // CCTV-V-1, CCTV-V-2 등 (고정)
+    assignedCctvId?: string; // 할당된 실제 CCTV의 cctvId
+    isGrouped: boolean; // 그룹핑 여부
+    isMain: boolean; // 메인 카메라 여부 (전체 중 1개만 가능)
+}
+
+// 기존 CCTVInfo 호환을 위한 통합 인터페이스
 export interface CCTVInfo {
-    cctvId: string;
-    cctvName: string;
-    rtspURL: string;
+    bridgeId: string; // Unity Bridge ID (CCTV-V-1 ~ CCTV-V-11)
+    cctvId: string; // 할당된 실제 CCTV ID
+    cctvName: string; // 할당된 실제 CCTV 이름
+    rtspURL: string; // 할당된 실제 CCTV RTSP 주소
+    isGrouped: boolean; // 그룹핑 여부
+    isMain: boolean; // 메인 카메라 여부
 }
 
 export interface AgentKeyValue {
@@ -32,19 +54,38 @@ const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: "Agent", label: "Agent", icon: "mdi:robot" },
 ];
 
-export default function ConfigurePopup({ onClose }: ConfigurePopupProps) {
+export default function ConfigurePopup({ onClose, availableCCTVs, bridgeSlots, onBridgeSlotsChange }: ConfigurePopupProps) {
     const [activeTab, setActiveTab] = useState<TabType>("CCTV");
-    const [cctvList] = useState<CCTVInfo[]>([
-        { cctvId: "CCTV-V-1", cctvName: "1번 카메라", rtspURL: "rtsp://192.168.1.101:554/stream1" },
-        { cctvId: "CCTV-V-2", cctvName: "2번 카메라", rtspURL: "rtsp://192.168.1.102:554/stream1" },
-        { cctvId: "CCTV-V-5", cctvName: "5번 카메라", rtspURL: "rtsp://192.168.1.105:554/stream1" },
-        { cctvId: "CCTV-V-6", cctvName: "6번 카메라", rtspURL: "rtsp://192.168.1.106:554/stream1" },
-        { cctvId: "CCTV-V-7", cctvName: "7번 카메라", rtspURL: "rtsp://192.168.1.107:554/stream1" },
-        { cctvId: "CCTV-V-8", cctvName: "8번 카메라", rtspURL: "rtsp://192.168.1.108:554/stream1" },
-        { cctvId: "CCTV-V-9", cctvName: "9번 카메라", rtspURL: "rtsp://192.168.1.109:554/stream1" },
-        { cctvId: "CCTV-V-10", cctvName: "10번 카메라", rtspURL: "rtsp://192.168.1.110:554/stream1" },
-        { cctvId: "CCTV-V-11", cctvName: "11번 카메라 (메인)", rtspURL: "rtsp://192.168.1.111:554/stream1" },
-    ]);
+
+    // 이미 할당된 CCTV 목록 계산 (다른 슬롯에서 사용 중인 CCTV)
+    const assignedCctvIds = bridgeSlots.filter((slot) => slot.assignedCctvId).map((slot) => slot.assignedCctvId);
+
+    // Bridge 슬롯에 CCTV 할당 핸들러
+    const handleAssignCctv = (bridgeId: string, cctvId: string | undefined) => {
+        onBridgeSlotsChange(bridgeSlots.map((slot) => (slot.bridgeId === bridgeId ? { ...slot, assignedCctvId: cctvId } : slot)));
+    };
+
+    // 그룹핑 토글 핸들러 (bridgeId 기준)
+    const handleToggleGrouped = (bridgeId: string) => {
+        onBridgeSlotsChange(bridgeSlots.map((slot) => (slot.bridgeId === bridgeId ? { ...slot, isGrouped: !slot.isGrouped } : slot)));
+    };
+
+    // 메인 카메라 설정 핸들러 (bridgeId 기준, 전체 중 하나만 가능)
+    const handleSetMain = (bridgeId: string) => {
+        onBridgeSlotsChange(
+            bridgeSlots.map((slot) => ({
+                ...slot,
+                isMain: slot.bridgeId === bridgeId,
+            }))
+        );
+    };
+
+    // bridgeId로 할당된 실제 CCTV 정보 가져오기
+    const getAssignedCctv = (bridgeId: string): RealCCTV | undefined => {
+        const slot = bridgeSlots.find((s) => s.bridgeId === bridgeId);
+        if (!slot?.assignedCctvId) return undefined;
+        return availableCCTVs.find((cctv) => cctv.cctvId === slot.assignedCctvId);
+    };
 
     // Agent 관련 상태
     const [agentList, setAgentList] = useState<AgentInfo[]>([
@@ -210,19 +251,63 @@ export default function ConfigurePopup({ onClose }: ConfigurePopupProps) {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-gray-200">
-                                        <th className="text-left py-3 px-2 font-semibold text-gray-700">카메라 ID</th>
+                                        <th className="text-left py-3 px-2 font-semibold text-gray-700 w-[100px]">Bridge ID</th>
+                                        <th className="text-left py-3 px-2 font-semibold text-gray-700 w-[160px]">CCTV 할당</th>
                                         <th className="text-left py-3 px-2 font-semibold text-gray-700">카메라 이름</th>
                                         <th className="text-left py-3 px-2 font-semibold text-gray-700">RTSP 주소</th>
+                                        <th className="text-center py-3 px-2 font-semibold text-gray-700 w-[70px]">그룹핑</th>
+                                        <th className="text-center py-3 px-2 font-semibold text-gray-700 w-[60px]">메인</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {cctvList.map((camera) => (
-                                        <tr key={camera.cctvId} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                            <td className="py-3 px-2 text-gray-900 font-medium">{camera.cctvId}</td>
-                                            <td className="py-3 px-2 text-gray-700">{camera.cctvName}</td>
-                                            <td className="py-3 px-2 text-gray-500 font-mono text-xs">{camera.rtspURL}</td>
-                                        </tr>
-                                    ))}
+                                    {bridgeSlots.map((slot) => {
+                                        const assignedCctv = getAssignedCctv(slot.bridgeId);
+                                        return (
+                                            <tr key={slot.bridgeId} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 px-2 text-gray-900 font-medium">{slot.bridgeId}</td>
+                                                <td className="py-3 px-2">
+                                                    <select
+                                                        value={slot.assignedCctvId || ""}
+                                                        onChange={(e) => handleAssignCctv(slot.bridgeId, e.target.value || undefined)}
+                                                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer text-gray-700"
+                                                        aria-label={`${slot.bridgeId} CCTV 할당`}
+                                                    >
+                                                        <option value="">미할당</option>
+                                                        {availableCCTVs.map((cctv) => {
+                                                            const isAssignedToOther = assignedCctvIds.includes(cctv.cctvId) && slot.assignedCctvId !== cctv.cctvId;
+                                                            return (
+                                                                <option key={cctv.cctvId} value={cctv.cctvId} disabled={isAssignedToOther}>
+                                                                    {cctv.cctvId} - {cctv.cctvName}
+                                                                    {isAssignedToOther ? " (사용 중)" : ""}
+                                                                </option>
+                                                            );
+                                                        })}
+                                                    </select>
+                                                </td>
+                                                <td className="py-3 px-2 text-gray-700">{assignedCctv?.cctvName || <span className="text-gray-400">-</span>}</td>
+                                                <td className="py-3 px-2 text-gray-500 font-mono text-xs">{assignedCctv?.rtspURL || <span className="text-gray-400">-</span>}</td>
+                                                <td className="py-3 px-2 text-center">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={slot.isGrouped}
+                                                        onChange={() => handleToggleGrouped(slot.bridgeId)}
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                                        aria-label={`${slot.bridgeId} 그룹핑`}
+                                                    />
+                                                </td>
+                                                <td className="py-3 px-2 text-center">
+                                                    <input
+                                                        type="radio"
+                                                        name="mainCamera"
+                                                        checked={slot.isMain}
+                                                        onChange={() => handleSetMain(slot.bridgeId)}
+                                                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 cursor-pointer"
+                                                        aria-label={`${slot.bridgeId} 메인 카메라로 설정`}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

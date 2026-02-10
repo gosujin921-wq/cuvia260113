@@ -343,7 +343,7 @@ export default function Home() {
                                 id: missingEvent.id,
                                 eventId: missingEvent.eventId,
                                 mainCctvId: "CCTV-V-11",
-                                cctvIdList: ["CCTV-V-1", "CCTV-V-2", "CCTV-V-5", "CCTV-V-6", "CCTV-V-7", "CCTV-V-8", "CCTV-V-9", "CCTV-V-10"],
+                                cctvIdList: ["CCTV-V-1", "CCTV-V-6", "CCTV-V-8", "CCTV-V-9"],
                                 eventMessage: "CCTV-V-11에서 폭력(싸움)이벤트가 감지되었습니다.",
                             },
                         },
