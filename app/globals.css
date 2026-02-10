@@ -550,3 +550,204 @@ input[type="range"].slider::-moz-range-thumb {
     background-position: 0% 50%;
   }
 }
+
+/* 스켈레톤 너비 애니메이션 - 3가지 패턴 */
+@keyframes skeleton-width-0 {
+  0%, 100% {
+    width: 60%;
+  }
+  50% {
+    width: 85%;
+  }
+}
+
+@keyframes skeleton-width-1 {
+  0%, 100% {
+    width: 75%;
+  }
+  50% {
+    width: 50%;
+  }
+}
+
+@keyframes skeleton-width-2 {
+  0%, 100% {
+    width: 45%;
+  }
+  50% {
+    width: 70%;
+  }
+}
+
+/* 캡처 애니메이션 - 플래시 효과 */
+@keyframes capture-flash {
+  0% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 캡처 애니메이션 - 프레임 효과 */
+@keyframes capture-frame {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+}
+
+/* 캡처 애니메이션 - 체크 아이콘 */
+@keyframes capture-check {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  40% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.animate-capture-flash {
+  animation: capture-flash 1s ease-out forwards;
+}
+
+.animate-capture-frame {
+  animation: capture-frame 1s ease-out forwards;
+}
+
+.animate-capture-check {
+  animation: capture-check 1s ease-out forwards;
+}
+
+/* 포착 알림 애니메이션 - 메뉴 플래시 */
+@keyframes capture-menu-flash {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  30% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  70% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 포착 알림 애니메이션 - 뱃지 팝 */
+@keyframes capture-badge-pop {
+  0% {
+    transform: scale(1);
+  }
+  20% {
+    transform: scale(1.4);
+  }
+  40% {
+    transform: scale(1.1);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+  80% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-capture-menu-flash {
+  animation: capture-menu-flash 3s ease-out forwards;
+}
+
+.animate-capture-badge-pop {
+  animation: capture-badge-pop 0.8s ease-out;
+}
+
+/* 포착 아이콘 바운스 애니메이션 */
+@keyframes icon-bounce {
+  0% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.15);
+  }
+  30% {
+    transform: scale(0.95);
+  }
+  45% {
+    transform: scale(1.1);
+  }
+  60% {
+    transform: scale(0.98);
+  }
+  75% {
+    transform: scale(1.05);
+  }
+  90% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-icon-bounce {
+  animation: icon-bounce 0.8s ease-out;
+}
+
+/* 썸네일이 포착 목록 메뉴로 날아가는 애니메이션 (동적 위치) */
+@keyframes fly-to-menu-dynamic {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(calc(-50% + var(--end-x) * 0.7), calc(-50% + var(--end-y) * 0.7)) scale(0.6);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(calc(-50% + var(--end-x) * 0.8), calc(-50% + var(--end-y) * 0.8)) scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(0.4);
+    opacity: 0;
+  }
+}

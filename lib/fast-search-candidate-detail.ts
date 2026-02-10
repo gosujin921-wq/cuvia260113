@@ -44,6 +44,7 @@ const MOCK_SUMMARIES: Partial<Record<ImageId, string>> = {
   '08': '회색 패딩·검정 바지 착용자가 우산과 백팩을 메고 편의점 앞에 등장한 뒤 체류하였고, 이후 화면을 이탈함.',
   '09': '어두운색 아우터 착용자가 우산을 들고 야간에 등장한 뒤 체류하였고, 이후 화면을 이탈함.',
   '10': '회색 상의 착용자가 비닐백/쇼핑백을 들고 출입문을 통과한 뒤 화면을 이탈함.',
+  '48': '회색 후드티·청색 바지 착용자가 휴대폰을 조작하며 인도에 등장한 뒤 체류하였고, 이후 하단 우측 방향으로 이동하여 화면을 이탈함.',
   '59': '회색 후드 남성이 편의점 앞에 체류하다가 입장·퇴장 후 상단 중앙 방향으로 화면을 이탈함',
 };
 
@@ -68,6 +69,13 @@ const MOCK_TIMELINES: Partial<Record<ImageId, Omit<TimelineEntry, 'seconds'>[]>>
     { time: '00:10', label: '편의점 앞 체류' },
     { time: '06:02', label: '상단 중앙 방향으로 이동 후 화면 이탈' },
   ],
+  '48': [
+    { time: '00:00', label: '좌측 상단 회색 후드티·청색 바지 착용자 등장' },
+    { time: '00:05', label: '휴대폰 조작하며 천천히 이동' },
+    { time: '00:15', label: '인도 중앙 체류, 휴대폰 계속 조작' },
+    { time: '00:25', label: '하단 우측 방향으로 이동 시작' },
+    { time: '00:35', label: '화면 우측 하단으로 이동 후 화면 이탈' },
+  ],
   '59': [
     { time: '00:00', label: '회색 후드티 착용 남성 등장, 편의점 입구 근처 체류' },
     { time: '00:20', label: '전화하는 듯한 모습, 입구 쪽으로 이동' },
@@ -84,6 +92,7 @@ const MOCK_EXIT_DIRECTIONS: Partial<Record<ImageId, string>> = {
   '02': '상단 중앙',
   '03': '우측 상단',
   '04': '상단 중앙',
+  '48': '하단 우측',
   '59': '상단 중앙',
 };
 
@@ -92,6 +101,7 @@ const MOCK_BEHAVIORS: Partial<Record<ImageId, string>> = {
   '02': '체류 후 반복 출입',
   '03': '체류 후 반복 출입',
   '04': '체류 후 반복 출입',
+  '48': '휴대폰 조작하며 천천히 이동',
   '59': '편의점 입구 근처 체류, 전화, 입구 이동',
 };
 
@@ -142,4 +152,54 @@ export const getCandidateDetailData = (
       score,
     },
   };
+};
+
+/**
+ * 후보 상세 정보를 마크다운 형식으로 변환
+ */
+export const generateMarkdownAnalysis = (
+  imageId: ImageId,
+  cctvName: string,
+  location: string,
+  timestamp: string,
+  confidence: number
+): string => {
+  const detail = getCandidateDetailData(imageId, { cameraId: cctvName, score: confidence });
+  
+  let markdown = `# 포착 후보 분석 보고서\n\n`;
+  markdown += `## 기본 정보\n\n`;
+  markdown += `- **카메라**: ${cctvName}\n`;
+  markdown += `- **위치**: ${location}\n`;
+  markdown += `- **포착 시각**: ${timestamp}\n`;
+  markdown += `- **유사도**: ${confidence}%\n\n`;
+  
+  markdown += `## 관찰 요약\n\n`;
+  markdown += `${detail.observationSummary}\n\n`;
+  
+  markdown += `## 시간 기반 관찰 기록\n\n`;
+  detail.timeline.forEach((entry) => {
+    markdown += `- **${entry.time}**: ${entry.label}\n`;
+  });
+  markdown += `\n`;
+  
+  markdown += `## 후보 메타 정보\n\n`;
+  markdown += `- **감지 객체**: ${detail.meta.detectedObject}\n`;
+  markdown += `- **주요 속성**: ${detail.meta.mainAttributes}\n`;
+  markdown += `- **행동 특징**: ${detail.meta.behavior}\n`;
+  markdown += `- **이탈 방향**: ${detail.meta.exitDirection}\n`;
+  markdown += `- **유사도 점수**: ${detail.meta.score}점\n\n`;
+  
+  // 48번 후보인 경우 유사도 근거 추가
+  if (imageId === '48') {
+    markdown += `## 유사도 근거\n\n`;
+    markdown += `| 항목 | 실종자 정보 | 포착 인물 정보 | 일치 여부 |\n`;
+    markdown += `|------|------------|---------------|----------|\n`;
+    markdown += `| 의류(상의) | 회색 후드 | 회색 후드티 | ✅ 일치 |\n`;
+    markdown += `| 의류(하의) | 청바지 | 흑색/청색 계열 하의 | ✅ 일치 |\n`;
+    markdown += `| 헤어스타일 | 흑색 짧은 머리 | 흑색 짧은 머리 | ✅ 일치 |\n`;
+    markdown += `| 소지품/행동 | - | 휴대폰 조작 | ⚠️ 특이점 |\n\n`;
+    markdown += `**최종 유사도**: 95.0점\n`;
+  }
+  
+  return markdown;
 };

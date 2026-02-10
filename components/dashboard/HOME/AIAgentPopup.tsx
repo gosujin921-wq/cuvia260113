@@ -57,21 +57,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
         },
     ]);
     const [isResponding, setIsResponding] = useState(false);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const ignoreNextChangeRef = useRef(false);
 
-    useEffect(() => {
-        if (!isOpen) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                e.preventDefault();
-                onClose();
-            }
-        };
-        window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose]);
+    // Escape 키는 Home.tsx에서 일괄 처리하므로 여기서는 처리하지 않음
 
     useEffect(() => {
         if (bottomRef.current) {
@@ -169,7 +160,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
         setInputKey((k) => k + 1);
         ignoreNextChangeRef.current = true;
         setIsResponding(true);
-
+        setIsExpanded(true)
+        setIsAnalyzing(true);
         setTimeout(() => {
             const assistantMessage = generateAssistantReply(text);
             setMessages((prev) => [...prev, assistantMessage]);
@@ -180,7 +172,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                     setMessages((prev) => {
                         const updated = prev.map((msg) => {
                             if (msg.id === assistantMessage.id && msg.type === "analyzing") {
-                                const newProgress = Math.min((msg.progress || 0) + 0.02, 1);
+                                const newProgress = Math.min((msg.progress || 0) + 0.05, 1);
                                 return { ...msg, progress: newProgress };
                             }
                             return msg;
@@ -191,7 +183,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
 
                 setTimeout(() => {
                     clearInterval(progressInterval);
-                }, 5000);
+                    setIsAnalyzing(false);
+                }, 2000);
             }
         }, 700);
     };
@@ -237,30 +230,35 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({ isOpen, onClose, hideContro
                                                 <div>
                                                     {message.type === "analyzing" ? (
                                                         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                                            <div className="mb-3">
-                                                                <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
-                                                                <p className="text-sm text-gray-700 leading-relaxed">
-                                                                    {message.content} (처리 : {message.processingTime}초, 전송 : {message.transmissionTime}초)
-                                                                </p>
-                                                            </div>
-                                                            <div className="mb-2">
-                                                                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                                                                    <div
-                                                                        className="h-full rounded-full transition-all duration-300"
-                                                                        style={{
-                                                                            width: `${(message.progress || 0) * 100}%`,
-                                                                            background: AGENT_GRADIENT,
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-xs text-gray-500 mt-2">
-                                                                {message.currentStep}/{message.totalSteps}
-                                                            </div>
+                                                            {isAnalyzing && (
+                                                                <>
+                                                                    <div className="mb-3">
+                                                                        <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
+                                                                        <p className="text-sm text-gray-700 leading-relaxed">
+                                                                            {message.content} (처리 : {message.processingTime}초, 전송 : {message.transmissionTime}초)
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="mb-2">
+                                                                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                                                            <div
+                                                                                className="h-full rounded-full transition-all duration-300"
+                                                                                style={{
+                                                                                    width: `${(message.progress || 0) * 100}%`,
+                                                                                    background: AGENT_GRADIENT,
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-500 mt-2">
+                                                                        {message.currentStep}/{message.totalSteps}
+                                                                    </div>
+                                                                </>
+                                                            )}
+
 
                                                             {/* 분석 결과 표시 (프로그래스 완료 시) */}
                                                             {message.progress && message.progress >= 1 && message.analysisResult && (
-                                                                <div className="mt-4 space-y-4 pt-4 border-t border-gray-300">
+                                                                <div className={`space-y-4 ${isAnalyzing ? 'border-t border-gray-300 pt-4 mt-4 ' : ''}`}>
                                                                     {/* 한 줄 결론 */}
                                                                     <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
                                                                         <div className="flex items-center gap-2 mb-2">

@@ -19,14 +19,14 @@ interface FastSearchListPanelProps {
   onReSearchClick?: () => void;
   /** 에이전트 "속성 삭제"로 제외할 속성 목록. 해당 속성 이미지 카드는 리스트에서 숨김 */
   excludedAttributes?: string[];
-  /** 후보 상세 > "이 후보 분석하기" 클릭 시 */
-  onAnalyzeCandidate?: (candidate: CaptureItem) => void;
-  /** 후보 상세 > "지도에서 위치 보기" 클릭 시 */
-  onShowOnMap?: (candidate: CaptureItem) => void;
   /** 외부에서 열 후보 ID (예: '42' = qs_img_57_y) */
   openCandidateId?: string | null;
   /** 후보가 열렸을 때 호출 */
   onCandidateOpened?: () => void;
+  /** 스켈레톤 로딩 표시 여부 */
+  showSkeleton?: boolean;
+  /** 대상 포착 시 호출 */
+  onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string) => void;
 }
 
 interface CaptureItem {
@@ -90,14 +90,18 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   onReSearchComplete,
   onReSearchClick,
   excludedAttributes = [],
-  onAnalyzeCandidate,
-  onShowOnMap,
   openCandidateId,
   onCandidateOpened,
+  showSkeleton = false,
+  onAddCapture,
 }) => {
-  const [radius, setRadius] = useState<number>(300); // 반경 (m)
-  const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60)
+  const [radius, setRadius] = useState<number>(300); // 반경 (m) - 실제 적용된 값
+  const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
   const [selectedZones, setSelectedZones] = useState<string[]>([]); // 다중 선택 구역 (기본값: 전체)
+  
+  // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
+  const [tempRadius, setTempRadius] = useState<number>(300);
+  const [tempTimeRange, setTempTimeRange] = useState<[number, number]>([0, 60]);
   
   // 부천시 행정구역 데이터 (2depth)
   const zoneData = {
@@ -211,8 +215,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     setExpandedGu(prev => prev === gu ? null : gu);
   };
   
-  // 시간 범위 업데이트 (최소 1시간 간격 유지)
-  const updateTimeRange = (newStart: number, newEnd: number, preserveStart: boolean = false, preserveEnd: boolean = false) => {
+  // 시간 범위 업데이트 (최소 1시간 간격 유지) - 임시 값 업데이트
+  const updateTempTimeRange = (newStart: number, newEnd: number, preserveStart: boolean = false, preserveEnd: boolean = false) => {
     const minDiff = 60; // 최소 1시간 (60분)
     const maxTime = 1439; // 23:59
     
@@ -226,7 +230,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
         newStart = Math.max(0, newEnd - minDiff);
       } else {
         // 범위 드래그
-        if (newStart < timeRange[0]) {
+        if (newStart < tempTimeRange[0]) {
           newEnd = newStart + minDiff;
         } else {
           newStart = newEnd - minDiff;
@@ -244,7 +248,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       if (!preserveStart) newStart = Math.max(0, newEnd - minDiff);
     }
     
-    setTimeRange([newStart, newEnd]);
+    setTempTimeRange([newStart, newEnd]);
   };
   
   // 슬라이더 값 계산
@@ -260,7 +264,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     e.stopPropagation();
     isDraggingRef.current = type;
     dragStartXRef.current = e.clientX;
-    dragStartRangeRef.current = [timeRange[0], timeRange[1]];
+    dragStartRangeRef.current = [tempTimeRange[0], tempTimeRange[1]];
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isDraggingRef.current || !sliderTrackRef.current) return;
@@ -268,9 +272,9 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       const newTime = getTimeFromPosition(moveEvent.clientX);
       
       if (isDraggingRef.current === 'start') {
-        updateTimeRange(newTime, timeRange[1], false, true); // 종료점 유지
+        updateTempTimeRange(newTime, tempTimeRange[1], false, true); // 종료점 유지
       } else if (isDraggingRef.current === 'end') {
-        updateTimeRange(timeRange[0], newTime, true, false); // 시작점 유지
+        updateTempTimeRange(tempTimeRange[0], newTime, true, false); // 시작점 유지
       }
     };
     
@@ -289,7 +293,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     e.stopPropagation();
     isDraggingRef.current = 'range';
     dragStartXRef.current = e.clientX;
-    dragStartRangeRef.current = [timeRange[0], timeRange[1]];
+    dragStartRangeRef.current = [tempTimeRange[0], tempTimeRange[1]];
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!isDraggingRef.current || !sliderTrackRef.current) return;
@@ -301,7 +305,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       const newEnd = dragStartRangeRef.current[1] + deltaTime;
       
       if (newStart >= 0 && newEnd <= 1439) {
-        updateTimeRange(newStart, newEnd);
+        updateTempTimeRange(newStart, newEnd);
       }
     };
     
@@ -352,6 +356,12 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     if (!onRadiusChange) return;
     onRadiusChange(radius);
   }, [onRadiusChange, radius]);
+  
+  // 임시 반경 변경 시 부모에 전달 (실시간 미리보기)
+  useLayoutEffect(() => {
+    if (!onRadiusChange) return;
+    onRadiusChange(tempRadius);
+  }, [onRadiusChange, tempRadius]);
 
   // 외부에서 특정 후보 열기
   useEffect(() => {
@@ -382,7 +392,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           paddingRight: '16px',
         }}
       >
-        <div className="flex flex-col gap-4 h-full" style={{ paddingTop: isVisible ? '0.5rem' : '16px', minHeight: 0 }}>
+        <div className="flex flex-col gap-3 h-full" style={{ paddingTop: isVisible ? '0.5rem' : '16px', minHeight: 0 }}>
         {/* 헤더 */}
         <div
           className="rounded-lg flex-shrink-0"
@@ -395,7 +405,14 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             {/* 반경 칩 */}
             <div className="relative">
               <button
-                onClick={() => setOpenPopover(openPopover === 'radius' ? null : 'radius')}
+                onClick={() => {
+                  if (openPopover === 'radius') {
+                    setOpenPopover(null);
+                  } else {
+                    setTempRadius(radius);
+                    setOpenPopover('radius');
+                  }
+                }}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
@@ -409,28 +426,40 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   ref={radiusPopoverRef}
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px]"
                 >
-                  <div className="text-white text-sm font-semibold mb-3">검색 반경 설정</div>
-                  <div className="space-y-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-white text-sm font-semibold">검색 반경 설정</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRadius(tempRadius);
+                        setOpenPopover(null);
+                      }}
+                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
+                    >
+                      확인
+                    </button>
+                  </div>
+                  <div className="space-y-3">
                     <div className="relative">
                       <input
                         type="range"
                         min="100"
                         max="3000"
                         step="100"
-                        value={radius}
-                        onChange={(e) => setRadius(Number(e.target.value))}
+                        value={tempRadius}
+                        onChange={(e) => setTempRadius(Number(e.target.value))}
                         className="w-full h-2 bg-[#0f0f0f] rounded-full appearance-none cursor-pointer slider"
                         style={{
-                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((radius - 100) / 2900) * 100}%, #0f0f0f ${((radius - 100) / 2900) * 100}%, #0f0f0f 100%)`
+                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((tempRadius - 100) / 2900) * 100}%, #0f0f0f ${((tempRadius - 100) / 2900) * 100}%, #0f0f0f 100%)`
                         }}
                       />
                     </div>
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <span>100m</span>
-                      <span className="text-white font-semibold">{radius}m</span>
+                      <span className="text-white font-semibold">{tempRadius}m</span>
                       <span>3000m</span>
                     </div>
-                    <div className="text-[10px] text-gray-400 mt-1">
+                    <div className="text-[10px] text-gray-400">
                       반경을 넓히면 더 많은 CCTV를 탐색하지만 분석 시간이 길어질 수 있습니다.
                     </div>
                   </div>
@@ -441,7 +470,14 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             {/* 시간 칩 */}
             <div className="relative">
               <button
-                onClick={() => setOpenPopover(openPopover === 'time' ? null : 'time')}
+                onClick={() => {
+                  if (openPopover === 'time') {
+                    setOpenPopover(null);
+                  } else {
+                    setTempTimeRange([timeRange[0], timeRange[1]]);
+                    setOpenPopover('time');
+                  }
+                }}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -455,7 +491,19 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   ref={timePopoverRef}
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-5 shadow-xl border border-[#31353a] z-[250] min-w-[380px]"
                 >
-                  <div className="text-white text-sm font-semibold mb-3">시간 범위 선택</div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-white text-sm font-semibold">시간 범위 선택</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTimeRange([tempTimeRange[0], tempTimeRange[1]]);
+                        setOpenPopover(null);
+                      }}
+                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
+                    >
+                      확인
+                    </button>
+                  </div>
                   <div className="space-y-2">
                     {/* 듀얼 핸들 슬라이더 */}
                     <div className="relative" style={{ height: '40px', display: 'flex', alignItems: 'center', paddingTop: '12px', paddingBottom: '12px' }}>
@@ -473,8 +521,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                         className="absolute h-2 rounded-full bg-[#3b82f6] cursor-move"
                         onMouseDown={handleRangeMouseDown}
                         style={{
-                          left: `${(timeRange[0] / 1439) * 100}%`,
-                          width: `${((timeRange[1] - timeRange[0]) / 1439) * 100}%`,
+                          left: `${(tempTimeRange[0] / 1439) * 100}%`,
+                          width: `${((tempTimeRange[1] - tempTimeRange[0]) / 1439) * 100}%`,
                           zIndex: 2,
                         }}
                       />
@@ -484,7 +532,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                         className="absolute cursor-grab active:cursor-grabbing"
                         onMouseDown={(e) => handleHandleMouseDown('start', e)}
                         style={{
-                          left: `max(0px, calc(${(timeRange[0] / 1439) * 100}% - 16px))`,
+                          left: `max(0px, calc(${(tempTimeRange[0] / 1439) * 100}% - 16px))`,
                           top: '50%',
                           transform: 'translateY(-50%)',
                           zIndex: 3,
@@ -503,7 +551,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                         className="absolute cursor-grab active:cursor-grabbing"
                         onMouseDown={(e) => handleHandleMouseDown('end', e)}
                         style={{
-                          left: `min(calc(100% - 32px), calc(${(timeRange[1] / 1439) * 100}% - 16px))`,
+                          left: `min(calc(100% - 32px), calc(${(tempTimeRange[1] / 1439) * 100}% - 16px))`,
                           top: '50%',
                           transform: 'translateY(-50%)',
                           zIndex: 3,
@@ -520,7 +568,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <span>00:00</span>
-                      <span className="text-white font-semibold">{formatTime(timeRange[0])} ~ {formatTime(timeRange[1])}</span>
+                      <span className="text-white font-semibold">{formatTime(tempTimeRange[0])} ~ {formatTime(tempTimeRange[1])}</span>
                       <span>23:59</span>
                     </div>
                     <div className="text-[10px] text-gray-400 mt-1">
@@ -531,105 +579,63 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               )}
             </div>
 
-            {/* 구역 칩 */}
-            <div className="relative">
+            {/* 정렬 칩 */}
+            <div className="relative" ref={sortPopoverRef}>
               <button
-                onClick={() => setOpenPopover(openPopover === 'zone' ? null : 'zone')}
-                onMouseEnter={() => {
-                  if (selectedZones.length > 0 && !openPopover) {
-                    setIsZoneHovered(true);
-                  }
-                }}
-                onMouseLeave={() => setIsZoneHovered(false)}
+                type="button"
+                onClick={() => setOpenPopover(openPopover === 'sort' ? null : 'sort')}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
+                aria-label="정렬 옵션"
+                aria-expanded={openPopover === 'sort'}
+                aria-haspopup="listbox"
               >
                 <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                <span>구역: {getZoneDisplayText()}</span>
-                <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'zone' ? 'rotate-180' : ''}`} />
+                <span>정렬: {
+                  sortOption === 'confidence-desc' ? '유사도순' :
+                  sortOption === 'confidence-asc' ? '유사도 낮은순' :
+                  sortOption === 'distance-asc' ? '거리순' : '거리 먼순'
+                }</span>
+                <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`} />
               </button>
               
-              {/* 호버 툴팁 */}
-              {isZoneHovered && selectedZones.length > 0 && !openPopover && (
-                <div 
-                  className="absolute px-3 py-2 bg-[#0f0f0f] border border-[#31353a] rounded-lg shadow-xl text-xs text-gray-300"
-                  style={{
-                    top: 'calc(100% + 8px)',
-                    left: '0',
-                    zIndex: 10000,
-                    pointerEvents: 'none',
-                    maxWidth: '400px',
-                    whiteSpace: 'normal',
-                  }}
-                >
-                  {selectedZones.join(', ')}
-                </div>
-              )}
-              
-              {/* 구역 선택 팝오버 */}
-              {openPopover === 'zone' && (
+              {/* 정렬 옵션 팝오버 */}
+              {openPopover === 'sort' && (
                 <div
-                  ref={zonePopoverRef}
-                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px] max-h-[400px] overflow-y-auto"
+                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-3 shadow-xl border border-[#31353a] z-[250] min-w-[200px]"
+                  role="listbox"
+                  aria-label="정렬 기준 선택"
                 >
-                  <div className="text-white text-sm font-semibold mb-3">구역 선택</div>
+                  <div className="text-white text-sm font-semibold mb-2">정렬 기준</div>
                   <div className="space-y-1">
-                    {/* 전체 옵션 */}
-                    <button
-                      onClick={() => toggleZone('전체')}
-                      className={`w-full px-3 py-2 rounded text-xs font-medium transition-colors text-left flex items-center gap-2 ${
-                        isAllSelected
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-[#0f0f0f] text-gray-300 hover:bg-[#2a2a2a]'
-                      }`}
-                    >
-                      {isAllSelected && (
-                        <Icon icon="mdi:check" className="w-4 h-4" />
-                      )}
-                      <span>전체</span>
-                    </button>
-                    
-                    {Object.keys(zoneData).map((gu) => (
-                      <div key={gu}>
-                        {/* 1depth: 구 */}
-                        <button
-                          onClick={() => toggleGu(gu)}
-                          className="w-full px-3 py-2 rounded text-xs font-medium transition-colors text-left flex items-center justify-between bg-[#0f0f0f] text-gray-300 hover:bg-[#2a2a2a]"
-                        >
-                          <span>{gu}</span>
-                          <Icon 
-                            icon={expandedGu === gu ? "mdi:chevron-up" : "mdi:chevron-down"} 
-                            className="w-4 h-4" 
-                          />
-                        </button>
-                        
-                        {/* 2depth: 동 */}
-                        {expandedGu === gu && (
-                          <div className="pl-4 pt-1 space-y-1">
-                            {zoneData[gu as keyof typeof zoneData].map((dong) => (
-                              <button
-                                key={dong}
-                                onClick={() => toggleZone(dong)}
-                                className={`w-full px-3 py-1.5 rounded text-xs font-medium transition-colors text-left flex items-center gap-2 ${
-                                  selectedZones.includes(dong)
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-[#0f0f0f] text-gray-300 hover:bg-[#2a2a2a]'
-                                }`}
-                              >
-                                {selectedZones.includes(dong) && (
-                                  <Icon icon="mdi:check" className="w-4 h-4" />
-                                )}
-                                <span>{dong}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                    {([
+                      { value: 'confidence-desc', label: '유사도 높은 순' },
+                      { value: 'confidence-asc', label: '유사도 낮은 순' },
+                      { value: 'distance-asc', label: '신고 위치와 가까운 순' },
+                      { value: 'distance-desc', label: '신고 위치와 먼 순' },
+                    ] as { value: SortOption; label: string }[]).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="option"
+                        aria-selected={sortOption === opt.value}
+                        onClick={() => {
+                          setSortOption(opt.value);
+                          setOpenPopover(null);
+                        }}
+                        className={`w-full px-3 py-2 rounded text-xs transition-colors text-left ${
+                          sortOption === opt.value
+                            ? 'bg-blue-500/20 text-blue-300'
+                            : 'text-gray-400 hover:bg-[#2a2a2a]'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
                     ))}
                   </div>
                 </div>
               )}
             </div>
-
+            
             {/* 필터 초기화 버튼 */}
             <button
               onClick={() => {
@@ -676,73 +682,12 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               />
             </>
           )}
-          {/* 리스트 상단 고정: 정렬 / 결과 재검색 */}
+          {/* 리스트 상단 고정: 결과 재검색 */}
           <div
-            className="flex items-center justify-between gap-2 flex-shrink-0 px-4 py-3 border-b border-[#31353a]"
+            className="flex items-center justify-end gap-2 flex-shrink-0 px-4 py-3 border-b border-[#31353a]"
             style={{ background: 'rgba(0,0,0,0.2)' }}
           >
-            {/* 정렬 버튼 + 팝오버 (좌측) */}
-            <div className="relative" ref={sortPopoverRef}>
-              <button
-                type="button"
-                onClick={() => setOpenPopover(openPopover === 'sort' ? null : 'sort')}
-                className="px-3 py-2 rounded-lg text-xs font-medium transition-colors text-white bg-[#31353a] hover:bg-[#3d4046] border border-[#31353a] flex items-center gap-2"
-                aria-label="정렬 옵션"
-                aria-expanded={openPopover === 'sort'}
-                aria-haspopup="listbox"
-              >
-                <Icon icon="mdi:sort" className="w-4 h-4 flex-shrink-0" />
-                <span>정렬</span>
-                <span className="text-gray-500">|</span>
-                <span className="text-gray-300">
-                  {sortOption === 'confidence-desc' && '유사도 높은 순'}
-                  {sortOption === 'confidence-asc' && '유사도 낮은 순'}
-                  {sortOption === 'distance-asc' && '신고 위치와 가까운 순'}
-                  {sortOption === 'distance-desc' && '신고 위치와 먼 순'}
-                </span>
-                <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {/* 정렬 옵션 팝오버 */}
-              {openPopover === 'sort' && (
-                <div
-                  className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-2 shadow-xl border border-[#31353a] z-[250] min-w-[200px]"
-                  role="listbox"
-                  aria-label="정렬 기준 선택"
-                >
-                  <div className="text-gray-400 text-[10px] font-medium px-3 py-1.5 uppercase tracking-wider">정렬 기준</div>
-                  {([
-                    { value: 'confidence-desc', label: '유사도 높은 순' },
-                    { value: 'confidence-asc', label: '유사도 낮은 순' },
-                    { value: 'distance-asc', label: '신고 위치와 가까운 순' },
-                    { value: 'distance-desc', label: '신고 위치와 먼 순' },
-                  ] as { value: SortOption; label: string }[]).map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      role="option"
-                      aria-selected={sortOption === opt.value}
-                      onClick={() => {
-                        setSortOption(opt.value);
-                        setOpenPopover(null);
-                      }}
-                      className={`w-full px-3 py-2 rounded text-xs font-medium transition-colors text-left flex items-center gap-2 ${
-                        sortOption === opt.value
-                          ? 'bg-blue-500 text-white'
-                          : 'text-gray-300 hover:bg-[#2a2a2a]'
-                      }`}
-                    >
-                      {sortOption === opt.value && (
-                        <Icon icon="mdi:check" className="w-4 h-4 flex-shrink-0" />
-                      )}
-                      <span className={sortOption === opt.value ? '' : 'pl-6'}>{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* 결과 재검색 (우측) */}
+            {/* 결과 재검색 */}
             <button
               type="button"
               onClick={() => {
@@ -762,7 +707,61 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             }}
           >
             <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
-            {visibleCaptureList.map((item) => {
+            {showSkeleton ? (
+              // 스켈레톤 로딩 (9개 카드)
+              Array.from({ length: 9 }).map((_, idx) => (
+                <div
+                  key={`skeleton-${idx}`}
+                  className="bg-[#393a42] rounded-lg overflow-hidden flex flex-col"
+                >
+                  {/* 썸네일 스켈레톤 */}
+                  <div className="relative w-full bg-[#2a2b32]" style={{ height: '160px' }}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Icon icon="mdi:image-outline" className="w-12 h-12 text-gray-600" />
+                    </div>
+                  </div>
+                  
+                  {/* 정보 스켈레톤 */}
+                  <div className="flex-1 min-w-0 p-3 space-y-2">
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded"
+                      style={{
+                        animation: `skeleton-width-${idx % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1}s`
+                      }}
+                    ></div>
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded"
+                      style={{
+                        animation: `skeleton-width-${(idx + 1) % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1 + 0.2}s`
+                      }}
+                    ></div>
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded"
+                      style={{
+                        animation: `skeleton-width-${(idx + 2) % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1 + 0.4}s`
+                      }}
+                    ></div>
+                    <div 
+                      className="h-3 bg-[#2a2b32] rounded mt-2"
+                      style={{
+                        animation: `skeleton-width-${idx % 3} 1.5s ease-in-out infinite`,
+                        animationDelay: `${idx * 0.1 + 0.6}s`
+                      }}
+                    ></div>
+                  </div>
+                  
+                  {/* 버튼 스켈레톤 */}
+                  <div className="px-3 pb-2 flex gap-1.5">
+                    <div className="flex-1 h-8 bg-[#2a2b32] rounded"></div>
+                    <div className="flex-1 h-8 bg-[#2a2b32] rounded"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              visibleCaptureList.map((item) => {
               const isMatched = matchedIds.has(item.id);
               const isWrong = wrongIds.has(item.id);
               return (
@@ -878,7 +877,8 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 </div>
               </div>
             );
-            })}
+            })
+            )}
             </div>
           </div>
         </div>
@@ -889,8 +889,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
         isOpen={!!selectedCandidate}
         onClose={() => setSelectedCandidate(null)}
         candidate={selectedCandidate}
-        onAnalyze={onAnalyzeCandidate}
-        onShowOnMap={onShowOnMap}
+        onAddCapture={onAddCapture}
       />
     </>
   );

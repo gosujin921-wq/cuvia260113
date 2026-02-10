@@ -1,14 +1,17 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/MapView';
+import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
 import LeftPanel from '@/components/dashboard/LeftPanel';
 import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
-import FastSearchProgress from '@/components/dashboard/HOME-v2/FastSearchProgress';
 import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
+import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
+import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/CaptureListPanel';
 import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
 import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
 import { Event } from '@/types';
@@ -29,13 +32,17 @@ type UIState = {
   showReSearchProgress: boolean;
   showObjectTrackingConfirm: boolean;
   showObjectTracking: boolean;
-  selectedMenuId: 'fast-search' | 'object-tracking' | 'broadcast' | null;
+  showCaptureList: boolean;
+  selectedMenuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast' | null;
+  showFastSearchProgress: boolean;
+  showNetMonitoringDialog: boolean;
 };
 
 type UIAction =
   | { type: 'SET_SELECTED_EVENT'; payload: string | null }
   | { type: 'SET_HIGHLIGHTED_EVENT'; payload: string | null }
   | { type: 'START_FAST_SEARCH' }
+  | { type: 'START_FAST_SEARCH_WITH_PROGRESS' }
   | { type: 'COMPLETE_FAST_SEARCH' }
   | { type: 'SHOW_FAST_SEARCH_LIST' }
   | { type: 'HIDE_FAST_SEARCH_LIST' }
@@ -44,9 +51,14 @@ type UIAction =
   | { type: 'SHOW_OBJECT_TRACKING_CONFIRM' }
   | { type: 'HIDE_OBJECT_TRACKING_CONFIRM' }
   | { type: 'START_OBJECT_TRACKING' }
-  | { type: 'SET_MENU'; payload: 'fast-search' | 'object-tracking' | 'broadcast' | null }
+  | { type: 'SHOW_CAPTURE_LIST' }
+  | { type: 'HIDE_CAPTURE_LIST' }
+  | { type: 'SET_MENU'; payload: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast' | null }
   | { type: 'TOGGLE_LEFT_PANEL' }
-  | { type: 'CLEAR_ALL' };
+  | { type: 'CLEAR_ALL' }
+  | { type: 'COMPLETE_FAST_SEARCH_PROGRESS' }
+  | { type: 'SHOW_NET_MONITORING_DIALOG' }
+  | { type: 'HIDE_NET_MONITORING_DIALOG' };
 
 const uiReducer = (state: UIState, action: UIAction): UIState => {
   switch (action.type) {
@@ -60,8 +72,33 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         panelsSlidOut: true,
         showCCTV: false,
         hideControls: true,
-        showFastSearch: true,
+        showFastSearch: false,
+        showFastSearchList: true,
         selectedMenuId: 'fast-search',
+        showAIAgentPopup: true,
+        showFastSearchProgress: false,
+        showObjectTracking: false,
+        showCaptureList: false,
+      };
+    case 'START_FAST_SEARCH_WITH_PROGRESS':
+      return {
+        ...state,
+        panelsSlidOut: true,
+        showCCTV: false,
+        hideControls: true,
+        showFastSearch: false,
+        showFastSearchList: true,
+        selectedMenuId: 'fast-search',
+        showAIAgentPopup: true,
+        showFastSearchProgress: true,
+        showObjectTracking: false,
+        showCaptureList: false,
+      };
+    case 'COMPLETE_FAST_SEARCH_PROGRESS':
+      return {
+        ...state,
+        showFastSearchProgress: false,
+        showFastSearchList: true,
       };
     case 'COMPLETE_FAST_SEARCH':
       return {
@@ -104,10 +141,38 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showObjectTrackingConfirm: false,
         showObjectTracking: true,
         showFastSearchList: false,
+        showCaptureList: false,
         showAIAgentPopup: true,
         hideControls: true,
         selectedMenuId: 'object-tracking',
+        selectedEventId: 'A-20260107-004', // 신고 팝업을 위한 이벤트 선택
+        panelsSlidOut: true, // 좌우 패널 숨김
+        showCCTV: false, // CCTV 패널 숨김
       };
+    case 'SHOW_CAPTURE_LIST':
+      return {
+        ...state,
+        showCaptureList: true,
+        showFastSearchList: false,
+        showObjectTracking: false,
+        panelsSlidOut: true,
+        showCCTV: false,
+        hideControls: true,
+        selectedMenuId: 'capture-list',
+      };
+    case 'HIDE_CAPTURE_LIST':
+      return {
+        ...state,
+        showCaptureList: false,
+        panelsSlidOut: false,
+        showCCTV: true,
+        hideControls: false,
+        selectedMenuId: null,
+      };
+    case 'SHOW_NET_MONITORING_DIALOG':
+      return { ...state, showNetMonitoringDialog: true };
+    case 'HIDE_NET_MONITORING_DIALOG':
+      return { ...state, showNetMonitoringDialog: false };
     case 'SET_MENU':
       return { ...state, selectedMenuId: action.payload };
     case 'TOGGLE_LEFT_PANEL':
@@ -126,7 +191,10 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showReSearchProgress: false,
         showObjectTrackingConfirm: false,
         showObjectTracking: false,
+        showCaptureList: false,
         selectedMenuId: null,
+        showFastSearchProgress: false,
+        showNetMonitoringDialog: false,
       };
     default:
       return state;
@@ -150,7 +218,10 @@ export default function HomeV2() {
     showReSearchProgress: false,
     showObjectTrackingConfirm: false,
     showObjectTracking: false,
+    showCaptureList: false,
     selectedMenuId: null,
+    showFastSearchProgress: false,
+    showNetMonitoringDialog: false,
   });
 
   // 나머지 필요한 state들
@@ -159,6 +230,7 @@ export default function HomeV2() {
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
   const [fastSearchRadius, setFastSearchRadius] = useState<number>(300);
+  const [captureListRadius, setCaptureListRadius] = useState<number>(100);
   const [reportPopupHeight, setReportPopupHeight] = useState<number>(0);
   const [pinOffset, setPinOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [excludedAttributes, setExcludedAttributes] = useState<string[]>([]);
@@ -167,7 +239,20 @@ export default function HomeV2() {
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
-  const [showPredictedCCTV, setShowPredictedCCTV] = useState<boolean>(false);
+  const [visibleTrackingPins, setVisibleTrackingPins] = useState<number>(0); // 0~4: 보이는 핀 개수
+  const [showPredictedCCTVList, setShowPredictedCCTVList] = useState<boolean>(false); // 예측 CCTV 리스트 표시 여부
+  const [objectTrackingCompleted, setObjectTrackingCompleted] = useState<boolean>(false); // 객체 추적 애니메이션 완료 여부
+  const [captureItems, setCaptureItems] = useState<CaptureItem[]>([]); // 포착 목록
+  const [showCaptureNotification, setShowCaptureNotification] = useState<boolean>(false); // 포착 알림 애니메이션
+  const [captureNotificationMessage, setCaptureNotificationMessage] = useState<string>(''); // 포착 알림 메시지
+  const [lastMapState, setLastMapState] = useState<{ center: [number, number]; zoom: number; pitch: number; bearing: number }>({
+    center: [126.8136, 37.4865],
+    zoom: 15,
+    pitch: 60,
+    bearing: -17.6
+  });
+  const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
+  const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -193,6 +278,11 @@ export default function HomeV2() {
 
   // MapView용 이벤트 (선택된 이벤트를 맨 앞에 추가)
   const events: Event[] = useMemo(() => {
+    // 객체 추적 중이거나 추적 핀이 표시되고 있으면 이벤트 핀 숨김
+    if (uiState.showObjectTracking || visibleTrackingPins > 0) {
+      return [];
+    }
+    
     if (uiState.showFastSearchList && uiState.selectedEventId) {
       const alreadyInList = visibleEvents.some((e) => e.id === uiState.selectedEventId);
       if (!alreadyInList) {
@@ -201,23 +291,121 @@ export default function HomeV2() {
       }
     }
     return visibleEvents;
-  }, [visibleEvents, uiState.showFastSearchList, uiState.selectedEventId, allConvertedEvents]);
+  }, [visibleEvents, uiState.showFastSearchList, uiState.selectedEventId, allConvertedEvents, uiState.showObjectTracking, visibleTrackingPins]);
 
   // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
   const fastSearchFocusXPercent = uiState.showFastSearchList ? 52 : 50;
 
   // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
-  const handleMenuSelect = useCallback((menuId: 'fast-search' | 'object-tracking' | 'broadcast') => {
+  const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'broadcast') => {
+    console.log('[Home-v2] 메뉴 선택:', menuId);
     dispatch({ type: 'SET_MENU', payload: menuId });
     
-    if (menuId === 'fast-search') {
+    if (menuId === 'net-monitoring') {
+      dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
+    } else if (menuId === 'fast-search') {
+      console.log('[Home-v2] 고속검색 시작');
+      // 예측 CCTV 리스트 패널 닫기
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      setVisibleTrackingPins(0);
+      // 고속검색 시작 시 신고 팝업을 위한 이벤트 선택
+      const missingEvent = allConvertedEvents.find(event => 
+        event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+      );
+      console.log('[Home-v2] 찾은 이벤트:', missingEvent);
+      if (missingEvent) {
+        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+        // 이벤트 핀을 지도에 표시하기 위해 visibleEventIds에 추가
+        setVisibleEventIds(new Set([missingEvent.id]));
+        // 이벤트 위치로 지도 이동
+        setFlyToLocation([126.783853180335, 37.5049838114765]);
+      }
       dispatch({ type: 'START_FAST_SEARCH' });
     } else if (menuId === 'object-tracking') {
-      if (uiState.showFastSearchList) {
-        dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+      // 객체 추적 메뉴 선택 시 - 에이전트 팝업과 동일한 로직
+      // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
+      dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+    } else if (menuId === 'capture-list') {
+      dispatch({ type: 'SHOW_CAPTURE_LIST' });
+    }
+  }, [allConvertedEvents]);
+
+  // 포착 아이템 추가 핸들러
+  const handleAddCaptureItem = useCallback((
+    cctvName: string, 
+    location: string, 
+    confidence: number, 
+    thumbnailUrlOrAnalysisResult?: string | any, 
+    analysisResultParam?: string | any,
+    videoUrlParam?: string
+  ) => {
+    // 6개 파라미터: thumbnailUrl + analysisResult + videoUrl (고속검색에서 호출)
+    // 5개 파라미터: 
+    //   - 케이스1: thumbnailUrl + analysisResult (고속검색에서 호출)
+    //   - 케이스2: capturedImage(base64) + analysisResult(마크다운) (객체추적에서 호출)
+    // 4개 파라미터: thumbnailUrl 또는 analysisResult 또는 캡처된 이미지(base64) (타입으로 구분)
+    // 3개 파라미터: 기본 (썸네일 없음)
+    let thumbnailUrl = '/images/cctv-placeholder.jpg';
+    let analysisResult = undefined;
+    let videoUrl = '/videos/sample-cctv.mp4';
+    
+    if (videoUrlParam !== undefined) {
+      // 6개 파라미터: thumbnailUrl(4번째) + analysisResult(5번째) + videoUrl(6번째)
+      thumbnailUrl = typeof thumbnailUrlOrAnalysisResult === 'string' ? thumbnailUrlOrAnalysisResult : '/images/cctv-placeholder.jpg';
+      analysisResult = analysisResultParam;
+      videoUrl = videoUrlParam;
+    } else if (analysisResultParam !== undefined) {
+      // 5개 파라미터: capturedImage/thumbnailUrl(4번째) + analysisResult(5번째)
+      const is4thParamImage = typeof thumbnailUrlOrAnalysisResult === 'string' && 
+                              (thumbnailUrlOrAnalysisResult.startsWith('/') || 
+                               thumbnailUrlOrAnalysisResult.startsWith('http') ||
+                               thumbnailUrlOrAnalysisResult.startsWith('data:image/'));
+      
+      if (is4thParamImage) {
+        thumbnailUrl = thumbnailUrlOrAnalysisResult;
+      }
+      analysisResult = analysisResultParam;
+    } else if (thumbnailUrlOrAnalysisResult !== undefined) {
+      // 4개 파라미터: thumbnailUrl 또는 analysisResult 또는 캡처된 이미지(base64)
+      const isUrl = typeof thumbnailUrlOrAnalysisResult === 'string' && 
+                    (thumbnailUrlOrAnalysisResult.startsWith('/') || thumbnailUrlOrAnalysisResult.startsWith('http'));
+      const isBase64Image = typeof thumbnailUrlOrAnalysisResult === 'string' && 
+                            thumbnailUrlOrAnalysisResult.startsWith('data:image/');
+      
+      if (isUrl || isBase64Image) {
+        thumbnailUrl = thumbnailUrlOrAnalysisResult;
+      } else {
+        analysisResult = thumbnailUrlOrAnalysisResult;
       }
     }
-  }, [uiState.showFastSearchList]);
+    
+    const newItem: CaptureItem = {
+      id: `capture-${Date.now()}`,
+      cctvName,
+      location,
+      timestamp: new Date().toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+      thumbnailUrl,
+      videoUrl,
+      analysisResult,
+    };
+    
+    setCaptureItems((prev) => [newItem, ...prev]);
+    
+    // 알림 메시지 설정
+    const message = `${cctvName} | ${location}의 클립을 포착 목록에 추가했습니다.\n전파 패키지를 생성하여 전파를 보내세요.`;
+    setCaptureNotificationMessage(message);
+    setShowCaptureNotification(true);
+    
+    // 5초 후 알림 애니메이션 종료
+    setTimeout(() => {
+      setShowCaptureNotification(false);
+    }, 5000);
+  }, []);
 
   // 이벤트 액션 핸들러 (useCallback으로 메모이제이션)
   const handleEventAction = useCallback((eventId: string) => {
@@ -245,18 +433,79 @@ export default function HomeV2() {
     setFlyToLocation(null);
   }, []);
 
+  // 객체 추적 애니메이션 완료 핸들러
+  const handleTrackingComplete = useCallback(() => {
+    console.log('[Home-v2] 객체 추적 애니메이션 완료 - 예측 CCTV 리스트 표시 및 에이전트 팝업 결과 메시지');
+    setShowPredictedCCTVList(true);
+    setObjectTrackingCompleted(true);
+  }, []);
+
+  // 객체 추적 시퀀스 시작 핸들러
+  const handleStartTrackingSequence = useCallback(() => {
+    console.log('[Home-v2] 객체 추적 시퀀스 시작');
+    
+    // 기존 이벤트 핀 숨기기 (하지만 selectedEventId는 유지하여 신고 팝업 표시)
+    setVisibleEventIds(new Set());
+    
+    // 기존 추적 핀 초기화
+    setVisibleTrackingPins(0);
+    
+    // 예측 CCTV 리스트 숨기기
+    setShowPredictedCCTVList(false);
+    
+    // 객체 추적 완료 플래그 리셋
+    setObjectTrackingCompleted(false);
+    
+    // 추적 경로 좌표
+    const trackingSequence = [
+      [126.783853180335, 37.5049838114765], // 1번: 초기 목격 지점
+      [126.7843434, 37.5042779],            // 2번: 목격 지점 (춘의동 126-18)
+      [126.7828196, 37.50501939999999],     // 3번: 목격 지점 (춘의동 125-46)
+      [126.7828168, 37.504067],             // 4번: 목격 지점 (춘의동 125-32)
+    ];
+    
+    // 1단계: 1번 핀 표시 및 줌인 (초기화 후 약간의 딜레이)
+    setTimeout(() => {
+      console.log('[Home-v2] 1단계: 1번 핀 표시');
+      setVisibleTrackingPins(1);
+      setFlyToLocation(trackingSequence[0] as [number, number]);
+    }, 100);
+    
+    // 2단계: 2번 핀 표시 및 이동 (2.1초 후)
+    setTimeout(() => {
+      console.log('[Home-v2] 2단계: 2번 핀 표시');
+      setVisibleTrackingPins(2);
+      setFlyToLocation(trackingSequence[1] as [number, number]);
+    }, 2100);
+    
+    // 3단계: 3번 핀 표시 및 이동 (4.1초 후)
+    setTimeout(() => {
+      console.log('[Home-v2] 3단계: 3번 핀 표시');
+      setVisibleTrackingPins(3);
+      setFlyToLocation(trackingSequence[2] as [number, number]);
+    }, 4100);
+    
+    // 4단계: 4번 핀 표시 및 이동 (6.1초 후)
+    setTimeout(() => {
+      console.log('[Home-v2] 4단계: 4번 핀 표시');
+      setVisibleTrackingPins(4);
+      setFlyToLocation(trackingSequence[3] as [number, number]);
+    }, 6100);
+  }, []);
+
   /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
       const topPx = reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424; // 1.25rem = 20px
-      const reserveBottom = 24 + 56 + 8; // 플로팅 버튼 영역
+      // 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드일 때는 플로팅 버튼 영역 제외
+      const reserveBottom = (uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList) ? 24 : 24 + 56 + 8;
       setAgentPopupMaxHeight(Math.max(200, window.innerHeight - topPx - reserveBottom));
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [reportPopupHeight]);
+  }, [reportPopupHeight, uiState.showFastSearchList, uiState.showObjectTracking, uiState.showCaptureList]);
 
   // 재검색 완료 후 카드 개수 변경 감지
   useEffect(() => {
@@ -287,28 +536,19 @@ export default function HomeV2() {
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setFlyToLocation([126.783853180335, 37.5049838114765]);
-    } else if (e.key === '2' && missingEvent) {
-      dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
-      dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
-      dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
-      setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-      setFlyToLocation([126.783853180335, 37.5049838114765]);
-      setPinOffset({ x: 0, y: 0 });
+    } else if (e.key === '2') {
+      // 좌측 메뉴 패널에서 객체 추적 버튼을 누르는 것과 동일한 시나리오
+      dispatch({ type: 'SET_MENU', payload: 'object-tracking' });
+      dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
     } else if (e.key === '3') {
-      dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
-      setPinOffset({ x: 0, y: 0 });
+      console.log('[Home-v2] 3번 키 - 객체 추적 시작');
+      handleStartTrackingSequence();
     } else if (e.key === '4') {
       dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
-    } else if (e.key === 'Escape') {
-      if (uiState.showFastSearchList) {
-        dispatch({ type: 'HIDE_FAST_SEARCH_LIST' });
-      } else {
-        clearSelection();
-      }
     }
-  }, [allConvertedEvents, uiState.showFastSearchList, clearSelection]);
+  }, [allConvertedEvents, uiState.showFastSearchList, clearSelection, handleStartTrackingSequence]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -322,35 +562,59 @@ export default function HomeV2() {
     >
 
       <div className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
-        <MapView
-          events={events}
-          highlightedEventId={uiState.highlightedEventId}
-          selectedEventId={uiState.selectedEventId}
-          aiDetectionEventId={aiDetectionEventId}
-          onEventClick={handleEventAction}
-          onAiDetectionClose={clearSelection}
-          onMapClick={undefined}
-          externalZoomLevel={mapZoomLevel}
-          onZoomLevelChange={setMapZoomLevel}
-          hideControls={uiState.hideControls}
-          showFastSearch={uiState.showFastSearch}
-          showFastSearchList={uiState.showFastSearchList}
-          fastSearchRadius={fastSearchRadius}
-          leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
-          pinOffset={pinOffset}
-          focusTargetXPercent={fastSearchFocusXPercent}
-          flyToLocation={flyToLocation}
-          externalShowCCTV={!uiState.showObjectTracking}
-          showPredictedCCTV={showPredictedCCTV}
-        />
+        {(() => {
+          console.log('[Home-v2] MapView 렌더링 - showObjectTracking:', uiState.showObjectTracking);
+          return uiState.showObjectTracking ? (
+            <ObjectTrackingMapView
+              visibleTrackingPins={visibleTrackingPins}
+              flyToLocation={flyToLocation}
+              initialMapState={lastMapState}
+              onTrackingComplete={handleTrackingComplete}
+              onCCTVHover={(cctvId, showLabel) => {
+                setHoveredCCTVId(cctvId);
+                setShowCCTVLabel(showLabel || false);
+              }}
+              hoveredCCTVId={hoveredCCTVId}
+              showCCTVLabel={showCCTVLabel}
+              pulseRadius={captureListRadius}
+            />
+          ) : (
+            <MapView
+            events={events}
+            highlightedEventId={uiState.highlightedEventId}
+            selectedEventId={uiState.selectedEventId}
+            aiDetectionEventId={aiDetectionEventId}
+            onEventClick={handleEventAction}
+            onAiDetectionClose={clearSelection}
+            onMapClick={undefined}
+            externalZoomLevel={mapZoomLevel}
+            onZoomLevelChange={setMapZoomLevel}
+            hideControls={uiState.hideControls}
+            showFastSearch={uiState.showFastSearch}
+            showFastSearchList={uiState.showFastSearchList}
+            fastSearchRadius={fastSearchRadius}
+            leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
+            pinOffset={pinOffset}
+            focusTargetXPercent={fastSearchFocusXPercent}
+            flyToLocation={flyToLocation}
+            externalShowCCTV={!uiState.showObjectTracking}
+            onMapStateChange={setLastMapState}
+          />
+          );
+        })()}
       </div>
 
-      {/* 좌측 메뉴 패널 - 고속검색 또는 객체 추적 시 표시 */}
+      {/* 좌측 메뉴 패널 - 고속검색 또는 객체 추적 또는 포착 목록 시 표시 */}
       <div 
-        className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${uiState.showFastSearchList || uiState.showObjectTracking ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
+        className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
         style={{ zIndex: 101 }}
       >
-        <LeftMenuPanel onMenuSelect={handleMenuSelect} selectedMenuId={uiState.selectedMenuId} />
+        <LeftMenuPanel 
+          onMenuSelect={handleMenuSelect} 
+          selectedMenuId={uiState.selectedMenuId}
+          captureCount={captureItems.length}
+          showNotification={showCaptureNotification}
+        />
       </div>
 
       <div 
@@ -386,9 +650,9 @@ export default function HomeV2() {
         </div>
       </div>
 
-      {/* BottomPanel (CCTV 화면) */}
+      {/* BottomPanel (CCTV 화면) - 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드일 때 숨김 */}
       <BottomPanel
-        showCCTV={uiState.showCCTV}
+        showCCTV={uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList}
         hideControls={uiState.hideControls}
         leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
         windowWidth={windowWidth}
@@ -398,46 +662,75 @@ export default function HomeV2() {
         autoScrollIntervalRef={autoScrollIntervalRef}
       />
 
-      {/* ReportPopup */}
+      {/* ReportPopup - 고속검색, 객체추적, 포착목록 모드일 때 우측 상단에 표시 */}
       {uiState.selectedEventId && !uiState.showFastSearch && (
         <ReportPopup
           event={allConvertedEvents.find(e => e.id === uiState.selectedEventId) || null}
-          onClose={clearSelection}
-          onFastSearchStart={() => dispatch({ type: 'START_FAST_SEARCH' })}
-          showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking}
+          onClose={() => {
+            // 객체 추적 모드일 때는 신고 팝업만 닫고 객체 추적 상태는 유지
+            if (uiState.showObjectTracking) {
+              dispatch({ type: 'SET_SELECTED_EVENT', payload: null });
+            } else {
+              clearSelection();
+            }
+          }}
+          onFastSearchStart={() => dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' })}
+          showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList}
           onLayout={setReportPopupHeight}
-          position={uiState.showFastSearchList || uiState.showObjectTracking ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
+          position={uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
         />
       )}
 
-      {/* FastSearchProgress */}
-      <FastSearchProgress
-        isVisible={uiState.showFastSearch}
-        hideDim={false}
-        onComplete={() => {
-          dispatch({ type: 'COMPLETE_FAST_SEARCH' });
-          setPinOffset({ x: 0, y: 0 });
-        }}
-      />
+      {/* FastSearchProgress - 더 이상 사용하지 않음 (AIAgentPopup에서 처리) */}
 
-      {/* FastSearchListPanel - 재검색 시 리스트 박스 전체(상단 버튼 포함) 딤 + 프로그래스 중앙 */}
+      {/* FastSearchListPanel */}
       <FastSearchListPanel
-        isVisible={uiState.showFastSearchList && !uiState.showObjectTracking}
+        isVisible={uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList}
         onListCardCountChange={setListCardCount}
         onRadiusChange={setFastSearchRadius}
-        showReSearchDim={uiState.showReSearchProgress}
+        showReSearchDim={false}
         onReSearchComplete={() => {
           dispatch({ type: 'COMPLETE_RE_SEARCH' });
           isReSearchingRef.current = true;
         }}
-        onReSearchClick={() => {
-          previousListCardCountRef.current = listCardCount;
-          currentExcludedAttributesRef.current = excludedAttributes;
-          dispatch({ type: 'START_RE_SEARCH' });
-        }}
         excludedAttributes={excludedAttributes}
         openCandidateId={openCandidateId}
         onCandidateOpened={() => setOpenCandidateId(null)}
+        showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress}
+        onAddCapture={handleAddCaptureItem}
+      />
+
+      {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}
+      <PredictedCCTVListPanel
+        isVisible={showPredictedCCTVList && !uiState.showCaptureList}
+        onAddCapture={handleAddCaptureItem}
+        hoveredCCTVId={hoveredCCTVId}
+        onCCTVHover={(cctvId) => {
+          setHoveredCCTVId(cctvId);
+          setShowCCTVLabel(false); // 썸네일 호버 시 라벨 표시 안함
+        }}
+        onRadiusChange={setCaptureListRadius}
+      />
+
+      {/* CaptureListPanel - 포착 목록 */}
+      <CaptureListPanel
+        isVisible={uiState.showCaptureList}
+        captureItems={captureItems}
+        onCreatePropagationPackage={() => {
+          console.log('[Home-v2] 전파 패키지 생성 요청');
+          // TODO: 전파 패키지 생성 로직
+        }}
+      />
+
+      {/* 투망감시 안내 다이얼로그 */}
+      <ConfirmDialog
+        isOpen={uiState.showNetMonitoringDialog}
+        title="투망감시"
+        message="현재 객체 추적, 포착목록, 전파, CUVIA Link를 위한 데모 페이지입니다.\n다른 메뉴를 선택해 보세요."
+        confirmText="확인"
+        cancelText=""
+        onConfirm={() => dispatch({ type: 'HIDE_NET_MONITORING_DIALOG' })}
+        onCancel={() => dispatch({ type: 'HIDE_NET_MONITORING_DIALOG' })}
       />
 
       {/* 객체 추적 확인 다이얼로그 */}
@@ -447,7 +740,11 @@ export default function HomeV2() {
         message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.\n객체 추적 검사를 시작하시겠습니까?`}
         confirmText="시작"
         cancelText="취소"
-        onConfirm={() => dispatch({ type: 'START_OBJECT_TRACKING' })}
+        onConfirm={() => {
+          dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' });
+          dispatch({ type: 'START_OBJECT_TRACKING' });
+          handleStartTrackingSequence();
+        }}
         onCancel={() => dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' })}
       />
 
@@ -468,9 +765,7 @@ export default function HomeV2() {
             if (parsed.length) {
               previousListCardCountRef.current = listCardCount;
               currentExcludedAttributesRef.current = parsed;
-              isReSearchingRef.current = true;
               setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
-              dispatch({ type: 'START_RE_SEARCH' });
             }
             
             return parsed;
@@ -478,11 +773,88 @@ export default function HomeV2() {
           maxHeight={agentPopupMaxHeight}
           reSearchResult={reSearchResult}
           isObjectTracking={uiState.showObjectTracking}
-          onObjectTrackingComplete={() => {
-            console.log('[Home-v2] 객체 추적 완료, 파란색 핀 표시');
-            setShowPredictedCCTV(true);
+          captureNotificationMessage={showCaptureNotification ? captureNotificationMessage : ''}
+          onObjectTrackingStart={() => {
+            if (uiState.showFastSearchList) {
+              // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
+              dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+            } else {
+              // 고속검색 리스트가 없으면 바로 시작
+              dispatch({ type: 'START_OBJECT_TRACKING' });
+              handleStartTrackingSequence();
+            }
+          }}
+          objectTrackingCompleted={objectTrackingCompleted}
+          showFastSearchProgress={uiState.showFastSearchProgress}
+          onFastSearchComplete={() => {
+            dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
+            setPinOffset({ x: 0, y: 0 });
+          }}
+          onReSearchStart={() => {
+            dispatch({ type: 'START_RE_SEARCH' });
+          }}
+          onReSearchComplete={() => {
+            dispatch({ type: 'COMPLETE_RE_SEARCH' });
+            isReSearchingRef.current = true;
           }}
         />
+      )}
+
+      {/* 포착 목록 아이콘 오버레이 - 딤 위에 표시 */}
+      {showCaptureNotification && (
+        <div
+          id="capture-menu-overlay"
+          className="fixed"
+          style={{ 
+            left: '80px',
+            top: '0',
+            zIndex: 10000,
+            pointerEvents: 'none',
+            transform: 'translateX(-80px)',
+          }}
+        >
+          <div className="py-6 px-3" style={{ width: '80px' }}>
+            {/* 로고 영역 */}
+            <div className="mb-4 pb-4 border-b border-gray-700/50 w-full flex justify-center">
+              <div className="h-8 w-8" />
+            </div>
+
+            {/* 메뉴 아이템들 */}
+            <div className="flex flex-col items-center gap-3 w-full">
+              {/* 빈 메뉴 3개 */}
+              <div style={{ height: '52px' }} />
+              <div style={{ height: '52px' }} />
+              <div style={{ height: '52px' }} />
+              
+              {/* 포착목록 아이콘 */}
+              <button 
+                onClick={() => handleMenuSelect('capture-list')}
+                className="flex flex-col items-center justify-center w-full group relative"
+              >
+                <div className={`relative ${showCaptureNotification ? 'animate-icon-bounce' : ''}`}>
+                  <svg className="w-7 h-7 text-gray-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M1 5h2v14H1zm4 0h2v14H5zm17 0H10a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1M11 17l2.5-3.15L15.29 16l2.5-3.22L21 17z" />
+                  </svg>
+                  
+                  {captureItems.length > 0 && (
+                    <div
+                      className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold animate-capture-badge-pop"
+                      style={{
+                        boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)',
+                      }}
+                    >
+                      {captureItems.length}
+                    </div>
+                  )}
+                </div>
+                
+                <span className="text-[10px] font-medium mt-1.5 text-gray-400 group-hover:text-white transition-colors">
+                  포착목록
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

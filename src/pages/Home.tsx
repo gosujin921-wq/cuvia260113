@@ -308,7 +308,9 @@ export default function Home() {
     // 키보드 단축키 핸들러
     useEffect(() => {
         const handleKeyPress = (e: KeyboardEvent) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+            // Escape와 0 키는 입력 필드에서도 동작하도록 허용
+            const isEscapeOrZero = e.key === "Escape" || e.key === "0";
+            if (!isEscapeOrZero && (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
                 return;
             }
 
