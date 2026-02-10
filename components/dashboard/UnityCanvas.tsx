@@ -147,6 +147,7 @@ const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
                     height: "100%",
                     visibility: isLoaded ? "visible" : "hidden",
                 }}
+                devicePixelRatio={2}
             />
         </div>
     );
