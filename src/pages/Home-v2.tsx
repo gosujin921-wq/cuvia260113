@@ -298,11 +298,144 @@ export default function HomeV2() {
       .filter((event) => event.processingStage !== '종결');
   }, []);
 
+  // 가상 이벤트 데이터 (레이아웃 확인용)
+  const mockEvents: Event[] = useMemo(() => {
+    const now = new Date();
+    const formatDate = () => {
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}.${month}.${day}`;
+    };
+    const formatTime = (hours: number, minutes: number) => {
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    };
+
+    return [
+      // 일반 5개
+      {
+        id: 'mock-1',
+        type: '112-치안',
+        title: '주차장 소음 민원 신고',
+        priority: '일반' as const,
+        status: 'NEW' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
+        location: { name: '부천시 원미구 중동 지하주차장', coordinates: [126.98, 37.42] as [number, number] },
+        processingStage: '생성',
+        resolution: { category: '112', code: '001', description: '' },
+      },
+      {
+        id: 'mock-2',
+        type: '약자',
+        title: '노인 낙상 부상 신고',
+        priority: '일반' as const,
+        status: 'NEW' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
+        location: { name: '부천시 원미구 중앙공원 산책로', coordinates: [126.99, 37.43] as [number, number] },
+        processingStage: '선별',
+        resolution: { category: '약자', code: '002', description: '' },
+      },
+      {
+        id: 'mock-3',
+        type: '112-치안',
+        title: '횡단보도 신호 위반',
+        priority: '일반' as const,
+        status: 'MONITORING' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
+        location: { name: '부천시 원미구 중동 사거리', coordinates: [126.97, 37.41] as [number, number] },
+        processingStage: '착수',
+        resolution: { category: '112', code: '003', description: '' },
+      },
+      {
+        id: 'mock-4',
+        type: 'AI-배회',
+        title: '이상 행동 AI 탐지',
+        priority: '일반' as const,
+        status: 'NEW' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 45)),
+        location: { name: '부천시 원미구 부천역 앞 광장', coordinates: [126.96, 37.4] as [number, number] },
+        processingStage: '생성',
+        resolution: { category: 'AI', code: '004', description: '' },
+      },
+      {
+        id: 'mock-5',
+        type: '112-치안',
+        title: '차량 사고 교통 정체',
+        priority: '일반' as const,
+        status: 'MONITORING' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
+        location: { name: '부천시 원미구 송내대로', coordinates: [126.95, 37.39] as [number, number] },
+        processingStage: '선별',
+        resolution: { category: '112', code: '005', description: '' },
+      },
+      // 주의 3개
+      {
+        id: 'mock-6',
+        type: '112-미아',
+        title: '미아 발생 긴급 수색',
+        priority: '주의' as const,
+        status: 'MONITORING' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
+        location: { name: '부천시 원미구 중동초등학교 정문 앞', coordinates: [126.98, 37.42] as [number, number] },
+        processingStage: '착수',
+        resolution: { category: '112', code: '006', description: '' },
+      },
+      {
+        id: 'mock-7',
+        type: '119-구조',
+        title: '차량 충돌 사고 발생',
+        priority: '주의' as const,
+        status: 'NEW' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
+        location: { name: '부천시 원미구 부천시청 앞 교차로', coordinates: [126.99, 37.43] as [number, number] },
+        processingStage: '생성',
+        resolution: { category: '119', code: '007', description: '' },
+      },
+      {
+        id: 'mock-8',
+        type: '112-치안',
+        title: '말다툼 주먹다짐 발생',
+        priority: '주의' as const,
+        status: 'MONITORING' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 30)),
+        location: { name: '부천시 원미구 송내역 인근 상가 앞', coordinates: [126.97, 37.41] as [number, number] },
+        processingStage: '착수',
+        resolution: { category: '112', code: '008', description: '' },
+      },
+      // 경계 2개
+      {
+        id: 'mock-9',
+        type: '119-화재',
+        title: '쓰레기 수거함 화재 발생',
+        priority: '경계' as const,
+        status: 'MONITORING' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
+        location: { name: '부천시 원미구 중동 아파트 단지 내 쓰레기 수거함', coordinates: [126.96, 37.4] as [number, number] },
+        processingStage: '착수',
+        resolution: { category: '119', code: '009', description: '' },
+      },
+      {
+        id: 'mock-10',
+        type: '112-치안',
+        title: '절도 시도 의심 행동',
+        priority: '경계' as const,
+        status: 'NEW' as const,
+        timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
+        location: { name: '부천시 원미구 중동 상가 앞', coordinates: [126.95, 37.39] as [number, number] },
+        processingStage: '선별',
+        resolution: { category: '112', code: '010', description: '' },
+      },
+    ];
+  }, []);
+
   // 보이는 이벤트만 필터링 (중복 로직 제거)
   const visibleEvents: Event[] = useMemo(() => {
-    if (visibleEventIds.size === 0) return [];
-    return allConvertedEvents.filter((event) => visibleEventIds.has(event.id));
-  }, [allConvertedEvents, visibleEventIds]);
+    // 가상 이벤트는 항상 표시
+    const realEvents = visibleEventIds.size > 0 
+      ? allConvertedEvents.filter((event) => visibleEventIds.has(event.id))
+      : [];
+    return [...mockEvents, ...realEvents];
+  }, [allConvertedEvents, visibleEventIds, mockEvents]);
 
   // MapView용 이벤트 (선택된 이벤트를 맨 앞에 추가)
   const events: Event[] = useMemo(() => {

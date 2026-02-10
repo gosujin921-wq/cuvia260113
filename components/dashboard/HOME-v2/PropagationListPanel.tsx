@@ -91,6 +91,20 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   width = 700,
   onClose,
 }) => {
+  // ESC 키로 닫기
+  useEffect(() => {
+    if (!isVisible) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isVisible, onClose]);
+
   const [threads, setThreads] = useState<PropagationThread[]>(() => {
     const now = new Date();
     const reportTime = new Date(now.getTime() - 3 * 60 * 60 * 1000); // 3시간 전
@@ -425,40 +439,24 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                     {/* 포착 목록 */}
                                     <div className="mt-4 pt-4 border-t border-[#31353a]">
                                       <div className="text-xs font-semibold text-gray-400 mb-3">📎 포착 목록</div>
-                                      <div className="grid grid-cols-3 gap-2">
+                                      <div className="grid grid-cols-2 gap-2">
                                         {[
-                                          { id: '48', name: '원미A-230', type: 'image' },
-                                          { id: '42', name: '원미A-444', type: 'image' },
-                                          { id: '28', name: '원미A-604', type: 'image' },
-                                          { video: '/videos/qs_img_59_y.mp4', poster: '/images/fast-search/qs_img_57_48.png', name: '원미A-230 영상', type: 'video' },
-                                          { video: '/videos/qs_img_57_y.mov', poster: '/images/fast-search/qs_img_57_28.png', name: '원미A-604 영상', type: 'video' },
+                                          { video: '/videos/qs_img_59_y.mp4', poster: '/images/fast-search/qs_img_57_48.png', name: '원미A-230 영상' },
+                                          { video: '/videos/qs_img_57_y.mov', poster: '/images/fast-search/qs_img_57_28.png', name: '원미A-604 영상' },
                                         ].map((item, idx) => (
                                           <div key={idx} className="relative group">
                                             <div className="aspect-video bg-black rounded overflow-hidden border border-[#31353a] group-hover:border-blue-500/50 transition-colors relative">
-                                              {item.type === 'image' ? (
-                                                <img
-                                                  src={`/images/fast-search/qs_img_57_${item.id}.png`}
-                                                  alt={item.name}
-                                                  className="w-full h-full object-cover"
-                                                  onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%231a1a1a"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" fill="%23666" font-size="12"%3ENo Image%3C/text%3E%3C/svg%3E';
-                                                  }}
-                                                />
-                                              ) : (
-                                                <>
-                                                  <video
-                                                    src={item.video}
-                                                    poster={item.poster}
-                                                    className="w-full h-full object-cover"
-                                                    muted
-                                                    playsInline
-                                                    preload="metadata"
-                                                  />
-                                                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                                    <Icon icon="mdi:play-circle" className="w-8 h-8 text-white opacity-80" />
-                                                  </div>
-                                                </>
-                                              )}
+                                              <video
+                                                src={item.video}
+                                                poster={item.poster}
+                                                className="w-full h-full object-cover"
+                                                muted
+                                                playsInline
+                                                preload="metadata"
+                                              />
+                                              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                                <Icon icon="mdi:play-circle" className="w-8 h-8 text-white opacity-80" />
+                                              </div>
                                             </div>
                                             <div className="text-[10px] text-gray-400 mt-1 text-center truncate">{item.name}</div>
                                           </div>
