@@ -1,10 +1,9 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Icon } from '@iconify/react';
 import EventList from '@/components/dashboard/HOME/EventList';
-import MapView from '@/components/dashboard/MapView';
+import MapView from '@/components/dashboard/HOME-v2/MapView';
 import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
-import LeftPanel from '@/components/dashboard/LeftPanel';
+import LeftPanel from '@/components/dashboard/HOME-v2/LeftPanel';
 import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
@@ -26,7 +25,6 @@ type UIState = {
   hideControls: boolean;
   leftPanelCollapsed: boolean;
   panelsSlidOut: boolean;
-  showFastSearch: boolean;
   showFastSearchList: boolean;
   showAIAgentPopup: boolean;
   showCCTV: boolean;
@@ -76,7 +74,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         panelsSlidOut: true,
         showCCTV: false,
         hideControls: true,
-        showFastSearch: false,
         showFastSearchList: true,
         selectedMenuId: 'fast-search',
         showAIAgentPopup: true,
@@ -90,7 +87,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         panelsSlidOut: true,
         showCCTV: false,
         hideControls: true,
-        showFastSearch: false,
         showFastSearchList: true,
         selectedMenuId: 'fast-search',
         showAIAgentPopup: true,
@@ -107,7 +103,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
     case 'COMPLETE_FAST_SEARCH':
       return {
         ...state,
-        showFastSearch: false,
         showFastSearchList: true,
         showAIAgentPopup: true,
       };
@@ -128,7 +123,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         panelsSlidOut: false,
         showCCTV: true,
         hideControls: false,
-        showFastSearch: false,
         selectedMenuId: null,
       };
     case 'START_RE_SEARCH':
@@ -190,10 +184,8 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
       return {
         ...state,
         showPropagationList: false,
-        panelsSlidOut: false,
-        showCCTV: true,
-        hideControls: false,
-        selectedMenuId: null,
+        showCaptureList: true,
+        selectedMenuId: 'capture-list',
       };
     case 'SHOW_NET_MONITORING_DIALOG':
       return { ...state, showNetMonitoringDialog: true };
@@ -210,7 +202,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         hideControls: false,
         leftPanelCollapsed: state.leftPanelCollapsed,
         panelsSlidOut: false,
-        showFastSearch: false,
         showFastSearchList: false,
         showAIAgentPopup: false,
         showCCTV: true,
@@ -238,7 +229,6 @@ export default function HomeV2() {
     hideControls: false,
     leftPanelCollapsed: false,
     panelsSlidOut: false,
-    showFastSearch: false,
     showFastSearchList: false,
     showAIAgentPopup: false,
     showCCTV: true,
@@ -253,8 +243,6 @@ export default function HomeV2() {
   });
 
   // 나머지 필요한 state들
-  const [mapZoomLevel, setMapZoomLevel] = useState<number>(0);
-  const [aiDetectionEventId, setAiDetectionEventId] = useState<string | null>(null);
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
   const [fastSearchRadius, setFastSearchRadius] = useState<number>(300);
@@ -301,12 +289,6 @@ export default function HomeV2() {
   // 가상 이벤트 데이터 (레이아웃 확인용)
   const mockEvents: Event[] = useMemo(() => {
     const now = new Date();
-    const formatDate = () => {
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}.${month}.${day}`;
-    };
     const formatTime = (hours: number, minutes: number) => {
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
     };
@@ -589,8 +571,6 @@ export default function HomeV2() {
   // 선택 초기화 핸들러 (useCallback으로 메모이제이션)
   const clearSelection = useCallback(() => {
     dispatch({ type: 'CLEAR_ALL' });
-    setAiDetectionEventId(null);
-    setMapZoomLevel(0);
     setPinOffset({ x: 0, y: 0 });
     setExcludedAttributes([]);
     setFlyToLocation(null);
@@ -684,7 +664,7 @@ export default function HomeV2() {
     }
   }, [listCardCount, uiState.showReSearchProgress]);
 
-  // 키보드 단축키 핸들러 (useCallback으로 최적화)
+  // 키보드 단축키 핸들러 (시나리오 프로토타입용)
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
       return;
@@ -700,7 +680,6 @@ export default function HomeV2() {
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setFlyToLocation([126.783853180335, 37.5049838114765]);
     } else if (e.key === '2') {
-      // 좌측 메뉴 패널에서 객체 추적 버튼을 누르는 것과 동일한 시나리오
       dispatch({ type: 'SET_MENU', payload: 'object-tracking' });
       dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
     } else if (e.key === '3') {
@@ -711,7 +690,7 @@ export default function HomeV2() {
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
     }
-  }, [allConvertedEvents, uiState.showFastSearchList, clearSelection, handleStartTrackingSequence]);
+  }, [allConvertedEvents, handleStartTrackingSequence]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -746,14 +725,14 @@ export default function HomeV2() {
             events={events}
             highlightedEventId={uiState.highlightedEventId}
             selectedEventId={uiState.selectedEventId}
-            aiDetectionEventId={aiDetectionEventId}
+            aiDetectionEventId={null}
             onEventClick={handleEventAction}
             onAiDetectionClose={clearSelection}
             onMapClick={undefined}
-            externalZoomLevel={mapZoomLevel}
-            onZoomLevelChange={setMapZoomLevel}
+            externalZoomLevel={0}
+            onZoomLevelChange={() => {}}
             hideControls={uiState.hideControls}
-            showFastSearch={uiState.showFastSearch}
+            showFastSearch={false}
             showFastSearchList={uiState.showFastSearchList}
             fastSearchRadius={fastSearchRadius}
             leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
@@ -826,7 +805,7 @@ export default function HomeV2() {
       />
 
       {/* ReportPopup - 고속검색, 객체추적, 포착목록 모드일 때 우측 상단에 표시 (전파 모드일 때는 숨김) */}
-      {uiState.selectedEventId && !uiState.showFastSearch && !uiState.showPropagationList && (
+      {uiState.selectedEventId && !uiState.showPropagationList && (
         <ReportPopup
           event={allConvertedEvents.find(e => e.id === uiState.selectedEventId) || null}
           onClose={() => {
@@ -843,8 +822,6 @@ export default function HomeV2() {
           position={uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
         />
       )}
-
-      {/* FastSearchProgress - 더 이상 사용하지 않음 (AIAgentPopup에서 처리) */}
 
       {/* FastSearchListPanel */}
       <FastSearchListPanel
@@ -954,7 +931,7 @@ export default function HomeV2() {
             }
           }}
           objectTrackingCompleted={objectTrackingCompleted}
-          showFastSearchProgress={uiState.showFastSearchProgress}
+          showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
           onFastSearchComplete={() => {
             dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
             setPinOffset({ x: 0, y: 0 });
