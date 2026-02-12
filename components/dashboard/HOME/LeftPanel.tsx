@@ -2,6 +2,7 @@ import { Icon } from '@iconify/react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { useGetWeather } from '@/src/apis/weather/hooks';
 
 interface MonitoringSpot {
   spotId: string;
@@ -147,6 +148,8 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const energyChartContainerRef = useRef<HTMLDivElement>(null);
   const energyXAxisTickXMapRef = useRef<Map<number, number>>(new Map());
   const [energyChartRect, setEnergyChartRect] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+
+  // const { data: weatherData } = useGetWeather('경기', '주엽동');
   
   const sensorLocations = useMemo(() => ['신원동', '행신동', '식사동'], []);
   
