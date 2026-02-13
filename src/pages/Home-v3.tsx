@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EventList from '@/components/dashboard/HOME-v3/EventList';
-import MapView from '@/components/dashboard/HOME-v3/MapView';
+import MapView from '@/components/dashboard/HOME/MapView';
 import UnityMapView from '@/components/dashboard/HOME/unity/UnityMapView';
 import ObjectTrackingMapView from '@/components/dashboard/HOME-v3/ObjectTrackingMapView';
 import LeftPanel from '@/components/dashboard/HOME-v3/LeftPanel';
@@ -746,12 +746,14 @@ export default function HomeV2() {
             );
           }
           
-          // 일반 MapView (HOME-v3/MapView)
+          // 일반 MapView (HOME/MapView)
           return (
             <MapView
               events={events}
               highlightedEventId={uiState.highlightedEventId}
               selectedEventId={uiState.selectedEventId}
+              aiDetectionEventId={null}
+              cctvIndex={null}
               onEventClick={handleEventAction}
               onAiDetectionClose={clearSelection}
               onMapClick={() => {}}
@@ -759,6 +761,7 @@ export default function HomeV2() {
               onZoomLevelChange={() => {}}
               hideControls={uiState.hideControls}
               leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
+              isAutoMode={true}
             />
           );
         })()}
