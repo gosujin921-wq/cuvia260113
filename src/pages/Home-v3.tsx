@@ -1,19 +1,20 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
-import EventList from '@/components/dashboard/HOME/EventList';
-import MapView from '@/components/dashboard/HOME-v2/MapView';
-import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
-import LeftPanel from '@/components/dashboard/HOME-v2/LeftPanel';
-import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
-import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
-import BottomPanel from '@/components/dashboard/BottomPanel';
-import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
-import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
-import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
-import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/CaptureListPanel';
-import PropagationListPanel from '@/components/dashboard/HOME-v2/PropagationListPanel';
-import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
-import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
+import EventList from '@/components/dashboard/HOME-v3/EventList';
+import MapView from '@/components/dashboard/HOME-v3/MapView';
+import UnityMapView from '@/components/dashboard/HOME/unity/UnityMapView';
+import ObjectTrackingMapView from '@/components/dashboard/HOME-v3/ObjectTrackingMapView';
+import LeftPanel from '@/components/dashboard/HOME-v3/LeftPanel';
+import LeftMenuPanel from '@/components/dashboard/HOME-v3/LeftMenuPanel';
+import HeatmapPanel from '@/components/dashboard/HOME-v3/HeatmapPanel';
+import BottomPanel from '@/components/dashboard/HOME-v3/BottomPanel';
+import ReportPopup from '@/components/dashboard/HOME-v3/ReportPopup';
+import FastSearchListPanel from '@/components/dashboard/HOME-v3/FastSearchListPanel';
+import PredictedCCTVListPanel from '@/components/dashboard/HOME-v3/PredictedCCTVListPanel';
+import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v3/CaptureListPanel';
+import PropagationListPanel from '@/components/dashboard/HOME-v3/PropagationListPanel';
+import AIAgentPopup from '@/components/dashboard/HOME-v3/AIAgentPopup';
+import ConfirmDialog from '@/components/dashboard/HOME-v3/ConfirmDialog';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
@@ -243,6 +244,7 @@ export default function HomeV2() {
   });
 
   // 나머지 필요한 state들
+  const [isUnityMode, setIsUnityMode] = useState<boolean>(false);
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
   const [fastSearchRadius, setFastSearchRadius] = useState<number>(300);
@@ -689,6 +691,9 @@ export default function HomeV2() {
       dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
+    } else if (e.key === 'u' || e.key === 'U') {
+      console.log('[Home-v3] Unity 모드 토글');
+      setIsUnityMode(prev => !prev);
     }
   }, [allConvertedEvents, handleStartTrackingSequence]);
 
@@ -705,43 +710,65 @@ export default function HomeV2() {
 
       <div className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
         {(() => {
-          console.log('[Home-v2] MapView 렌더링 - showObjectTracking:', uiState.showObjectTracking);
-          return uiState.showObjectTracking ? (
-            <ObjectTrackingMapView
-              visibleTrackingPins={visibleTrackingPins}
-              flyToLocation={flyToLocation}
-              initialMapState={lastMapState}
-              onTrackingComplete={handleTrackingComplete}
-              onCCTVHover={(cctvId, showLabel) => {
-                setHoveredCCTVId(cctvId);
-                setShowCCTVLabel(showLabel || false);
-              }}
-              hoveredCCTVId={hoveredCCTVId}
-              showCCTVLabel={showCCTVLabel}
-              pulseRadius={captureListRadius}
-            />
-          ) : (
+          console.log('[Home-v3] MapView 렌더링 - showObjectTracking:', uiState.showObjectTracking, 'isUnityMode:', isUnityMode);
+          
+          // 객체 추적 모드
+          if (uiState.showObjectTracking) {
+            return (
+              <ObjectTrackingMapView
+                visibleTrackingPins={visibleTrackingPins}
+                flyToLocation={flyToLocation}
+                initialMapState={lastMapState}
+                onTrackingComplete={handleTrackingComplete}
+                onCCTVHover={(cctvId, showLabel) => {
+                  setHoveredCCTVId(cctvId);
+                  setShowCCTVLabel(showLabel || false);
+                }}
+                hoveredCCTVId={hoveredCCTVId}
+                showCCTVLabel={showCCTVLabel}
+                pulseRadius={captureListRadius}
+              />
+            );
+          }
+          
+          // Unity 모드
+          if (isUnityMode) {
+            return (
+              <UnityMapView
+                events={events}
+                highlightedEventId={uiState.highlightedEventId}
+                selectedEventId={uiState.selectedEventId}
+                aiDetectionEventId={null}
+                cctvIndex={null}
+                onEventClick={handleEventAction}
+                onAiDetectionClose={clearSelection}
+                onMapClick={() => {}}
+                externalZoomLevel={0}
+                onZoomLevelChange={() => {}}
+                hideControls={uiState.hideControls}
+                leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
+                isAutoMode={true}
+              />
+            );
+          }
+          
+          // 일반 MapView (HOME/MapView)
+          return (
             <MapView
-            events={events}
-            highlightedEventId={uiState.highlightedEventId}
-            selectedEventId={uiState.selectedEventId}
-            aiDetectionEventId={null}
-            onEventClick={handleEventAction}
-            onAiDetectionClose={clearSelection}
-            onMapClick={undefined}
-            externalZoomLevel={0}
-            onZoomLevelChange={() => {}}
-            hideControls={uiState.hideControls}
-            showFastSearch={false}
-            showFastSearchList={uiState.showFastSearchList}
-            fastSearchRadius={fastSearchRadius}
-            leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
-            pinOffset={pinOffset}
-            focusTargetXPercent={fastSearchFocusXPercent}
-            flyToLocation={flyToLocation}
-            externalShowCCTV={!uiState.showObjectTracking}
-            onMapStateChange={setLastMapState}
-          />
+              events={events}
+              highlightedEventId={uiState.highlightedEventId}
+              selectedEventId={uiState.selectedEventId}
+              aiDetectionEventId={null}
+              cctvIndex={null}
+              onEventClick={handleEventAction}
+              onAiDetectionClose={clearSelection}
+              onMapClick={() => {}}
+              externalZoomLevel={0}
+              onZoomLevelChange={() => {}}
+              hideControls={uiState.hideControls}
+              leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
+              isAutoMode={true}
+            />
           );
         })()}
       </div>
@@ -782,7 +809,7 @@ export default function HomeV2() {
             zone8: '원종동',
           }}
         />
-        <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+        <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', boxShadow: 'inset -2px -2px 4px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.4)' }}>
           <EventList
             events={visibleEvents}
             selectedEventId={uiState.selectedEventId || undefined}
