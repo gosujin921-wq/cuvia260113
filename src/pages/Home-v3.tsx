@@ -736,30 +736,22 @@ export default function HomeV2() {
             return (
               <UnityMapView
                 events={events}
-                highlightedEventId={uiState.highlightedEventId}
                 selectedEventId={uiState.selectedEventId}
-                aiDetectionEventId={null}
-                cctvIndex={null}
-                onEventClick={handleEventAction}
-                onAiDetectionClose={clearSelection}
                 onMapClick={() => {}}
                 externalZoomLevel={0}
                 onZoomLevelChange={() => {}}
                 hideControls={uiState.hideControls}
                 leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
-                isAutoMode={true}
               />
             );
           }
           
-          // 일반 MapView (HOME/MapView)
+          // 일반 MapView (HOME-v3/MapView)
           return (
             <MapView
               events={events}
               highlightedEventId={uiState.highlightedEventId}
               selectedEventId={uiState.selectedEventId}
-              aiDetectionEventId={null}
-              cctvIndex={null}
               onEventClick={handleEventAction}
               onAiDetectionClose={clearSelection}
               onMapClick={() => {}}
@@ -767,7 +759,6 @@ export default function HomeV2() {
               onZoomLevelChange={() => {}}
               hideControls={uiState.hideControls}
               leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
-              isAutoMode={true}
             />
           );
         })()}
