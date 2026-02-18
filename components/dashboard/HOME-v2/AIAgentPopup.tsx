@@ -347,6 +347,7 @@ interface ChatInputFormProps {
   setChatInput: (value: string) => void;
   handleSendMessage: () => void;
   isResponding: boolean;
+  onSkipResponse: () => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   inputKey: number;
   ignoreNextChangeRef: React.MutableRefObject<boolean>;
@@ -359,6 +360,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   setChatInput,
   handleSendMessage,
   isResponding,
+  onSkipResponse,
   textareaRef,
   inputKey,
   ignoreNextChangeRef,
@@ -408,23 +410,37 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             }}
             rows={1}
           />
-          <button
-            type="button"
-            onClick={handleSendMessage}
-            disabled={!chatInput.trim() || isResponding}
-            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${
-              isExpanded ? 'self-center' : ''
-            }`}
-            style={{ background: AGENT_GRADIENT }}
-            aria-label="전송"
-          >
-            <img
-              src="/simbol.svg"
-              alt="전송"
-              className="w-5 h-5"
-              style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-            />
-          </button>
+          {isResponding ? (
+            <button
+              type="button"
+              onClick={onSkipResponse}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${
+                isExpanded ? 'self-center' : ''
+              }`}
+              style={{ background: AGENT_GRADIENT }}
+              aria-label="답변 취소"
+            >
+              <Icon icon="mdi:close" className="w-5 h-5 text-white" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSendMessage}
+              disabled={!chatInput.trim()}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${
+                isExpanded ? 'self-center' : ''
+              }`}
+              style={{ background: AGENT_GRADIENT }}
+              aria-label="전송"
+            >
+              <img
+                src="/simbol.svg"
+                alt="전송"
+                className="w-5 h-5"
+                style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+              />
+            </button>
+          )}
         </div>
         <p className="text-xs text-gray-500 mt-2 text-center">
           <span className="font-semibold">{isExpanded ? 'CUVIA Agent' : 'CUVIA Link'}</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
@@ -539,6 +555,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   const ignoreNextChangeRef = useRef(false);
   const lastReSearchResultRef = useRef<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
   
+  // 애니메이션 interval refs
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   // 고속검색 프로그래스 상태
   const [fastSearchStep, setFastSearchStep] = useState<number>(0);
   const [fastSearchProgress, setFastSearchProgress] = useState<number>(0);
@@ -546,6 +567,47 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   
   // 재검색 프로그래스 상태
   const [isReSearching, setIsReSearching] = useState<boolean>(false);
+
+  // 답변 스킵 핸들러 (답변 취소)
+  const handleSkipResponse = () => {
+    // 모든 interval/timeout 정리
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    if (progressTimeoutRef.current) {
+      clearTimeout(progressTimeoutRef.current);
+      progressTimeoutRef.current = null;
+    }
+    
+    // 타이핑 중이거나 프로그래스바 표시 중인 메시지 제거
+    setMessages((prev) =>
+      prev.filter((msg) => {
+        // 타이핑 중인 메시지 제거
+        if (msg.isTyping) return false;
+        // 프로그래스바 메시지 제거
+        if (msg.type === 'analyzing') return false;
+        // 응답 대기 중인 메시지 제거 (마지막 assistant 메시지가 아직 완료되지 않은 경우)
+        if (msg.role === 'assistant' && msg.content === '') return false;
+        return true;
+      })
+    );
+    
+    setIsResponding(false);
+  };
+
+  // 컴포넌트 언마운트 시 모든 interval 정리
+  useEffect(() => {
+    return () => {
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (progressTimeoutRef.current) clearTimeout(progressTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -979,6 +1041,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             } else {
               // 타이핑 완료
               clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === errorMessage.id
@@ -988,6 +1052,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               );
             }
           }, 30);
+          typingIntervalRef.current = typingInterval;
         }, 700);
       } else {
         // 파싱된 속성이 있으면 재검색 프로그래스 표시
@@ -1095,9 +1160,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             return updated;
           });
         }, 100);
+        progressIntervalRef.current = progressInterval;
 
-        setTimeout(() => {
+        const progressTimeout = setTimeout(() => {
           clearInterval(progressInterval);
+          progressIntervalRef.current = null;
           
           // 객체 추적 완료 시 프로그래스바 제거하고 완료 메시지 추가 (타이핑 애니메이션)
           if (isObjectTracking) {
@@ -1142,6 +1209,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 } else {
                   // 타이핑 완료
                   clearInterval(typingInterval);
+                  typingIntervalRef.current = null;
+                  setIsResponding(false);
                   setMessages((prev) =>
                     prev.map((msg) =>
                       msg.id.startsWith('assistant-complete-')
@@ -1151,9 +1220,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   );
                 }
               }, 30);
+              typingIntervalRef.current = typingInterval;
             }, 500);
           }
         }, totalDuration);
+        progressTimeoutRef.current = progressTimeout;
       } else {
         // 프로그래스바가 없는 일반 답변: 로딩 후 타이핑 애니메이션
         setTimeout(() => {
@@ -1186,6 +1257,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             } else {
               // 타이핑 완료
               clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === assistantMessage.id
@@ -1195,6 +1268,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               );
             }
           }, 30); // 30ms마다 한 글자씩
+          typingIntervalRef.current = typingInterval;
         }, 800); // 800ms 로딩 시간
       }
     }, 300); // 초기 딜레이 300ms
@@ -1252,6 +1326,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               setChatInput={setChatInput}
               handleSendMessage={handleSendMessage}
               isResponding={isResponding}
+              onSkipResponse={handleSkipResponse}
               textareaRef={textareaRef}
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
@@ -1307,6 +1382,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               setChatInput={setChatInput}
               handleSendMessage={handleSendMessage}
               isResponding={isResponding}
+              onSkipResponse={handleSkipResponse}
               textareaRef={textareaRef}
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}

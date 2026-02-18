@@ -36,6 +36,13 @@ type UIState = {
   selectedMenuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast' | null;
   showFastSearchProgress: boolean;
   showNetMonitoringDialog: boolean;
+  previousStateBeforePropagation: {
+    showFastSearchList: boolean;
+    showObjectTracking: boolean;
+    showCaptureList: boolean;
+    showAIAgentPopup: boolean;
+    selectedMenuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast' | null;
+  } | null;
 };
 
 type UIAction =
@@ -179,13 +186,25 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showCCTV: false,
         hideControls: true,
         selectedMenuId: 'propagation',
+        previousStateBeforePropagation: {
+          showFastSearchList: state.showFastSearchList,
+          showObjectTracking: state.showObjectTracking,
+          showCaptureList: state.showCaptureList,
+          showAIAgentPopup: state.showAIAgentPopup,
+          selectedMenuId: state.selectedMenuId,
+        },
       };
     case 'HIDE_PROPAGATION_LIST':
+      const previousState = state.previousStateBeforePropagation;
       return {
         ...state,
         showPropagationList: false,
-        showCaptureList: true,
-        selectedMenuId: 'capture-list',
+        showFastSearchList: previousState?.showFastSearchList || false,
+        showObjectTracking: previousState?.showObjectTracking || false,
+        showCaptureList: previousState?.showCaptureList || false,
+        showAIAgentPopup: previousState?.showAIAgentPopup || false,
+        selectedMenuId: previousState?.selectedMenuId || null,
+        previousStateBeforePropagation: null,
       };
     case 'SHOW_NET_MONITORING_DIALOG':
       return { ...state, showNetMonitoringDialog: true };
@@ -213,6 +232,7 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         selectedMenuId: null,
         showFastSearchProgress: false,
         showNetMonitoringDialog: false,
+        previousStateBeforePropagation: null,
       };
     default:
       return state;
@@ -226,6 +246,7 @@ export default function HomeV2() {
   const [uiState, dispatch] = useReducer(uiReducer, {
     selectedEventId: null,
     highlightedEventId: null,
+    previousStateBeforePropagation: null,
     hideControls: false,
     leftPanelCollapsed: false,
     panelsSlidOut: false,
@@ -895,55 +916,57 @@ export default function HomeV2() {
       />
 
       {/* 에이전트 팝업: 고속검색 리스트 시 신고팝업 아래 여백(24px) 유지, 사건팝업 높이 변동에 따라 위치 조정 (전파 모드일 때는 숨김) */}
-      {uiState.showAIAgentPopup && !uiState.showPropagationList && (
-        <AIAgentPopup
-          isOpen={uiState.showAIAgentPopup}
-          onClose={() => dispatch({ type: 'COMPLETE_FAST_SEARCH' })}
-          hideControls={uiState.hideControls}
-          position={{
-            top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424}px`,
-            right: '20px',
-          }}
-          listCardCount={listCardCount}
-          onDeleteLikeRequest={({ rawMessage }) => {
-            const parsed = parseExcludedAttributesFromMessage(rawMessage);
-            
-            if (parsed.length) {
-              previousListCardCountRef.current = listCardCount;
-              currentExcludedAttributesRef.current = parsed;
-              setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
-            }
-            
-            return parsed;
-          }}
-          maxHeight={agentPopupMaxHeight}
-          reSearchResult={reSearchResult}
-          isObjectTracking={uiState.showObjectTracking}
-          captureNotificationMessage={showCaptureNotification ? captureNotificationMessage : ''}
-          onObjectTrackingStart={() => {
-            if (uiState.showFastSearchList) {
-              // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
-              dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
-            } else {
-              // 고속검색 리스트가 없으면 바로 시작
-              dispatch({ type: 'START_OBJECT_TRACKING' });
-              handleStartTrackingSequence();
-            }
-          }}
-          objectTrackingCompleted={objectTrackingCompleted}
-          showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
-          onFastSearchComplete={() => {
-            dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
-            setPinOffset({ x: 0, y: 0 });
-          }}
-          onReSearchStart={() => {
-            dispatch({ type: 'START_RE_SEARCH' });
-          }}
-          onReSearchComplete={() => {
-            dispatch({ type: 'COMPLETE_RE_SEARCH' });
-            isReSearchingRef.current = true;
-          }}
-        />
+      {uiState.showAIAgentPopup && (
+        <div style={{ display: uiState.showPropagationList ? 'none' : 'block' }}>
+          <AIAgentPopup
+            isOpen={uiState.showAIAgentPopup && !uiState.showPropagationList}
+            onClose={() => dispatch({ type: 'COMPLETE_FAST_SEARCH' })}
+            hideControls={uiState.hideControls}
+            position={{
+              top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424}px`,
+              right: '20px',
+            }}
+            listCardCount={listCardCount}
+            onDeleteLikeRequest={({ rawMessage }) => {
+              const parsed = parseExcludedAttributesFromMessage(rawMessage);
+              
+              if (parsed.length) {
+                previousListCardCountRef.current = listCardCount;
+                currentExcludedAttributesRef.current = parsed;
+                setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
+              }
+              
+              return parsed;
+            }}
+            maxHeight={agentPopupMaxHeight}
+            reSearchResult={reSearchResult}
+            isObjectTracking={uiState.showObjectTracking}
+            captureNotificationMessage={showCaptureNotification ? captureNotificationMessage : ''}
+            onObjectTrackingStart={() => {
+              if (uiState.showFastSearchList) {
+                // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
+                dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+              } else {
+                // 고속검색 리스트가 없으면 바로 시작
+                dispatch({ type: 'START_OBJECT_TRACKING' });
+                handleStartTrackingSequence();
+              }
+            }}
+            objectTrackingCompleted={objectTrackingCompleted}
+            showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
+            onFastSearchComplete={() => {
+              dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
+              setPinOffset({ x: 0, y: 0 });
+            }}
+            onReSearchStart={() => {
+              dispatch({ type: 'START_RE_SEARCH' });
+            }}
+            onReSearchComplete={() => {
+              dispatch({ type: 'COMPLETE_RE_SEARCH' });
+              isReSearchingRef.current = true;
+            }}
+          />
+        </div>
       )}
 
       {/* 포착 목록 아이콘 오버레이 */}
@@ -953,7 +976,7 @@ export default function HomeV2() {
           className="fixed"
           style={{ 
             left: '80px',
-            top: '0',
+            top: '4px',
             zIndex: 200,
             pointerEvents: 'none',
             transform: 'translateX(-80px)',

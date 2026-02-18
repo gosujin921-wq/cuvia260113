@@ -5,6 +5,7 @@ import {
   getCandidateDetailData,
   addMinutesToTime,
   generateMarkdownAnalysis,
+  getSimilarityTableForImageId,
   type TimelineEntry,
 } from '@/lib/fast-search-candidate-detail';
 import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes';
@@ -456,14 +457,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const timeEnd = addMinutesToTime(candidate.timestamp, 6);
   const timeRange = `${candidate.timestamp} ~ ${timeEnd}`;
   
-  let videoSrc = getRandomCCTVVideo(candidate.cctvId);
-  if (imageId === '48') {
-    videoSrc = '/fastsearch_img/qs_img_48_n.mov';
-  } else if (imageId === '57') {
-    videoSrc = '/fastsearch_img/qs_img_57_y.mov';
-  } else if (imageId === '59') {
-    videoSrc = '/fastsearch_img/qs_img_59_y.mp4';
-  }
+  const videoPath = getVideoPathForImageId(imageId);
+  const videoSrc = videoPath || getRandomCCTVVideo(candidate.cctvId);
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -871,16 +866,11 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                             </div>
                             
                             {/* 테이블 바디 */}
-                            {[
-                              { category: '의류(상의)', missing: '회색 후드', captured: '회색 후드티', match: true },
-                              { category: '의류(하의)', missing: '청바지', captured: '흑색/청색 계열 하의', match: true },
-                              { category: '헤어스타일', missing: '흑색 짧은 머리', captured: '흑색 짧은 머리', match: true },
-                              { category: '소지품/행동', missing: '-', captured: '휴대폰 조작', match: 'special' },
-                            ].map((item, idx) => (
+                            {getSimilarityTableForImageId(imageId).map((item, idx, arr) => (
                               <div 
                                 key={idx} 
                                 className={`grid grid-cols-4 gap-2 p-3 ${
-                                  idx !== 3 ? 'border-b border-[#3a3a3a]' : ''
+                                  idx !== arr.length - 1 ? 'border-b border-[#3a3a3a]' : ''
                                 }`}
                               >
                                 <div className="text-sm text-gray-300 font-medium">{item.category}</div>
@@ -908,7 +898,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                           {/* 최종 유사도 */}
                           <div className="bg-blue-500/10 border border-blue-500/30 rounded p-3 flex items-center justify-between mt-3">
                             <span className="text-sm text-blue-300 font-semibold">최종 유사도</span>
-                            <span className="text-base text-blue-400 font-bold">95.0점</span>
+                            <span className="text-base text-blue-400 font-bold">{detail.meta.score}점</span>
                           </div>
                         </div>
                       </>

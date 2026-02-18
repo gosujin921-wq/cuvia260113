@@ -56,23 +56,30 @@ const getDistanceFromReportLocation = (location: string): number => {
 /** 정렬 옵션 타입 */
 type SortOption = 'confidence-desc' | 'confidence-asc' | 'distance-asc' | 'distance-desc';
 
-/** 43개 카드용 베이스 데이터 생성 (이미지별 CCTV명, 위치, 유사도) */
+/** 10개 카드용 베이스 데이터 생성 (이미지별 CCTV명, 위치, 유사도) */
 const buildBaseItems = (): Omit<CaptureItem, 'id'>[] => {
-  return Array.from({ length: 43 }, (_, i) => {
+  const timestamps = [
+    '10:30:10', // ID 1 (05)
+    '10:31:05', // ID 2 (11)
+    '10:32:01', // ID 3 (15)
+    '10:33:05', // ID 4 (21)
+    '10:33:40', // ID 5 (25)
+    '10:34:20', // ID 6 (30)
+    '10:35:10', // ID 7 (40)
+    '10:35:10', // ID 8 (47)
+    '10:36:20', // ID 9 (51)
+    '10:37:39', // ID 10 (59)
+  ];
+  
+  return Array.from({ length: 10 }, (_, i) => {
     const id = String(i + 1);
     const cctvName = getCctvNameForCaptureItem({ id });
     const location = getLocationForCaptureItem({ id });
     const confidence = getConfidenceForCaptureItem({ id });
-    const baseMin = 28 + Math.floor((i * 3) % 60);
-    const baseSec = (i * 11) % 60;
-    const hour = 9 + Math.floor((i * 5) / 60) % 4;
-    const min = baseMin % 60;
-    const sec = baseSec;
-    const ts = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
     return {
       cctvId: cctvName,
       cctvName,
-      timestamp: ts,
+      timestamp: timestamps[i],
       confidence,
       location,
     };
@@ -320,7 +327,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   };
 
   const captureList = useMemo<CaptureItem[]>(() => {
-    return Array.from({ length: 43 }, (_, i) => {
+    return Array.from({ length: 10 }, (_, i) => {
       const base = BASE_ITEMS[i];
       return { id: String(i + 1), ...base };
     });
