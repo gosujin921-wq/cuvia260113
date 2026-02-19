@@ -1469,26 +1469,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
   // 선택된 이벤트를 지도 컨테이너 기준 지정된 X 위치(기본 중앙 50%)와 Y=50%로 이동시키기 위한 translate 계산
   const mapTranslate = useMemo(() => {
-    if (!selectedEventId) {
-      return { x: 0, y: 0, offsetX: 0 };
-    }
-    
-    const selectedEvent = events.find(e => e.id === selectedEventId);
-    if (!selectedEvent) {
-      return { x: 0, y: 0, offsetX: 0 };
-    }
-    
-    const eventPosition = positionsById[selectedEvent.id] || { left: centerX, top: centerY };
-    // focusTargetXPercent 위치(기본 50%)와 Y=50%에 오도록 translate 계산
-    const currentMapScale = zoomLevel === 0 ? 1 : mapScale;
-    const translateX = (focusTargetXPercent - eventPosition.left) * currentMapScale - 5;
-    const translateY = (50 - eventPosition.top) * currentMapScale;
-    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : windowWidth;
-    const offsetXPx = 100;
-    const offsetXPercent = (offsetXPx / screenWidth) * 100;
-    
-    return { x: translateX, y: translateY, offsetX: offsetXPercent };
-  }, [zoomLevel, selectedEventId, events, mapScale, positionsById, windowWidth, focusTargetXPercent]);
+    // 이벤트 핀이 없으므로 자동 이동 비활성화
+    return { x: 0, y: 0, offsetX: 0 };
+  }, []);
 
   // 핀 위치 계산 - 단순히 퍼센트 위치 유지
   const getEventPosition = (event: Event) => {
@@ -1755,48 +1738,50 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         </button>
         
         {/* CCTV 라벨 토글 */}
-        {showCCTV && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const newValue = !showCCTVName;
-              setShowCCTVName(newValue);
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('cctv-show-name', newValue.toString());
-              }
-            }}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-              showCCTVName 
-                ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
-                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-            }`}
-            aria-label="CCTV 라벨"
-          >
-            <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? 'text-blue-600' : 'text-gray-800'}`} />
-          </button>
-        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const newValue = !showCCTVName;
+            setShowCCTVName(newValue);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('cctv-show-name', newValue.toString());
+            }
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            showCCTVName 
+              ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          style={{
+            visibility: showCCTV ? 'visible' : 'hidden'
+          }}
+          aria-label="CCTV 라벨"
+        >
+          <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? 'text-blue-600' : 'text-gray-800'}`} />
+        </button>
         
         {/* 시야각 토글 */}
-        {showCCTV && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              const newValue = !showCCTVViewAngle;
-              setShowCCTVViewAngle(newValue);
-              if (typeof window !== 'undefined') {
-                localStorage.setItem('cctv-show-view-angle', newValue.toString());
-              }
-            }}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-              showCCTVViewAngle 
-                ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
-                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-            }`}
-            aria-label="CCTV 시야각"
-          >
-            <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
-          </button>
-        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const newValue = !showCCTVViewAngle;
+            setShowCCTVViewAngle(newValue);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('cctv-show-view-angle', newValue.toString());
+            }
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            showCCTVViewAngle 
+              ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          style={{
+            visibility: showCCTV ? 'visible' : 'hidden'
+          }}
+          aria-label="CCTV 시야각"
+        >
+          <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
+        </button>
       </div>
       )}
 

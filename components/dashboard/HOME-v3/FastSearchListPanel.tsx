@@ -798,35 +798,10 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   />
                 </div>
 
-                {/* 기본정보 - 타이틀 없이 */}
-                <div className="flex-1 min-w-0 p-3 space-y-1.5">
-                  {/* CCTV명 */}
-                  <div className="text-xs text-gray-300 font-semibold truncate" title={item.cctvName}>
-                    {item.cctvName}
-                  </div>
-                  
-                  {/* 장소 */}
-                  <div className="text-xs text-gray-200 truncate" title={item.location}>
-                    {item.location}
-                  </div>
-
-                  {/* 시간 */}
-                  <div className="text-xs text-gray-200">
-                    {item.timestamp}
-                  </div>
-
-                  {/* 유사도 (디바이더) */}
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-[10px] text-gray-400">유사도</span>
-                    <span className="text-[10px] text-gray-500">|</span>
-                    <span className="text-xs text-gray-200 font-semibold">
-                      {String(item.confidence).padStart(2, '0')}%
-                    </span>
-                  </div>
-                </div>
+                <div className="flex-1 min-w-0"></div>
 
                 {/* 틀림/맞음 버튼 */}
-                <div className="px-3 pb-2 flex gap-1.5">
+                <div className="px-3 pb-3 pt-2 flex gap-1.5">
                   <button
                     type="button"
                     aria-pressed={isWrong}

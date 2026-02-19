@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
+import { getPredictedCCTVDetail } from '@/lib/predicted-cctv-details';
 
 export interface PredictedCCTVItem {
   id: string;
@@ -438,12 +439,16 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                 </div>
                 
                 {/* 예측 정보 카드들 */}
-                {[
-                  { icon: 'mdi:map-marker-distance', label: '예상 이동 거리', value: `약 ${cctv.distance}m (이전 위치 기준)` },
-                  { icon: 'mdi:navigation', label: '이동 추세', value: `${cctv.direction} (최근 3프레임 평균)` },
-                  { icon: 'mdi:clock-outline', label: '예상 도달 시각', value: `${cctv.predictedTime} (현재 시각 +30초)` },
-                  { icon: 'mdi:chart-timeline-variant', label: '경로 적합도', value: `${cctv.confidence}점` },
-                ].map((item, idx) => (
+                {(() => {
+                  const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
+                  return [
+                    { icon: 'mdi:account-details', label: '객체 속성', value: detail?.objectAttributes || '정보 없음' },
+                    { icon: 'mdi:map-marker-distance', label: '예상 이동 거리', value: detail?.expectedDistance || `약 ${cctv.distance}m (이전 위치 기준)` },
+                    { icon: 'mdi:navigation', label: '이동 추세', value: detail?.movementTrend || `${cctv.direction} (최근 3프레임 평균)` },
+                    { icon: 'mdi:clock-outline', label: '예상 도달 시각', value: detail?.expectedArrivalTime || `${cctv.predictedTime} (현재 시각 +30초)` },
+                    { icon: 'mdi:chart-timeline-variant', label: '경로 적합도(유사도)', value: `${detail?.routeFitScore || cctv.confidence}점` },
+                  ];
+                })().map((item, idx) => (
                   <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
                     <div className="flex items-start gap-3">
                       <Icon icon={item.icon} className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
@@ -480,14 +485,27 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                       
                       {/* 각 분석 항목 */}
                       <div className="p-3 space-y-2">
-                        {[
-                          { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향을 유지하며 이동 중임.' },
-                          { category: '이동 속도', analysis: '정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.' },
-                          { category: '보행로 구조', analysis: '하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.' },
-                          { category: 'CCTV 연계', analysis: '인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.' },
-                          { category: '이전 경로', analysis: '특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.' },
-                          { category: '유사 사례', analysis: '해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.' },
-                        ].map((item, idx) => (
+                        {(() => {
+                          const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
+                          if (!detail?.detailedAnalysis) {
+                            return [
+                              { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향을 유지하며 이동 중임.' },
+                              { category: '이동 속도', analysis: '정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.' },
+                              { category: '보행로 구조', analysis: '하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.' },
+                              { category: 'CCTV 연계', analysis: '인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.' },
+                              { category: '이전 경로', analysis: '특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.' },
+                              { category: '유사 사례', analysis: '해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.' },
+                            ];
+                          }
+                          return [
+                            { category: '이동 방향', analysis: detail.detailedAnalysis.movementDirection },
+                            { category: '이동 속도', analysis: detail.detailedAnalysis.movementSpeed },
+                            { category: '보행로 구조', analysis: detail.detailedAnalysis.pathStructure },
+                            { category: 'CCTV 연계', analysis: detail.detailedAnalysis.cctvLinkage },
+                            { category: '이전 경로', analysis: detail.detailedAnalysis.previousPath },
+                            { category: '유사 사례', analysis: detail.detailedAnalysis.similarCases },
+                          ];
+                        })().map((item, idx) => (
                           <div key={idx} className="bg-[#1a1a1a]/50 rounded p-3 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-gray-300 font-medium">{item.category}</span>

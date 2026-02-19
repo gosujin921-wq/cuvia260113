@@ -46,7 +46,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:15',
     confidence: 92,
     direction: '북동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_48_n.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_05_n.mov',
   },
   {
     id: '2',
@@ -56,7 +56,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:30',
     confidence: 88,
     direction: '북서쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_11_n.mov',
   },
   {
     id: '3',
@@ -66,7 +66,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:45',
     confidence: 85,
     direction: '동쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_15_n.mov',
   },
   {
     id: '4',
@@ -76,7 +76,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:00',
     confidence: 83,
     direction: '남서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_57_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_21_y.mov',
   },
   {
     id: '5',
@@ -86,7 +86,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:15',
     confidence: 80,
     direction: '남동쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_25_y.mov',
   },
   {
     id: '6',
@@ -96,7 +96,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:30',
     confidence: 78,
     direction: '서쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_30_y.mov',
   },
   {
     id: '7',
@@ -106,7 +106,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:45',
     confidence: 75,
     direction: '동쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_40_y.mov',
   },
   {
     id: '8',
@@ -116,7 +116,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:00',
     confidence: 73,
     direction: '북쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_47_y.mov',
   },
   {
     id: '9',
@@ -126,7 +126,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:15',
     confidence: 70,
     direction: '남서쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_51_y.mov',
   },
   {
     id: '10',
@@ -136,7 +136,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:30',
     confidence: 68,
     direction: '남동쪽',
-    thumbnailUrl: getRandomVideoUrl(),
+    thumbnailUrl: '/fastsearch_img/qs_img_59_y.mp4',
   },
 ];
 
@@ -407,6 +407,13 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                             {item.confidence}점
                           </span>
                         </div>
+                      </div>
+                    </div>
+                    
+                    {/* CCTV명 */}
+                    <div className="px-3 py-2 flex items-center">
+                      <div className="text-xs text-gray-300 font-semibold truncate" title={item.cctvName}>
+                        {item.cctvName}
                       </div>
                     </div>
                   </div>

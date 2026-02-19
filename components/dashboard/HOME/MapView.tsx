@@ -583,24 +583,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     };
 
     const mapTranslate = useMemo(() => {
-        if (zoomLevel === 0 || !selectedEventId) {
-            return { x: 0, y: 0, offsetX: 0 };
-        }
-
-        const selectedEvent = events.find((e) => e.id === selectedEventId);
-        if (!selectedEvent) {
-            return { x: 0, y: 0, offsetX: 0 };
-        }
-
-        const eventPosition = positionsById[selectedEvent.id] || { left: centerX, top: centerY };
-        const translateX = (50 - eventPosition.left) * mapScale - 5;
-        const translateY = (50 - eventPosition.top) * mapScale;
-        const screenWidth = typeof window !== "undefined" ? window.innerWidth : windowWidth;
-        const offsetXPx = 100;
-        const offsetXPercent = (offsetXPx / screenWidth) * 100;
-
-        return { x: translateX, y: translateY, offsetX: offsetXPercent };
-    }, [zoomLevel, selectedEventId, events, mapScale, positionsById, windowWidth]);
+        // 이벤트 핀이 없으므로 자동 이동 비활성화
+        return { x: 0, y: 0, offsetX: 0 };
+    }, []);
 
     const getEventPosition = (event: Event) => {
         return positionsById[event.id] || { left: centerX, top: centerY };

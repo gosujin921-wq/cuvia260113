@@ -229,51 +229,50 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
 
   return (
     <div className="w-full flex flex-col h-full overflow-y-auto">
-      <div className="border-t border-b border-white/20">
-        <div className="flex items-center justify-center gap-2" style={{ paddingTop: '14px' }}>
-          {tabs.map((tab, index) => {
-            const isActive = priorityFilter === tab.value;
-            const getPriorityDot = () => {
-              if (tab.value === '긴급') {
-                return <span className="w-2 h-2 rounded-full border-2 border-red-400 inline-block mr-1.5" style={{ borderWidth: '3px' }} />;
-              } else if (tab.value === '경계') {
-                return <span className="w-2 h-2 rounded-full border-2 border-yellow-400 inline-block mr-1.5" style={{ borderWidth: '3px' }} />;
-              } else if (tab.value === '주의') {
-                return <span className="w-2 h-2 rounded-full border-2 border-blue-400 inline-block mr-1.5" style={{ borderWidth: '3px' }} />;
-              } else if (tab.value === 'GENERAL') {
-                return <span className="w-2 h-2 rounded-full border-2 border-gray-400 inline-block mr-1.5" style={{ borderWidth: '3px' }} />;
-              }
-              return null;
-            };
-            return (
-              <React.Fragment key={tab.value}>
+      <div className="border-t border-b border-white/20 py-2.5">
+        <div className="flex items-center justify-center px-2">
+          <div className="inline-flex items-center rounded-full p-0.5 gap-0.5" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            {tabs.map((tab) => {
+              const isActive = priorityFilter === tab.value;
+              const getPriorityDot = () => {
+                if (tab.value === '긴급') {
+                  return <span className="w-1.5 h-1.5 rounded-full border-2 border-red-400 inline-block mr-1" style={{ borderWidth: '2px' }} />;
+                } else if (tab.value === '경계') {
+                  return <span className="w-1.5 h-1.5 rounded-full border-2 border-yellow-400 inline-block mr-1" style={{ borderWidth: '2px' }} />;
+                } else if (tab.value === '주의') {
+                  return <span className="w-1.5 h-1.5 rounded-full border-2 border-blue-400 inline-block mr-1" style={{ borderWidth: '2px' }} />;
+                } else if (tab.value === 'GENERAL') {
+                  return <span className="w-1.5 h-1.5 rounded-full border-2 border-gray-400 inline-block mr-1" style={{ borderWidth: '2px' }} />;
+                }
+                return null;
+              };
+              return (
                 <button
+                  key={tab.value}
                   onClick={() => setPriorityFilter(tab.value)}
-                  className={`pb-2 text-xs font-bold tracking-tight transition-colors flex items-center drop-shadow-md ${
+                  className={`px-2 py-1 rounded-full text-xs font-bold tracking-tight transition-all flex items-center whitespace-nowrap ${
                     isActive
-                      ? 'text-white border-b-2 border-blue-400'
-                      : 'text-white/90 border-b-2 border-transparent hover:text-white'
+                      ? 'bg-white/90 text-gray-900'
+                      : 'text-white/70 hover:text-white/90'
                   }`}
+                  style={{ fontSize: '11px' }}
                 >
                   {getPriorityDot()}
                   {tab.label}
                   {tab.count !== null && (
-                    <span className="ml-1 text-white/90">
+                    <span className={`ml-0.5 ${isActive ? 'text-gray-700' : 'text-white/90'}`}>
                       ({formatCount(tab.count)})
                     </span>
                   )}
                 </button>
-                {(tab.value === 'ALL' || tab.value === '주의') && (
-                  <span className="w-1 h-1 rounded-full bg-white/50 self-center" style={{ marginBottom: '10px' }} />
-                )}
-              </React.Fragment>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto py-3 space-y-2 floating-scrollbar">
         {filteredGroups.length === 0 ? (
-          <div className="text-white text-xs px-3 py-6 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' }}>
+          <div className="text-white text-sm px-4 py-8 rounded-lg text-center font-medium" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
             표시할 이벤트가 없습니다.
           </div>
         ) : (
@@ -310,11 +309,11 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                     : 'hover:ring-2 hover:ring-blue-400/60'
                 }`}
                 style={{ 
-                  background: isSelected ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.2)', 
+                  background: isSelected ? 'rgba(239, 68, 68, 0.3)' : 'rgba(0, 0, 0, 0.2)', 
                   backdropFilter: 'blur(20px)', 
                   WebkitBackdropFilter: 'blur(20px)', 
-                  border: isSelected ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255, 255, 255, 0.3)', 
-                  boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' 
+                  border: isSelected ? '1px solid rgba(239, 68, 68, 0.5)' : 'none', 
+                  boxShadow: isSelected ? '0 4px 16px 0 rgba(239, 68, 68, 0.2)' : 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' 
                 }}
               >
                 {/* 1. 날짜 시간 신고기관 / 우선순위 뷸렛 */}
@@ -461,11 +460,10 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                       onMouseLeave={() => onEventHover?.(null)}
                       className="px-3 py-2 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-400/60 transition-all duration-200"
                       style={{ 
-                        background: 'rgba(59, 130, 246, 0.15)', 
+                        background: 'rgba(0, 0, 0, 0.2)', 
                         backdropFilter: 'blur(20px)', 
                         WebkitBackdropFilter: 'blur(20px)', 
-                        border: '1px solid rgba(59, 130, 246, 0.3)', 
-                        boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' 
+                        boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' 
                       }}
                     >
                       <div className="flex items-center gap-2">
