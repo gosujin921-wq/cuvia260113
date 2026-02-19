@@ -383,6 +383,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             </button>
           )}
           <textarea
+            id="agent-chat-input"
             ref={textareaRef}
             key={inputKey}
             value={chatInput}
@@ -424,6 +425,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             </button>
           ) : (
             <button
+              id="agent-chat-send-button"
               type="button"
               onClick={handleSendMessage}
               disabled={!chatInput.trim()}

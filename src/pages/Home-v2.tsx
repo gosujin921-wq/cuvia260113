@@ -264,6 +264,7 @@ export default function HomeV2() {
   });
 
   // 나머지 필요한 state들
+  const [showStartMessage, setShowStartMessage] = useState<boolean>(true); // 시작 메시지창 표시 여부
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
   const [fastSearchRadius, setFastSearchRadius] = useState<number>(300);
@@ -290,6 +291,10 @@ export default function HomeV2() {
   });
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
+  const [showMouseGuide, setShowMouseGuide] = useState<boolean>(true); // 마우스 유도 애니메이션 표시 여부 (기본값 true)
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 }); // 마우스 위치
+  const [guideTarget, setGuideTarget] = useState<string | null>(null); // 마우스 가이드 타겟 요소 ID
+  const [guideMessage, setGuideMessage] = useState<string>(''); // 마우스 가이드 메시지
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -595,7 +600,25 @@ export default function HomeV2() {
     setPinOffset({ x: 0, y: 0 });
     setExcludedAttributes([]);
     setFlyToLocation(null);
+    setGuideTarget(null); // 가이드 타겟 초기화
+    setGuideMessage(''); // 가이드 메시지 초기화
   }, []);
+
+  // 에이전트 입력창 감지 (우산 삭제 입력 시 전송 버튼으로 가이드 이동)
+  useEffect(() => {
+    if (!showMouseGuide || guideTarget !== 'agent-chat-input') return;
+
+    const checkInput = () => {
+      const inputElement = document.getElementById('agent-chat-input') as HTMLTextAreaElement;
+      if (inputElement && inputElement.value.includes('우산')) {
+        setGuideTarget('agent-chat-send-button');
+        setGuideMessage('전송 버튼을 클릭하세요');
+      }
+    };
+
+    const interval = setInterval(checkInput, 200);
+    return () => clearInterval(interval);
+  }, [showMouseGuide, guideTarget]);
 
   // 객체 추적 애니메이션 완료 핸들러
   const handleTrackingComplete = useCallback(() => {
@@ -685,6 +708,29 @@ export default function HomeV2() {
     }
   }, [listCardCount, uiState.showReSearchProgress]);
 
+  // 시작 버튼 핸들러
+  const handleStartSimulation = useCallback(() => {
+    const missingEvent = allConvertedEvents.find(event => 
+      event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+    );
+    
+    if (missingEvent) {
+      setShowStartMessage(false);
+      dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+      dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
+      setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
+      setFlyToLocation([126.783853180335, 37.5049838114765]);
+      
+      // 마우스 가이드가 켜져있으면 고속검색 시작 버튼으로 이동
+      if (showMouseGuide) {
+        setTimeout(() => {
+          setGuideTarget('fast-search-start-button');
+          setGuideMessage('고속검색 시작 버튼을 클릭하세요');
+        }, 500); // 팝업이 나타난 후 0.5초 뒤에 가이드 이동
+      }
+    }
+  }, [allConvertedEvents, showMouseGuide]);
+
   // 키보드 단축키 핸들러 (시나리오 프로토타입용)
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
@@ -695,11 +741,22 @@ export default function HomeV2() {
       event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
     );
     
-    if (e.key === '1' && missingEvent) {
+    if (e.key === '0') {
+      setShowMouseGuide(prev => !prev);
+    } else if (e.key === '1' && missingEvent) {
+      setShowStartMessage(false);
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setFlyToLocation([126.783853180335, 37.5049838114765]);
+      
+      // 마우스 가이드가 켜져있으면 고속검색 시작 버튼으로 이동
+      if (showMouseGuide) {
+        setTimeout(() => {
+          setGuideTarget('fast-search-start-button');
+          setGuideMessage('고속검색 시작 버튼을 클릭하세요');
+        }, 500); // 팝업이 나타난 후 0.5초 뒤에 가이드 이동
+      }
     } else if (e.key === '2') {
       dispatch({ type: 'SET_MENU', payload: 'object-tracking' });
       dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
@@ -711,12 +768,68 @@ export default function HomeV2() {
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
     }
-  }, [allConvertedEvents, handleStartTrackingSequence]);
+  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
+
+  // 마우스 위치 추적 (가이드 타겟이 있으면 타겟 위치로, 없으면 실제 마우스 위치)
+  useEffect(() => {
+    if (!showMouseGuide) return;
+
+    // 가이드 타겟이 있으면 타겟 요소의 중심으로 위치 설정
+    if (guideTarget) {
+      const updateTargetPosition = () => {
+        const targetElement = document.getElementById(guideTarget);
+        if (targetElement) {
+          const rect = targetElement.getBoundingClientRect();
+          // 버튼의 정확한 중심 계산
+          const centerX = rect.left + (rect.width / 2);
+          const centerY = rect.top + (rect.height / 2);
+          
+          console.log('[MouseGuide] 타겟 위치:', {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+            centerX,
+            centerY
+          });
+          
+          setMousePosition({
+            x: centerX,
+            y: centerY,
+          });
+        } else {
+          console.log('[MouseGuide] 타겟 요소를 찾을 수 없음:', guideTarget);
+        }
+      };
+
+      // 초기 위치 설정 (약간의 딜레이 추가)
+      setTimeout(updateTargetPosition, 100);
+
+      // 윈도우 리사이즈 시 위치 업데이트
+      window.addEventListener('resize', updateTargetPosition);
+      
+      // 주기적으로 위치 업데이트 (팝업 애니메이션 등에 대응)
+      const interval = setInterval(updateTargetPosition, 100);
+
+      return () => {
+        window.removeEventListener('resize', updateTargetPosition);
+        clearInterval(interval);
+      };
+    } else {
+      // 가이드 타겟이 없으면 실제 마우스 위치 추적
+      const handleMouseMove = (e: MouseEvent) => {
+        setMousePosition({ x: e.clientX, y: e.clientY });
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      return () => window.removeEventListener('mousemove', handleMouseMove);
+    }
+  }, [showMouseGuide, guideTarget]);
 
   return (
     <div
@@ -837,7 +950,10 @@ export default function HomeV2() {
               clearSelection();
             }
           }}
-          onFastSearchStart={() => dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' })}
+          onFastSearchStart={() => {
+            console.log('[Home-v2] 고속검색 시작 - 프로그래스 표시');
+            dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
+          }}
           showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
           onLayout={setReportPopupHeight}
           position={uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
@@ -955,8 +1071,15 @@ export default function HomeV2() {
             objectTrackingCompleted={objectTrackingCompleted}
             showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
+              console.log('[Home-v2] 고속검색 프로그래스 완료');
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
               setPinOffset({ x: 0, y: 0 });
+              
+              // 마우스 가이드가 켜져있으면 에이전트 입력창으로 즉시 이동
+              if (showMouseGuide) {
+                setGuideTarget('agent-chat-input');
+                setGuideMessage('"우산 삭제"를 입력하세요');
+              }
             }}
             onReSearchStart={() => {
               dispatch({ type: 'START_RE_SEARCH' });
@@ -1025,6 +1148,155 @@ export default function HomeV2() {
           </div>
         </div>
       )}
+
+      {/* 시작 메시지창 */}
+      {showStartMessage && (
+        <div 
+          className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[9999]"
+        >
+          <div 
+            className="bg-black/80 border border-gray-700 rounded-2xl p-8 text-center"
+            style={{
+              minWidth: '400px',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            }}
+          >
+            <p className="text-white text-lg mb-6" style={{ lineHeight: '1.8' }}>
+              실종 시뮬레이션을 해보시려면<br />
+              <span className="font-bold text-blue-400">1</span> 또는 <span className="font-bold">시작 버튼</span>을 눌러주세요.
+            </p>
+            <button
+              onClick={handleStartSimulation}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              시작
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 마우스 유도 애니메이션 - 프로그래스 진행 중에는 숨김 */}
+      {showMouseGuide && !uiState.showFastSearchProgress && (
+        <div
+          className="fixed pointer-events-none z-[10000]"
+          style={{
+            left: `${mousePosition.x}px`,
+            top: `${mousePosition.y}px`,
+          }}
+        >
+          {/* 중심 원 - 크기 증가 및 펄스 효과 */}
+          <div
+            className="absolute"
+            style={{
+              left: '0',
+              top: '0',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <div
+              className="w-5 h-5 rounded-full bg-blue-500/70 border-2 border-blue-300"
+              style={{
+                boxShadow: '0 0 15px rgba(59, 130, 246, 0.9), 0 0 30px rgba(59, 130, 246, 0.6)',
+                animation: 'pulse 1.5s ease-in-out infinite',
+              }}
+            />
+          </div>
+
+          {/* 확장되는 원 애니메이션 1 - 더 굵고 밝게 */}
+          <div
+            className="absolute"
+            style={{
+              left: '0',
+              top: '0',
+              animation: 'mouse-ripple-small 2s ease-out infinite',
+            }}
+          >
+            <div
+              className="w-8 h-8 rounded-full border-3 border-blue-400"
+              style={{
+                boxShadow: '0 0 12px rgba(59, 130, 246, 0.8)',
+              }}
+            />
+          </div>
+
+          {/* 확장되는 원 애니메이션 2 */}
+          <div
+            className="absolute"
+            style={{
+              left: '0',
+              top: '0',
+              animation: 'mouse-ripple-small 2s ease-out infinite 0.5s',
+            }}
+          >
+            <div
+              className="w-8 h-8 rounded-full border-3 border-blue-400"
+              style={{
+                boxShadow: '0 0 12px rgba(59, 130, 246, 0.8)',
+              }}
+            />
+          </div>
+
+          {/* 확장되는 원 애니메이션 3 */}
+          <div
+            className="absolute"
+            style={{
+              left: '0',
+              top: '0',
+              animation: 'mouse-ripple-small 2s ease-out infinite 1s',
+            }}
+          >
+            <div
+              className="w-8 h-8 rounded-full border-3 border-blue-400"
+              style={{
+                boxShadow: '0 0 12px rgba(59, 130, 246, 0.8)',
+              }}
+            />
+          </div>
+
+          {/* 회전하는 외곽 링 - 추가 강조 효과 */}
+          <div
+            className="absolute"
+            style={{
+              left: '0',
+              top: '0',
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <div
+              className="w-8 h-8 rounded-full border-2 border-transparent border-t-blue-400 border-r-blue-400"
+              style={{
+                boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)',
+                animation: 'spin-center 3s linear infinite',
+              }}
+            />
+          </div>
+
+          {/* 마우스 가이드 바로 위에 메시지 표시 */}
+          {guideMessage && (
+            <div
+              className="absolute"
+              style={{
+                left: guideMessage === '전송 버튼을 클릭하세요' ? '0' : '0',
+                bottom: '20px',
+                transform: guideMessage === '전송 버튼을 클릭하세요' ? 'translateX(-100%)' : 'translateX(-50%)',
+              }}
+            >
+              <div 
+                className="bg-gradient-to-r from-blue-600/95 to-purple-600/95 border-2 border-blue-400 rounded-xl px-4 py-2"
+                style={{
+                  boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.3)',
+                }}
+              >
+                <div className="text-white text-sm font-bold flex items-center gap-2 whitespace-nowrap">
+                  <span className="text-xl">👆</span>
+                  <span>{guideMessage}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
     </div>
   );
 }

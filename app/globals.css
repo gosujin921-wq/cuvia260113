@@ -751,3 +751,53 @@ input[type="range"].slider::-moz-range-thumb {
     opacity: 0;
   }
 }
+
+/* 마우스 유도 애니메이션 - 확장되는 원 */
+@keyframes mouse-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4.5);
+    opacity: 0;
+  }
+}
+
+/* 마우스 유도 애니메이션 - 작은 확장 원 */
+@keyframes mouse-ripple-small {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(3);
+    opacity: 0;
+  }
+}
+
+/* 회전 애니메이션 */
+@keyframes spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* 중심 고정 회전 애니메이션 */
+@keyframes spin-center {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

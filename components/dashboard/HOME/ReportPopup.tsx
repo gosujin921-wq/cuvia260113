@@ -133,6 +133,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
           {/* 고속검색 시작 버튼: 초기 화면에서만 표시, 고속검색 화면에서는 숨김 */}
           {showFastSearchStartButton && (
             <button
+              id="fast-search-start-button"
               onClick={() => {
                 if (onFastSearchStart) {
                   onFastSearchStart();
