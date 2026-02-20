@@ -411,38 +411,26 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                       hoveredCCTVId === item.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-105' : ''
                     }`}
                   >
-                    {/* 썸네일 - CCTV 영상 (팝업 열리면 일시정지) */}
-                    <div className="relative w-full bg-black" style={{ paddingTop: '56.25%' }}>
+                    {/* 썸네일 */}
+                    <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
                       <ListVideo src={item.thumbnailUrl} isPaused={isPopupOpen} />
                       
-                      {/* 호버 시 정보 오버레이 */}
-                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-center p-3 space-y-2">
-                        {/* CCTV명 */}
-                        <div className="text-xs text-white font-semibold truncate" title={item.cctvName}>
-                          {item.cctvName}
-                        </div>
-                        
-                        {/* 주소 */}
-                        <div className="text-xs text-gray-300 truncate" title={item.location}>
+                      {/* 호버 시 주소 아래→위 슬라이드 */}
+                      <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
+                        <div className="text-[10px] text-gray-200 truncate" title={item.location}>
                           {item.location}
-                        </div>
-
-                        {/* 경로 적합도 */}
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-[10px] text-gray-400">경로 적합도</span>
-                          <span className="text-[10px] text-gray-500">|</span>
-                          <span className="text-xs text-blue-400 font-semibold">
-                            {item.confidence}점
-                          </span>
                         </div>
                       </div>
                     </div>
                     
-                    {/* CCTV명 */}
-                    <div className="px-3 py-2 flex items-center">
+                    {/* CCTV명 + 경로 적합도 */}
+                    <div className="px-3 py-2 flex items-center justify-between gap-2">
                       <div className="text-xs text-gray-300 font-semibold truncate" title={item.cctvName}>
                         {item.cctvName}
                       </div>
+                      <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] text-blue-400 font-semibold leading-none">
+                        {item.confidence}점
+                      </span>
                     </div>
                   </div>
                 ))}
