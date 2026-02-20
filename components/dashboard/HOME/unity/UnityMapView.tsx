@@ -628,10 +628,20 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                         </div>
                                     );
                                 })}
+
+
                             </div>
                         </>
                     );
                 })()}
+    
+            {/* 순찰 로봇 화면의 우측 하단에 고정 */}
+            <UnityCCTVMeshTracking event={events.find((e) => e.id === aiDetectionEventId) || null} onClose={() => {}} isMain={false} cctvId={'patrol-robot'} cctvName={'순찰 로봇'} cctvRtspURL={'http://192.168.102.101:7000/live'} position={{
+                top: undefined,
+                right: undefined,
+                left: `${20}px`,
+                bottom: `${20}px`,
+            }} width={420} hideControls={hideControls} highlighted={false} onHover={handleHoverCctv} />
 
             <BottomPanel showCCTV={showCCTV} hideControls={hideControls} leftPanelWidth={leftPanelWidth} windowWidth={windowWidth} cctvScrollContainerRef={cctvScrollContainerRef} isUserScrollingRef={isUserScrollingRef} userScrollTimeoutRef={userScrollTimeoutRef} autoScrollIntervalRef={autoScrollIntervalRef} />
 
