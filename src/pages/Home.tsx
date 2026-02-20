@@ -342,8 +342,8 @@ export default function Home() {
                             value: {
                                 id: missingEvent.id,
                                 eventId: missingEvent.eventId,
-                                mainCctvId: "CCTV-V-11",
-                                cctvIdList: ["CCTV-V-1", "CCTV-V-6", "CCTV-V-8", "CCTV-V-9"],
+                                mainCctvId: "Bullet-2",
+                                cctvIdList: ["PTZ-1","PTZ-2","PTZ-3"],
                                 eventMessage: "CCTV-V-11에서 폭력(싸움)이벤트가 감지되었습니다.",
                             },
                         },
@@ -372,6 +372,30 @@ export default function Home() {
             } else if (e.key === "Escape" || e.key === "0") {
                 clearSelection();
                 setHideControls(false);
+            }
+            else if(e.key === "4") {
+                const eventToUnity: EventToUnity = {
+                    methodName: "showRoad",
+                    payload: {
+                        value: {
+                            
+                        },
+                    },
+                };
+                console.log(eventToUnity);
+                sendToUnity(JSON.stringify(eventToUnity));
+            }
+            else if(e.key === "5") {
+                const eventToUnity: EventToUnity = {
+                    methodName: "hideRoad",
+                    payload: {
+                        value: {
+                            
+                        },
+                    },
+                };
+                console.log(eventToUnity);
+                sendToUnity(JSON.stringify(eventToUnity));
             }
         };
 

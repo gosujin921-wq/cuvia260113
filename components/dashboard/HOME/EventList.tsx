@@ -32,13 +32,13 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
     const getCCTVName = (event: Event): string => {
         // 1 키로 선택된 이벤트 (A-20260107-004)는 CCTV-V-11
         if (event.eventId === "A-20260107-004" || event.id === "A-20260107-004") {
-            return "CCTV-V-11";
+            return "Bullet-2";
         }
         // 다른 이벤트들은 이벤트 ID 기반으로 무작위 할당 (CCTV-V-1 ~ CCTV-V-12)
         const eventId = event.eventId || event.id;
         const hash = eventId.split("").reduce((acc, char, idx) => acc + char.charCodeAt(0) * (idx + 1), 0);
         const cctvNumber = event.eventId === "A-20260107-004" || event.id === "A-20260107-004" ? 11 : (hash % 12) + 1; // 1~12
-        return `CCTV-V-${cctvNumber}`;
+        return `Bullet-${cctvNumber}`;
     };
 
     // 동명 선택 함수 (이벤트 ID 기반으로 일관된 동명 할당)

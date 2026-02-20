@@ -42,17 +42,18 @@ const initialAvailableCCTVs: RealCCTV[] = [
 
 // Unity Bridge 슬롯 초기값 (CCTV-V-1 ~ CCTV-V-11)
 const initialBridgeSlots: BridgeSlot[] = [
-    { bridgeId: "CCTV-V-1", assignedCctvId: "카메라01", isGrouped: true, isMain: false },
-    { bridgeId: "CCTV-V-2", assignedCctvId: "카메라02", isGrouped: false, isMain: false },
-    { bridgeId: "CCTV-V-3", assignedCctvId: "카메라03", isGrouped: false, isMain: false },
-    { bridgeId: "CCTV-V-4", assignedCctvId: "카메라04", isGrouped: false, isMain: false },
-    { bridgeId: "CCTV-V-5", assignedCctvId: "카메라05", isGrouped: false, isMain: false },
-    { bridgeId: "CCTV-V-6", assignedCctvId: "카메라06", isGrouped: true, isMain: false },
-    { bridgeId: "CCTV-V-7", assignedCctvId: "카메라07", isGrouped: false, isMain: false },
-    { bridgeId: "CCTV-V-8", assignedCctvId: "카메라08", isGrouped: true, isMain: false },
-    { bridgeId: "CCTV-V-9", assignedCctvId: "카메라09", isGrouped: true, isMain: false },
-    { bridgeId: "CCTV-V-10", assignedCctvId: "카메라10", isGrouped: false, isMain: false },
-    { bridgeId: "CCTV-V-11", assignedCctvId: "카메라11", isGrouped: true, isMain: true },
+    { bridgeId: "PTZ-1", assignedCctvId: "카메라01", isGrouped: true, isMain: false },
+    { bridgeId: "PTZ-2", assignedCctvId: "카메라02", isGrouped: true, isMain: false },
+    { bridgeId: "PTZ-3", assignedCctvId: "카메라03", isGrouped: true, isMain: false },
+    { bridgeId: "PTZ-4", assignedCctvId: "카메라04", isGrouped: false, isMain: false },
+    { bridgeId: "PTZ-5", assignedCctvId: "카메라05", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-1", assignedCctvId: "카메라06", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-2", assignedCctvId: "카메라07", isGrouped: false, isMain: true },
+    { bridgeId: "Bullet-3", assignedCctvId: "카메라08", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-4", assignedCctvId: "카메라09", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-6", assignedCctvId: "카메라10", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-7", assignedCctvId: "카메라11", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-8", assignedCctvId: "카메라12", isGrouped: false, isMain: false },
 ];
 
 const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, onAiDetectionClose, hideControls = false, leftPanelWidth = 480 }: UnityMapViewProps) => {
@@ -636,7 +637,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 })()}
     
             {/* 순찰 로봇 화면의 우측 하단에 고정 */}
-            <UnityCCTVMeshTracking event={events.find((e) => e.id === aiDetectionEventId) || null} onClose={() => {}} isMain={false} cctvId={'patrol-robot'} cctvName={'순찰 로봇'} cctvRtspURL={'http://192.168.102.101:7000/live'} position={{
+            <UnityCCTVMeshTracking event={events.find((e) => e.id === aiDetectionEventId) || null} onClose={() => {}} isMain={false} cctvId={'patrol-robot'} cctvName={'순찰 로봇'} cctvRtspURL={'순찰로봇 rtsp'} position={{
                 top: undefined,
                 right: undefined,
                 left: `${20}px`,
