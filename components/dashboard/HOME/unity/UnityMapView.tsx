@@ -466,13 +466,13 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (verticalLevel < 2) {
-                                const newLevel = verticalLevel + 1;
+                            if (verticalLevel > 0) {
+                                const newLevel = verticalLevel - 1;
                                 setVerticalLevel(newLevel);
                                 handleVerticalLevelChange(newLevel);
                             }
                         }}
-                        disabled={verticalLevel >= 2}
+                        disabled={verticalLevel <= 0}
                         className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         aria-label="회전 상"
                         tabIndex={0}>
@@ -481,13 +481,13 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            if (verticalLevel > 0) {
-                                const newLevel = verticalLevel - 1;
+                            if (verticalLevel < 2) {
+                                const newLevel = verticalLevel + 1;
                                 setVerticalLevel(newLevel);
                                 handleVerticalLevelChange(newLevel);
                             }
                         }}
-                        disabled={verticalLevel <= 0}
+                        disabled={verticalLevel >= 2}
                         className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         aria-label="회전 하"
                         tabIndex={0}>
