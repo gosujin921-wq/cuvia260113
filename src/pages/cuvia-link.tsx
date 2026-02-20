@@ -10,7 +10,7 @@ const CuviaLinkPage = () => {
   const [showToolPopup, setShowToolPopup] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isInputExpanded, setIsInputExpanded] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const isComposingRef = useRef(false);
   const pendingEnterRef = useRef(false);
@@ -18,55 +18,56 @@ const CuviaLinkPage = () => {
   const promptCategories = [
     {
       id: 'summary',
+      icon: 'mdi:file-document-outline',
       title: '상황 요약하기',
       prompts: [
         '지난달 사건사고 요약해줘',
-        '지난주 폭력 사건 핵심만 정리해줘',
-        '지난주 쓰러짐 통계 보여줘',
+        '지난주 폭력 사건 정리해줘',
       ],
     },
     {
       id: 'pattern',
+      icon: 'mdi:chart-timeline-variant-shimmer',
       title: '패턴 분석하기',
       prompts: [
-        '폭력 제일 많이 발생한 곳은 어디야?',
+        '폭력 많은 지역 알려줘',
         '쓰러짐 많은 CCTV 알려줘',
-        '폭력은 보통 몇 시에 많이 발생해?',
       ],
     },
     {
       id: 'history',
+      icon: 'mdi:history',
       title: '이력 조회하기',
       prompts: [
         '어제 밤 폭력사건 보여줘',
-        '지난주 침수 이벤트 조회해줘',
-        '부천역 주변 CCTV에서 쓰러짐 찾아줘',
+        '지난주 침수 이벤트 보여줘',
       ],
     },
     {
       id: 'map',
+      icon: 'mdi:map-marker-radius-outline',
       title: '지도에서 보기',
       prompts: [
-        '부천 범죄주의구간 보여줘',
-        '침수 위험구간 높은 곳 보여줘',
-        '부천역 근처 대피소 보여줘',
+        '범죄주의구간 보여줘',
+        '침수 위험구간 보여줘',
       ],
     },
     {
       id: 'monitor',
+      icon: 'mdi:cctv',
       title: '우선 감시 추천받기',
       prompts: [
-        '지금 당장 모니터링 해야 할 CCTV 10개 띄워줘',
-        '호우특보면 어디부터 감시해야 돼?',
-        '쓰러짐 자주 뜨는 곳 CCTV 추천해줘',
+        '지금 감시할 CCTV 추천해줘',
+        '호우특보 때 어디부터 봐야 해?',
       ],
     },
     {
       id: 'manual',
+      icon: 'mdi:book-open-page-variant-outline',
       title: '메뉴얼 확인하기',
       prompts: [
-        '침수 발생했을 때 초동 대응 절차 알려줘',
-        '폭력 사건 대응 근거 포함해서 정리해줘',
+        '침수 대응 절차 알려줘',
+        '폭력 대응 매뉴얼 알려줘',
       ],
     },
   ];
@@ -202,18 +203,14 @@ const CuviaLinkPage = () => {
               {/* 중앙: 문구와 채팅창 */}
               <div 
                 className="flex-1 flex flex-col items-center justify-center max-w-[800px] mx-auto w-full"
-                onClick={() => {
-                  if (selectedCategory) {
-                    setSelectedCategory(null);
-                  }
-                }}
+                style={{ marginTop: '-5vh' }}
               >
                 <h1 
                   className="text-4xl text-center mb-1 leading-relaxed w-full" 
                   style={{ fontSize: '40px' }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <span className="font-bold" style={{ color: '#475569' }}>관제 특화 AI Agent,</span>{' '}
+                  <span className="font-bold" style={{ color: '#475569' }}>도시 통합 어시스턴트,</span>{' '}
                   <span className="bg-gradient-to-r from-[#ff8566] to-[#ff8566] bg-clip-text text-transparent font-bold">
                     CUVIA Link
                   </span>
@@ -223,7 +220,7 @@ const CuviaLinkPage = () => {
                   style={{ fontSize: '17px' }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  자연어로 질문하면 내부 관제 데이터와 외부 근거를 종합해 신속하고 일관된 의사결정을 지원합니다.
+                  도시 전반 데이터를 연결해 상황 파악부터 조치까지 빠르고 일관되게 지원합니다.
                 </p>
                 <div className="w-full" onClick={(e) => e.stopPropagation()}>
                   <div 
@@ -326,48 +323,36 @@ const CuviaLinkPage = () => {
                   </div>
                 </div>
 
-                {/* 추천 프롬프트 영역 - 고정 높이와 너비 */}
-                <div className="w-full mt-4 flex justify-center">
-                  <div style={{ width: '900px', height: '220px' }}>
-                    {/* 추천 프롬프트 카테고리 버튼 - 선택되지 않았을 때만 표시 */}
-                    {!selectedCategory && (
-                      <div className="flex flex-wrap gap-2 justify-center" style={{ height: '220px' }}>
-                        {promptCategories.map((category) => (
+                {/* 추천 프롬프트 카드 그리드 3x2 */}
+                <div className="w-full mt-6 grid grid-cols-3 gap-3" style={{ maxWidth: '800px' }}>
+                  {promptCategories.map((category) => (
+                    <div
+                      key={category.id}
+                      className="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl p-4 flex flex-col gap-2.5 hover:border-gray-300 hover:shadow-sm transition-all"
+                    >
+                      <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                        <Icon icon={category.icon} className="w-4 h-4 text-gray-500" />
+                        {category.title}
+                      </h3>
+                      <div className="flex flex-col gap-2">
+                        {category.prompts.slice(0, 2).map((prompt, index) => (
                           <button
-                            key={category.id}
-                            onClick={() => setSelectedCategory(category.id)}
-                            className="px-2.5 py-1.5 rounded-full font-medium bg-white border border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all h-fit flex items-center gap-1"
-                            style={{ fontSize: '13px' }}
+                            key={index}
+                            onClick={() => {
+                              setChatInput(prompt);
+                              textareaRef.current?.focus();
+                            }}
+                            className="group/prompt text-left text-[13px] text-gray-500 hover:text-gray-700 bg-gray-100/80 hover:bg-gray-200/80 rounded-full px-3 py-1.5 transition-all cursor-pointer flex items-center gap-1.5 w-fit max-w-full"
+                            tabIndex={0}
+                            aria-label={prompt}
                           >
-                            {category.title}
-                            <Icon icon="mdi:chevron-right" className="w-3.5 h-3.5" />
+                            <span className="truncate">{prompt}</span>
+                            <Icon icon="mdi:arrow-top-right" className="w-3.5 h-3.5 flex-shrink-0 opacity-40 group-hover/prompt:opacity-100 transition-opacity" />
                           </button>
                         ))}
                       </div>
-                    )}
-
-                    {/* 선택된 카테고리의 추천 문구들 - 리스트 형식 텍스트 */}
-                    {selectedCategory && (
-                      <div className="space-y-2" style={{ height: '220px' }}>
-                        {promptCategories
-                          .find((cat) => cat.id === selectedCategory)
-                          ?.prompts.map((prompt, index) => (
-                            <div key={index} className="w-full text-left">
-                              <button
-                                onClick={() => {
-                                  setChatInput(prompt);
-                                  setSelectedCategory(null);
-                                  textareaRef.current?.focus();
-                                }}
-                                className="inline-block px-4 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
-                              >
-                                {prompt}
-                              </button>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
