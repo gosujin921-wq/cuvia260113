@@ -989,11 +989,86 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     (map as any)._cctvMarkers = [...newClusterMarkers, ...newIndividualMarkers];
     (map as any)._cctvZoomHandler = zoomHandler;
     
+    // 경찰서 위치 핀 추가
+    const oldPoliceMarkers = (map as any)._policeStationMarkers;
+    if (oldPoliceMarkers) {
+      oldPoliceMarkers.forEach((m: maplibregl.Marker) => m.remove());
+    }
+    
+    const policeStationLocations = [
+      { location: [126.7852, 37.5062] as [number, number], name: '별빛파출소' },
+      { location: [126.7815, 37.5040] as [number, number], name: '은하지구대' },
+      { location: [126.7860, 37.5043] as [number, number], name: '별빛경찰서' },
+    ];
+    
+    const policeMarkerList: maplibregl.Marker[] = [];
+    
+    policeStationLocations.forEach((station) => {
+      const container = document.createElement('div');
+      container.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: auto;';
+      
+      const iconWrapper = document.createElement('div');
+      iconWrapper.style.cssText = `
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+        border: 2px solid #16a34a;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 12px rgba(22, 163, 74, 0.4), 0 0 24px rgba(22, 163, 74, 0.15);
+        backdrop-filter: blur(4px);
+        z-index: 40;
+      `;
+      
+      const img = document.createElement('img');
+      img.src = '/police.svg';
+      img.alt = station.name;
+      img.style.cssText = 'width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(67%) sepia(61%) saturate(459%) hue-rotate(93deg) brightness(95%) contrast(92%);';
+      iconWrapper.appendChild(img);
+      
+      const label = document.createElement('div');
+      label.style.cssText = `
+        margin-top: 6px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: rgba(15, 15, 15, 0.9);
+        border: 1px solid rgba(22, 163, 74, 0.4);
+        white-space: nowrap;
+        font-size: 11px;
+        font-weight: 600;
+        color: #4ade80;
+      `;
+      label.textContent = station.name;
+      
+      container.appendChild(iconWrapper);
+      container.appendChild(label);
+      
+      const policeMarker = new maplibregl.Marker({ element: container, anchor: 'center' })
+        .setLngLat(station.location)
+        .addTo(map);
+      
+      const markerEl = policeMarker.getElement();
+      if (markerEl) {
+        markerEl.style.zIndex = '40';
+      }
+      
+      policeMarkerList.push(policeMarker);
+    });
+    
+    (map as any)._policeStationMarkers = policeMarkerList;
+    
     // cleanup
       return () => {
         map.off('zoom', zoomHandler);
         newClusterMarkers.forEach(m => m.remove());
         newIndividualMarkers.forEach(m => m.remove());
+        const pMarkers = (map as any)._policeStationMarkers;
+        if (pMarkers) {
+          pMarkers.forEach((m: maplibregl.Marker) => m.remove());
+          (map as any)._policeStationMarkers = null;
+        }
       };
     };
     

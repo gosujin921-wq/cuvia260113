@@ -52,22 +52,7 @@ const ObjectTrackingMapView = ({
       const layers = map.getStyle().layers;
       if (layers) {
         layers.forEach((layer) => {
-          if (
-            layer.type === 'symbol' &&
-            (layer.id.includes('label') ||
-              layer.id.includes('name') ||
-              layer.id.includes('place') ||
-              layer.id.includes('poi') ||
-              layer.id.includes('road') ||
-              layer.id.includes('street') ||
-              layer.id.includes('town') ||
-              layer.id.includes('city') ||
-              layer.id.includes('country') ||
-              layer.id.includes('state') ||
-              layer.id.includes('building') ||
-              layer.id.includes('housenumber') ||
-              layer.id.includes('address'))
-          ) {
+          if (layer.type === 'symbol') {
             map.setLayoutProperty(layer.id, 'visibility', 'none');
           }
         });
@@ -141,6 +126,13 @@ const ObjectTrackingMapView = ({
           map.off('zoom', zoomHandler);
           (map as any)._pin4PulseZoomHandler = null;
         }
+      }
+      
+      // 경찰서 마커 제거
+      const policeMarkers = (map as any)._policeStationMarkers;
+      if (policeMarkers) {
+        policeMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
+        (map as any)._policeStationMarkers = null;
       }
       
       zoomOutTriggeredRef.current = false; // 리셋
@@ -729,6 +721,72 @@ const ObjectTrackingMapView = ({
           
           (map as any)._nearbyCCTVMarkers = markers;
           console.log('[ObjectTrackingMapView] 근처 CCTV 핀 19개 추가 완료 (그레이 9개 + 블루 10개)');
+          
+          // 경찰서 위치 핀 추가
+          const policeStations = [
+            { location: [126.7833, 37.5044] as [number, number], name: '별빛파출소' },
+            { location: [126.7810, 37.5035] as [number, number], name: '은하지구대' },
+            { location: [126.7865, 37.5038] as [number, number], name: '별빛경찰서' },
+          ];
+          
+          const policeMarkers: maplibregl.Marker[] = [];
+          
+          policeStations.forEach((station) => {
+            const container = document.createElement('div');
+            container.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: auto;';
+            
+            const iconWrapper = document.createElement('div');
+            iconWrapper.style.cssText = `
+              width: 32px;
+              height: 32px;
+              background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+              border: 2px solid #16a34a;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 0 12px rgba(22, 163, 74, 0.4), 0 0 24px rgba(22, 163, 74, 0.15);
+              backdrop-filter: blur(4px);
+              z-index: 40;
+            `;
+            
+            const img = document.createElement('img');
+            img.src = '/police.svg';
+            img.alt = station.name;
+            img.style.cssText = 'width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(67%) sepia(61%) saturate(459%) hue-rotate(93deg) brightness(95%) contrast(92%);';
+            iconWrapper.appendChild(img);
+            
+            const label = document.createElement('div');
+            label.style.cssText = `
+              margin-top: 6px;
+              padding: 3px 8px;
+              border-radius: 6px;
+              background: rgba(15, 15, 15, 0.9);
+              border: 1px solid rgba(22, 163, 74, 0.4);
+              white-space: nowrap;
+              font-size: 11px;
+              font-weight: 600;
+              color: #4ade80;
+            `;
+            label.textContent = station.name;
+            
+            container.appendChild(iconWrapper);
+            container.appendChild(label);
+            
+            const policeMarker = new maplibregl.Marker({ element: container, anchor: 'center' })
+              .setLngLat(station.location)
+              .addTo(map);
+            
+            const markerEl = policeMarker.getElement();
+            if (markerEl) {
+              markerEl.style.zIndex = '40';
+            }
+            
+            policeMarkers.push(policeMarker);
+          });
+          
+          (map as any)._policeStationMarkers = policeMarkers;
+          console.log('[ObjectTrackingMapView] 경찰서 핀 3개 추가 완료');
           
           // 추적 애니메이션 완료 콜백 호출
           if (onTrackingComplete) {
