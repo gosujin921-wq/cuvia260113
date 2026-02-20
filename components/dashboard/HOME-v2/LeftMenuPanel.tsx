@@ -79,6 +79,7 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
           return (
             <button
               key={item.id}
+              id={item.id === 'object-tracking' ? 'object-tracking-menu' : item.id === 'capture-list' ? 'capture-list-menu' : undefined}
               onClick={() => handleMenuClick(item.id)}
               className="flex flex-col items-center justify-center w-full group relative"
               aria-label={item.label}

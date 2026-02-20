@@ -162,10 +162,10 @@ export const getEventCategory = (event: BaseEvent): string => {
   return domainLabels[event.domain];
 };
 
-// 좌표 생성 (부천시 기준)
+// 좌표 생성 (하늘시 기준)
 const generateCoordinates = (index: number): [number, number] => {
-  const baseLat = 37.5034; // 부천시 위도
-  const baseLng = 126.7660; // 부천시 경도
+  const baseLat = 37.5034; // 하늘시 위도
+  const baseLng = 126.7660; // 하늘시 경도
   const offset = index * 0.001;
   return [baseLat + offset, baseLng + offset];
 };
@@ -383,7 +383,8 @@ export const generateAIInsight = (event: BaseEvent): string => {
     if (type.includes('산불')) {
       return `산불 경보. ${description || title}. ${location} 인근에서 산불 의심 상황이 감지되었습니다. 위험도 ${risk}입니다. 연기 발생 및 산불 가능성이 확인되었습니다. 즉시 소방대 및 산림청 출동이 필요하며, 주변 주민 대피가 필요할 수 있습니다.`;
     } else if (type.includes('호우') || type.includes('침수')) {
-      return `호우(침수) 경보. ${description || title}. 부천시 전역에 집중 호우 경보가 발령되었습니다. 위험도 ${risk}입니다. 시간당 50mm 이상 강우가 예상되며, 침수 및 도로 통제가 필요할 수 있습니다. 즉시 대비 조치가 필요합니다.`;
+      return `호우(침수) 경보. ${description || title}. 하늘시 전역에 집중 호우 경보가 발령되었습니다. 위험도 ${risk}입니다. 시간당 50mm 이상 강우가 예상되며, 침수 및 도로 통제가 필요할 수 있습니다. 즉시 대비 조치가 필요합니다.`;
+
     } else if (type.includes('지진')) {
       return `지진 경보. ${description || title}. ${location}에서 지진이 감지되었습니다. 위험도 ${risk}입니다. 즉시 안전 확인 및 대피 조치가 필요합니다.`;
     } else if (type.includes('교통 마비')) {

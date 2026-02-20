@@ -441,8 +441,8 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                       <div className="text-xs font-semibold text-gray-400 mb-3">📎 포착 목록</div>
                                       <div className="grid grid-cols-2 gap-2">
                                         {[
-                                          { video: '/videos/qs_img_59_y.mp4', poster: '/images/fast-search/qs_img_57_48.png', name: '원미A-230 영상' },
-                                          { video: '/videos/qs_img_57_y.mov', poster: '/images/fast-search/qs_img_57_28.png', name: '원미A-604 영상' },
+                                          { video: 'http://192.168.102.102/video/qs_img_59_y.mp4', poster: '/images/fast-search/qs_img_57_48.png', name: '원미A-230 영상' },
+                                          { video: 'http://192.168.102.102/video/qs_img_57_y.mov', poster: '/images/fast-search/qs_img_57_28.png', name: '원미A-604 영상' },
                                         ].map((item, idx) => (
                                           <div key={idx} className="relative group">
                                             <div className="aspect-video bg-black rounded overflow-hidden border border-[#31353a] group-hover:border-blue-500/50 transition-colors relative">

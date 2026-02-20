@@ -700,10 +700,15 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       return;
     }
 
+    console.log('[AIAgentPopup] 고속검색 프로그래스 시작');
+
     // 이미 프로그래스 메시지가 있으면 추가하지 않음
     setMessages((prev) => {
       const hasProgress = prev.some(msg => msg.id === 'fast-search-progress');
-      if (hasProgress) return prev;
+      if (hasProgress) {
+        console.log('[AIAgentPopup] 이미 프로그래스 메시지 존재 - 스킵');
+        return prev;
+      }
       
       // 고속검색 프로그래스 메시지 추가
       const progressMessage: ChatMessage = {
@@ -768,6 +773,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               
               // 완료 후 1초 대기 후 메시지 제거 및 완료 메시지 추가
               completeTimeout = setTimeout(() => {
+                console.log('[AIAgentPopup] 고속검색 프로그래스 완료 - 메시지 업데이트 및 콜백 호출');
                 setMessages((prev) => {
                   // 프로그래스 메시지 제거
                   const withoutProgress = prev.filter((msg) => msg.id !== 'fast-search-progress');
@@ -788,7 +794,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 });
                 
                 if (onFastSearchComplete) {
+                  console.log('[AIAgentPopup] onFastSearchComplete 호출');
                   onFastSearchComplete();
+                } else {
+                  console.warn('[AIAgentPopup] onFastSearchComplete가 없음!');
                 }
               }, 1000);
             } else {
@@ -878,9 +887,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     if (reSearchResult && reSearchResult !== lastReSearchResultRef.current) {
       lastReSearchResultRef.current = reSearchResult;
       
-      const { excludedAttributes, deletedCount } = reSearchResult;
-      const attributesText = excludedAttributes.join(', ');
-      const fullContent = `${attributesText}이(가) ${deletedCount}건 삭제되어 결과를 재검색했습니다.`;
+      const fullContent = `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`;
       
       const resultMessage: ChatMessage = {
         id: `assistant-research-${Date.now()}`,

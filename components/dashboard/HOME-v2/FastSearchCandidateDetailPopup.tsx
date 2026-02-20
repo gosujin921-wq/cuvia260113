@@ -9,6 +9,7 @@ import {
   type TimelineEntry,
 } from '@/lib/fast-search-candidate-detail';
 import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes';
+import SharedVideoPlayer from './SharedVideoPlayer';
 
 export interface CandidateCard {
   id: string;
@@ -535,14 +536,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               className="bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
               style={{ aspectRatio: '16/9', width: '100%', maxHeight: '100%' }}
             >
-              <video
-                ref={videoRef}
+              <SharedVideoPlayer
                 src={videoSrc}
-                className="w-full h-full object-contain"
-                muted
-                playsInline
-                autoPlay
-                aria-label="캡처 구간 클립"
+                videoRef={videoRef}
+                ariaLabel="캡처 구간 클립"
                 onEnded={() => {
                   const v = videoRef.current;
                   if (!v) return;
@@ -736,6 +733,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                   시간 기반 관찰 기록
                 </button>
                 <button
+                  id="detail-tab-button"
                   type="button"
                   onClick={() => setActiveTab('detail')}
                   className={`relative flex-1 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300 z-10 ${
@@ -820,7 +818,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                     { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
                     { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
                   ].map((item, idx) => (
-                    <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
+                    <div key={idx} id={idx === 0 ? 'candidate-meta-info' : undefined} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
                       <div className="flex items-start gap-3">
                         <Icon icon={item.icon} className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -832,7 +830,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                   ))}
                   
                   {/* 유사도 카드 - 토글 가능 */}
-                  <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
+                  <div id="similarity-dropdown" className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
                     <button
                       type="button"
                       onClick={() => setIsSimilarityOpen(!isSimilarityOpen)}
@@ -913,6 +911,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         {/* 푸터 - 고정 */}
         <div className="flex items-center justify-end px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
           <button
+            id="capture-target-button"
             type="button"
             onClick={handleCaptureTarget}
             className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-1.5"

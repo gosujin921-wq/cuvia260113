@@ -158,30 +158,30 @@ export const IMAGE_CONFIDENCE: Record<ImageId, number> = {
 
 /** 이미지 ID별 CCTV명 */
 export const IMAGE_CCTV_NAME: Record<ImageId, string> = {
-  '05': '원미A-230',
-  '11': '원미A-230',
-  '15': '원미A-230',
-  '21': '원미A-444',
-  '25': '원미A-444',
-  '30': '원미A-481',
-  '40': '원미A-498',
-  '47': '원미A-583',
-  '51': '원미A-583',
-  '59': '원미A-604',
+  '05': '별빛A-230',
+  '11': '별빛A-230',
+  '15': '별빛A-230',
+  '21': '별빛A-444',
+  '25': '별빛A-444',
+  '30': '별빛A-481',
+  '40': '별빛A-498',
+  '47': '별빛A-583',
+  '51': '별빛A-583',
+  '59': '별빛A-604',
 };
 
 /** 이미지 ID별 위치 */
 export const IMAGE_LOCATION: Record<ImageId, string> = {
-  '05': '원미구 춘의동 125-46',
-  '11': '원미구 춘의동 125-46',
-  '15': '원미구 춘의동 125-46',
-  '21': '길주로363번길 48',
-  '25': '길주로363번길 48',
-  '30': '계남로301번길 28',
-  '40': '계남로301번길 54',
-  '47': '원미구 부천로 245번길 41',
-  '51': '원미구 부천로 245번길 41',
-  '59': '길주로391번길 29 (검지2, 약대파출소)',
+  '05': '별빛구 은하동 125-46',
+  '11': '별빛구 은하동 125-46',
+  '15': '별빛구 은하동 125-46',
+  '21': '은하로363번길 48',
+  '25': '은하로363번길 48',
+  '30': '달빛로301번길 28',
+  '40': '달빛로301번길 54',
+  '47': '별빛구 하늘로 245번길 41',
+  '51': '별빛구 하늘로 245번길 41',
+  '59': '은하로391번길 29 (검지2, 하늘파출소)',
 };
 
 /** 이미지 ID로 속성 목록 반환 */
@@ -241,13 +241,13 @@ export const getConfidenceForCaptureItem = (item: { id: string }): number => {
 /** 캡처 아이템의 CCTV명 */
 export const getCctvNameForCaptureItem = (item: { id: string }): string => {
   const imageId = getImageIdFromCaptureItem(item);
-  return IMAGE_CCTV_NAME[imageId] ?? '원미A-230';
+  return IMAGE_CCTV_NAME[imageId] ?? '별빛A-230';
 };
 
 /** 캡처 아이템의 위치 */
 export const getLocationForCaptureItem = (item: { id: string }): string => {
   const imageId = getImageIdFromCaptureItem(item);
-  return IMAGE_LOCATION[imageId] ?? '원미구 춘의동 125-46';
+  return IMAGE_LOCATION[imageId] ?? '별빛구 은하동 125-46';
 };
 
 /** 해당 이미지가 제외 대상 속성 중 하나라도 가지는지 */
@@ -275,13 +275,13 @@ export const getVideoPathForImageId = (imageId: ImageId): string | undefined => 
     '05': '/fastsearch_img/qs_img_05_n.mov',
     '11': '/fastsearch_img/qs_img_11_n.mov',
     '15': '/fastsearch_img/qs_img_15_n.mov',
-    '21': '/fastsearch_img/qs_img_21_y.mov',
-    '25': '/fastsearch_img/qs_img_25_y.mov',
-    '30': '/fastsearch_img/qs_img_30_y.mov',
-    '40': '/fastsearch_img/qs_img_40_y.mov',
-    '47': '/fastsearch_img/qs_img_47_y.mov',
-    '51': '/fastsearch_img/qs_img_51_y.mov',
-    '59': '/fastsearch_img/qs_img_59_y.mp4',
+    '21': 'http://192.168.102.102/video/qs_img_21_y.mov',
+    '25': 'http://192.168.102.102/video/qs_img_25_y.mov',
+    '30': 'http://192.168.102.102/video/qs_img_30_y.mov',
+    '40': 'http://192.168.102.102/video/qs_img_40_y.mov',
+    '47': 'http://192.168.102.102/video/qs_img_47_y.mov',
+    '51': 'http://192.168.102.102/video/qs_img_51_y.mov',
+    '59': 'http://192.168.102.102/video/qs_img_59_y.mp4',
   };
   return videoMap[imageId];
 };

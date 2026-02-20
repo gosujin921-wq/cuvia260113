@@ -33,6 +33,8 @@ interface MapViewProps {
   showFastSearchList?: boolean;
   /** 고속검색 반경(m). 500m → 100px 기준으로 대시 원 크기 연동 */
   fastSearchRadius?: number;
+  /** 고속검색 반경 (실제 적용된 값, CCTV 필터링용) */
+  appliedSearchRadius?: number;
   leftPanelWidth?: number;
   pinOffset?: { x: number; y: number };
   focusTargetXPercent?: number; // 줌 시 포커스(화면) 위치 (기본: 50)
@@ -41,7 +43,7 @@ interface MapViewProps {
   onMapStateChange?: (state: { center: [number, number]; zoom: number; pitch: number; bearing: number }) => void; // 지도 상태 변경 콜백
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -282,7 +284,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
-      center: [126.8136, 37.4865], // 역곡 좌표
+      center: [126.8136, 37.4865], // 성운동 좌표
       zoom: 15,
       pitch: 45,
       bearing: 0,
@@ -290,7 +292,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       interactive: true,
     });
 
-    // 맵 로드 후 3D 건물 활성화
+    // 맵 로드 후 3D 건물 활성화 및 라벨 숨기기
     map.on('load', () => {
       const style = map.getStyle();
       if (!style || !style.layers) return;
@@ -302,6 +304,18 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       // 레이어 처리
       layers.forEach((layer: any) => {
         const layerId = layer.id.toLowerCase();
+        
+        // 도로명, 건물명 등 텍스트 라벨 숨기기
+        if (layer.type === 'symbol') {
+          try {
+            if (map.getLayer(layer.id)) {
+              map.setLayoutProperty(layer.id, 'visibility', 'none');
+              console.log('라벨 레이어 숨김:', layer.id);
+            }
+          } catch (e) {
+            console.warn('라벨 레이어 숨기기 실패:', layer.id, e);
+          }
+        }
         
         const isBuildingLayer = 
           layerId.includes('building') || 
@@ -554,7 +568,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       `;
       labelEl.innerHTML = `
         <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
-        <div style="font-size: 12px; font-weight: 600; color: white;">춘의동 125-46</div>
+        <div style="font-size: 12px; font-weight: 600; color: white;">은하동 125-46</div>
       `;
       markerContainer.appendChild(labelEl);
       
@@ -588,7 +602,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       // 초기 위치로 복귀
       if (map.loaded()) {
         map.flyTo({
-          center: [126.8136, 37.4865], // 역곡 좌표
+          center: [126.8136, 37.4865], // 성운동 좌표
           zoom: 15,
           pitch: 45,
           bearing: 0,
@@ -699,52 +713,69 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const cctvGroups = [
       {
         id: 'A-230',
-        name: '원미A-230',
+        name: '별빛A-230',
         location: [126.784245, 37.5056784],
         cameras: ['고정1', '고정2', '고정3', '고정4'],
         directions: [0, 90, 180, 270]
       },
       {
         id: 'A-444',
-        name: '원미A-444',
+        name: '별빛A-444',
         location: [126.7828196, 37.50501939999999],
         cameras: ['검지1', '검지2', '검지3'],
         directions: [45, 135, 225]
       },
       {
         id: 'A-481',
-        name: '원미A-481',
+        name: '별빛A-481',
         location: [126.7828168, 37.504067],
         cameras: ['검지1', '검지2', '검지3', '검지4'],
         directions: [0, 90, 180, 270]
       },
       {
         id: 'A-498',
-        name: '원미A-498',
+        name: '별빛A-498',
         location: [126.7843434, 37.5042779],
         cameras: ['검지1', '검지2', '검지3', '검지4'],
         directions: [45, 135, 225, 315]
       },
       {
         id: 'A-583',
-        name: '원미A-583',
+        name: '별빛A-583',
         location: [126.7839366, 37.5057328],
-        cameras: ['검지1 원미', '검지2 원미', '검지3 원미'],
+        cameras: ['검지1 별빛', '검지2 별빛', '검지3 별빛'],
         directions: [60, 150, 240]
       },
       {
         id: 'A-604',
-        name: '원미A-604',
+        name: '별빛A-604',
         location: [126.7858121, 37.5047548],
         cameras: ['검지1', '검지2'],
         directions: [90, 270]
       }
     ];
     
+    // 반경에 따라 CCTV 필터링
+    // 200m: 별빛A-498, 별빛A-583만 보임
+    // 200m 초과~400m 미만: 별빛A-498, 별빛A-583, 별빛A-444, 별빛A-481 보임
+    // 400m 이상: 모든 CCTV 보임 (별빛A-604 추가)
+    const filteredCctvGroups = cctvGroups.filter(group => {
+      if (appliedSearchRadius <= 200) {
+        // 200m 이하: 별빛A-498, 별빛A-583만
+        return ['A-498', 'A-583'].includes(group.id);
+      } else if (appliedSearchRadius < 400) {
+        // 200m 초과~399m: 별빛A-498, 별빛A-583, 별빛A-444, 별빛A-481
+        return ['A-498', 'A-583', 'A-444', 'A-481'].includes(group.id);
+      } else {
+        // 400m 이상: 모든 CCTV
+        return true;
+      }
+    });
+    
     // 모든 CCTV 위치 계산
     const cctvPositions: Array<{ lng: number; lat: number; name: string; groupId: string; direction: number }> = [];
     
-    cctvGroups.forEach(group => {
+    filteredCctvGroups.forEach(group => {
       const offsets = getScatteredOffsets(group.cameras.length);
       group.cameras.forEach((camera, index) => {
         cctvPositions.push({
@@ -893,8 +924,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       return el;
     };
     
-    // 클러스터 마커 생성
-    const newClusterMarkers = cctvGroups.map(group => {
+    // 클러스터 마커 생성 (필터링된 그룹만 사용)
+    const newClusterMarkers = filteredCctvGroups.map(group => {
       const groupCCTVs = cctvPositions.filter(pos => pos.groupId === group.id);
       const clusterCenter = [
         groupCCTVs.reduce((sum, pos) => sum + pos.lng, 0) / groupCCTVs.length,
@@ -997,7 +1028,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       };
     }
     
-  }, [showFastSearchList, showCCTVName, showCCTVViewAngle]);
+  }, [showFastSearchList, showCCTVName, showCCTVViewAngle, appliedSearchRadius]);
 
   // 고속검색 반경 원 마커 생성 - 실제 지도 좌표에 고정, 바닥에 눕힘
   useEffect(() => {

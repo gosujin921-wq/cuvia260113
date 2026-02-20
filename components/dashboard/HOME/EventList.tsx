@@ -41,14 +41,20 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
         return `CCTV-V-${cctvNumber}`;
     };
 
-    // Hall 랜덤 선택 함수 (이벤트 ID 기반으로 일관된 Hall 할당)
+    // 동명 선택 함수 (이벤트 ID 기반으로 일관된 동명 할당)
     const getHallName = (event: Event): string => {
-        // 이벤트 ID를 기반으로 일관된 Hall 할당 (같은 이벤트는 항상 같은 Hall)
+        // 가상의 동명 목록
+        const dongNames = [
+            '은하동', '별빛동', '달빛동', '해빛동', 
+            '무지개동', '구름동', '바람동', '노을동'
+        ];
+        
+        // 이벤트 ID를 기반으로 일관된 동명 할당 (같은 이벤트는 항상 같은 동명)
         const eventId = event.eventId || event.id;
         const hash = eventId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const hallNumber = event.eventId === "A-20260107-004" || event.id === "A-20260107-004" ? 1 : (hash % 8) + 1; // 1~8
+        const dongIndex = event.eventId === "A-20260107-004" || event.id === "A-20260107-004" ? 0 : hash % dongNames.length;
 
-        return `Hall${hallNumber}`;
+        return dongNames[dongIndex];
     };
 
     // 날짜 시간 포맷 함수

@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import { getPredictedCCTVDetail } from '@/lib/predicted-cctv-details';
 
 export interface PredictedCCTVItem {
@@ -35,7 +34,6 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [currentLiveTime, setCurrentLiveTime] = useState(new Date());
-  const [videoSrc, setVideoSrc] = useState<string>('');
   const [isRouteScoreOpen, setIsRouteScoreOpen] = useState(false);
   const [isCaptureAnimating, setIsCaptureAnimating] = useState(false);
   const [flyingThumbnail, setFlyingThumbnail] = useState<{
@@ -67,14 +65,13 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정
+  // CCTV 변경 시 재생 상태 초기화 (src는 렌더 시점에 바로 전달하여 로딩 지연 방지)
   useEffect(() => {
     if (!cctv) return;
-    setVideoSrc(cctv.thumbnailUrl); // 리스트에서 할당된 비디오 사용
     setCurrentTime(0);
     setDuration(0);
-    setIsPlaying(true);
-  }, [cctv?.id, cctv?.thumbnailUrl]);
+    setIsPlaying(false);
+  }, [cctv?.id]);
 
   // 비디오 이벤트 핸들러
   useEffect(() => {
@@ -337,7 +334,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
             >
               <video
                 ref={videoRef}
-                src={videoSrc}
+                src={cctv.thumbnailUrl}
                 className="w-full h-full object-contain"
                 muted
                 playsInline

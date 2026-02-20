@@ -244,6 +244,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                 </div>
               </div>
               <button
+                id="capture-detail-close-button"
                 type="button"
                 onClick={() => setSelectedCapture(null)}
                 className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
@@ -262,24 +263,25 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                   className="bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
                   style={{ aspectRatio: '16/9', width: '100%' }}
                 >
-                  {selectedCapture.videoUrl ? (
+                  {selectedCapture.videoUrl && selectedCapture.videoUrl.trim() !== '' ? (
                     <>
                       <video
                         ref={videoRef}
                         src={selectedCapture.videoUrl}
                         className="w-full h-full object-contain"
-                        poster={selectedCapture.thumbnailUrl}
+                        poster={selectedCapture.thumbnailUrl && selectedCapture.thumbnailUrl.trim() !== '' ? selectedCapture.thumbnailUrl : undefined}
                         muted
                         playsInline
                         autoPlay
                         aria-label="포착 영상"
                       />
                       
-                      {/* 비디오 컨트롤 오버레이 */}
-                      <div 
-                        className="absolute inset-0 pointer-events-none"
-                        style={{ zIndex: 10 }}
-                      >
+                      {/* 비디오 컨트롤 오버레이 - 객체 추적 이미지가 아닐 때만 표시 */}
+                      {!selectedCapture.analysisResult?.includes('객체 추적') && (
+                        <div 
+                          className="absolute inset-0 pointer-events-none"
+                          style={{ zIndex: 10 }}
+                        >
                         <div 
                           className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pointer-events-auto"
                           onClick={(e) => e.stopPropagation()}
@@ -346,11 +348,12 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                             </button>
                           </div>
                         </div>
-                      </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <img
-                      src={selectedCapture.thumbnailUrl}
+                      src={selectedCapture.thumbnailUrl && selectedCapture.thumbnailUrl.trim() !== '' ? selectedCapture.thumbnailUrl : '/images/cctv-placeholder.jpg'}
                       alt={selectedCapture.cctvName}
                       className="w-full h-full object-contain"
                     />
@@ -578,6 +581,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
               </div>
               
               <button
+                id="create-propagation-package-button"
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
@@ -617,11 +621,12 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
-                  {captureItems.map((item) => {
+                  {captureItems.map((item, index) => {
                     const isSelected = selectedIds.has(item.id);
                     return (
                       <div
                         key={item.id}
+                        id={index === 0 ? 'capture-item-0' : index === 1 ? 'capture-item-1' : undefined}
                         onClick={() => setSelectedCapture(item)}
                         className={`relative bg-[#0f0f0f]/70 border rounded-lg overflow-hidden cursor-pointer transition-all group hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 ${
                           isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-[#31353a]'
@@ -630,6 +635,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                       >
                         {/* 선택 체크박스 */}
                         <div
+                          id={index === 0 ? 'capture-checkbox-0' : index === 1 ? 'capture-checkbox-1' : undefined}
                           className="absolute top-2 left-2 z-10"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -657,7 +663,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                         {/* 썸네일 */}
                         <div className="relative w-full bg-black" style={{ height: '160px' }}>
                           <img
-                            src={item.thumbnailUrl}
+                            src={item.thumbnailUrl && item.thumbnailUrl.trim() !== '' ? item.thumbnailUrl : '/images/cctv-placeholder.jpg'}
                             alt={item.cctvName}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -666,12 +672,14 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                             }}
                           />
                           
-                          {/* 재생 아이콘 오버레이 */}
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                              <Icon icon="mdi:play" className="w-8 h-8 text-white" />
+                          {/* 재생 아이콘 오버레이 - 객체 추적 이미지가 아닐 때만 표시 */}
+                          {!item.analysisResult?.includes('객체 추적') && (
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                <Icon icon="mdi:play" className="w-8 h-8 text-white" />
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
 
                         {/* 기본정보 */}

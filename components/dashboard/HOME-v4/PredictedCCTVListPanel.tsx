@@ -21,6 +21,7 @@ export interface PredictedCCTVItem {
   confidence: number; // 0-100
   direction: string; // 예: "북동쪽", "남쪽"
   thumbnailUrl: string;
+  posterUrl?: string;
 }
 
 // CCTV 비디오 파일 목록
@@ -47,6 +48,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     confidence: 92,
     direction: '북동쪽',
     thumbnailUrl: '/fastsearch_img/qs_img_05_n.mov',
+    posterUrl: '/fastsearch_img/qs_img_05_n.png',
   },
   {
     id: '2',
@@ -57,6 +59,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     confidence: 88,
     direction: '북서쪽',
     thumbnailUrl: '/fastsearch_img/qs_img_11_n.mov',
+    posterUrl: '/fastsearch_img/qs_img_11_n.png',
   },
   {
     id: '3',
@@ -67,6 +70,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     confidence: 85,
     direction: '동쪽',
     thumbnailUrl: '/fastsearch_img/qs_img_15_n.mov',
+    posterUrl: '/fastsearch_img/qs_img_15_n.png',
   },
   {
     id: '4',
@@ -76,7 +80,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:00',
     confidence: 83,
     direction: '남서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_21_y.mov',
+    thumbnailUrl: 'http://192.168.102.102/video/qs_img_21_y.mov',
+    posterUrl: '/fastsearch_img/qs_img_21_y.png',
   },
   {
     id: '5',
@@ -86,7 +91,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:15',
     confidence: 80,
     direction: '남동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_25_y.mov',
+    thumbnailUrl: 'http://192.168.102.102/video/qs_img_25_y.mov',
+    posterUrl: '/fastsearch_img/qs_img_25_y.png',
   },
   {
     id: '6',
@@ -96,7 +102,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:30',
     confidence: 78,
     direction: '서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_30_y.mov',
+    thumbnailUrl: 'http://192.168.102.102/video/qs_img_30_y.mov',
+    posterUrl: '/fastsearch_img/qs_img_30_y.png',
   },
   {
     id: '7',
@@ -106,7 +113,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:45',
     confidence: 75,
     direction: '동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_40_y.mov',
+    thumbnailUrl: 'http://192.168.102.102/video/qs_img_40_y.mov',
+    posterUrl: '/fastsearch_img/qs_img_40_y.png',
   },
   {
     id: '8',
@@ -116,7 +124,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:00',
     confidence: 73,
     direction: '북쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_47_y.mov',
+    thumbnailUrl: 'http://192.168.102.102/video/qs_img_47_y.mov',
+    posterUrl: '/fastsearch_img/qs_img_47_y.png',
   },
   {
     id: '9',
@@ -126,7 +135,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:15',
     confidence: 70,
     direction: '남서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_51_y.mov',
+    thumbnailUrl: 'http://192.168.102.102/video/qs_img_51_y.mov',
+    posterUrl: '/fastsearch_img/qs_img_51_y.png',
   },
   {
     id: '10',
@@ -136,9 +146,33 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:30',
     confidence: 68,
     direction: '남동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_59_y.mp4',
+    thumbnailUrl: 'http://192.168.102.102/video/qs_img_59_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_59_y.png',
   },
 ];
+
+/** 팝업 열리면 비디오 unmount → poster로 대체 (완전 정지, 대역폭 확보) */
+const ListVideo: React.FC<{ src: string; posterUrl?: string; isPaused: boolean }> = ({ src, posterUrl, isPaused }) => {
+  if (isPaused && posterUrl) {
+    return (
+      <img
+        src={posterUrl}
+        alt=""
+        className="absolute top-0 left-0 w-full h-full object-cover"
+      />
+    );
+  }
+  return (
+    <video
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="absolute top-0 left-0 w-full h-full object-cover"
+    />
+  );
+};
 
 const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   isVisible,
@@ -193,6 +227,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
 
+  const isPopupOpen = selectedCCTV !== null;
 
   return (
     <>
@@ -376,16 +411,9 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                       hoveredCCTVId === item.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-105' : ''
                     }`}
                   >
-                    {/* 썸네일 - CCTV 영상 */}
+                    {/* 썸네일 - CCTV 영상 (팝업 열리면 일시정지) */}
                     <div className="relative w-full bg-black" style={{ paddingTop: '56.25%' }}>
-                      <video
-                        src={item.thumbnailUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="absolute top-0 left-0 w-full h-full object-cover"
-                      />
+                      <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={isPopupOpen} />
                       
                       {/* 호버 시 정보 오버레이 */}
                       <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-center p-3 space-y-2">

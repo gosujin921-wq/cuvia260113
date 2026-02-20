@@ -131,7 +131,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [floodRiskZoneIndex, setFloodRiskZoneIndex] = useState<number>(0);
   const [facilityRiskZoneIndex, setFacilityRiskZoneIndex] = useState<number>(0);
   
-  const sensorLocations = useMemo(() => ['내동', '소사본동', '석천초교', '오정동', '괴안동'], []);
+  const sensorLocations = useMemo(() => ['물결동', '무지개본동', '은하초교', '햇살동', '노을동'], []);
   
   const weatherData = {
     icon: 'mdi:weather-partly-cloudy',
@@ -352,7 +352,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       },
       {
         spotId: '5',
-        spotName: '부천역 광장',
+        spotName: '하늘역 광장',
         fps: 27,
         status: 'delay',
         autoSequence: true,
@@ -463,24 +463,24 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const allIncidentData = useMemo(() => {
     const data = [
       // 🚗 교통·차량
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 상동로 상동역 인근 차량 추돌 사고로 2개 차로 정체 발생' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 송내로 송내역 사거리 승용차 고장으로 부분 통제' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 오정구 산업로 내동 교차로 화물차 정차로 교통 흐름 저하' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 해빛로 해빛역 인근 차량 추돌 사고로 2개 차로 정체 발생' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 구름로 구름역 사거리 승용차 고장으로 부분 통제' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 산업로 물결동 교차로 화물차 정차로 교통 흐름 저하' },
       
       // 🚧 도로·시설
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 중동 중앙공원 인근 도로 포트홀 발생, 차량 서행 필요' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 괴안동 이면도로 맨홀 파손으로 임시 통제' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 오정구 삼정동 공사 차량 진출입으로 일시적 교통 혼잡' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 달빛동 중앙공원 인근 도로 포트홀 발생, 차량 서행 필요' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 노을동 이면도로 맨홀 파손으로 임시 통제' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 이슬동 공사 차량 진출입으로 일시적 교통 혼잡' },
       
       // 🐾 생활·안전
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 약대동 횡단보도 인근 소형 동물 로드킬 발생' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 심곡본동 골목길 쓰러진 가로수로 보행 불편' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 중동역 인근 노상 적치물로 보행자 통행 주의' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 하늘동 횡단보도 인근 소형 동물 로드킬 발생' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 바람본동 골목길 쓰러진 가로수로 보행 불편' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 달빛역 인근 노상 적치물로 보행자 통행 주의' },
       
       // 🌧 기상·환경 연계형
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 중동 지하차도 인근 강우로 노면 미끄럼 주의' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 역곡동 일대 강풍으로 간판 흔들림 신고 접수' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 오정구 내동 비산먼지 발생 민원 접수' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 달빛동 지하차도 인근 강우로 노면 미끄럼 주의' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 성운동 일대 강풍으로 간판 흔들림 신고 접수' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 물결동 비산먼지 발생 민원 접수' },
     ];
     
     // 랜덤 섞기 (Fisher-Yates shuffle)
@@ -519,16 +519,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       // 안전 비상벨 운영 상태
       emergencyBell: { normalCount: 456, errorCount: 2 },
       floodRiskZones: [
-        { zone: '원미동', currentLevel: 1.2, warningLevel: 3.5, percentage: 35 },
-        { zone: '소사동', currentLevel: 2.1, warningLevel: 3.5, percentage: 60 },
-        { zone: '오정동', currentLevel: 0.8, warningLevel: 3.5, percentage: 23 },
-        { zone: '중동', currentLevel: 1.5, warningLevel: 3.5, percentage: 43 },
+        { zone: '별빛동', currentLevel: 1.2, warningLevel: 3.5, percentage: 35 },
+        { zone: '무지개동', currentLevel: 2.1, warningLevel: 3.5, percentage: 60 },
+        { zone: '햇살동', currentLevel: 0.8, warningLevel: 3.5, percentage: 23 },
+        { zone: '달빛동', currentLevel: 1.5, warningLevel: 3.5, percentage: 43 },
       ],
       facilityRiskZones: [
-        { zone: '원미동', riskLevel: 65, maxLevel: 100, percentage: 65 },
-        { zone: '소사동', riskLevel: 45, maxLevel: 100, percentage: 45 },
-        { zone: '오정동', riskLevel: 78, maxLevel: 100, percentage: 78 },
-        { zone: '중동', riskLevel: 52, maxLevel: 100, percentage: 52 },
+        { zone: '별빛동', riskLevel: 65, maxLevel: 100, percentage: 65 },
+        { zone: '무지개동', riskLevel: 45, maxLevel: 100, percentage: 45 },
+        { zone: '햇살동', riskLevel: 78, maxLevel: 100, percentage: 78 },
+        { zone: '달빛동', riskLevel: 52, maxLevel: 100, percentage: 52 },
       ],
     };
   }, []);
