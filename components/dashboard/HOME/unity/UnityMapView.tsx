@@ -60,6 +60,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
     const [showCCTV, setShowCCTV] = useState(true);
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
     const [showCCTVName, setShowCCTVName] = useState(true);
+    const [verticalLevel, setVerticalLevel] = useState(1);
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
     const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null);
 
@@ -269,6 +270,19 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         console.log("eventToUnity", eventToUnity);
     };
 
+    const handleVerticalLevelChange = (level: number) => {
+        // TODO: 레벨에 따른 동작 구현
+        console.log("pitchLevel changed:", level);
+        const eventToUnity: EventToUnity = {
+            methodName: "pitchLevel",
+            payload: {
+                value: level,
+            },
+        };
+        sendToUnity(JSON.stringify(eventToUnity));
+        console.log("eventToUnity", eventToUnity);
+    };
+
     const handleShowCctvName = (show: boolean) => {
         setShowCCTVName(show);
         const eventToUnity: EventToUnity = {
@@ -447,24 +461,59 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                     <Icon icon="mdi:minus" className="w-5 h-5" />
                 </button>
                 <div className="w-full h-px bg-gray-300 my-1" />
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleMapBearingChange(-30);
-                    }}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                    aria-label="회전 왼쪽">
-                    <Icon icon="mdi:rotate-left" className="w-5 h-5" />
-                </button>
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleMapBearingChange(30);
-                    }}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                    aria-label="회전 오른쪽">
-                    <Icon icon="mdi:rotate-right" className="w-5 h-5" />
-                </button>
+                {/* 상하좌우 회전 컨트롤 */}
+                <div className="grid grid-cols-2 gap-1">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (verticalLevel < 2) {
+                                const newLevel = verticalLevel + 1;
+                                setVerticalLevel(newLevel);
+                                handleVerticalLevelChange(newLevel);
+                            }
+                        }}
+                        disabled={verticalLevel >= 2}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        aria-label="회전 상"
+                        tabIndex={0}>
+                        <Icon icon="mdi:chevron-up" className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (verticalLevel > 0) {
+                                const newLevel = verticalLevel - 1;
+                                setVerticalLevel(newLevel);
+                                handleVerticalLevelChange(newLevel);
+                            }
+                        }}
+                        disabled={verticalLevel <= 0}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        aria-label="회전 하"
+                        tabIndex={0}>
+                        <Icon icon="mdi:chevron-down" className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleMapBearingChange(-30);
+                        }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                        aria-label="회전 왼쪽"
+                        tabIndex={0}>
+                        <Icon icon="mdi:chevron-left" className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleMapBearingChange(30);
+                        }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                        aria-label="회전 오른쪽"
+                        tabIndex={0}>
+                        <Icon icon="mdi:chevron-right" className="w-5 h-5" />
+                    </button>
+                </div>
             </div>
 
             <div
