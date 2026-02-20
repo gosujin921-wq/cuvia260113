@@ -48,6 +48,30 @@ const ObjectTrackingMapView = ({
 
     map.on('load', () => {
       console.log('[ObjectTrackingMapView] 지도 로드 완료');
+      
+      const layers = map.getStyle().layers;
+      if (layers) {
+        layers.forEach((layer) => {
+          if (
+            layer.type === 'symbol' &&
+            (layer.id.includes('label') ||
+              layer.id.includes('name') ||
+              layer.id.includes('place') ||
+              layer.id.includes('poi') ||
+              layer.id.includes('road') ||
+              layer.id.includes('street') ||
+              layer.id.includes('town') ||
+              layer.id.includes('city') ||
+              layer.id.includes('country') ||
+              layer.id.includes('state') ||
+              layer.id.includes('building') ||
+              layer.id.includes('housenumber') ||
+              layer.id.includes('address'))
+          ) {
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+          }
+        });
+      }
     });
 
     return () => {
