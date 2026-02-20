@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
+import { CCTV_ALL_MEDIA } from '@/lib/cctv-video-utils';
 
 interface BottomPanelProps {
   showCCTV: boolean;
@@ -25,7 +25,7 @@ const BottomPanel = ({
   const rightPanelWidth = 370;
   const panelGap = 16;
   const verticalPadding = 16;
-  const cctvList = ['CCTV-V-1', 'CCTV-V-2', 'CCTV-V-3', 'CCTV-V-4'];
+  const cctvList = CCTV_ALL_MEDIA.map((_, i) => `CCTV-V-${i + 1}`);
   const gap = 12;
   const paddingHorizontal = 16;
   const totalPaddingWidth = paddingHorizontal * 2;
@@ -167,33 +167,44 @@ const BottomPanel = ({
             }
           }}
         >
-          {[...cctvList, ...cctvList, ...cctvList].map((cctvId, index) => (
-            <div
-              key={`bottom-cctv-${index}-${cctvId}`}
-              className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0"
-              style={{ width: `${itemWidth}px`, height: `${itemHeight}px` }}
-            >
-              <video
-                src={getRandomCCTVVideo(cctvId)}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-2 left-2" style={{ zIndex: 10 }}>
-                <span className="px-2 py-0.5 bg-red-500/90 text-white text-xs font-semibold rounded flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
-                  LIVE
-                </span>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-0.5">
-                <div className="text-white text-[10px] font-semibold truncate" title={cctvId}>
-                  {cctvId}
+          {[...cctvList, ...cctvList, ...cctvList].map((cctvId, index) => {
+            const media = CCTV_ALL_MEDIA[index % CCTV_ALL_MEDIA.length];
+            return (
+              <div
+                key={`bottom-cctv-${index}-${cctvId}`}
+                className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0"
+                style={{ width: `${itemWidth}px`, height: `${itemHeight}px` }}
+              >
+                {media.type === 'video' ? (
+                  <video
+                    src={media.src}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src={media.src}
+                    alt={cctvId}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute top-2 left-2" style={{ zIndex: 10 }}>
+                  <span className="px-2 py-0.5 bg-red-500/90 text-white text-xs font-semibold rounded flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                    LIVE
+                  </span>
+                </div>
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-0.5">
+                  <div className="text-white text-[10px] font-semibold truncate" title={cctvId}>
+                    {cctvId}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

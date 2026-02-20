@@ -11,6 +11,22 @@ export const CCTV_VIDEO_FILES = [
   '/cctv_img/cctv4.mov',
 ];
 
+// CCTV 이미지 파일 목록
+export const CCTV_IMAGE_FILES = [
+  '/cctv_img/002.jpg',
+  '/cctv_img/003.jpg',
+];
+
+// CCTV 전체 미디어 파일 목록 (영상 + 이미지)
+export const CCTV_ALL_MEDIA: { src: string; type: 'video' | 'image' }[] = [
+  { src: '/cctv_img/cctv1.mov', type: 'video' },
+  { src: '/cctv_img/cctv2.mov', type: 'video' },
+  { src: '/cctv_img/003.jpg', type: 'image' },
+  { src: '/cctv_img/cctv3.mov', type: 'video' },
+  { src: '/cctv_img/cctv4.mov', type: 'video' },
+  { src: '/cctv_img/002.jpg', type: 'image' },
+];
+
 /**
  * 배열을 랜덤으로 섞는 함수 (Fisher-Yates 알고리즘)
  */
