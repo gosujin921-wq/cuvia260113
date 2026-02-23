@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Icon } from "@iconify/react";
 import EventList from "@/components/dashboard/HOME/EventList";
 import MapView from "@/components/dashboard/HOME/MapView";
 import UnityMapView from "@/components/dashboard/HOME/unity/UnityMapView";
@@ -9,7 +8,7 @@ import HeatmapPanel from "@/components/dashboard/HeatmapPanel";
 import CCTVStatusPanel from "@/components/dashboard/HOME/CCTVStatusPanel";
 import AIAgentPopup from "@/components/dashboard/HOME/AIAgentPopup";
 import TopControlPanel from "@/components/dashboard/HOME/TopControlPanel";
-import { Event, EventSummary as EventSummaryType } from "@/types";
+import { Event } from "@/types";
 import { allEvents, convertToDashboardEvent } from "@/lib/events-data";
 import { sendToUnity } from "@/lib/unity/unityBridge";
 import { EventToUnity } from "@/lib/unity/types";

@@ -45,7 +45,7 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)";
 
-const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, onClose, mainCameraName, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo }) => {
+const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo }) => {
     const [chatInput, setChatInput] = useState("네, 분석해 주세요.");
     const [inputKey, setInputKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
