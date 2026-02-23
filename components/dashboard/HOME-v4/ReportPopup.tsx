@@ -26,11 +26,23 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   width = 420,
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     setImageError(false);
+    setImageLoaded(false);
   }, [event?.id]);
+
+  // 선로드된 이미지(캐시)가 있으면 즉시 표시
+  useEffect(() => {
+    if (!event?.id || imageError) return;
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) {
+      setImageLoaded(true);
+    }
+  }, [event?.id, imageError]);
 
   useEffect(() => {
     if (!onLayout || !rootRef.current) return;
@@ -87,8 +99,8 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
         <div className="px-4 pb-4">
           {/* 상단: 사진과 정보 영역 */}
           <div className="flex gap-3 mb-3">
-            {/* 좌측: 사진 영역 */}
-            <div className="flex-shrink-0">
+            {/* 좌측: 사진 영역 (잠시 숨김) */}
+            <div className="flex-shrink-0 hidden">
               <div
                 className="w-40 h-48 rounded-lg bg-[#0f0f0f] border border-[#31353a] flex items-center justify-center overflow-hidden"
                 style={{ borderWidth: '1px' }}
@@ -97,42 +109,41 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   <Icon icon="mdi:image-outline" className="w-10 h-10 text-gray-600" aria-hidden />
                 ) : (
                   <img
+                    ref={imgRef}
                     src={REPORT_POPUP_IMAGE_SRC}
                     alt="신고 대상 인물"
-                    className="w-full h-full object-cover object-center"
+                    className={`w-full h-full object-cover object-center transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    fetchPriority="high"
+                    onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
                   />
                 )}
               </div>
             </div>
 
-            {/* 우측: 정보 영역 (레이블-값 구조) */}
-            <div className="flex-1 text-gray-200 min-w-0 space-y-3">
-              <div>
-                <div className="text-xs text-gray-400 mb-1">이름/나이</div>
-                <div className="text-base font-semibold text-white">김도연 / 22세 (남)</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">인상착의</div>
-                <div className="text-sm text-gray-200 leading-relaxed">회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg.</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">실종 장소/시간</div>
-                <div className="text-sm text-gray-200">춘의동 125-46 일원, 09:30경</div>
+            {/* 우측: 정보 영역 */}
+            <div className="flex-1 text-gray-200 min-w-0">
+              <div className="text-sm leading-relaxed whitespace-pre-line">
+                {`최초 포착: CCTV-01 14:02:18 (의심 장면)
+차량: 흰색 SUV 추정
+부분 번호판: 12* 3*** (가시성: 중간)
+현재 이동 방향: 동 (추정)
+최근 포착: CCTV-08 14:04:08`}
               </div>
             </div>
           </div>
 
-          {/* 레드 박스: 장애 있음, 긴급 수색 요망 */}
+          {/* 추천 대응 */}
           <div className="mb-3 rounded-lg p-3 bg-red-500/20 border border-red-500/60">
             <div className="text-sm font-semibold text-red-400">
-              장애 있음. 긴급 수색 요망.
+              추천 대응 : 112 전파 권고
             </div>
           </div>
 
           {/* 고속검색 시작 버튼: 초기 화면에서만 표시, 고속검색 화면에서는 숨김 */}
           {showFastSearchStartButton && (
             <button
+              id="fast-search-start-button"
               onClick={() => {
                 if (onFastSearchStart) {
                   onFastSearchStart();

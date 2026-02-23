@@ -11,6 +11,7 @@ interface ObjectTrackingMapViewProps {
   hoveredCCTVId?: string | null; // 외부에서 전달받은 호버 CCTV ID
   showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
   pulseRadius?: number; // 펄스 반경 (m)
+  showPredictedCCTVList?: boolean; // 예측 CCTV 리스트 패널 표시 여부 (true면 1~3번 핀 영상 일시정지)
 }
 
 const ObjectTrackingMapView = ({ 
@@ -21,7 +22,8 @@ const ObjectTrackingMapView = ({
   onCCTVHover,
   hoveredCCTVId,
   showCCTVLabel = false,
-  pulseRadius = 100
+  pulseRadius = 100,
+  showPredictedCCTVList = false
 }: ObjectTrackingMapViewProps) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -46,8 +48,20 @@ const ObjectTrackingMapView = ({
 
     mapRef.current = map;
 
+    map.on('styleimagemissing', (e: { id: string }) => {
+      if (map.hasImage(e.id)) return;
+      map.addImage(e.id, { width: 1, height: 1, data: new Uint8ClampedArray([0, 0, 0, 0]) });
+    });
+
     map.on('load', () => {
-      console.log('[ObjectTrackingMapView] 지도 로드 완료');
+      const layers = map.getStyle().layers;
+      if (layers) {
+        layers.forEach((layer) => {
+          if (layer.type === 'symbol') {
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+          }
+        });
+      }
     });
 
     return () => {
@@ -90,33 +104,35 @@ const ObjectTrackingMapView = ({
     const map = mapRef.current;
     if (!map) return;
     
-    console.log('[ObjectTrackingMapView] 추적 핀 useEffect:', visibleTrackingPins);
-    
     // visibleTrackingPins가 0이면 기존 마커 제거
     if (visibleTrackingPins === 0) {
       const existingMarkers = (map as any)._trackingPinsMarkers;
       if (existingMarkers) {
-        console.log('[ObjectTrackingMapView] 기존 추적 핀 제거');
         existingMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
         (map as any)._trackingPinsMarkers = null;
+        (map as any)._pinVideos = null;
       }
       
       // 펄스 마커 제거
       const pulseMarker = (map as any)._pin4PulseMarker;
       if (pulseMarker) {
-        console.log('[ObjectTrackingMapView] 펄스 마커 제거');
         pulseMarker.remove();
         (map as any)._pin4PulseMarker = null;
         (map as any)._pin4PulseWrapper = null;
         (map as any)._pin4PulseSvg = null;
         (map as any)._pin4PulseCircle = null;
-        
-        // zoom 핸들러 제거
         const zoomHandler = (map as any)._pin4PulseZoomHandler;
         if (zoomHandler) {
           map.off('zoom', zoomHandler);
           (map as any)._pin4PulseZoomHandler = null;
         }
+      }
+      
+      // 경찰서 마커 제거
+      const policeMarkers = (map as any)._policeStationMarkers;
+      if (policeMarkers) {
+        policeMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
+        (map as any)._policeStationMarkers = null;
       }
       
       zoomOutTriggeredRef.current = false; // 리셋
@@ -125,10 +141,10 @@ const ObjectTrackingMapView = ({
     
     // 모든 추적 핀 정의
     const allTrackingPins = [
-      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '춘의동 125-46', name: '원미A-230', color: 'gray' },
-      { location: [126.7843434, 37.5042779] as [number, number], address: '춘의동 126-18', name: '원미A-444', color: 'gray' },
-      { location: [126.7828196, 37.50501939999999] as [number, number], address: '춘의동 125-46', name: '원미A-481', color: 'gray' },
-      { location: [126.7828168, 37.504067] as [number, number], address: '춘의동 125-32', name: '원미A-498', color: 'blue' },
+      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '은하동 125-46', name: '별빛A-230', color: 'gray' },
+      { location: [126.7843434, 37.5042779] as [number, number], address: '은하동 126-18', name: '별빛A-444', color: 'gray' },
+      { location: [126.7828196, 37.50501939999999] as [number, number], address: '은하동 125-46', name: '별빛A-481', color: 'gray' },
+      { location: [126.7828168, 37.504067] as [number, number], address: '은하동 125-32', name: '별빛A-498', color: 'blue' },
     ];
     
     const initPins = () => {
@@ -142,7 +158,6 @@ const ObjectTrackingMapView = ({
       
       if (!markers) {
         // 처음 생성
-        console.log('[ObjectTrackingMapView] 추적 핀 초기 생성');
         markers = [];
         
         allTrackingPins.forEach((pin, index) => {
@@ -163,39 +178,89 @@ const ObjectTrackingMapView = ({
             iconColor = '#60a5fa';
           }
           
+          // flex column: 영상(상단) → 핀 → 라벨
           const markerContainer = document.createElement('div');
           markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
-          
+
+          // 목격지점 핀 위 영상 (4번 핀은 잠시 숨김)
+          if (index !== 3) {
+            const pinVideos = (map as any)._pinVideos || [];
+            const videoWrapper = document.createElement('div');
+            videoWrapper.style.cssText = 'width: 240px; height: 135px; border-radius: 6px; overflow: hidden; background: #0f0f0f; border: 1px solid #31353a; margin-bottom: 8px; flex-shrink: 0; position: relative;';
+            const videoEl = document.createElement('video');
+            const videoFiles = ['/hijacking/cnc_01 .mp4', '/hijacking/cnc_02.mp4', '/hijacking/cnc_03.mp4', '/hijacking/cnc_04.mp4'];
+            videoEl.src = videoFiles[index];
+            videoEl.muted = true;
+            videoEl.playsInline = true;
+            videoEl.autoplay = true;
+            videoEl.loop = true;
+            videoEl.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+            videoEl.setAttribute('aria-label', '목격 지점 영상');
+            videoWrapper.appendChild(videoEl);
+            pinVideos[index] = videoEl;
+            (map as any)._pinVideos = pinVideos;
+
+            // 플레이/일시정지 버튼 (상태에 따라 하나만 표시)
+            const controlsDiv = document.createElement('div');
+            controlsDiv.style.cssText = 'position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 20;';
+            const playBtn = document.createElement('button');
+            playBtn.style.cssText = 'width: 28px; height: 28px; border-radius: 6px; background: rgba(0,0,0,0.7); border: 1px solid #4b5563; color: white; cursor: pointer; display: none; align-items: center; justify-content: center;';
+            playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+            playBtn.setAttribute('aria-label', '재생');
+            const pauseBtn = document.createElement('button');
+            pauseBtn.style.cssText = 'width: 28px; height: 28px; border-radius: 6px; background: rgba(0,0,0,0.7); border: 1px solid #4b5563; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;';
+            pauseBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+            pauseBtn.setAttribute('aria-label', '일시정지');
+            const updateBtns = () => {
+              const isPaused = videoEl.paused;
+              playBtn.style.display = isPaused ? 'flex' : 'none';
+              pauseBtn.style.display = isPaused ? 'none' : 'flex';
+            };
+            playBtn.addEventListener('click', (e) => { e.stopPropagation(); videoEl.play(); });
+            pauseBtn.addEventListener('click', (e) => { e.stopPropagation(); videoEl.pause(); });
+            videoEl.addEventListener('play', updateBtns);
+            videoEl.addEventListener('pause', updateBtns);
+            updateBtns();
+            controlsDiv.appendChild(playBtn);
+            controlsDiv.appendChild(pauseBtn);
+            videoWrapper.appendChild(controlsDiv);
+            markerContainer.appendChild(videoWrapper);
+          }
+
           const centerWrapper = document.createElement('div');
           centerWrapper.style.cssText = 'position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; z-index: 1;';
-          
+
           const el = document.createElement('div');
           el.style.cssText = `width: 28px; height: 28px; background: ${bgGradient}; border: 2px solid ${borderColor}; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: ${shadowColor}; cursor: pointer; backdrop-filter: blur(4px); position: relative; z-index: 10;`;
-          
+
           const ringEl = document.createElement('div');
           ringEl.style.cssText = `position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border: 2px solid ${ringColor}; border-radius: 14px; pointer-events: none;`;
           el.appendChild(ringEl);
-          
+
           const iconEl = document.createElement('div');
           iconEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: ${iconColor};"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" /></svg>`;
           el.appendChild(iconEl);
-          
+
           centerWrapper.appendChild(el);
           markerContainer.appendChild(centerWrapper);
-          
+
           const labelEl = document.createElement('div');
           labelEl.style.cssText = 'margin-top: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(15, 15, 15, 0.95); border: 1px solid #31353a; white-space: nowrap; z-index: 140;';
-          
+
           const currentTime = new Date();
           const hours = String(currentTime.getHours()).padStart(2, '0');
           const minutes = String(currentTime.getMinutes()).padStart(2, '0');
           const timeString = `${hours}:${minutes}`;
           const labelType = index === 0 ? '초기 목격 지점' : '목격 지점';
-          
+
           labelEl.innerHTML = `<div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${labelType} · ${timeString}</div><div style="font-size: 13px; font-weight: 600; color: white;">${pin.address}</div>`;
           markerContainer.appendChild(labelEl);
-          
-          const marker = new maplibregl.Marker({ element: markerContainer, anchor: 'center' }).setLngLat(pin.location).addTo(map);
+
+          // v2와 동일: anchor center
+          const marker = new maplibregl.Marker({
+            element: markerContainer,
+            anchor: 'center',
+          }).setLngLat(pin.location).addTo(map);
           
           const markerElement = marker.getElement();
           if (markerElement) {
@@ -209,7 +274,6 @@ const ObjectTrackingMapView = ({
         });
         
         (map as any)._trackingPinsMarkers = markers;
-        console.log('[ObjectTrackingMapView] 추적 핀 4개 생성 완료');
       }
       
       // visibility 업데이트
@@ -220,7 +284,6 @@ const ObjectTrackingMapView = ({
         if (index < visibleTrackingPins) {
           markerElement.style.opacity = '1';
           markerElement.style.visibility = 'visible';
-          console.log(`[ObjectTrackingMapView] 핀 ${index + 1} 표시`);
         }
       });
       
@@ -230,8 +293,6 @@ const ObjectTrackingMapView = ({
         const toIndex = visibleTrackingPins - 1;
         const fromLocation = allTrackingPins[fromIndex].location;
         const toLocation = allTrackingPins[toIndex].location;
-        
-        console.log(`[ObjectTrackingMapView] 선 애니메이션: ${fromIndex + 1}번 → ${toIndex + 1}번`);
         
         // 선 애니메이션 (0.5초 동안)
         const animationDuration = 500;
@@ -261,18 +322,9 @@ const ObjectTrackingMapView = ({
           if (progress < 1) {
             requestAnimationFrame(animateLine);
           } else {
-            // 애니메이션 완료 후 최종 좌표로 업데이트
+            // 애니메이션 완료 후 최종 좌표로 업데이트 (꼭지점 원은 각 핀 마커에 포함)
             const finalCoordinates = allTrackingPins.slice(0, visibleTrackingPins).map(p => p.location);
             lineSource.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: finalCoordinates } });
-            
-            // 연결점 추가
-            const pointsSource = map.getSource('tracking-points') as maplibregl.GeoJSONSource;
-            if (pointsSource) {
-              pointsSource.setData({ type: 'FeatureCollection', features: finalCoordinates.map(coord => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: coord } })) });
-            } else {
-              map.addSource('tracking-points', { type: 'geojson', data: { type: 'FeatureCollection', features: finalCoordinates.map(coord => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: coord } })) } });
-              map.addLayer({ id: 'tracking-points-layer', type: 'circle', source: 'tracking-points', paint: { 'circle-radius': 6, 'circle-color': '#3b82f6', 'circle-stroke-width': 2, 'circle-stroke-color': '#1e40af', 'circle-opacity': 0.9 } });
-            }
           }
         };
         
@@ -283,26 +335,32 @@ const ObjectTrackingMapView = ({
     initPins();
   }, [visibleTrackingPins]);
 
+  // 예측 CCTV 리스트 패널 뜨면 1~3번 핀 영상 일시정지
+  useEffect(() => {
+    if (!showPredictedCCTVList) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const pinVideos = (map as any)._pinVideos as HTMLVideoElement[] | undefined;
+    if (!pinVideos) return;
+    [0, 1, 2].forEach((i) => {
+      const v = pinVideos[i];
+      if (v) v.pause();
+    });
+  }, [showPredictedCCTVList]);
 
   // 4번 핀까지 모두 표시되면 범위 펄스 추가 + 줌 아웃 + 평면으로 전환
   useEffect(() => {
-    console.log('[ObjectTrackingMapView] 4번 핀 useEffect 실행 - visibleTrackingPins:', visibleTrackingPins, 'triggered:', zoomOutTriggeredRef.current);
-    
     const map = mapRef.current;
     if (!map) {
-      console.log('[ObjectTrackingMapView] 지도 없음');
       return;
     }
     if (visibleTrackingPins !== 4) {
-      console.log('[ObjectTrackingMapView] 4번 핀 아님');
       return;
     }
     if (zoomOutTriggeredRef.current) {
-      console.log('[ObjectTrackingMapView] 이미 실행됨');
       return;
     }
     
-    console.log('[ObjectTrackingMapView] 4번 핀 완료 - 범위 펄스 추가');
     zoomOutTriggeredRef.current = true;
     
     const pin4Location: [number, number] = [126.7828168, 37.504067]; // 4번 핀 위치
@@ -310,15 +368,12 @@ const ObjectTrackingMapView = ({
     // 지도 로드 대기 후 펄스 추가
     const waitForMapAndAddPulse = () => {
       if (!map.loaded()) {
-        console.log('[ObjectTrackingMapView] 지도 로드 대기, 재시도');
         setTimeout(waitForMapAndAddPulse, 100);
         return;
       }
       
       // 펄스 마커 추가 (고속검색과 동일한 스타일)
       if (!(map as any)._pin4PulseMarker) {
-        console.log('[ObjectTrackingMapView] 4번 핀 블루 펄스 마커 생성');
-        
         // 현재 줌 레벨에서 반경을 픽셀로 변환
         const zoom = map.getZoom();
         const lat = pin4Location[1];
@@ -424,13 +479,11 @@ const ObjectTrackingMapView = ({
           .setLngLat(pin4Location)
           .addTo(map);
         
-        // z-index 설정
         const markerElement = radiusMarker.getElement();
         if (markerElement) {
           markerElement.style.zIndex = '1';
         }
         
-        // 저장
         (map as any)._pin4PulseMarker = radiusMarker;
         (map as any)._pin4PulseWrapper = radiusWrapper;
         (map as any)._pin4PulseSvg = svg;
@@ -460,16 +513,11 @@ const ObjectTrackingMapView = ({
         map.on('zoom', zoomHandler);
         (map as any)._pin4PulseZoomHandler = zoomHandler;
         
-        console.log('[ObjectTrackingMapView] 4번 핀 블루 펄스 마커 추가 완료');
       }
       
       // 4번 핀 표시 후 이동 애니메이션 완료를 기다린 후 줌 아웃 + 2D 전환
       setTimeout(() => {
-        console.log('[ObjectTrackingMapView] 줌 아웃 타이머 실행');
-        
         const currentBearing = map.getBearing();
-        console.log('[ObjectTrackingMapView] 줌 아웃 시작 - 1~4번 핀 모두 보이게');
-        
         // 1~4번 핀 좌표
         const allPinLocations = [
           [126.783853180335, 37.5049838114765], // 1번
@@ -494,41 +542,36 @@ const ObjectTrackingMapView = ({
           offset: [-50, 0] // 좌측으로 50px 추가 이동
         });
         
-        console.log('[ObjectTrackingMapView] flyTo 호출 완료 - 목표 pitch: 0');
-        
         // 2D 전환 완료 후 CCTV 핀 추가
         map.once('moveend', () => {
           const newPitch = map.getPitch();
-          console.log('[ObjectTrackingMapView] 2D 전환 완료 - 새 pitch:', newPitch, '- CCTV 핀 추가');
-          
           // 이미 추가되었는지 확인
           if ((map as any)._nearbyCCTVMarkers) {
-            console.log('[ObjectTrackingMapView] CCTV 핀 이미 존재');
             return;
           }
           
-          // 1번 핀(춘의동 125-46) 근처 CCTV 좌표 - 초기 목격 지점
+          // 1번 핀(은하동 125-46) 근처 CCTV 좌표 - 초기 목격 지점
           const nearbyCCTV1 = [
             [126.7840, 37.5050], // 동쪽 약 15m
             [126.7837, 37.5049], // 서쪽 약 15m
             [126.7839, 37.5048], // 남동쪽 약 20m
           ];
           
-          // 2번 핀(춘의동 126-18) 근처 CCTV 좌표 - 목격 지점
+          // 2번 핀(은하동 126-18) 근처 CCTV 좌표 - 목격 지점
           const nearbyCCTV2 = [
             [126.7845, 37.5043], // 동쪽 약 15m
             [126.7842, 37.5042], // 서쪽 약 15m
             [126.7844, 37.5041], // 남동쪽 약 20m
           ];
           
-          // 3번 핀(춘의동 125-46) 근처 CCTV 좌표 - 목격 지점
+          // 3번 핀(은하동 125-46) 근처 CCTV 좌표 - 목격 지점
           const nearbyCCTV3 = [
             [126.7830, 37.5051], // 북동쪽 약 20m
             [126.7826, 37.5050], // 서쪽 약 15m
             [126.7829, 37.5049], // 남동쪽 약 15m
           ];
           
-          // 4번 핀(춘의동 125-32) 근처 CCTV 좌표 - 목격 지점 (붉은 원 60m 반경 안)
+          // 4번 핀(은하동 125-32) 근처 CCTV 좌표 - 목격 지점 (붉은 원 60m 반경 안)
           const predictedCCTV4 = [
             [126.7829, 37.5042],   // 북동쪽 약 15m
             [126.7826, 37.5041],   // 북서쪽 약 20m
@@ -593,16 +636,16 @@ const ObjectTrackingMapView = ({
           // 블루 CCTV 마커 추가 (4번 핀 근처)
           // CCTV 정보 배열 (예측 CCTV 리스트와 동일)
           const cctvInfoList = [
-            { cctvName: '원미A-583', location: '원미구 춘의동 125-32', confidence: 92 },
-            { cctvName: '원미A-604', location: '원미구 춘의동 125-32', confidence: 88 },
-            { cctvName: '원미A-621', location: '원미구 춘의동 125-32', confidence: 85 },
-            { cctvName: '원미A-638', location: '원미구 춘의동 125-32', confidence: 83 },
-            { cctvName: '원미A-655', location: '원미구 춘의동 125-32', confidence: 80 },
-            { cctvName: '원미A-672', location: '원미구 춘의동 125-32', confidence: 78 },
-            { cctvName: '원미A-689', location: '원미구 춘의동 125-32', confidence: 75 },
-            { cctvName: '원미A-706', location: '원미구 춘의동 125-32', confidence: 73 },
-            { cctvName: '원미A-723', location: '원미구 춘의동 125-32', confidence: 70 },
-            { cctvName: '원미A-740', location: '원미구 춘의동 125-32', confidence: 68 },
+            { cctvName: '별빛A-583', location: '별빛구 은하동 125-32', confidence: 92 },
+            { cctvName: '별빛A-604', location: '별빛구 은하동 125-32', confidence: 88 },
+            { cctvName: '별빛A-621', location: '별빛구 은하동 125-32', confidence: 85 },
+            { cctvName: '별빛A-638', location: '별빛구 은하동 125-32', confidence: 83 },
+            { cctvName: '별빛A-655', location: '별빛구 은하동 125-32', confidence: 80 },
+            { cctvName: '별빛A-672', location: '별빛구 은하동 125-32', confidence: 78 },
+            { cctvName: '별빛A-689', location: '별빛구 은하동 125-32', confidence: 75 },
+            { cctvName: '별빛A-706', location: '별빛구 은하동 125-32', confidence: 73 },
+            { cctvName: '별빛A-723', location: '별빛구 은하동 125-32', confidence: 70 },
+            { cctvName: '별빛A-740', location: '별빛구 은하동 125-32', confidence: 68 },
           ];
           
           blueCCTV.forEach((location, index) => {
@@ -668,7 +711,6 @@ const ObjectTrackingMapView = ({
               iconEl.querySelector('svg')!.style.color = '#3b82f6';
               infoLabel.style.opacity = '1';
               if (onCCTVHover) {
-                console.log('[ObjectTrackingMapView] CCTV 마커 호버:', cctvId);
                 onCCTVHover(cctvId, true); // showLabel = true
               }
             });
@@ -681,7 +723,6 @@ const ObjectTrackingMapView = ({
               iconEl.querySelector('svg')!.style.color = '#60a5fa';
               infoLabel.style.opacity = '0';
               if (onCCTVHover) {
-                console.log('[ObjectTrackingMapView] CCTV 마커 호버 해제');
                 onCCTVHover(null, false);
               }
             });
@@ -704,11 +745,72 @@ const ObjectTrackingMapView = ({
           });
           
           (map as any)._nearbyCCTVMarkers = markers;
-          console.log('[ObjectTrackingMapView] 근처 CCTV 핀 19개 추가 완료 (그레이 9개 + 블루 10개)');
+          // 경찰서 위치 핀 추가
+          const policeStations = [
+            { location: [126.7833, 37.5044] as [number, number], name: '별빛파출소' },
+            { location: [126.7810, 37.5035] as [number, number], name: '은하지구대' },
+            { location: [126.7865, 37.5038] as [number, number], name: '별빛경찰서' },
+          ];
           
+          const policeMarkers: maplibregl.Marker[] = [];
+          
+          policeStations.forEach((station) => {
+            const container = document.createElement('div');
+            container.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: auto;';
+            
+            const iconWrapper = document.createElement('div');
+            iconWrapper.style.cssText = `
+              width: 32px;
+              height: 32px;
+              background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+              border: 2px solid #16a34a;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 0 12px rgba(22, 163, 74, 0.4), 0 0 24px rgba(22, 163, 74, 0.15);
+              backdrop-filter: blur(4px);
+              z-index: 40;
+            `;
+            
+            const img = document.createElement('img');
+            img.src = '/police.svg';
+            img.alt = station.name;
+            img.style.cssText = 'width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(67%) sepia(61%) saturate(459%) hue-rotate(93deg) brightness(95%) contrast(92%);';
+            iconWrapper.appendChild(img);
+            
+            const label = document.createElement('div');
+            label.style.cssText = `
+              margin-top: 6px;
+              padding: 3px 8px;
+              border-radius: 6px;
+              background: rgba(15, 15, 15, 0.9);
+              border: 1px solid rgba(22, 163, 74, 0.4);
+              white-space: nowrap;
+              font-size: 11px;
+              font-weight: 600;
+              color: #4ade80;
+            `;
+            label.textContent = station.name;
+            
+            container.appendChild(iconWrapper);
+            container.appendChild(label);
+            
+            const policeMarker = new maplibregl.Marker({ element: container, anchor: 'center' })
+              .setLngLat(station.location)
+              .addTo(map);
+            
+            const markerEl = policeMarker.getElement();
+            if (markerEl) {
+              markerEl.style.zIndex = '40';
+            }
+            
+            policeMarkers.push(policeMarker);
+          });
+          
+          (map as any)._policeStationMarkers = policeMarkers;
           // 추적 애니메이션 완료 콜백 호출
           if (onTrackingComplete) {
-            console.log('[ObjectTrackingMapView] 추적 완료 콜백 호출');
             onTrackingComplete();
           }
         });
@@ -720,8 +822,6 @@ const ObjectTrackingMapView = ({
 
   // 외부 호버 상태에 따라 CCTV 마커 하이라이트
   useEffect(() => {
-    console.log('[ObjectTrackingMapView] 외부 호버 상태 변경:', hoveredCCTVId, 'showLabel:', showCCTVLabel);
-    
     // 모든 마커 초기화
     cctvMarkersRef.current.forEach((marker, id) => {
       if (id !== hoveredCCTVId) {
@@ -741,7 +841,6 @@ const ObjectTrackingMapView = ({
     if (hoveredCCTVId) {
       const marker = cctvMarkersRef.current.get(hoveredCCTVId);
       if (marker) {
-        console.log('[ObjectTrackingMapView] 마커 하이라이트:', hoveredCCTVId);
         marker.el.style.transform = 'scale(1.5)';
         marker.el.style.zIndex = '9999';
         marker.el.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)';
@@ -767,8 +866,6 @@ const ObjectTrackingMapView = ({
     const circle = (map as any)._pin4PulseCircle;
     
     if (radiusWrapper && svg && circle) {
-      console.log('[ObjectTrackingMapView] 펄스 반경 업데이트:', pulseRadius);
-      
       const zoom = map.getZoom();
       const lat = pin4Location[1];
       const metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);

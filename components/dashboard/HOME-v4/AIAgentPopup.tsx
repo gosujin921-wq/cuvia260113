@@ -69,9 +69,21 @@ interface MessageListProps {
   listCardCount: number;
   cameraCount: number;
   isExpanded: boolean;
+  onObjectTrackingStart?: () => void;
+  onVideoView?: () => void;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded }) => {
+const WELCOME_MSG_CONTENT = {
+  title: '[긴급 알림] 납치(의심) 이벤트 감지',
+  camera: '카메라: CCTV-01 | 30초 정문',
+  detectedAt: '감지 시각: 14:02:18 | 사건 위치: 부천시 원미로 123',
+  body: '성인 남성이 성인 여성과 함께 차량 방향으로 이동하며, 여성의 움직임이 비자발적으로 보입니다.\n\n주변을 살피는 동작과 동선 변경이 반복되어 후속 확인이 필요합니다.\n\n차량 이동 중으로 판단되어 **객체추적 전환**을 권장합니다',
+  footer: '※ 자동 분석 결과이며 추가 확인이 필요합니다.',
+  btnVideo: '▶ 사건 영상 바로 보기',
+  btnTracking: '▶ 객체 추적하기',
+};
+
+const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView }) => {
   return (
     <>
       {isExpanded && (
@@ -100,12 +112,14 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
               <div className={isExpanded ? '' : 'min-w-0 flex-1'}>
                 {message.type === 'analyzing' ? (
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
-                      </p>
-                    </div>
+                    {message.id !== 'object-tracking-progress' && (
+                      <div className="mb-3">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
+                        </p>
+                      </div>
+                    )}
                     
                     {/* 재검색 단계별 표시 */}
                     {message.id === 're-search-progress' && message.totalSteps === 3 && (
@@ -159,27 +173,30 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                     )}
                     
                     {/* 객체 추적 단계별 표시 */}
-                    {message.id !== 'fast-search-progress' && message.totalSteps === 5 && (
-                      <div className="space-y-2 mb-3 text-xs">
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
-                          <span>1. 대표 후보 기준점 설정 {(message.currentStep || 0) === 1 && '✅'}</span>
+                    {message.id === 'object-tracking-progress' && message.totalSteps === 4 && (
+                      <div className="space-y-3 mb-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석중</h3>
+                          <p className="text-xs text-gray-600 mb-1">추적 대상: 차량 1대 · 관련 인물 2명(추정)</p>
+                          <p className="text-xs text-gray-600">추적 범위: 반경 2km · CCTV 42대 · 최근 20분</p>
                         </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. 경로 적합도 기반 재탐색 {(message.currentStep || 0) === 2 && '⏳'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 시간순 정렬 및 경로 연결 {(message.currentStep || 0) === 3 && '…'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
-                          <span>4. 이동 방향/시간대 반영 {(message.currentStep || 0) === 4 && '…'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 5 ? 'mdi:check-circle' : (message.currentStep || 0) === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 5 ? 'animate-spin' : ''}`} />
-                          <span>5. 다음 포착 후보 CCTV 생성 {(message.currentStep || 0) === 5 && '…'}</span>
+                        <div className="space-y-2 text-xs">
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
+                            <span>1. 차량 트랙 생성 및 재포착 감시(실시간)</span>
+                          </div>
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                            <span>2. 번호판 후보 프레임 자동 선별(가시성 높은 프레임 우선)</span>
+                          </div>
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                            <span>3. 예상 이동 경로 계산 및 다음 CCTV 우선순위 갱신</span>
+                          </div>
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
+                            <span>4. 동행자(남/여) 동반 포착 여부 동시 탐색</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -287,15 +304,56 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                       </div>
                     )}
                     <div className={`${isExpanded ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200' : 'rounded-xl border border-gray-200 bg-gray-50 p-4'}`} style={isExpanded ? { borderWidth: '1px' } : {}}>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
-                        {message.id === 'welcome-msg'
-                          ? `고속검색 결과 ${listCardCount}건이 검색되었습니다.\n조건을 추가해 후보를 좁힐 수 있습니다.`
-                          : (message.isTyping ? message.displayedContent : message.content)}
-                        {message.isTyping && <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse" />}
-                      </p>
-                      <div className={`text-xs text-gray-500 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
-                        {message.timestamp}
-                      </div>
+                      {message.id === 'welcome-msg' ? (
+                        <div className="space-y-3">
+                          {message.isTyping ? (
+                            <>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                                {message.displayedContent ?? ''}
+                                <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse align-middle" />
+                              </p>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm font-semibold text-gray-900">{WELCOME_MSG_CONTENT.title}</p>
+                              <p className="text-xs text-gray-600">{WELCOME_MSG_CONTENT.camera}</p>
+                              <p className="text-xs text-gray-600">{WELCOME_MSG_CONTENT.detectedAt}</p>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700" dangerouslySetInnerHTML={{ __html: WELCOME_MSG_CONTENT.body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                              <p className="text-xs text-gray-500">{WELCOME_MSG_CONTENT.footer}</p>
+                              <div className="flex flex-col gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => onVideoView?.()}
+                                  className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
+                                  aria-label="사건 영상 바로 보기"
+                                >
+                                  {WELCOME_MSG_CONTENT.btnVideo}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onObjectTrackingStart?.()}
+                                  className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
+                                  aria-label="객체 추적하기"
+                                >
+                                  {WELCOME_MSG_CONTENT.btnTracking}
+                                </button>
+                              </div>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                            {message.isTyping ? message.displayedContent : message.content}
+                            {message.isTyping && <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse" />}
+                          </p>
+                          <div className={`text-xs text-gray-500 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
+                            {message.timestamp}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </>
                 )}
@@ -347,6 +405,7 @@ interface ChatInputFormProps {
   setChatInput: (value: string) => void;
   handleSendMessage: () => void;
   isResponding: boolean;
+  onSkipResponse: () => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   inputKey: number;
   ignoreNextChangeRef: React.MutableRefObject<boolean>;
@@ -359,6 +418,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   setChatInput,
   handleSendMessage,
   isResponding,
+  onSkipResponse,
   textareaRef,
   inputKey,
   ignoreNextChangeRef,
@@ -381,6 +441,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             </button>
           )}
           <textarea
+            id="agent-chat-input"
             ref={textareaRef}
             key={inputKey}
             value={chatInput}
@@ -408,23 +469,38 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             }}
             rows={1}
           />
-          <button
-            type="button"
-            onClick={handleSendMessage}
-            disabled={!chatInput.trim() || isResponding}
-            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${
-              isExpanded ? 'self-center' : ''
-            }`}
-            style={{ background: AGENT_GRADIENT }}
-            aria-label="전송"
-          >
-            <img
-              src="/simbol.svg"
-              alt="전송"
-              className="w-5 h-5"
-              style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-            />
-          </button>
+          {isResponding ? (
+            <button
+              type="button"
+              onClick={onSkipResponse}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${
+                isExpanded ? 'self-center' : ''
+              }`}
+              style={{ background: AGENT_GRADIENT }}
+              aria-label="답변 취소"
+            >
+              <Icon icon="mdi:close" className="w-5 h-5 text-white" />
+            </button>
+          ) : (
+            <button
+              id="agent-chat-send-button"
+              type="button"
+              onClick={handleSendMessage}
+              disabled={!chatInput.trim()}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${
+                isExpanded ? 'self-center' : ''
+              }`}
+              style={{ background: AGENT_GRADIENT }}
+              aria-label="전송"
+            >
+              <img
+                src="/simbol.svg"
+                alt="전송"
+                className="w-5 h-5"
+                style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+              />
+            </button>
+          )}
         </div>
         <p className="text-xs text-gray-500 mt-2 text-center">
           <span className="font-semibold">{isExpanded ? 'CUVIA Agent' : 'CUVIA Link'}</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
@@ -452,7 +528,57 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onReSearchComplete,
   captureNotificationMessage = '',
 }) => {
+  const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setSlideEntered(false);
+      const t = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setSlideEntered(true));
+      });
+      return () => cancelAnimationFrame(t);
+    } else {
+      setSlideEntered(false);
+    }
+  }, [isOpen]);
+
+  // 초기 메시지 타이핑 애니메이션
+  useEffect(() => {
+    if (!isOpen) return;
+    const fullText = [
+      WELCOME_MSG_CONTENT.title,
+      WELCOME_MSG_CONTENT.camera,
+      WELCOME_MSG_CONTENT.detectedAt,
+      '',
+      WELCOME_MSG_CONTENT.body,
+      '',
+      WELCOME_MSG_CONTENT.footer,
+    ].join('\n');
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      currentIndex++;
+      if (currentIndex <= fullText.length) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === 'welcome-msg'
+              ? { ...msg, displayedContent: fullText.substring(0, currentIndex) }
+              : msg
+          )
+        );
+      } else {
+        clearInterval(typingInterval);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === 'welcome-msg'
+              ? { ...msg, isTyping: false, displayedContent: fullText }
+              : msg
+          )
+        );
+      }
+    }, 30);
+    return () => clearInterval(typingInterval);
+  }, [isOpen]);
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -464,7 +590,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       // 이미 프로그래스 메시지가 있는지 확인
       setMessages((prev) => {
         const hasObjectTrackingProgress = prev.some(msg => 
-          msg.type === 'analyzing' && msg.totalSteps === 5
+          msg.id === 'object-tracking-progress' && msg.type === 'analyzing'
         );
         
         if (hasObjectTrackingProgress) {
@@ -475,7 +601,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         const progressMessage: ChatMessage = {
           id: 'object-tracking-progress',
           role: 'assistant',
-          content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV를 예측하겠습니다.',
+          content: '',
           timestamp: new Date().toLocaleTimeString('ko-KR', {
             hour: '2-digit',
             minute: '2-digit',
@@ -484,7 +610,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           type: 'analyzing',
           progress: 0,
           currentStep: 1,
-          totalSteps: 5,
+          totalSteps: 4,
         };
         
         return [...prev, progressMessage];
@@ -499,12 +625,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               const newProgress = Math.min((msg.progress || 0) + 0.01, 1);
               let newStep = msg.currentStep || 1;
               
-              // 지도 애니메이션과 동기화된 단계 진행
+              // 4단계 진행 (25%, 50%, 75%, 100%)
               const progressPercent = newProgress * 100;
-              if (progressPercent >= 20 && newStep < 2) newStep = 2;
-              if (progressPercent >= 40 && newStep < 3) newStep = 3;
-              if (progressPercent >= 60 && newStep < 4) newStep = 4;
-              if (progressPercent >= 80 && newStep < 5) newStep = 5;
+              if (progressPercent >= 25 && newStep < 2) newStep = 2;
+              if (progressPercent >= 50 && newStep < 3) newStep = 3;
+              if (progressPercent >= 75 && newStep < 4) newStep = 4;
               
               return { ...msg, progress: newProgress, currentStep: newStep };
             }
@@ -531,6 +656,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         minute: '2-digit',
         second: '2-digit',
       }),
+      isTyping: true,
+      displayedContent: '',
     },
   ]);
   const [isResponding, setIsResponding] = useState(false);
@@ -538,6 +665,14 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const ignoreNextChangeRef = useRef(false);
   const lastReSearchResultRef = useRef<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
+  const lastCaptureNotificationRef = useRef<string>('');
+  const onFastSearchCompleteRef = useRef(onFastSearchComplete);
+  onFastSearchCompleteRef.current = onFastSearchComplete;
+  
+  // 애니메이션 interval refs
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // 고속검색 프로그래스 상태
   const [fastSearchStep, setFastSearchStep] = useState<number>(0);
@@ -546,6 +681,47 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   
   // 재검색 프로그래스 상태
   const [isReSearching, setIsReSearching] = useState<boolean>(false);
+
+  // 답변 스킵 핸들러 (답변 취소)
+  const handleSkipResponse = () => {
+    // 모든 interval/timeout 정리
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    if (progressTimeoutRef.current) {
+      clearTimeout(progressTimeoutRef.current);
+      progressTimeoutRef.current = null;
+    }
+    
+    // 타이핑 중이거나 프로그래스바 표시 중인 메시지 제거
+    setMessages((prev) =>
+      prev.filter((msg) => {
+        // 타이핑 중인 메시지 제거
+        if (msg.isTyping) return false;
+        // 프로그래스바 메시지 제거
+        if (msg.type === 'analyzing') return false;
+        // 응답 대기 중인 메시지 제거 (마지막 assistant 메시지가 아직 완료되지 않은 경우)
+        if (msg.role === 'assistant' && msg.content === '') return false;
+        return true;
+      })
+    );
+    
+    setIsResponding(false);
+  };
+
+  // 컴포넌트 언마운트 시 모든 interval 정리
+  useEffect(() => {
+    return () => {
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (progressTimeoutRef.current) clearTimeout(progressTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -580,7 +756,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
   // 포착 알림 메시지 처리
   useEffect(() => {
-    if (!captureNotificationMessage) return;
+    if (!captureNotificationMessage) {
+      lastCaptureNotificationRef.current = '';
+      return;
+    }
+    if (captureNotificationMessage === lastCaptureNotificationRef.current) return;
+    lastCaptureNotificationRef.current = captureNotificationMessage;
     
     const captureMessage: ChatMessage = {
       id: `capture-notification-${Date.now()}`,
@@ -639,7 +820,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     // 이미 프로그래스 메시지가 있으면 추가하지 않음
     setMessages((prev) => {
       const hasProgress = prev.some(msg => msg.id === 'fast-search-progress');
-      if (hasProgress) return prev;
+      if (hasProgress) {
+        return prev;
+      }
       
       // 고속검색 프로그래스 메시지 추가
       const progressMessage: ChatMessage = {
@@ -667,8 +850,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       }
     });
 
-    // 단계별 진행 (각 단계 650ms)
-    const stepDuration = 650;
+    // 단계별 진행 (각 단계 400ms)
+    const stepDuration = 400;
     let currentStepIndex = 0;
     let stepInterval: ReturnType<typeof setInterval> | null = null;
     let countInterval: ReturnType<typeof setInterval> | null = null;
@@ -696,13 +879,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         countTimeout = setTimeout(() => {
           let count = 0;
           countInterval = setInterval(() => {
-            count += Math.floor(Math.random() * 3) + 1;
-            if (count >= 37) {
-              count = 37;
+            count += Math.floor(Math.random() * 2) + 1;
+            if (count >= 10) {
+              count = 10;
               if (countInterval) clearInterval(countInterval);
               setCameraCount(count);
               
-              // 완료 후 1초 대기 후 메시지 제거 및 완료 메시지 추가
+              // 완료 후 0.5초 대기 후 메시지 제거 및 완료 메시지 추가
               completeTimeout = setTimeout(() => {
                 setMessages((prev) => {
                   // 프로그래스 메시지 제거
@@ -723,15 +906,18 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   return [...withoutProgress, welcomeMessage];
                 });
                 
-                if (onFastSearchComplete) {
-                  onFastSearchComplete();
+                const cb = onFastSearchCompleteRef.current;
+                if (cb) {
+                  cb();
+                } else {
+                  console.warn('[AIAgentPopup] onFastSearchComplete가 없음!');
                 }
-              }, 1000);
+              }, 500);
             } else {
               setCameraCount(count);
             }
-          }, 80);
-        }, 280);
+          }, 60);
+        }, 150);
       }
     }, stepDuration);
 
@@ -741,15 +927,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       if (countTimeout) clearTimeout(countTimeout);
       if (completeTimeout) clearTimeout(completeTimeout);
     };
-  }, [showFastSearchProgress, onFastSearchComplete]);
+  }, [showFastSearchProgress]);
 
   // 객체 추적 완료 시 결과 메시지 추가 (지도 2D 전환 완료 시)
   const lastObjectTrackingCompletedRef = useRef<boolean>(false);
   useEffect(() => {
     if (objectTrackingCompleted && !lastObjectTrackingCompletedRef.current) {
       lastObjectTrackingCompletedRef.current = true;
-      
-      console.log('[AIAgentPopup] 객체 추적 완료 - 결과 메시지 추가');
       
       // 프로그래스 메시지 제거하고 완료 메시지 추가 (타이핑 애니메이션)
       setMessages((prev) => {
@@ -809,17 +993,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
   // 재검색 완료 후 결과 메시지 자동 추가 (타이핑 애니메이션)
   useEffect(() => {
-    console.log('[AIAgentPopup] reSearchResult 변경:', reSearchResult);
-    
     if (reSearchResult && reSearchResult !== lastReSearchResultRef.current) {
       lastReSearchResultRef.current = reSearchResult;
-      
       const { excludedAttributes, deletedCount } = reSearchResult;
-      const attributesText = excludedAttributes.join(', ');
-      const fullContent = `${attributesText}이(가) ${deletedCount}건 삭제되어 결과를 재검색했습니다.`;
+      const isResultReSearchButton = excludedAttributes.some((a) => a.includes('대표 후보'));
+      const fullContent = isResultReSearchButton
+        ? `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`
+        : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
       
+      const messageId = `assistant-research-${Date.now()}`;
       const resultMessage: ChatMessage = {
-        id: `assistant-research-${Date.now()}`,
+        id: messageId,
         role: 'assistant',
         content: fullContent,
         timestamp: new Date().toLocaleTimeString('ko-KR', {
@@ -832,7 +1016,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         displayedContent: '',
       };
       
-      console.log('[AIAgentPopup] 결과 메시지 추가:', resultMessage);
       setMessages((prev) => [...prev, resultMessage]);
       
       // 타이핑 애니메이션
@@ -844,7 +1027,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         if (currentIndex <= fullContent.length) {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id.startsWith('assistant-research-')
+              msg.id === messageId
                 ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
                 : msg
             )
@@ -854,7 +1037,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           clearInterval(typingInterval);
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id.startsWith('assistant-research-')
+              msg.id === messageId
                 ? { ...msg, isTyping: false, displayedContent: fullContent }
                 : msg
             )
@@ -979,6 +1162,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             } else {
               // 타이핑 완료
               clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === errorMessage.id
@@ -988,6 +1173,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               );
             }
           }, 30);
+          typingIntervalRef.current = typingInterval;
         }, 700);
       } else {
         // 파싱된 속성이 있으면 재검색 프로그래스 표시
@@ -1095,9 +1281,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             return updated;
           });
         }, 100);
+        progressIntervalRef.current = progressInterval;
 
-        setTimeout(() => {
+        const progressTimeout = setTimeout(() => {
           clearInterval(progressInterval);
+          progressIntervalRef.current = null;
           
           // 객체 추적 완료 시 프로그래스바 제거하고 완료 메시지 추가 (타이핑 애니메이션)
           if (isObjectTracking) {
@@ -1142,6 +1330,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 } else {
                   // 타이핑 완료
                   clearInterval(typingInterval);
+                  typingIntervalRef.current = null;
+                  setIsResponding(false);
                   setMessages((prev) =>
                     prev.map((msg) =>
                       msg.id.startsWith('assistant-complete-')
@@ -1151,9 +1341,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   );
                 }
               }, 30);
+              typingIntervalRef.current = typingInterval;
             }, 500);
           }
         }, totalDuration);
+        progressTimeoutRef.current = progressTimeout;
       } else {
         // 프로그래스바가 없는 일반 답변: 로딩 후 타이핑 애니메이션
         setTimeout(() => {
@@ -1186,6 +1378,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             } else {
               // 타이핑 완료
               clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === assistantMessage.id
@@ -1195,6 +1389,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               );
             }
           }, 30); // 30ms마다 한 글자씩
+          typingIntervalRef.current = typingInterval;
         }, 800); // 800ms 로딩 시간
       }
     }, 300); // 초기 딜레이 300ms
@@ -1214,9 +1409,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     <>
       {isExpanded ? (
         <div
-          className="fixed inset-y-0 right-0 z-[2000]"
+          className="fixed inset-y-0 right-0 z-[2000] transition-transform duration-300 ease-out"
           onClick={(e) => e.stopPropagation()}
-          style={{ zIndex: 2000 }}
+          style={{
+            zIndex: 2000,
+            transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+          }}
         >
           <div
             className="flex flex-col bg-white border-l border-[#31353a] h-full w-[30rem] overflow-hidden"
@@ -1241,6 +1439,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   listCardCount={listCardCount}
                   cameraCount={cameraCount}
                   isExpanded={true}
+                  onObjectTrackingStart={onObjectTrackingStart}
+                  onVideoView={undefined}
                 />
               </div>
 
@@ -1252,6 +1452,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               setChatInput={setChatInput}
               handleSendMessage={handleSendMessage}
               isResponding={isResponding}
+              onSkipResponse={handleSkipResponse}
               textareaRef={textareaRef}
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
@@ -1262,13 +1463,18 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         </div>
       ) : (
         <div
-          className="absolute z-[1000]"
+          className="absolute z-[1000] transition-transform duration-300 ease-out"
           style={
             positionOverride
-              ? { position: 'absolute' as const, ...positionOverride }
+              ? {
+                  position: 'absolute' as const,
+                  ...positionOverride,
+                  transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+                }
               : {
                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
                   right: `${padding}px`,
+                  transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
                 }
           }
           onClick={(e) => e.stopPropagation()}
@@ -1296,6 +1502,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   listCardCount={listCardCount}
                   cameraCount={cameraCount}
                   isExpanded={false}
+                  onObjectTrackingStart={onObjectTrackingStart}
+                  onVideoView={undefined}
                 />
               </div>
 
@@ -1307,6 +1515,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               setChatInput={setChatInput}
               handleSendMessage={handleSendMessage}
               isResponding={isResponding}
+              onSkipResponse={handleSkipResponse}
               textareaRef={textareaRef}
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
