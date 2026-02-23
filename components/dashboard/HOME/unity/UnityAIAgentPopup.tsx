@@ -272,7 +272,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     const mainPopupHeight = mainPopupVideoHeight + mainPopupTitleHeight + mainPopupPadding;
     const padding = 20;
     const gap = 10;
-    console.log(isReadyToAnalyze);
+
     return (
         <>
             {isExpanded ? (
