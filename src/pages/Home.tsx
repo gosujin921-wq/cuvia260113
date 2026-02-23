@@ -307,7 +307,7 @@ export default function Home() {
 
     // 이벤트 트리거 함수 (키보드 1 또는 웹소켓 이벤트에서 호출)
     const triggerEventMode = useCallback(
-        (overrideEventId?: string) => {
+        (overrideEventId?: string, mainCctvId?: string, cctvIdList?: string[], eventMessage?: string) => {
             const missingEvent = allConvertedEvents.find((event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004");
             // 웹소켓 이벤트용 더미 이벤트 생성 (missingEvent가 없을 때)
             const targetEvent = missingEvent || (overrideEventId ? { id: `ws-event-${overrideEventId}`, eventId: `EVT-${overrideEventId}` } : null);
@@ -339,9 +339,9 @@ export default function Home() {
                         value: {
                             id: targetEvent.id,
                             eventId: targetEvent.eventId,
-                            mainCctvId: "Bullet-2",
-                            cctvIdList: ["PTZ-1", "PTZ-2", "PTZ-3"],
-                            eventMessage: "이벤트가 감지되었습니다.",
+                            mainCctvId: mainCctvId || "Bullet-2",
+                            cctvIdList: cctvIdList || ["PTZ-1", "PTZ-2", "PTZ-3"],
+                            eventMessage: eventMessage || "이벤트가 감지되었습니다.",
                         },
                     },
                 };
@@ -354,9 +354,9 @@ export default function Home() {
 
     // 웹소켓 이벤트 수신 핸들러
     const handleWebSocketEventReceived = useCallback(
-        (eventData: { rtspUrl: string; eventId: number }) => {
+        (eventData: { rtspUrl: string; eventId: number; mainCctvId: string; cctvIdList: string[]; eventMessage: string }) => {
             console.log("[Home] 웹소켓 이벤트 수신:", eventData);
-            triggerEventMode(String(eventData.eventId));
+            triggerEventMode(String(eventData.eventId), eventData.mainCctvId, eventData.cctvIdList, eventData.eventMessage);
         },
         [triggerEventMode]
     );
@@ -426,7 +426,20 @@ export default function Home() {
             {/* 맵 - 전체 화면 */}
             <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
                 {isUnityMode ? (
-                    <UnityMapView events={events} selectedEventId={selectedEventId} aiDetectionEventId={aiDetectionEventId} cctvIndex={cctvIndex} onAiDetectionClose={clearSelection} onMapClick={() => {}} externalZoomLevel={mapZoomLevel} onZoomLevelChange={setMapZoomLevel} hideControls={hideControls} leftPanelWidth={leftPanelCollapsed ? 80 : 416} isAutoMode={isAutoMode} onWebSocketEventReceived={handleWebSocketEventReceived} />
+                    <UnityMapView
+                        events={events}
+                        selectedEventId={selectedEventId}
+                        aiDetectionEventId={aiDetectionEventId}
+                        cctvIndex={cctvIndex}
+                        onAiDetectionClose={clearSelection}
+                        onMapClick={() => {}}
+                        externalZoomLevel={mapZoomLevel}
+                        onZoomLevelChange={setMapZoomLevel}
+                        hideControls={hideControls}
+                        leftPanelWidth={leftPanelCollapsed ? 80 : 416}
+                        isAutoMode={isAutoMode}
+                        onWebSocketEventReceived={handleWebSocketEventReceived}
+                    />
                 ) : (
                     <MapView
                         events={events}

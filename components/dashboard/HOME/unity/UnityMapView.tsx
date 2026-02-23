@@ -10,7 +10,7 @@ import UnityCanvas from "../../UnityCanvas";
 import CameraListPopup, { BridgeSlot, CCTVInfo } from "./ConfigurePopup";
 import { CameraListPageData } from "@/src/apis/camera/types";
 import UnityCCTVMeshTracking from "./UnityCCTVMeshTracking";
-import { useGetCamera, useGetIceServerList } from "@/src/apis/camera/hooks";
+import { useGetCamera, useGetCameraAssignCameraInfo, useGetIceServerList } from "@/src/apis/camera/hooks";
 import { useEventSocket } from "@/src/apis/event/hooks";
 import { useGetAgentList } from "@/src/apis/agent/hooks";
 import UnityBottomPanel from "./UnityBottomPanel";
@@ -27,24 +27,25 @@ interface UnityMapViewProps {
     hideControls?: boolean;
     leftPanelWidth?: number;
     isAutoMode?: boolean;
-    onWebSocketEventReceived?: (eventData: { rtspUrl: string; eventId: number }) => void;
+    onWebSocketEventReceived?: (eventData: { rtspUrl: string; eventId: number; mainCctvId: string; cctvIdList: string[]; eventMessage: string }) => void;
 }
 
 // Unity Bridge 슬롯 초기값 (PTZ, Bullet 카메라)
 const initialBridgeSlots: BridgeSlot[] = [
-    { bridgeId: "PTZ-1", assignedCctvId: undefined, isGrouped: true, isMain: false },
-    { bridgeId: "PTZ-2", assignedCctvId: undefined, isGrouped: true, isMain: false },
-    { bridgeId: "PTZ-3", assignedCctvId: undefined, isGrouped: true, isMain: false },
-    { bridgeId: "PTZ-4", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "PTZ-5", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-1", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-2", assignedCctvId: undefined, isGrouped: false, isMain: true },
-    { bridgeId: "Bullet-3", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-4", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-5", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-6", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-7", assignedCctvId: undefined, isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-8", assignedCctvId: undefined, isGrouped: false, isMain: false },
+    { bridgeId: "PTZ-1", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "PTZ-2", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "PTZ-3", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "PTZ-4", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "PTZ-5", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-1", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-2", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-3", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-4", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-5", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-6", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-7", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Bullet-8", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
+    { bridgeId: "Robot-1", assignedCctvId: undefined, isGrouped: false, isMain: false, isRobot: false },
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -67,6 +68,31 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
     const mediaAgentUrl = mediaAgent ? `ws://${mediaAgent.agent_ip}:${mediaAgent.agent_port}/v1/media-agent/camera/stream` : undefined;
 
     const { data: iceServerList } = useGetIceServerList();
+
+    const { data: cameraAssignCameraInfo } = useGetCameraAssignCameraInfo();
+
+    // cameraAssignCameraInfo 데이터로 bridgeSlots 업데이트
+    useEffect(() => {
+        if (!cameraAssignCameraInfo?.camera_info || cameraAssignCameraInfo.camera_info.length === 0) {
+            return;
+        }
+
+        setBridgeSlots((prevSlots) => {
+            return prevSlots.map((slot) => {
+                const assignInfo = cameraAssignCameraInfo.camera_info.find((info) => info.bridge_id === slot.bridgeId);
+                if (assignInfo) {
+                    return {
+                        ...slot,
+                        assignedCctvId: assignInfo.camera_id || undefined,
+                        isGrouped: assignInfo.is_grouped === "Y",
+                        isMain: assignInfo.is_main === "Y",
+                        isRobot: assignInfo.is_robot === "Y",
+                    };
+                }
+                return slot;
+            });
+        });
+    }, [cameraAssignCameraInfo]);
 
     const { status, lastEvent } = useEventSocket({
         autoConnect: true,
@@ -107,10 +133,17 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 setActiveEventId(eventId);
                 setActiveEventCameraInfo({ rtsp_url: lastEvent.camera_info.rtsp_url });
 
+                // bridgeSlots에서 메인 카메라 ID와 그룹핑된 카메라 ID 리스트 가져오기
+                const mainCctvBridgeId = bridgeSlots.find((slot) => slot.isMain)?.bridgeId || "";
+                const groupedCctvBridgeIds = bridgeSlots.filter((slot) => slot.isGrouped).map((slot) => slot.bridgeId);
+
                 // 상위 컴포넌트에 이벤트 수신 알림 (키보드 1 누른 것처럼 동작하게)
                 onWebSocketEventReceivedRef.current?.({
                     rtspUrl: lastEvent.camera_info.rtsp_url,
                     eventId: eventId,
+                    mainCctvId: mainCctvBridgeId,
+                    cctvIdList: groupedCctvBridgeIds,
+                    eventMessage: `${mainCctvBridgeId}에서 폭력(싸움) 이벤트가 감지되었습니다.`,
                 });
             }
         }
@@ -169,7 +202,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isUserScrollingRef = useRef(false);
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const prevHideControlsRef = useRef(hideControls);
 
     // 투망감시 모드 시작 시 그룹핑된 CCTV 팝업 열기 (aiDetectionEventId가 설정되어야 열림)
     useEffect(() => {
@@ -179,7 +211,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         // (웹소켓 이벤트는 Home.tsx 딜레이 후 aiDetectionEventId 설정됨)
         if (isEvent1Selected || aiDetectionEventId) {
             const blueCCTVIndices = cctvList.filter((cctv) => cctv.isGrouped).map((cctv) => cctv.bridgeId);
-            console.log("[CCTV Popups] 그룹핑된 카메라 팝업 열기:", blueCCTVIndices);
             setOpenedCCTVPopups(new Set(blueCCTVIndices));
         } else {
             setOpenedCCTVPopups(new Set());
@@ -329,12 +360,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         setCachedPositions((prev) => ({ ...prev, ...newPositions }));
     }, [events.map((e) => e.id).join(",")]);
 
-    // 줌/수직 레벨 초기화. 투망감시 중지 시 hideControls true→false 변경으로 위 useEffect에서 자동 호출됨.
-    const initUi = () => {
-        setZoomLevel(1);
-        setVerticalLevel(1);
-    };
-
     const handleZoomLevelChange = (level: number) => {
         setZoomLevel(level);
         const eventToUnity: EventToUnity = {
@@ -344,7 +369,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
     };
 
     const handleMapBearingChange = (bearing: number) => {
@@ -355,12 +379,10 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
     };
 
     const handleVerticalLevelChange = (level: number) => {
         // TODO: 레벨에 따른 동작 구현
-        console.log("pitchLevel changed:", level);
         const eventToUnity: EventToUnity = {
             methodName: "pitchLevel",
             payload: {
@@ -368,7 +390,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
     };
 
     const handleShowCctvName = (show: boolean) => {
@@ -380,7 +401,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
     };
 
     const handleShowCctv = (show: boolean) => {
@@ -392,7 +412,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
     };
 
     const handleShowCctvViewAngle = (show: boolean) => {
@@ -404,7 +423,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
     };
 
     const handleCCTVToggle = () => {
@@ -429,7 +447,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                     },
                 };
                 sendToUnity(JSON.stringify(eventToUnity));
-                console.log("eventToUnity", eventToUnity);
             }
             setHoveredCCTVId(null);
             return;
@@ -445,7 +462,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             },
         };
         sendToUnity(JSON.stringify(eventToUnity));
-        console.log("eventToUnity", eventToUnity);
     };
 
     useEffect(() => {
@@ -454,15 +470,12 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
             if (eventName === "hoverCCTV") {
                 try {
                     const data = JSON.parse(eventData);
-                    console.log("[MapView] Unity에서 hover 이벤트 수신:", data);
                     setHoveredCCTVId(data.cctvId);
                 } catch (e) {
                     console.error("[MapView] JSON 파싱 에러:", e);
                 }
             } else if (eventName === "leaveCCTV") {
                 try {
-                    const data = JSON.parse(eventData);
-                    console.log("[MapView] Unity에서 leave 이벤트 수신:", data);
                     setHoveredCCTVId(null);
                 } catch (e) {
                     console.error("[MapView] JSON 파싱 에러:", e);
@@ -708,7 +721,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                     bottom: undefined,
                                 }}
                                 hideControls={hideControls}
-                                cctvName={mainCctv?.camera_name || "메인 카메라"}
+                                cctvName={mainCctv?.bridgeId || "메인 카메라"}
                                 highlighted={hoveredCCTVId === mainCctv?.bridgeId}
                                 isMain={true}
                                 onHover={handleHoverCctv}
@@ -748,7 +761,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                                 onClose={() => {}}
                                                 isMain={false}
                                                 cctvId={cctv.bridgeId}
-                                                cctvName={cctv.camera_name}
+                                                cctvName={cctv.bridgeId}
                                                 position={undefined}
                                                 width={gridPopupWidth}
                                                 hideControls={hideControls}
@@ -765,25 +778,36 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 })()}
 
             {/* 순찰 로봇 화면의 우측 하단에 고정 */}
-            <UnityCCTVMeshTracking
-                iceServerList={iceServerList?.ice_servers ?? []}
-                mediaAgentUrl={mediaAgentUrl}
-                event={events.find((e) => e.id === aiDetectionEventId) || null}
-                onClose={() => {}}
-                isMain={false}
-                cctvId={"patrol-robot"}
-                cctvName={"순찰 로봇"}
-                position={{
-                    top: undefined,
-                    right: undefined,
-                    left: `${20}px`,
-                    bottom: `${20}px`,
-                }}
-                width={420}
-                hideControls={hideControls}
-                highlighted={false}
-                onHover={handleHoverCctv}
-            />
+            {(() => {
+                const robotSlot = bridgeSlots.find((slot) => slot.isRobot);
+                if (!robotSlot) return null;
+
+                const robotCamera = availableCCTVs.find((cctv) => cctv.camera_id === robotSlot.assignedCctvId);
+                const robotRtspUrl = robotCamera?.rtsp_url || (robotCamera?.rtsp_ip && robotCamera?.rtsp_port ? `rtsp://${robotCamera.rtsp_ip}:${robotCamera.rtsp_port}` : undefined);
+
+                return (
+                    <UnityCCTVMeshTracking
+                        iceServerList={iceServerList?.ice_servers ?? []}
+                        mediaAgentUrl={mediaAgentUrl}
+                        event={events.find((e) => e.id === aiDetectionEventId) || null}
+                        onClose={() => {}}
+                        isMain={false}
+                        cctvId={robotSlot.bridgeId}
+                        cctvName={robotSlot.bridgeId}
+                        position={{
+                            top: undefined,
+                            right: undefined,
+                            left: `${20}px`,
+                            bottom: `${20}px`,
+                        }}
+                        width={420}
+                        hideControls={hideControls}
+                        highlighted={false}
+                        onHover={handleHoverCctv}
+                        cameraInfo={robotRtspUrl ? { rtsp_url: robotRtspUrl } : undefined}
+                    />
+                );
+            })()}
 
             <UnityBottomPanel
                 iceServerList={iceServerList?.ice_servers ?? []}
@@ -841,7 +865,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 );
             })()}
 
-            {toggleCctvSetting && <CameraListPopup onClose={() => setToggleCctvSetting(false)} availableCCTVs={availableCCTVs} bridgeSlots={bridgeSlots} onBridgeSlotsChange={setBridgeSlots} />}
+            {toggleCctvSetting && <CameraListPopup onClose={() => setToggleCctvSetting(false)} availableCCTVs={availableCCTVs} bridgeSlots={bridgeSlots} />}
         </div>
     );
 };

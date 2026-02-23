@@ -38,3 +38,25 @@ export interface IceServerInfo {
 export interface IceServerResponse {
     ice_servers: IceServerInfo[];
 }
+
+export interface CameraAssignInfo {
+    bridge_id: string;
+    camera_id: string;
+    camera_name: string;
+    rtsp_url: string;
+    is_grouped: string;
+    is_main: string;
+    is_robot: string;
+}
+
+export interface CameraAssignCameraInfo {
+    camera_info: CameraAssignInfo[];
+}
+
+export interface CameraAssignRequest {
+    camera_id?: string;
+    camera_name?: string;
+    is_grouped?: string;
+    is_main?: string;
+    is_robot?: string;
+}
