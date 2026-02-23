@@ -14,6 +14,8 @@ import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/Ca
 import PropagationListPanel from '@/components/dashboard/HOME-v2/PropagationListPanel';
 import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
 import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
+import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
+import { useMouseGuide } from '@/src/pages/useMouseGuide';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
@@ -294,11 +296,18 @@ export default function HomeV2() {
   });
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
-  const [showMouseGuide, setShowMouseGuide] = useState<boolean>(true); // 마우스 유도 애니메이션 표시 여부 (기본값 true)
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 }); // 마우스 위치
-  const [guideTarget, setGuideTarget] = useState<string | null>(null); // 마우스 가이드 타겟 요소 ID
-  const [guideMessage, setGuideMessage] = useState<string>(''); // 마우스 가이드 메시지
-  const [guideType, setGuideType] = useState<'mouse' | 'eye' | 'keyboard'>('mouse'); // 가이드 타입 (mouse: 클릭, eye: 시선, keyboard: 입력)
+  const {
+    showMouseGuide,
+    setShowMouseGuide,
+    mousePosition,
+    guideTarget,
+    guideMessage,
+    guideType,
+    jumpToStep,
+    resetGuide,
+    toggleGuide,
+    syncToAppState,
+  } = useMouseGuide();
   const [captureDetailCloseCount, setCaptureDetailCloseCount] = useState<number>(0); // 포착 디테일 팝업 닫기 횟수
   
   // Refs
@@ -309,6 +318,12 @@ export default function HomeV2() {
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
   const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 신고 팝업 이미지 선로드 (캐시 미리 워밍)
+  useEffect(() => {
+    const img = new Image();
+    img.src = '/people.jpg';
+  }, []);
 
   // 모든 이벤트를 한 번만 변환 (종결되지 않은 것만)
   const allConvertedEvents: Event[] = useMemo(() => {
@@ -472,22 +487,29 @@ export default function HomeV2() {
 
   // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
   const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
-    console.log('[Home-v2] 메뉴 선택:', menuId);
     dispatch({ type: 'SET_MENU', payload: menuId });
-    
+
+    if (showMouseGuide) {
+      if (menuId === 'fast-search') {
+        jumpToStep('radius-chip');
+      } else if (menuId === 'object-tracking') {
+        jumpToStep('object-tracking-confirm');
+      } else if (menuId === 'capture-list') {
+        jumpToStep('capture-item-0');
+      }
+    }
+
     if (menuId === 'net-monitoring') {
       dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
     } else if (menuId === 'fast-search') {
-      console.log('[Home-v2] 고속검색 시작');
       // 예측 CCTV 리스트 패널 닫기
       setShowPredictedCCTVList(false);
       setObjectTrackingCompleted(false);
       setVisibleTrackingPins(0);
       // 고속검색 시작 시 신고 팝업을 위한 이벤트 선택
-      const missingEvent = allConvertedEvents.find(event => 
+      const missingEvent = allConvertedEvents.find(event =>
         event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
       );
-      console.log('[Home-v2] 찾은 이벤트:', missingEvent);
       if (missingEvent) {
         dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
         // 이벤트 핀을 지도에 표시하기 위해 visibleEventIds에 추가
@@ -505,7 +527,7 @@ export default function HomeV2() {
     } else if (menuId === 'propagation') {
       dispatch({ type: 'SHOW_PROPAGATION_LIST' });
     }
-  }, [allConvertedEvents]);
+  }, [allConvertedEvents, showMouseGuide, jumpToStep]);
 
   // 포착 아이템 추가 핸들러
   const handleAddCaptureItem = useCallback((
@@ -514,7 +536,8 @@ export default function HomeV2() {
     confidence: number, 
     thumbnailUrlOrAnalysisResult?: string | any, 
     analysisResultParam?: string | any,
-    videoUrlParam?: string
+    videoUrlParam?: string,
+    optionsParam?: { hideOverlayWithPopup?: boolean }
   ) => {
     // 6개 파라미터: thumbnailUrl + analysisResult + videoUrl (고속검색에서 호출)
     // 5개 파라미터: 
@@ -577,10 +600,11 @@ export default function HomeV2() {
     setCaptureNotificationMessage(message);
     setShowCaptureNotification(true);
     
-    // 5초 후 알림 애니메이션 종료
+    // 팝업과 동시에 오버레이 숨김(고속검색, onAddCapture 300ms 후 호출 → 400ms면 700ms에 오버레이 제거) vs 5초 유지(객체추적 등)
+    const overlayDuration = optionsParam?.hideOverlayWithPopup ? 400 : 5000;
     setTimeout(() => {
       setShowCaptureNotification(false);
-    }, 5000);
+    }, overlayDuration);
   }, []);
 
   // 이벤트 액션 핸들러 (useCallback으로 메모이제이션)
@@ -608,819 +632,82 @@ export default function HomeV2() {
     setShowPredictedCCTVList(false);
     setObjectTrackingCompleted(false);
     setVisibleTrackingPins(0);
-    setGuideTarget(null);
-    setGuideMessage('');
-    setGuideType('mouse');
-  }, []);
+    resetGuide();
+  }, [resetGuide]);
 
-  // 반경 칩 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'radius-chip-button') return;
+  // 완전 초기화: 시작 메시지 다이얼로그가 떠 있는 상태로 되돌림
+  const handleBackToInitial = useCallback(() => {
+    dispatch({ type: 'CLEAR_ALL' });
+    setShowStartMessage(true);
+    setCaptureItems([]);
+    setPinOffset({ x: 0, y: 0 });
+    setExcludedAttributes([]);
+    setExcludedImageIds([]);
+    setFlyToLocation(null);
+    setShowPredictedCCTVList(false);
+    setObjectTrackingCompleted(false);
+    setVisibleTrackingPins(0);
+    setReSearchResult(null);
+    setCaptureDetailCloseCount(0);
+    setOpenCandidateId(null);
+    resetGuide();
+  }, [resetGuide]);
 
-    const radiusChip = document.getElementById('radius-chip-button');
-    if (!radiusChip) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 반경 칩 클릭 - 확인 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 확인 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 확인 버튼 유도');
-        setGuideTarget('radius-confirm-button');
-        setGuideMessage('400m 이상으로 설정 후 확인 버튼을 클릭하세요.');
-      }, 500);
-    };
-
-    radiusChip.addEventListener('click', handleClick);
-    return () => radiusChip.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 슬라이더 값 변경 감지 (400m 이상 선택 시 확인 버튼으로 가이드 이동)
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'radius-slider') return;
-
-    const slider = document.getElementById('radius-slider') as HTMLInputElement;
-    if (!slider) return;
-
-    const handleChange = () => {
-      const value = Number(slider.value);
-      console.log('[Home-v2] 슬라이더 값 변경:', value);
-      
-      if (value >= 400) {
-        console.log('[Home-v2] 400m 이상 선택 완료 - 확인 버튼 유도');
-        
-        // 가이드를 확인 버튼으로 이동
-        setGuideTarget('radius-confirm-button');
-        setGuideMessage('확인 버튼을 클릭하세요.');
-      }
-    };
-
-    slider.addEventListener('input', handleChange);
-    return () => slider.removeEventListener('input', handleChange);
-  }, [showMouseGuide, guideTarget]);
-
-  // 반경 확인 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'radius-confirm-button') return;
-
-    const confirmButton = document.getElementById('radius-confirm-button');
-    if (!confirmButton) {
-      console.log('[Home-v2] 반경 확인 버튼을 찾을 수 없음');
-      return;
-    }
-
-    console.log('[Home-v2] 반경 확인 버튼 클릭 리스너 등록');
-
-    const handleClick = () => {
-      console.log('[Home-v2] 반경 확인 버튼 클릭됨 - 에이전트 입력창 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.3초 후: 에이전트 입력창으로 가이드 이동 (팝오버가 닫히기 전)
-      setTimeout(() => {
-        console.log('[Home-v2] 에이전트 입력창으로 가이드 설정');
-        setGuideTarget('agent-chat-input');
-        setGuideMessage('검색된 결과 확인 후 비정형 검색 조건을 자연어로 입력하여 후보를 좁힐 수 있습니다.<br>(예 : 우산 쓴 사람 빼줘, 우산 삭제 등)');
-        setGuideType('keyboard');
-      }, 300);
-    };
-
-    // capture phase에서 이벤트 캡처
-    confirmButton.addEventListener('click', handleClick, true);
-    return () => {
-      console.log('[Home-v2] 반경 확인 버튼 클릭 리스너 제거');
-      confirmButton.removeEventListener('click', handleClick, true);
-    };
-  }, [showMouseGuide, guideTarget]);
-
-  // 에이전트 입력창 감지 (우산 삭제 입력 시 전송 버튼으로 가이드 이동)
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'agent-chat-input') return;
-
-    const checkInput = () => {
-      const inputElement = document.getElementById('agent-chat-input') as HTMLTextAreaElement;
-      if (inputElement && inputElement.value.includes('우산')) {
-        setGuideTarget('agent-chat-send-button');
-        setGuideMessage('전송 버튼을 클릭하세요');
-        setGuideType('mouse');
-      }
-    };
-
-    const interval = setInterval(checkInput, 200);
-    return () => clearInterval(interval);
-  }, [showMouseGuide, guideTarget]);
-
-  // 전송 버튼 클릭 감지 (클릭 시 가이드 숨김)
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'agent-chat-send-button') return;
-
-    const sendButton = document.getElementById('agent-chat-send-button');
-    if (!sendButton) return;
-
-    const handleClick = () => {
-      setGuideTarget(null);
-      setGuideMessage('');
-    };
-
-    sendButton.addEventListener('click', handleClick);
-    return () => sendButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 재검색 완료 후 59번 리스트로 가이드 이동 (스켈레톤 완료 즉시)
+  // 재검색 완료 후 가이드 이동 (에이전트 팝업 결과 표시 후)
+  // - 우산 삭제(에이전트): 별빛A-604 가이드
+  // - 결과재검색 버튼: 객체 추적 메뉴 가이드
   useEffect(() => {
     if (!showMouseGuide || !reSearchResult || uiState.showReSearchProgress) return;
-
-    // 스켈레톤이 끝나고 카드가 표시되면 즉시 가이드 이동
-    setGuideTarget('fast-search-candidate-10');
-    setGuideMessage('디테일한 고속 검색 결과를 확인해 보세요.');
-  }, [showMouseGuide, reSearchResult, uiState.showReSearchProgress]);
-
-  // 59번 리스트 클릭 감지 및 팝업 열림 시 순차적 가이드
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'fast-search-candidate-10') return;
-
-    const candidateElement = document.getElementById('fast-search-candidate-10');
-    if (!candidateElement) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 59번 후보 클릭 - 순차적 가이드 시작');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1단계: 팝업 위에 메시지 표시 (0.5초)
-      setTimeout(() => {
-        console.log('[Home-v2] 1단계: 팝업 메시지');
-        setGuideMessage('검색 된 대상의 디테일한 정보를 확인할 수 있어요.');
-      }, 500);
-
-      // 2단계: 후보 메타정보 탭 버튼으로 가이드 이동 (2.5초)
-      setTimeout(() => {
-        console.log('[Home-v2] 2단계: 메타정보 탭');
-        setGuideTarget('detail-tab-button');
-        setGuideMessage('후보 메타정보 탭을 클릭하세요.');
-      }, 2500);
-    };
-
-    candidateElement.addEventListener('click', handleClick);
-    return () => candidateElement.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 후보 메타정보 탭 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'detail-tab-button') return;
-
-    const tabButton = document.getElementById('detail-tab-button');
-    if (!tabButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 탭 클릭 - 유사도로 이동');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 유사도 드롭박스로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 유사도 드롭박스');
-        setGuideTarget('similarity-dropdown');
-        setGuideMessage('유사도 상세 정보를 확인하세요.');
-      }, 500);
-    };
-
-    tabButton.addEventListener('click', handleClick);
-    return () => tabButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 유사도 드롭박스 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'similarity-dropdown') return;
-
-    const similarityElement = document.getElementById('similarity-dropdown');
-    if (!similarityElement) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 유사도 클릭 - 대상 포착으로 이동');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 2초 후: 대상 포착 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 대상 포착 버튼');
-        setGuideTarget('capture-target-button');
-        setGuideMessage('대상을 포착 시 대상 포착 버튼을 눌러주세요.');
-      }, 2000);
-    };
-
-    similarityElement.addEventListener('click', handleClick);
-    return () => similarityElement.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 대상 포착 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'capture-target-button') return;
-
-    const captureButton = document.getElementById('capture-target-button');
-    if (!captureButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 대상 포착 클릭 - 포착 목록 메뉴 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 포착 목록 메뉴로 가이드 이동 (시선 유도)
-      setTimeout(() => {
-        console.log('[Home-v2] 포착 목록 메뉴 유도 (시선)');
-        setGuideTarget('capture-list-menu');
-        setGuideMessage('해당 검색 결과가 전파 근거를 위하여 포착 목록에 이동했습니다.');
-        setGuideType('eye');
-        
-        // 5초 후 자동으로 맞음 시퀀스로 진행 (마우스 유도)
-        setTimeout(() => {
-          console.log('[Home-v2] 5초 경과 - 59번 맞음 체크 유도');
-          setGuideTarget('match-button-10');
-          setGuideMessage('고속 검색 후보군 중 확정 후보는 맞음을 선택하여 후보군에 추가하세요.');
-          setGuideType('mouse');
-        }, 5000);
-      }, 1000);
-    };
-
-    captureButton.addEventListener('click', handleClick);
-    return () => captureButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-
-  // 59번 맞음 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'match-button-10') return;
-
-    const matchButton = document.getElementById('match-button-10');
-    if (!matchButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 59번 맞음 체크 - 5번 틀림 체크 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 1번(05) 틀림 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 1번(05) 틀림 체크');
-        setGuideTarget('wrong-button-1');
-        setGuideMessage('고속 검색 후보군 중 맞지 않는 후보는 틀림으로 체크하세요.');
-      }, 1000);
-    };
-
-    matchButton.addEventListener('click', handleClick);
-    return () => matchButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 05번 틀림 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'wrong-button-1') return;
-
-    const wrongButton = document.getElementById('wrong-button-1');
-    if (!wrongButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 05번 틀림 체크 - 결과 재검색 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 결과 재검색 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 결과 재검색 버튼 유도');
-        setGuideTarget('re-search-button');
-        setGuideMessage('추가한 조건 및 대표 후보를 기반으로 재검색을 시작합니다.');
-        setGuideType('mouse');
-      }, 1000);
-    };
-
-    wrongButton.addEventListener('click', handleClick);
-    return () => wrongButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 결과 재검색 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 're-search-button') return;
-
-    const reSearchButton = document.getElementById('re-search-button');
-    if (!reSearchButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 결과 재검색 버튼 클릭 - 객체 추적 메뉴 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 객체 추적 메뉴로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 객체 추적 메뉴 유도');
-        setGuideTarget('object-tracking-menu');
-        setGuideMessage('객체 추적 메뉴를 클릭하세요.');
-        setGuideType('mouse');
-      }, 1000);
-    };
-
-    reSearchButton.addEventListener('click', handleClick);
-    return () => reSearchButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 객체 추적 메뉴 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'object-tracking-menu') return;
-
-    const trackingMenu = document.getElementById('object-tracking-menu');
-    if (!trackingMenu) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 객체 추적 메뉴 클릭 - 다이얼로그 시작 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 다이얼로그 시작 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 다이얼로그 시작 버튼 유도');
-        setGuideTarget('object-tracking-confirm-button');
-        setGuideMessage('시작 버튼을 클릭하세요.');
-        setGuideType('mouse');
-      }, 500);
-    };
-
-    trackingMenu.addEventListener('click', handleClick);
-    return () => trackingMenu.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 객체 추적 다이얼로그 시작 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'object-tracking-confirm-button') return;
-
-    const confirmButton = document.getElementById('object-tracking-confirm-button');
-    if (!confirmButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 객체 추적 시작 버튼 클릭 - 애니메이션 완료 대기');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-    };
-
-    confirmButton.addEventListener('click', handleClick);
-    return () => confirmButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
+    const isResultReSearchButton = reSearchResult.excludedAttributes.some((a) => a.includes('대표 후보'));
+    jumpToStep(isResultReSearchButton ? 'object-tracking-menu' : 'fast-search-candidate-10');
+  }, [showMouseGuide, reSearchResult, uiState.showReSearchProgress, jumpToStep]);
 
   // 객체 추적 애니메이션 완료 핸들러
   const handleTrackingComplete = useCallback(() => {
-    console.log('[Home-v2] 객체 추적 애니메이션 완료 - 예측 CCTV 리스트 표시 및 에이전트 팝업 결과 메시지');
     setShowPredictedCCTVList(true);
     setObjectTrackingCompleted(true);
 
-    // 마우스 가이드: 예측 CCTV 리스트 별빛A-689 유도 (즉시)
     if (showMouseGuide) {
-      console.log('[Home-v2] 예측 CCTV 리스트 별빛A-689 유도');
-      setGuideTarget('predicted-cctv-7');
-      setGuideMessage('객체추적 결과를 통해 지도에서 이동 경로를 확인하고,<br/>마지막 확인 지점 이후 포착 예측 주변 CCTV 리스트를 확인합니다.');
-      setGuideType('mouse');
+      jumpToStep('predicted-cctv-7');
     }
-  }, [showMouseGuide]);
+  }, [showMouseGuide, jumpToStep]);
 
-  // 예측 CCTV 리스트 별빛A-689 클릭 감지
+  // syncToAppState: 타겟 요소가 없을 때 앱 상태에 맞춰 가이드 단계 동기화
   useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'predicted-cctv-7') return;
-
-    const cctvCard = document.getElementById('predicted-cctv-7');
-    if (!cctvCard) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 별빛A-689 클릭 - 경로 예측 드롭박스 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 경로 예측 상세 근거 드롭박스로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 경로 예측 상세 근거 드롭박스 유도');
-        setGuideTarget('route-prediction-dropdown');
-        setGuideMessage('경로 예측 상세 근거를 확인하세요.');
-        setGuideType('mouse');
-      }, 500);
-    };
-
-    cctvCard.addEventListener('click', handleClick);
-    return () => cctvCard.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 경로 예측 드롭박스 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'route-prediction-dropdown') return;
-
-    const dropdown = document.getElementById('route-prediction-dropdown');
-    if (!dropdown) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 경로 예측 드롭박스 클릭 - 대상 발견 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 2초 후: 대상 발견 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 대상 발견 버튼 유도');
-        setGuideTarget('predicted-target-found-button');
-        setGuideMessage('대상을 포착 시 대상 포착 버튼을 눌러주세요.');
-        setGuideType('mouse');
-      }, 2000);
-    };
-
-    dropdown.addEventListener('click', handleClick);
-    return () => dropdown.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 대상 발견 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'predicted-target-found-button') return;
-
-    const targetButton = document.getElementById('predicted-target-found-button');
-    if (!targetButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 대상 발견 버튼 클릭 - 팝업 닫기 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 팝업 닫기 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 팝업 닫기 버튼 유도');
-        setGuideTarget('predicted-cctv-close-button');
-        setGuideMessage('대상 포착을 완료한 뒤 닫기를 눌러 팝업을 닫아주세요.');
-        setGuideType('mouse');
-      }, 1000);
-    };
-
-    targetButton.addEventListener('click', handleClick);
-    return () => targetButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 예측 CCTV 팝업 닫기 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'predicted-cctv-close-button') return;
-
-    const closeButton = document.getElementById('predicted-cctv-close-button');
-    if (!closeButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 팝업 닫기 - 포착 목록 메뉴 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 포착 목록 메뉴로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 포착 목록 메뉴 유도');
-        setGuideTarget('capture-list-menu');
-        setGuideMessage('포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.');
-        setGuideType('mouse');
-      }, 500);
-    };
-
-    closeButton.addEventListener('click', handleClick);
-    return () => closeButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 포착 목록 메뉴 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'capture-list-menu') return;
-
-    const captureMenu = document.getElementById('capture-list-menu');
-    if (!captureMenu) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 포착 목록 메뉴 클릭 - 원미A-638 리스트 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 별빛A-638 리스트로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 별빛A-638 리스트 유도');
-        setGuideTarget('capture-item-0');
-        setGuideMessage('객체 추적 시 포착한 대상의 전파 근거 정보를 확인합니다.');
-        setGuideType('mouse');
-      }, 500);
-    };
-
-    captureMenu.addEventListener('click', handleClick);
-    return () => captureMenu.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 별빛A-638 리스트 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'capture-item-0') return;
-
-    const captureItem = document.getElementById('capture-item-0');
-    if (!captureItem) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 별빛A-638 리스트 클릭 - 팝업 닫기 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 팝업 닫기 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 포착 디테일 팝업 닫기 버튼 유도');
-        setGuideTarget('capture-detail-close-button');
-        setGuideMessage('전파 근거 내용을 확인 후 팝업을 닫아주세요.');
-        setGuideType('mouse');
-      }, 500);
-    };
-
-    captureItem.addEventListener('click', handleClick);
-    return () => captureItem.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 포착 디테일 팝업 닫기 버튼 클릭 감지 (통합)
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'capture-detail-close-button') return;
-
-    const closeButton = document.getElementById('capture-detail-close-button');
-    if (!closeButton) return;
-
-    const handleClick = () => {
-      if (captureDetailCloseCount === 0) {
-        // 첫 번째 닫기: 별빛A-604 리스트로 유도
-        console.log('[Home-v2] 포착 디테일 팝업 닫기 (1차) - 별빛A-604 리스트 유도');
-        
-        setCaptureDetailCloseCount(1);
-        
-        // 클릭 즉시 가이드 숨김
-        setGuideTarget(null);
-        setGuideMessage('');
-
-        // 0.5초 후: 별빛A-604 리스트로 가이드 이동
-        setTimeout(() => {
-          console.log('[Home-v2] 별빛A-604 리스트 유도');
-          setGuideTarget('capture-item-1');
-          setGuideMessage('고속 검색 시 포착한 대상의 전파 근거 정보를 확인합니다.');
-          setGuideType('mouse');
-        }, 500);
-      } else {
-        // 두 번째 닫기: 별빛A-638 체크박스로 유도
-        console.log('[Home-v2] 포착 디테일 팝업 닫기 (2차) - 별빛A-638 체크박스 유도');
-        
-        setCaptureDetailCloseCount(0); // 리셋
-        
-        // 클릭 즉시 가이드 숨김
-        setGuideTarget(null);
-        setGuideMessage('');
-
-        // 0.5초 후: 별빛A-638 체크박스로 가이드 이동
-        setTimeout(() => {
-          console.log('[Home-v2] 별빛A-638 체크박스 유도');
-          setGuideTarget('capture-checkbox-0');
-          setGuideMessage('별빛A-638을 선택하세요.');
-          setGuideType('mouse');
-        }, 500);
-      }
-    };
-
-    closeButton.addEventListener('click', handleClick);
-    return () => closeButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget, captureDetailCloseCount]);
-
-  // 별빛A-604 리스트 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'capture-item-1') return;
-
-    const captureItem = document.getElementById('capture-item-1');
-    if (!captureItem) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 별빛A-604 리스트 클릭 - 팝업 닫기 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 팝업 닫기 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 포착 디테일 팝업 닫기 버튼 유도 (2차)');
-        setGuideTarget('capture-detail-close-button');
-        setGuideMessage('전파 근거 내용을 확인 후 팝업을 닫아주세요.');
-        setGuideType('mouse');
-      }, 500);
-    };
-
-    captureItem.addEventListener('click', handleClick);
-    return () => captureItem.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 별빛A-638 체크박스 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'capture-checkbox-0') return;
-
-    const checkbox = document.getElementById('capture-checkbox-0');
-    if (!checkbox) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 별빛A-638 체크박스 클릭 - 별빛A-604 체크박스 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 별빛A-604 체크박스로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 별빛A-604 체크박스 유도');
-        setGuideTarget('capture-checkbox-1');
-        setGuideMessage('별빛A-604를 선택하세요.');
-        setGuideType('mouse');
-      }, 1000);
-    };
-
-    checkbox.addEventListener('click', handleClick);
-    return () => checkbox.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 별빛A-604 체크박스 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'capture-checkbox-1') return;
-
-    const checkbox = document.getElementById('capture-checkbox-1');
-    if (!checkbox) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 별빛A-604 체크박스 클릭 - 전파 패키지 생성 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 전파 패키지 생성 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 전파 패키지 생성 버튼 유도');
-        setGuideTarget('create-propagation-package-button');
-        setGuideMessage('포착한 정보를 토대로 전파의 초안을 AI가 생성합니다.');
-        setGuideType('mouse');
-      }, 1000);
-    };
-
-    checkbox.addEventListener('click', handleClick);
-    return () => checkbox.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 전파 패키지 생성 버튼 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'create-propagation-package-button') return;
-
-    const createButton = document.getElementById('create-propagation-package-button');
-    if (!createButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 전파 패키지 생성 버튼 클릭 - 상세보기 탭 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 1초 후: 상세보기 탭으로 가이드 이동 (팝업 열리는 시간 고려)
-      setTimeout(() => {
-        console.log('[Home-v2] 상세보기 탭 유도');
-        setGuideTarget('propagation-detail-tab');
-        setGuideMessage('상세 보기 탭을 클릭하세요.');
-        setGuideType('mouse');
-      }, 1000);
-    };
-
-    createButton.addEventListener('click', handleClick);
-    return () => createButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 상세보기 탭 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'propagation-detail-tab') return;
-
-    const detailTab = document.getElementById('propagation-detail-tab');
-    if (!detailTab) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 상세보기 탭 클릭 - 3초 후 전파패키지 전송 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 3초 후: 전파패키지 전송 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 전파패키지 전송 버튼 유도');
-        setGuideTarget('send-propagation-package-button');
-        setGuideMessage('전파 패키지를 전송하세요.');
-        setGuideType('mouse');
-      }, 3000);
-    };
-
-    detailTab.addEventListener('click', handleClick);
-    return () => detailTab.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 전파패키지 전송 버튼 클릭 감지 (클릭 시 가이드 종료)
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'send-propagation-package-button') return;
-
-    const sendButton = document.getElementById('send-propagation-package-button');
-    if (!sendButton) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 전파패키지 전송 버튼 클릭 - 가이드 종료');
-      setGuideTarget(null);
-      setGuideMessage('');
-    };
-
-    sendButton.addEventListener('click', handleClick);
-    return () => sendButton.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 예측 CCTV 리스트 별빛A-689 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'predicted-cctv-7') return;
-
-    const cctvCard = document.getElementById('predicted-cctv-7');
-    if (!cctvCard) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 별빛A-689 클릭 - 경로 예측 드롭박스 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 0.5초 후: 경로 예측 상세 근거 드롭박스로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 경로 예측 상세 근거 드롭박스 유도');
-        setGuideTarget('route-prediction-dropdown');
-        setGuideMessage('경로 예측 상세 근거를 확인하세요.');
-      }, 500);
-    };
-
-    cctvCard.addEventListener('click', handleClick);
-    return () => cctvCard.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
-
-  // 경로 예측 드롭박스 클릭 감지
-  useEffect(() => {
-    if (!showMouseGuide || guideTarget !== 'route-prediction-dropdown') return;
-
-    const dropdown = document.getElementById('route-prediction-dropdown');
-    if (!dropdown) return;
-
-    const handleClick = () => {
-      console.log('[Home-v2] 경로 예측 드롭박스 클릭 - 대상 발견 버튼 유도');
-      
-      // 클릭 즉시 가이드 숨김
-      setGuideTarget(null);
-      setGuideMessage('');
-
-      // 2초 후: 대상 발견 버튼으로 가이드 이동
-      setTimeout(() => {
-        console.log('[Home-v2] 대상 발견 버튼 유도');
-        setGuideTarget('predicted-target-found-button');
-        setGuideMessage('대상을 포착 시 대상 포착 버튼을 눌러주세요.');
-      }, 2000);
-    };
-
-    dropdown.addEventListener('click', handleClick);
-    return () => dropdown.removeEventListener('click', handleClick);
-  }, [showMouseGuide, guideTarget]);
+    const inputEl = document.getElementById('agent-chat-input') as HTMLTextAreaElement | null;
+    const agentChatHasUsan = !!inputEl?.value?.includes('우산');
+
+    syncToAppState({
+      fastSearchStarted: uiState.showFastSearchList,
+      fastSearchProgressDone: !uiState.showFastSearchProgress,
+      reSearchInProgress: uiState.showReSearchProgress,
+      radiusConfirmed: false,
+      agentChatHasUsan,
+      agentChatSent: false,
+      reSearchResult: !!reSearchResult,
+      reSearchExcludedAttributes: reSearchResult?.excludedAttributes ?? [],
+      reSearchProgressDone: !uiState.showReSearchProgress,
+      objectTrackingStarted: uiState.showObjectTracking,
+      objectTrackingCompleted,
+      showPredictedCCTVList,
+      showCaptureList: uiState.showCaptureList,
+      showPropagationList: uiState.showPropagationList,
+    });
+  }, [
+    syncToAppState,
+    uiState.showFastSearchList,
+    uiState.showFastSearchProgress,
+    uiState.showReSearchProgress,
+    uiState.showObjectTracking,
+    uiState.showCaptureList,
+    uiState.showPropagationList,
+    reSearchResult,
+    objectTrackingCompleted,
+    showPredictedCCTVList,
+  ]);
 
   // 객체 추적 시퀀스 시작 핸들러
   const handleStartTrackingSequence = useCallback(() => {
-    console.log('[Home-v2] 객체 추적 시퀀스 시작');
-    
     // 기존 이벤트 핀 숨기기 (하지만 selectedEventId는 유지하여 신고 팝업 표시)
     setVisibleEventIds(new Set());
     
@@ -1443,28 +730,24 @@ export default function HomeV2() {
     
     // 1단계: 1번 핀 표시 및 줌인 (초기화 후 약간의 딜레이)
     setTimeout(() => {
-      console.log('[Home-v2] 1단계: 1번 핀 표시');
       setVisibleTrackingPins(1);
       setFlyToLocation(trackingSequence[0] as [number, number]);
     }, 100);
     
     // 2단계: 2번 핀 표시 및 이동 (2.1초 후)
     setTimeout(() => {
-      console.log('[Home-v2] 2단계: 2번 핀 표시');
       setVisibleTrackingPins(2);
       setFlyToLocation(trackingSequence[1] as [number, number]);
     }, 2100);
     
     // 3단계: 3번 핀 표시 및 이동 (4.1초 후)
     setTimeout(() => {
-      console.log('[Home-v2] 3단계: 3번 핀 표시');
       setVisibleTrackingPins(3);
       setFlyToLocation(trackingSequence[2] as [number, number]);
     }, 4100);
     
     // 4단계: 4번 핀 표시 및 이동 (6.1초 후)
     setTimeout(() => {
-      console.log('[Home-v2] 4단계: 4번 핀 표시');
       setVisibleTrackingPins(4);
       setFlyToLocation(trackingSequence[3] as [number, number]);
     }, 6100);
@@ -1511,15 +794,11 @@ export default function HomeV2() {
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setFlyToLocation([126.783853180335, 37.5049838114765]);
       
-      // 마우스 가이드가 켜져있으면 고속검색 시작 버튼으로 이동
       if (showMouseGuide) {
-        setTimeout(() => {
-          setGuideTarget('fast-search-start-button');
-          setGuideMessage('고속검색 시작 버튼을 클릭하세요');
-        }, 500); // 팝업이 나타난 후 0.5초 뒤에 가이드 이동
+        jumpToStep('fast-search-start', 500);
       }
     }
-  }, [allConvertedEvents, showMouseGuide]);
+  }, [allConvertedEvents, showMouseGuide, jumpToStep]);
 
   // 키보드 단축키 핸들러 (시나리오 프로토타입용)
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
@@ -1532,7 +811,7 @@ export default function HomeV2() {
     );
     
     if (e.key === '0') {
-      setShowMouseGuide(prev => !prev);
+      toggleGuide();
       setShowStartMessage(prev => !prev);
     } else if (e.key === '1' && missingEvent) {
       setShowStartMessage(false);
@@ -1541,93 +820,31 @@ export default function HomeV2() {
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setFlyToLocation([126.783853180335, 37.5049838114765]);
       
-      // 마우스 가이드가 켜져있으면 고속검색 시작 버튼으로 이동
       if (showMouseGuide) {
-        setTimeout(() => {
-          setGuideTarget('fast-search-start-button');
-          setGuideMessage('고속검색 시작 버튼을 클릭하세요');
-        }, 500); // 팝업이 나타난 후 0.5초 뒤에 가이드 이동
+        jumpToStep('fast-search-start', 500);
       }
     } else if (e.key === '2') {
       setShowPredictedCCTVList(true);
       setObjectTrackingCompleted(true);
     } else if (e.key === '3') {
-      console.log('[Home-v2] 3번 키 - 객체 추적 시작');
       handleStartTrackingSequence();
     } else if (e.key === '4') {
       dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
     }
-  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide]);
+  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [handleKeyPress]);
 
-  // 마우스 위치 추적 (가이드 타겟이 있으면 타겟 위치로, 없으면 실제 마우스 위치)
-  useEffect(() => {
-    if (!showMouseGuide) return;
-
-    // 가이드 타겟이 있으면 타겟 요소의 중심으로 위치 설정
-    if (guideTarget) {
-      const updateTargetPosition = () => {
-        const targetElement = document.getElementById(guideTarget);
-        if (targetElement) {
-          const rect = targetElement.getBoundingClientRect();
-          // 버튼의 정확한 중심 계산
-          const centerX = rect.left + (rect.width / 2);
-          const centerY = rect.top + (rect.height / 2);
-          
-          console.log('[MouseGuide] 타겟 위치:', {
-            left: rect.left,
-            top: rect.top,
-            width: rect.width,
-            height: rect.height,
-            centerX,
-            centerY
-          });
-          
-          setMousePosition({
-            x: centerX,
-            y: centerY,
-          });
-        } else {
-          console.log('[MouseGuide] 타겟 요소를 찾을 수 없음:', guideTarget);
-        }
-      };
-
-      // 초기 위치 설정 (약간의 딜레이 추가)
-      setTimeout(updateTargetPosition, 100);
-
-      // 윈도우 리사이즈 시 위치 업데이트
-      window.addEventListener('resize', updateTargetPosition);
-      
-      // 주기적으로 위치 업데이트 (팝업 애니메이션 등에 대응)
-      const interval = setInterval(updateTargetPosition, 100);
-
-      return () => {
-        window.removeEventListener('resize', updateTargetPosition);
-        clearInterval(interval);
-      };
-    } else {
-      // 가이드 타겟이 없으면 실제 마우스 위치 추적
-      const handleMouseMove = (e: MouseEvent) => {
-        setMousePosition({ x: e.clientX, y: e.clientY });
-      };
-
-      window.addEventListener('mousemove', handleMouseMove);
-      return () => window.removeEventListener('mousemove', handleMouseMove);
-    }
-  }, [showMouseGuide, guideTarget]);
-
   return (
     <div
       className="relative bg-[#0a0e14] overflow-hidden"
       style={{ width: '100vw', height: '100vh' }}
     >
-
       <div className="absolute inset-0" style={{ width: '100%', height: '100%' }}>
         {uiState.showObjectTracking ? (
             <ObjectTrackingMapView
@@ -1740,7 +957,6 @@ export default function HomeV2() {
             }
           }}
           onFastSearchStart={() => {
-            console.log('[Home-v2] 고속검색 시작 - 프로그래스 표시');
             dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
           }}
           showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
@@ -1761,8 +977,6 @@ export default function HomeV2() {
           isReSearchingRef.current = true;
         }}
         onReSearchClick={() => {
-          console.log('[Home-v2] 결과 재검색 버튼 클릭 - 05, 11, 15번 제외');
-          
           // 짧은 스켈레톤 표시 (0.5초)
           setShowReSearchSkeleton(true);
           setTimeout(() => {
@@ -1784,6 +998,7 @@ export default function HomeV2() {
         onCandidateOpened={() => setOpenCandidateId(null)}
         showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress || showReSearchSkeleton}
         onAddCapture={handleAddCaptureItem}
+        scrollToBottomTrigger={guideTarget}
       />
 
       {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}
@@ -1803,7 +1018,6 @@ export default function HomeV2() {
         isVisible={uiState.showCaptureList}
         captureItems={captureItems}
         onCreatePropagationPackage={() => {
-          console.log('[Home-v2] 전파 패키지 생성 요청 - 전파 패널 열기');
           dispatch({ type: 'SHOW_PROPAGATION_LIST' });
         }}
       />
@@ -1812,7 +1026,7 @@ export default function HomeV2() {
       <PropagationListPanel
         isVisible={uiState.showPropagationList}
         onClose={() => dispatch({ type: 'HIDE_PROPAGATION_LIST' })}
-        onBackToInitial={() => dispatch({ type: 'CLEAR_ALL' })}
+        onBackToInitial={handleBackToInitial}
         captureItems={captureItems}
       />
 
@@ -1868,7 +1082,7 @@ export default function HomeV2() {
             maxHeight={agentPopupMaxHeight}
             reSearchResult={reSearchResult}
             isObjectTracking={uiState.showObjectTracking}
-            captureNotificationMessage={showCaptureNotification ? captureNotificationMessage : ''}
+            captureNotificationMessage={captureNotificationMessage}
             onObjectTrackingStart={() => {
               if (uiState.showFastSearchList) {
                 // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
@@ -1882,14 +1096,11 @@ export default function HomeV2() {
             objectTrackingCompleted={objectTrackingCompleted}
             showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
-              console.log('[Home-v2] 고속검색 프로그래스 완료');
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
               setPinOffset({ x: 0, y: 0 });
               
-              // 마우스 가이드가 켜져있으면 반경 칩으로 즉시 이동
               if (showMouseGuide) {
-                setGuideTarget('radius-chip-button');
-                setGuideMessage('검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.');
+                jumpToStep('radius-chip');
               }
             }}
             onReSearchStart={() => {
@@ -1904,6 +1115,9 @@ export default function HomeV2() {
             onReSearchComplete={() => {
               dispatch({ type: 'COMPLETE_RE_SEARCH' });
               isReSearchingRef.current = true;
+              if (showMouseGuide) {
+                jumpToStep('fast-search-candidate-10');
+              }
             }}
           />
         </div>
@@ -1992,64 +1206,14 @@ export default function HomeV2() {
         </div>
       )}
 
-      {/* 마우스 유도 애니메이션 - 프로그래스 진행 중에는 숨김, guideTarget이 있을 때만 표시 */}
-      {showMouseGuide && !uiState.showFastSearchProgress && guideTarget && (
-        <div
-          className="fixed pointer-events-none z-[10010]"
-          style={{
-            left: `${mousePosition.x}px`,
-            top: `${mousePosition.y}px`,
-          }}
-        >
-          {/* 중심 원 - 크기 증가 및 펄스 효과 (시선 유도 타입일 때는 숨김) */}
-          {guideType !== 'eye' && (
-            <div
-              className="absolute"
-              style={{
-                left: '0',
-                top: '0',
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              <div
-                className="w-5 h-5 rounded-full bg-orange-600/70 border-2 border-orange-400"
-                style={{
-                  boxShadow: '0 0 15px rgba(234, 88, 12, 0.9), 0 0 30px rgba(234, 88, 12, 0.6)',
-                  animation: 'pulse 1.5s ease-in-out infinite',
-                }}
-              />
-            </div>
-          )}
-
-          {/* 마우스 가이드 바로 위에 메시지 표시 */}
-          {guideMessage && (
-            <div
-              key={guideMessage}
-              className="absolute animate-fade-in"
-              style={{
-                left: guideMessage === '전송 버튼을 클릭하세요' ? '0' : guideMessage === '객체 추적 메뉴를 클릭하세요.' || guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.' || guideMessage === '해당 검색 결과가 전파 근거를 위하여 포착 목록에 이동했습니다.' ? '0' : guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? '0' : '0',
-                bottom: guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? undefined : '20px',
-                top: guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? '20px' : undefined,
-                transform: guideMessage === '전송 버튼을 클릭하세요' ? 'translateX(-100%)' : guideMessage === '객체 추적 메뉴를 클릭하세요.' || guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.' || guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' || guideMessage === '해당 검색 결과가 전파 근거를 위하여 포착 목록에 이동했습니다.' ? 'translateX(0)' : 'translateX(-50%)',
-              }}
-            >
-              <div 
-                className="bg-gradient-to-r from-blue-600/95 to-purple-600/95 border-2 border-blue-400 rounded-xl px-4 py-2"
-                style={{
-                  boxShadow: '0 0 20px rgba(59, 130, 246, 0.6), 0 0 40px rgba(59, 130, 246, 0.3)',
-                }}
-              >
-                <div className="text-white text-sm font-bold flex items-center gap-2 whitespace-nowrap">
-                  <span className="text-xl flex-shrink-0">
-                    {guideType === 'mouse' ? '👆' : guideType === 'eye' ? '👀' : '⌨️'}
-                  </span>
-                  <span dangerouslySetInnerHTML={{ __html: guideMessage }} />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <MouseGuide
+        show={showMouseGuide}
+        hideDuringProgress={uiState.showFastSearchProgress || uiState.showReSearchProgress}
+        guideTarget={guideTarget}
+        guideMessage={guideMessage}
+        guideType={guideType}
+        mousePosition={mousePosition}
+      />
 
     </div>
   );

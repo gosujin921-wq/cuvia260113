@@ -1467,10 +1467,10 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
             <h3 className="text-white text-sm font-semibold">도시 에너지 사용량</h3>
             <span className="text-gray-400 text-xs">지난 24시간</span>
           </div>
-          <div className="overflow-hidden flex-1">
-            <div className="h-full">
-              <div ref={trendChartContainerRef} className="relative w-full h-full rounded-xl overflow-visible">
-                <ResponsiveContainer width="100%" height="100%">
+          <div className="overflow-hidden flex-1 min-h-[120px]">
+            <div className="h-full min-h-[120px]">
+              <div ref={trendChartContainerRef} className="relative w-full h-full min-h-[120px] rounded-xl overflow-visible">
+                <ResponsiveContainer width="100%" height="100%" minHeight={120}>
                   <AreaChart
                     data={animatedTrendData}
                     margin={{ top: 30, right: 10, left: 10, bottom: 20 }}

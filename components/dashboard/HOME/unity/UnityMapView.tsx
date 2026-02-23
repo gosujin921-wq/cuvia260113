@@ -169,6 +169,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isUserScrollingRef = useRef(false);
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const prevHideControlsRef = useRef(hideControls);
 
     // 투망감시 모드 시작 시 그룹핑된 CCTV 팝업 열기 (aiDetectionEventId가 설정되어야 열림)
     useEffect(() => {
@@ -327,6 +328,12 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
 
         setCachedPositions((prev) => ({ ...prev, ...newPositions }));
     }, [events.map((e) => e.id).join(",")]);
+
+    // 줌/수직 레벨 초기화. 투망감시 중지 시 hideControls true→false 변경으로 위 useEffect에서 자동 호출됨.
+    const initUi = () => {
+        setZoomLevel(1);
+        setVerticalLevel(1);
+    };
 
     const handleZoomLevelChange = (level: number) => {
         setZoomLevel(level);

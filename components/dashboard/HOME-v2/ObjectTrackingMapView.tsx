@@ -46,9 +46,12 @@ const ObjectTrackingMapView = ({
 
     mapRef.current = map;
 
+    map.on('styleimagemissing', (e: { id: string }) => {
+      if (map.hasImage(e.id)) return;
+      map.addImage(e.id, { width: 1, height: 1, data: new Uint8ClampedArray([0, 0, 0, 0]) });
+    });
+
     map.on('load', () => {
-      console.log('[ObjectTrackingMapView] 지도 로드 완료');
-      
       const layers = map.getStyle().layers;
       if (layers) {
         layers.forEach((layer) => {
@@ -99,13 +102,10 @@ const ObjectTrackingMapView = ({
     const map = mapRef.current;
     if (!map) return;
     
-    console.log('[ObjectTrackingMapView] 추적 핀 useEffect:', visibleTrackingPins);
-    
     // visibleTrackingPins가 0이면 기존 마커 제거
     if (visibleTrackingPins === 0) {
       const existingMarkers = (map as any)._trackingPinsMarkers;
       if (existingMarkers) {
-        console.log('[ObjectTrackingMapView] 기존 추적 핀 제거');
         existingMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
         (map as any)._trackingPinsMarkers = null;
       }
@@ -113,7 +113,6 @@ const ObjectTrackingMapView = ({
       // 펄스 마커 제거
       const pulseMarker = (map as any)._pin4PulseMarker;
       if (pulseMarker) {
-        console.log('[ObjectTrackingMapView] 펄스 마커 제거');
         pulseMarker.remove();
         (map as any)._pin4PulseMarker = null;
         (map as any)._pin4PulseWrapper = null;
@@ -158,7 +157,6 @@ const ObjectTrackingMapView = ({
       
       if (!markers) {
         // 처음 생성
-        console.log('[ObjectTrackingMapView] 추적 핀 초기 생성');
         markers = [];
         
         allTrackingPins.forEach((pin, index) => {
@@ -225,7 +223,6 @@ const ObjectTrackingMapView = ({
         });
         
         (map as any)._trackingPinsMarkers = markers;
-        console.log('[ObjectTrackingMapView] 추적 핀 4개 생성 완료');
       }
       
       // visibility 업데이트
@@ -236,7 +233,6 @@ const ObjectTrackingMapView = ({
         if (index < visibleTrackingPins) {
           markerElement.style.opacity = '1';
           markerElement.style.visibility = 'visible';
-          console.log(`[ObjectTrackingMapView] 핀 ${index + 1} 표시`);
         }
       });
       
@@ -246,8 +242,6 @@ const ObjectTrackingMapView = ({
         const toIndex = visibleTrackingPins - 1;
         const fromLocation = allTrackingPins[fromIndex].location;
         const toLocation = allTrackingPins[toIndex].location;
-        
-        console.log(`[ObjectTrackingMapView] 선 애니메이션: ${fromIndex + 1}번 → ${toIndex + 1}번`);
         
         // 선 애니메이션 (0.5초 동안)
         const animationDuration = 500;
@@ -302,23 +296,17 @@ const ObjectTrackingMapView = ({
 
   // 4번 핀까지 모두 표시되면 범위 펄스 추가 + 줌 아웃 + 평면으로 전환
   useEffect(() => {
-    console.log('[ObjectTrackingMapView] 4번 핀 useEffect 실행 - visibleTrackingPins:', visibleTrackingPins, 'triggered:', zoomOutTriggeredRef.current);
-    
     const map = mapRef.current;
     if (!map) {
-      console.log('[ObjectTrackingMapView] 지도 없음');
       return;
     }
     if (visibleTrackingPins !== 4) {
-      console.log('[ObjectTrackingMapView] 4번 핀 아님');
       return;
     }
     if (zoomOutTriggeredRef.current) {
-      console.log('[ObjectTrackingMapView] 이미 실행됨');
       return;
     }
     
-    console.log('[ObjectTrackingMapView] 4번 핀 완료 - 범위 펄스 추가');
     zoomOutTriggeredRef.current = true;
     
     const pin4Location: [number, number] = [126.7828168, 37.504067]; // 4번 핀 위치
@@ -326,15 +314,12 @@ const ObjectTrackingMapView = ({
     // 지도 로드 대기 후 펄스 추가
     const waitForMapAndAddPulse = () => {
       if (!map.loaded()) {
-        console.log('[ObjectTrackingMapView] 지도 로드 대기, 재시도');
         setTimeout(waitForMapAndAddPulse, 100);
         return;
       }
       
       // 펄스 마커 추가 (고속검색과 동일한 스타일)
       if (!(map as any)._pin4PulseMarker) {
-        console.log('[ObjectTrackingMapView] 4번 핀 블루 펄스 마커 생성');
-        
         // 현재 줌 레벨에서 반경을 픽셀로 변환
         const zoom = map.getZoom();
         const lat = pin4Location[1];
@@ -476,16 +461,11 @@ const ObjectTrackingMapView = ({
         map.on('zoom', zoomHandler);
         (map as any)._pin4PulseZoomHandler = zoomHandler;
         
-        console.log('[ObjectTrackingMapView] 4번 핀 블루 펄스 마커 추가 완료');
       }
       
       // 4번 핀 표시 후 이동 애니메이션 완료를 기다린 후 줌 아웃 + 2D 전환
       setTimeout(() => {
-        console.log('[ObjectTrackingMapView] 줌 아웃 타이머 실행');
-        
         const currentBearing = map.getBearing();
-        console.log('[ObjectTrackingMapView] 줌 아웃 시작 - 1~4번 핀 모두 보이게');
-        
         // 1~4번 핀 좌표
         const allPinLocations = [
           [126.783853180335, 37.5049838114765], // 1번
@@ -510,16 +490,11 @@ const ObjectTrackingMapView = ({
           offset: [-50, 0] // 좌측으로 50px 추가 이동
         });
         
-        console.log('[ObjectTrackingMapView] flyTo 호출 완료 - 목표 pitch: 0');
-        
         // 2D 전환 완료 후 CCTV 핀 추가
         map.once('moveend', () => {
           const newPitch = map.getPitch();
-          console.log('[ObjectTrackingMapView] 2D 전환 완료 - 새 pitch:', newPitch, '- CCTV 핀 추가');
-          
           // 이미 추가되었는지 확인
           if ((map as any)._nearbyCCTVMarkers) {
-            console.log('[ObjectTrackingMapView] CCTV 핀 이미 존재');
             return;
           }
           
@@ -684,7 +659,6 @@ const ObjectTrackingMapView = ({
               iconEl.querySelector('svg')!.style.color = '#3b82f6';
               infoLabel.style.opacity = '1';
               if (onCCTVHover) {
-                console.log('[ObjectTrackingMapView] CCTV 마커 호버:', cctvId);
                 onCCTVHover(cctvId, true); // showLabel = true
               }
             });
@@ -697,7 +671,6 @@ const ObjectTrackingMapView = ({
               iconEl.querySelector('svg')!.style.color = '#60a5fa';
               infoLabel.style.opacity = '0';
               if (onCCTVHover) {
-                console.log('[ObjectTrackingMapView] CCTV 마커 호버 해제');
                 onCCTVHover(null, false);
               }
             });
@@ -720,8 +693,6 @@ const ObjectTrackingMapView = ({
           });
           
           (map as any)._nearbyCCTVMarkers = markers;
-          console.log('[ObjectTrackingMapView] 근처 CCTV 핀 19개 추가 완료 (그레이 9개 + 블루 10개)');
-          
           // 경찰서 위치 핀 추가
           const policeStations = [
             { location: [126.7833, 37.5044] as [number, number], name: '별빛파출소' },
@@ -786,11 +757,8 @@ const ObjectTrackingMapView = ({
           });
           
           (map as any)._policeStationMarkers = policeMarkers;
-          console.log('[ObjectTrackingMapView] 경찰서 핀 3개 추가 완료');
-          
           // 추적 애니메이션 완료 콜백 호출
           if (onTrackingComplete) {
-            console.log('[ObjectTrackingMapView] 추적 완료 콜백 호출');
             onTrackingComplete();
           }
         });
@@ -802,8 +770,6 @@ const ObjectTrackingMapView = ({
 
   // 외부 호버 상태에 따라 CCTV 마커 하이라이트
   useEffect(() => {
-    console.log('[ObjectTrackingMapView] 외부 호버 상태 변경:', hoveredCCTVId, 'showLabel:', showCCTVLabel);
-    
     // 모든 마커 초기화
     cctvMarkersRef.current.forEach((marker, id) => {
       if (id !== hoveredCCTVId) {
@@ -823,7 +789,6 @@ const ObjectTrackingMapView = ({
     if (hoveredCCTVId) {
       const marker = cctvMarkersRef.current.get(hoveredCCTVId);
       if (marker) {
-        console.log('[ObjectTrackingMapView] 마커 하이라이트:', hoveredCCTVId);
         marker.el.style.transform = 'scale(1.5)';
         marker.el.style.zIndex = '9999';
         marker.el.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)';
@@ -849,8 +814,6 @@ const ObjectTrackingMapView = ({
     const circle = (map as any)._pin4PulseCircle;
     
     if (radiusWrapper && svg && circle) {
-      console.log('[ObjectTrackingMapView] 펄스 반경 업데이트:', pulseRadius);
-      
       const zoom = map.getZoom();
       const lat = pin4Location[1];
       const metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);

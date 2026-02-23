@@ -6,9 +6,10 @@
 // CCTV 비디오 파일 목록
 export const CCTV_VIDEO_FILES = [
   '/cctv_img/cctv1.mov',
-  '/cctv_img/cctv2.mov',
   '/cctv_img/cctv3.mov',
   '/cctv_img/cctv4.mov',
+  '/cctv_img/cctv5.mov',
+  '/cctv_img/cctv6.mov',
 ];
 
 // CCTV 이미지 파일 목록
@@ -17,14 +18,13 @@ export const CCTV_IMAGE_FILES = [
   '/cctv_img/003.jpg',
 ];
 
-// CCTV 전체 미디어 파일 목록 (영상 + 이미지)
+// CCTV 전체 미디어 파일 목록 (영상 6개)
 export const CCTV_ALL_MEDIA: { src: string; type: 'video' | 'image' }[] = [
   { src: '/cctv_img/cctv1.mov', type: 'video' },
-  { src: '/cctv_img/cctv2.mov', type: 'video' },
-  { src: '/cctv_img/003.jpg', type: 'image' },
+  { src: '/cctv_img/cctv5.mov', type: 'video' },
   { src: '/cctv_img/cctv3.mov', type: 'video' },
   { src: '/cctv_img/cctv4.mov', type: 'video' },
-  { src: '/cctv_img/002.jpg', type: 'image' },
+  { src: '/cctv_img/cctv6.mov', type: 'video' },
 ];
 
 /**

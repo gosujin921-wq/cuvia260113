@@ -30,9 +30,9 @@ const BottomPanel = ({
   const paddingHorizontal = 16;
   const totalPaddingWidth = paddingHorizontal * 2;
   
-  // CCTV 패널 좌우 여백 동일하게
+  // CCTV 패널 좌우 여백 - 우측 패널 pl-4(16px)와 시각적 정렬
   const leftPanelGap = 20; // 좌측 패널과의 여백
-  const rightPanelGap = 20; // 우측 패널과의 여백
+  const rightPanelGap = 16; // 우측 패널과의 여백 (우측 패널 pl-4와 동일)
   const availableWidth = windowWidth - leftPanelWidth - rightPanelWidth - leftPanelGap - rightPanelGap;
   
   // 패널 높이 고정 (기존 4개 기준 높이 유지)
@@ -182,6 +182,7 @@ const BottomPanel = ({
                     loop
                     muted
                     playsInline
+                    preload="none"
                     className="w-full h-full object-cover"
                   />
                 ) : (

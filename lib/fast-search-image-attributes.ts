@@ -7,7 +7,11 @@
  */
 
 export type ImageId =
-  | '05' | '11' | '15' | '21' | '25' | '30' | '40' | '47' | '51' | '59';
+  | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10'
+  | '11' | '12' | '13' | '14' | '15' | '16' | '17' | '18' | '19' | '20'
+  | '21' | '22' | '23' | '24' | '25' | '26' | '27' | '28' | '29' | '30'
+  | '31' | '32' | '33' | '34' | '35' | '36' | '37' | '38' | '39' | '40'
+  | '47' | '48' | '51' | '57' | '59';
 
 export interface ImageAttributeMeta {
   /** public 경로 */
@@ -29,7 +33,7 @@ export interface ImageAttributeMeta {
 }
 
 /** 이미지 ID별 속성 맵 (10개로 축소) */
-export const IMAGE_ATTRIBUTES: Record<ImageId, ImageAttributeMeta> = {
+export const IMAGE_ATTRIBUTES: Partial<Record<ImageId, ImageAttributeMeta>> = {
   '05': {
     path: '/fastsearch_img/qs_img_05_n.png',
     top: '밝은색 패딩/재킷',
@@ -143,7 +147,7 @@ const IMAGE_IDS: ImageId[] = [
 /** 
  * 이미지 ID별 유사도(%) - 59번(회색 후드티, 어두운색 바지, 휴대폰, 남성) 기준
  */
-export const IMAGE_CONFIDENCE: Record<ImageId, number> = {
+export const IMAGE_CONFIDENCE: Partial<Record<ImageId, number>> = {
   '21': 98,
   '47': 97,
   '40': 96,
@@ -157,7 +161,7 @@ export const IMAGE_CONFIDENCE: Record<ImageId, number> = {
 };
 
 /** 이미지 ID별 CCTV명 */
-export const IMAGE_CCTV_NAME: Record<ImageId, string> = {
+export const IMAGE_CCTV_NAME: Partial<Record<ImageId, string>> = {
   '05': '별빛A-230',
   '11': '별빛A-230',
   '15': '별빛A-230',
@@ -171,7 +175,7 @@ export const IMAGE_CCTV_NAME: Record<ImageId, string> = {
 };
 
 /** 이미지 ID별 위치 */
-export const IMAGE_LOCATION: Record<ImageId, string> = {
+export const IMAGE_LOCATION: Partial<Record<ImageId, string>> = {
   '05': '별빛구 은하동 125-46',
   '11': '별빛구 은하동 125-46',
   '15': '별빛구 은하동 125-46',
@@ -272,16 +276,16 @@ export const shouldHideCaptureItem = (
 /** 이미지 ID로 비디오 경로 반환 (비디오가 있는 경우) */
 export const getVideoPathForImageId = (imageId: ImageId): string | undefined => {
   const videoMap: Partial<Record<ImageId, string>> = {
-    '05': '/fastsearch_img/qs_img_05_n.mov',
-    '11': '/fastsearch_img/qs_img_11_n.mov',
-    '15': '/fastsearch_img/qs_img_15_n.mov',
-    '21': 'http://192.168.102.102/video/qs_img_21_y.mov',
-    '25': 'http://192.168.102.102/video/qs_img_25_y.mov',
-    '30': 'http://192.168.102.102/video/qs_img_30_y.mov',
-    '40': 'http://192.168.102.102/video/qs_img_40_y.mov',
-    '47': 'http://192.168.102.102/video/qs_img_47_y.mov',
-    '51': 'http://192.168.102.102/video/qs_img_51_y.mov',
-    '59': 'http://192.168.102.102/video/qs_img_59_y.mp4',
+    '05': '/fastsearch_img/qs_img_05_n.mp4',
+    '11': '/fastsearch_img/qs_img_11_n.mp4',
+    '15': '/fastsearch_img/qs_img_15_n.mp4',
+    '21': '/fastsearch_img/qs_img_21_y.mp4',
+    '25': '/fastsearch_img/qs_img_25_y.mp4',
+    '30': '/fastsearch_img/qs_img_30_y.mp4',
+    '40': '/fastsearch_img/qs_img_40_y.mp4',
+    '47': '/fastsearch_img/qs_img_47_y.mp4',
+    '51': '/fastsearch_img/qs_img_51_y.mp4',
+    '59': '/fastsearch_img/qs_img_59_y.mp4',
   };
   return videoMap[imageId];
 };

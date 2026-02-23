@@ -556,6 +556,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const ignoreNextChangeRef = useRef(false);
   const lastReSearchResultRef = useRef<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
+  const lastCaptureNotificationRef = useRef<string>('');
+  const onFastSearchCompleteRef = useRef(onFastSearchComplete);
+  onFastSearchCompleteRef.current = onFastSearchComplete;
   
   // 애니메이션 interval refs
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -644,7 +647,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
   // 포착 알림 메시지 처리
   useEffect(() => {
-    if (!captureNotificationMessage) return;
+    if (!captureNotificationMessage) {
+      lastCaptureNotificationRef.current = '';
+      return;
+    }
+    if (captureNotificationMessage === lastCaptureNotificationRef.current) return;
+    lastCaptureNotificationRef.current = captureNotificationMessage;
     
     const captureMessage: ChatMessage = {
       id: `capture-notification-${Date.now()}`,
@@ -700,13 +708,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       return;
     }
 
-    console.log('[AIAgentPopup] 고속검색 프로그래스 시작');
-
     // 이미 프로그래스 메시지가 있으면 추가하지 않음
     setMessages((prev) => {
       const hasProgress = prev.some(msg => msg.id === 'fast-search-progress');
       if (hasProgress) {
-        console.log('[AIAgentPopup] 이미 프로그래스 메시지 존재 - 스킵');
         return prev;
       }
       
@@ -736,8 +741,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       }
     });
 
-    // 단계별 진행 (각 단계 650ms)
-    const stepDuration = 650;
+    // 단계별 진행 (각 단계 400ms)
+    const stepDuration = 400;
     let currentStepIndex = 0;
     let stepInterval: ReturnType<typeof setInterval> | null = null;
     let countInterval: ReturnType<typeof setInterval> | null = null;
@@ -765,15 +770,14 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         countTimeout = setTimeout(() => {
           let count = 0;
           countInterval = setInterval(() => {
-            count += Math.floor(Math.random() * 3) + 1;
-            if (count >= 37) {
-              count = 37;
+            count += Math.floor(Math.random() * 2) + 1;
+            if (count >= 10) {
+              count = 10;
               if (countInterval) clearInterval(countInterval);
               setCameraCount(count);
               
-              // 완료 후 1초 대기 후 메시지 제거 및 완료 메시지 추가
+              // 완료 후 0.5초 대기 후 메시지 제거 및 완료 메시지 추가
               completeTimeout = setTimeout(() => {
-                console.log('[AIAgentPopup] 고속검색 프로그래스 완료 - 메시지 업데이트 및 콜백 호출');
                 setMessages((prev) => {
                   // 프로그래스 메시지 제거
                   const withoutProgress = prev.filter((msg) => msg.id !== 'fast-search-progress');
@@ -793,18 +797,18 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   return [...withoutProgress, welcomeMessage];
                 });
                 
-                if (onFastSearchComplete) {
-                  console.log('[AIAgentPopup] onFastSearchComplete 호출');
-                  onFastSearchComplete();
+                const cb = onFastSearchCompleteRef.current;
+                if (cb) {
+                  cb();
                 } else {
                   console.warn('[AIAgentPopup] onFastSearchComplete가 없음!');
                 }
-              }, 1000);
+              }, 500);
             } else {
               setCameraCount(count);
             }
-          }, 80);
-        }, 280);
+          }, 60);
+        }, 150);
       }
     }, stepDuration);
 
@@ -814,15 +818,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       if (countTimeout) clearTimeout(countTimeout);
       if (completeTimeout) clearTimeout(completeTimeout);
     };
-  }, [showFastSearchProgress, onFastSearchComplete]);
+  }, [showFastSearchProgress]);
 
   // 객체 추적 완료 시 결과 메시지 추가 (지도 2D 전환 완료 시)
   const lastObjectTrackingCompletedRef = useRef<boolean>(false);
   useEffect(() => {
     if (objectTrackingCompleted && !lastObjectTrackingCompletedRef.current) {
       lastObjectTrackingCompletedRef.current = true;
-      
-      console.log('[AIAgentPopup] 객체 추적 완료 - 결과 메시지 추가');
       
       // 프로그래스 메시지 제거하고 완료 메시지 추가 (타이핑 애니메이션)
       setMessages((prev) => {
@@ -882,15 +884,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
   // 재검색 완료 후 결과 메시지 자동 추가 (타이핑 애니메이션)
   useEffect(() => {
-    console.log('[AIAgentPopup] reSearchResult 변경:', reSearchResult);
-    
     if (reSearchResult && reSearchResult !== lastReSearchResultRef.current) {
       lastReSearchResultRef.current = reSearchResult;
+      const { excludedAttributes, deletedCount } = reSearchResult;
+      const isResultReSearchButton = excludedAttributes.some((a) => a.includes('대표 후보'));
+      const fullContent = isResultReSearchButton
+        ? `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`
+        : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
       
-      const fullContent = `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`;
-      
+      const messageId = `assistant-research-${Date.now()}`;
       const resultMessage: ChatMessage = {
-        id: `assistant-research-${Date.now()}`,
+        id: messageId,
         role: 'assistant',
         content: fullContent,
         timestamp: new Date().toLocaleTimeString('ko-KR', {
@@ -903,7 +907,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         displayedContent: '',
       };
       
-      console.log('[AIAgentPopup] 결과 메시지 추가:', resultMessage);
       setMessages((prev) => [...prev, resultMessage]);
       
       // 타이핑 애니메이션
@@ -915,7 +918,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         if (currentIndex <= fullContent.length) {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id.startsWith('assistant-research-')
+              msg.id === messageId
                 ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
                 : msg
             )
@@ -925,7 +928,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           clearInterval(typingInterval);
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id.startsWith('assistant-research-')
+              msg.id === messageId
                 ? { ...msg, isTyping: false, displayedContent: fullContent }
                 : msg
             )

@@ -165,6 +165,20 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* 마우스 가이드 원 전용 펄스 - 선 스타일에서 더 잘 보이는 opacity */
+@keyframes guide-circle-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-guide-circle-pulse {
+  animation: guide-circle-pulse 1.2s ease-in-out infinite;
+}
+
 
 .flowing-opacity {
   overflow: hidden;

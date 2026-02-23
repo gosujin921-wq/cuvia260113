@@ -292,6 +292,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       interactive: true,
     });
 
+    // 누락된 맵 스프라이트 이미지 처리 (road_ 등)
+    map.on('styleimagemissing', (e: { id: string }) => {
+      if (map.hasImage(e.id)) return;
+      map.addImage(e.id, { width: 1, height: 1, data: new Uint8ClampedArray([0, 0, 0, 0]) });
+    });
+
     // 맵 로드 후 3D 건물 활성화 및 라벨 숨기기
     map.on('load', () => {
       const style = map.getStyle();
@@ -299,8 +305,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
       // 모든 레이어 확인
       const layers = style.layers;
-      console.log('Map layers:', layers.map((l: any) => ({ id: l.id, type: l.type, source: l.source })));
-
       // 레이어 처리
       layers.forEach((layer: any) => {
         const layerId = layer.id.toLowerCase();
@@ -310,7 +314,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           try {
             if (map.getLayer(layer.id)) {
               map.setLayoutProperty(layer.id, 'visibility', 'none');
-              console.log('라벨 레이어 숨김:', layer.id);
             }
           } catch (e) {
             console.warn('라벨 레이어 숨기기 실패:', layer.id, e);
@@ -324,8 +327,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           (layer.type === 'fill-extrusion');
         
         if (isBuildingLayer) {
-          console.log('Processing building layer:', layer.id, layer.type);
-          
           try {
             if (layer.type === 'fill-extrusion') {
               // 이미 fill-extrusion이면 높이 설정
@@ -421,15 +422,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
   // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
   useEffect(() => {
-    console.log('flyToLocation 변경:', flyToLocation, 'mapRef.current:', mapRef.current);
     if (!mapRef.current) return;
     
     const map = mapRef.current;
     const oldEventMarker = (map as any)._eventMarker;
     
     if (flyToLocation) {
-      console.log('지도 이동:', flyToLocation);
-      
       // 기존 이벤트 마커 제거
       if (oldEventMarker) {
         oldEventMarker.remove();
@@ -586,14 +584,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         eventMarkerElement.style.zIndex = '100';
       }
       
-      console.log('새 이벤트 마커 추가 완료');
-      
       // 저장
       (map as any)._eventMarker = newMarker;
       
     } else {
-      console.log('초기 위치로 복귀 및 마커 숨김');
-      
       // 마커 제거
       if (oldEventMarker) {
         oldEventMarker.remove();
@@ -615,7 +609,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
   // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
   useEffect(() => {
-    console.log('🗺️ [지도 이동 useEffect] showFastSearchList:', showFastSearchList, 'mapRef:', !!mapRef.current);
     if (!mapRef.current) return;
     
     const map = mapRef.current;
@@ -625,7 +618,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     // 지도 이동 함수
     const moveMap = () => {
       if (!map.loaded()) {
-        console.log('🗺️ [지도 이동] 지도 로드 대기 중... 재시도');
         setTimeout(moveMap, 300);
         return;
       }
@@ -634,14 +626,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const currentCenter = map.getCenter();
       const currentZoom = map.getZoom();
       
-      console.log('🗺️ [지도 이동] 시작 - 현재 중심:', currentCenter, 'zoom:', currentZoom);
-      
       // 130px을 경도로 변환 (줌 레벨에 따라 다름)
       const pixelOffset = 130;
       const metersPerPixel = 156543.03392 * Math.cos(currentCenter.lat * Math.PI / 180) / Math.pow(2, currentZoom);
       const lngOffset = (pixelOffset * metersPerPixel) / 111320; // 경도 1도 = 약 111.32km
-      
-      console.log('🗺️ [지도 이동] 계산 - pixelOffset:', pixelOffset, 'lngOffset:', lngOffset);
       
       // 우측으로 이동 (경도 증가)
       map.easeTo({
@@ -650,7 +638,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         essential: true
       });
       
-      console.log('🗺️ [지도 이동] 완료 - 새 중심:', [currentCenter.lng + lngOffset, currentCenter.lat]);
     };
     
     moveMap();
@@ -658,9 +645,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
   // CCTV 생성 및 표시 - 고속검색 리스트 표시 시에만
   useEffect(() => {
-    console.log('CCTV useEffect 실행:', { showFastSearchList, mapLoaded: mapRef.current?.loaded() });
     if (!mapRef.current || !showFastSearchList) {
-      console.log('CCTV 생성 조건 미충족:', { hasMap: !!mapRef.current, showFastSearchList });
       return;
     }
     
@@ -669,15 +654,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     // 기존 CCTV 제거
     const oldCCTVMarkers = (map as any)._cctvMarkers;
     if (oldCCTVMarkers) {
-      console.log('기존 CCTV 제거:', oldCCTVMarkers.length);
       oldCCTVMarkers.forEach((m: any) => m.remove());
       (map as any)._cctvMarkers = null;
     }
     
     // CCTV 생성 함수
     const createCCTV = () => {
-      console.log('CCTV 새로 생성 시작 - 지도 로드 상태:', map.loaded());
-    
     // 오프셋 계산 함수
     const getScatteredOffsets = (count: number) => {
       const offsets = [];
@@ -983,8 +965,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const zoomHandler = () => updateDisplay();
     map.on('zoom', zoomHandler);
     
-    console.log(`CCTV 클러스터 ${newClusterMarkers.length}개, 개별 ${newIndividualMarkers.length}개 생성 완료`);
-    
     // 저장
     (map as any)._cctvMarkers = [...newClusterMarkers, ...newIndividualMarkers];
     (map as any)._cctvZoomHandler = zoomHandler;
@@ -1074,20 +1054,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     
     // 지도 로드 확인 및 CCTV 생성
     if (map.loaded()) {
-      console.log('지도 이미 로드됨 - 즉시 CCTV 생성');
       return createCCTV();
     } else {
-      console.log('지도 로드 대기 중...');
       // 여러 번 재시도
       let retryCount = 0;
       const maxRetries = 10;
       
       const checkAndCreate = () => {
         retryCount++;
-        console.log(`지도 로드 확인 시도 ${retryCount}/${maxRetries}`);
-        
         if (map.loaded()) {
-          console.log('지도 로드 완료 - CCTV 생성');
           createCCTV();
         } else if (retryCount < maxRetries) {
           setTimeout(checkAndCreate, 500);
@@ -1099,7 +1074,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       setTimeout(checkAndCreate, 100);
       
       return () => {
-        console.log('CCTV useEffect cleanup');
       };
     }
     

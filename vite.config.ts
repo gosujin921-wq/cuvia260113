@@ -10,11 +10,13 @@ export default defineConfig({
         },
     },
     server: {
-        port: 3000,
+        port: 3001,
         open: true,
         hmr: {
-            port: 3001,
-            overlay: false, // HMR 에러 오버레이 비활성화
+            overlay: true, // HMR 에러 발생 시 오버레이 표시 (문제 진단용)
+        },
+        watch: {
+            usePolling: true, // macOS 등에서 파일 변경 감지 안 될 때 강제 폴링
         },
         proxy: {
             "/v1": {
