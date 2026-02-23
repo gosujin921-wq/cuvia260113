@@ -6,7 +6,7 @@ import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTracking
 import LeftPanel from '@/components/dashboard/HOME-v2/LeftPanel';
 import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
-import BottomPanel from '@/components/dashboard/BottomPanel';
+import BottomPanel from '@/components/dashboard/HOME-v3/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
 import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
@@ -833,26 +833,17 @@ export default function HomeV2() {
     if (!captureButton) return;
 
     const handleClick = () => {
-      console.log('[Home-v2] 대상 포착 클릭 - 포착 목록 메뉴 유도');
+      console.log('[Home-v2] 대상 포착 클릭 - 맞음 버튼 유도');
       
       // 클릭 즉시 가이드 숨김
       setGuideTarget(null);
       setGuideMessage('');
 
-      // 1초 후: 포착 목록 메뉴로 가이드 이동 (시선 유도)
+      // 1초 후: 맞음 버튼으로 가이드 이동
       setTimeout(() => {
-        console.log('[Home-v2] 포착 목록 메뉴 유도 (시선)');
-        setGuideTarget('capture-list-menu');
-        setGuideMessage('해당 검색 결과가 전파 근거를 위하여 포착 목록에 이동했습니다.');
-        setGuideType('eye');
-        
-        // 5초 후 자동으로 맞음 시퀀스로 진행 (마우스 유도)
-        setTimeout(() => {
-          console.log('[Home-v2] 5초 경과 - 59번 맞음 체크 유도');
-          setGuideTarget('match-button-10');
-          setGuideMessage('고속 검색 후보군 중 확정 후보는 맞음을 선택하여 후보군에 추가하세요.');
-          setGuideType('mouse');
-        }, 5000);
+        setGuideTarget('match-button-10');
+        setGuideMessage('고속 검색 후보군 중 확정 후보는 맞음을 선택하여 후보군에 추가하세요.');
+        setGuideType('mouse');
       }, 1000);
     };
 
@@ -993,16 +984,16 @@ export default function HomeV2() {
     setShowPredictedCCTVList(true);
     setObjectTrackingCompleted(true);
 
-    // 마우스 가이드: 예측 CCTV 리스트 별빛A-689 유도 (즉시)
+    // 마우스 가이드: 예측 CCTV 리스트 별빛A-638 유도 (즉시)
     if (showMouseGuide) {
-      console.log('[Home-v2] 예측 CCTV 리스트 별빛A-689 유도');
+      console.log('[Home-v2] 예측 CCTV 리스트 별빛A-638 유도');
       setGuideTarget('predicted-cctv-7');
       setGuideMessage('객체추적 결과를 통해 지도에서 이동 경로를 확인하고,<br/>마지막 확인 지점 이후 포착 예측 주변 CCTV 리스트를 확인합니다.');
       setGuideType('mouse');
     }
   }, [showMouseGuide]);
 
-  // 예측 CCTV 리스트 별빛A-689 클릭 감지
+  // 예측 CCTV 리스트 별빛A-638 클릭 감지
   useEffect(() => {
     if (!showMouseGuide || guideTarget !== 'predicted-cctv-7') return;
 
@@ -1010,7 +1001,7 @@ export default function HomeV2() {
     if (!cctvCard) return;
 
     const handleClick = () => {
-      console.log('[Home-v2] 별빛A-689 클릭 - 경로 예측 드롭박스 유도');
+      console.log('[Home-v2] 별빛A-638 클릭 - 경로 예측 드롭박스 유도');
       
       // 클릭 즉시 가이드 숨김
       setGuideTarget(null);
@@ -1365,7 +1356,7 @@ export default function HomeV2() {
     return () => sendButton.removeEventListener('click', handleClick);
   }, [showMouseGuide, guideTarget]);
 
-  // 예측 CCTV 리스트 별빛A-689 클릭 감지
+  // 예측 CCTV 리스트 별빛A-638 클릭 감지
   useEffect(() => {
     if (!showMouseGuide || guideTarget !== 'predicted-cctv-7') return;
 
@@ -1373,7 +1364,7 @@ export default function HomeV2() {
     if (!cctvCard) return;
 
     const handleClick = () => {
-      console.log('[Home-v2] 별빛A-689 클릭 - 경로 예측 드롭박스 유도');
+      console.log('[Home-v2] 별빛A-638 클릭 - 경로 예측 드롭박스 유도');
       
       // 클릭 즉시 가이드 숨김
       setGuideTarget(null);
@@ -2027,10 +2018,10 @@ export default function HomeV2() {
               key={guideMessage}
               className="absolute animate-fade-in"
               style={{
-                left: guideMessage === '전송 버튼을 클릭하세요' ? '0' : guideMessage === '객체 추적 메뉴를 클릭하세요.' || guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.' || guideMessage === '해당 검색 결과가 전파 근거를 위하여 포착 목록에 이동했습니다.' ? '0' : guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? '0' : '0',
+                left: guideMessage === '전송 버튼을 클릭하세요' ? '0' : guideMessage === '객체 추적 메뉴를 클릭하세요.' || guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.' ? '0' : guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? '0' : '0',
                 bottom: guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? undefined : '20px',
                 top: guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? '20px' : undefined,
-                transform: guideMessage === '전송 버튼을 클릭하세요' ? 'translateX(-100%)' : guideMessage === '객체 추적 메뉴를 클릭하세요.' || guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.' || guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' || guideMessage === '해당 검색 결과가 전파 근거를 위하여 포착 목록에 이동했습니다.' ? 'translateX(0)' : 'translateX(-50%)',
+                transform: guideMessage === '전송 버튼을 클릭하세요' ? 'translateX(-100%)' : guideMessage === '객체 추적 메뉴를 클릭하세요.' || guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.' || guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ? 'translateX(0)' : 'translateX(-50%)',
               }}
             >
               <div 

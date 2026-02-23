@@ -138,8 +138,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
 ];
 
-/** 팝업 열리면 비디오 일시정지 (이미지 교체 없음, 대역폭 확보 → 팝업 영상 빠르게) */
-const ListVideo: React.FC<{ src: string; isPaused: boolean }> = ({ src, isPaused }) => {
+/** 팝업 열리면 비디오 일시정지, poster로 대역폭 절약 */
+const ListVideo: React.FC<{ src: string; posterUrl?: string; isPaused: boolean }> = ({ src, posterUrl, isPaused }) => {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   React.useEffect(() => {
     const v = videoRef.current;
@@ -152,10 +152,11 @@ const ListVideo: React.FC<{ src: string; isPaused: boolean }> = ({ src, isPaused
     <video
       ref={videoRef}
       src={src}
-      autoPlay
+      poster={posterUrl}
       loop
       muted
       playsInline
+      preload="none"
       className="absolute top-0 left-0 w-full h-full object-cover"
     />
   );
@@ -390,7 +391,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                 {PREDICTED_CCTV_DATA.map((item) => (
                   <div
                     key={item.id}
-                    id={item.id === '7' ? 'predicted-cctv-7' : undefined}
+                    id={item.id === '4' ? 'predicted-cctv-7' : undefined}
                     onClick={() => setSelectedCCTV(item)}
                     onMouseEnter={() => onCCTVHover?.(item.id)}
                     onMouseLeave={() => onCCTVHover?.(null)}
@@ -400,7 +401,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                   >
                     {/* 썸네일 */}
                     <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
-                      <ListVideo src={item.thumbnailUrl} isPaused={isPopupOpen} />
+                      <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={isPopupOpen} />
                       
                       {/* 호버 시 주소 아래→위 슬라이드 */}
                       <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">

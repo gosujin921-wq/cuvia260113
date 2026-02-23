@@ -182,6 +182,7 @@ const BottomPanel = ({
                     loop
                     muted
                     playsInline
+                    preload="none"
                     className="w-full h-full object-cover"
                   />
                 ) : (
