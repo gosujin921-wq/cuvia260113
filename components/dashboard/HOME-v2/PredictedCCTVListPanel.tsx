@@ -24,19 +24,6 @@ export interface PredictedCCTVItem {
   posterUrl?: string;
 }
 
-// CCTV 비디오 파일 목록
-const CCTV_VIDEOS = [
-  '/cctv_img/cctv1.mov',
-  '/cctv_img/cctv2.mov',
-  '/cctv_img/cctv3.mov',
-  '/cctv_img/cctv4.mov',
-];
-
-// 무작위 비디오 URL 가져오기
-const getRandomVideoUrl = () => {
-  return CCTV_VIDEOS[Math.floor(Math.random() * CCTV_VIDEOS.length)];
-};
-
 // Mock 데이터 - 4번 핀(은하동 125-32) 근처 CCTV 10개
 const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
@@ -47,7 +34,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:15',
     confidence: 92,
     direction: '북동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_05_n.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_05_n.mp4',
     posterUrl: '/fastsearch_img/qs_img_05_n.png',
   },
   {
@@ -58,7 +45,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:30',
     confidence: 88,
     direction: '북서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_11_n.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_11_n.mp4',
     posterUrl: '/fastsearch_img/qs_img_11_n.png',
   },
   {
@@ -69,7 +56,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:35:45',
     confidence: 85,
     direction: '동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_15_n.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_15_n.mp4',
     posterUrl: '/fastsearch_img/qs_img_15_n.png',
   },
   {
@@ -80,7 +67,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:00',
     confidence: 83,
     direction: '남서쪽',
-    thumbnailUrl: 'http://192.168.102.102/video/qs_img_21_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_21_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_21_y.png',
   },
   {
@@ -91,7 +78,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:15',
     confidence: 80,
     direction: '남동쪽',
-    thumbnailUrl: 'http://192.168.102.102/video/qs_img_25_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_25_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_25_y.png',
   },
   {
@@ -102,7 +89,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:30',
     confidence: 78,
     direction: '서쪽',
-    thumbnailUrl: 'http://192.168.102.102/video/qs_img_30_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_30_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_30_y.png',
   },
   {
@@ -113,7 +100,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:45',
     confidence: 75,
     direction: '동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_40_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_40_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_40_y.png',
   },
   {
@@ -124,7 +111,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:00',
     confidence: 73,
     direction: '북쪽',
-    thumbnailUrl: 'http://192.168.102.102/video/qs_img_47_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_47_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_47_y.png',
   },
   {
@@ -135,7 +122,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:15',
     confidence: 70,
     direction: '남서쪽',
-    thumbnailUrl: 'http://192.168.102.102/video/qs_img_51_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_51_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_51_y.png',
   },
   {
@@ -146,7 +133,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:37:30',
     confidence: 68,
     direction: '남동쪽',
-    thumbnailUrl: 'http://192.168.102.102/video/qs_img_59_y.mp4',
+    thumbnailUrl: '/fastsearch_img/qs_img_59_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_59_y.png',
   },
 ];

@@ -276,9 +276,9 @@ export const shouldHideCaptureItem = (
 /** 이미지 ID로 비디오 경로 반환 (비디오가 있는 경우) */
 export const getVideoPathForImageId = (imageId: ImageId): string | undefined => {
   const videoMap: Partial<Record<ImageId, string>> = {
-    '05': '/fastsearch_img/qs_img_05_n.mov',
-    '11': '/fastsearch_img/qs_img_11_n.mov',
-    '15': '/fastsearch_img/qs_img_15_n.mov',
+    '05': '/fastsearch_img/qs_img_05_n.mp4',
+    '11': '/fastsearch_img/qs_img_11_n.mp4',
+    '15': '/fastsearch_img/qs_img_15_n.mp4',
     '21': '/fastsearch_img/qs_img_21_y.mp4',
     '25': '/fastsearch_img/qs_img_25_y.mp4',
     '30': '/fastsearch_img/qs_img_30_y.mp4',
