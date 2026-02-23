@@ -299,6 +299,7 @@ export default function HomeV2() {
   });
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
+  const [triggerCaptureForCctvId, setTriggerCaptureForCctvId] = useState<string | null>(null); // 전파 초안 요청 시 별빛A-655 캡처 트리거
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -518,7 +519,7 @@ export default function HomeV2() {
     thumbnailUrlOrAnalysisResult?: string | any, 
     analysisResultParam?: string | any,
     videoUrlParam?: string,
-    optionsParam?: { hideOverlayWithPopup?: boolean }
+    optionsParam?: { hideOverlayWithPopup?: boolean; trackingPinNumber?: number }
   ) => {
     // 6개 파라미터: thumbnailUrl + analysisResult + videoUrl (고속검색에서 호출)
     // 5개 파라미터: 
@@ -572,6 +573,7 @@ export default function HomeV2() {
       thumbnailUrl,
       videoUrl,
       analysisResult,
+      ...(optionsParam?.trackingPinNumber != null && { trackingPinNumber: optionsParam.trackingPinNumber }),
     };
     
     setCaptureItems((prev) => [newItem, ...prev]);
@@ -943,6 +945,7 @@ export default function HomeV2() {
         }}
         onRadiusChange={setCaptureListRadius}
         showFeaturedLayout={showFeaturedLayout}
+        triggerCaptureForCctvId={triggerCaptureForCctvId}
       />
 
       {/* CaptureListPanel - 포착 목록 */}
@@ -1032,6 +1035,10 @@ export default function HomeV2() {
             }}
             objectTrackingCompleted={objectTrackingCompleted}
             showFeaturedLayout={showFeaturedLayout}
+            onPropagationDraftRequest={() => {
+              setTriggerCaptureForCctvId('5');
+              setTimeout(() => setTriggerCaptureForCctvId(null), 1500);
+            }}
             showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });

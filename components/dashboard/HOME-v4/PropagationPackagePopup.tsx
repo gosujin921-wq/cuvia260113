@@ -27,68 +27,38 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
   const [isClosing, setIsClosing] = useState(false);
 
   // 초기 컨텐츠 설정
-  const initialContent = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
+  const initialContent = `**[112 긴급 전파] 납치(의심) 차량 이동 정황 — 번호판 후보 확보(관제 확인)**
 
+1. **대상 정보**
+- 사건 유형: **납치(의심)** (성인 남성이 성인 여성과 동행 후 차량 이동 정황)
+- 관련 차량: **번호판 후보 12 324*** *(가시성: 높음)* / 차종·색상·외형 특징 일치(추정)
 
-🚨 1. 최신 포착(즉시 출동 기준)
-10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
-편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
+2. **관제 확인 범위**
+- 확인 시간대: **14:00~현재**
+- 확인 구역: **부천시 ○○로 ○○ 일대** (반경 약 2km)
+- 관제 방식: **차량 중심 객체추적(실시간) 진행 중**
 
+3. **포착 현황**
+- CCTV-01 | 14:02:18: 성인 남성-성인 여성 동행, 여성 움직임 비자발적 정황 관찰(추정)
+- CCTV-19 | 14:05:08: 차량 **재포착**, 번호판 후보 **12 324*** 확보(가시성: 높음)
+- 이동 방향: **동 방향 진행**(추정)
 
-🚓 2. 최인근 파출소(출동 거점)
-기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하동 125-46
-최인근 파출소: (파출소명) / 약 (거리)km
+4. **추적 판단 요약**
+- 차량이 **이동 중**으로 판단되어, **차량 중심 추적**을 유지하며 후속 포착을 갱신 중입니다.
+- 현재 확보 단서 기준으로 **현장 확인/출동 검토**가 필요합니다.
 
-참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
+5. **상호 협조(요청)**
+- 번호판 후보 **12 324*** 및 동일/유사 차량에 대한 **즉시 확인 및 출동 검토** 요청드립니다.
+- 관제에서 **추가 포착 발생 시 즉시 업데이트** 드리겠습니다.
 
+6. **첨부(전달)**
+- **캡처 3장**(번호판 후보 포함)
+- **클립 2개**(전후 60초 구간)
+- **지도 스냅샷 1장**(포착 지점 및 추정 이동 경로)
 
-👤 3. 대상자 정보
-성명/나이: 김도연 / 22세(남)
-인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg
-실종 접수: 09:30경 은하동 125-46 일원
+※ **AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.**
 
-🧭 4. 추적 판단 요약(방향/가능 동선)
-남서 방향 이동 지속 추정(경로 적합도 83)
-인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능
-체류 후 동일 방향 이탈 패턴 반복 관측
-
-
-📡 5. 관제 확인 범위(현재 탐색 상태)
-시간: 09:30~현재
-범위: 은하동 125-46 인근 및 인접 구간 반경 10km 확인
-상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
-
-
-🎯 6. 포착 현황(근거 상세)
-
-🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
-
-· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
-🔗 (추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48
-
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54
-
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:12:31 / 별빛A-604 / 은하동 125-32
-
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-
-
-🤝 7. 상호 협조(112 회신 요청)
-112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면
-해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행
-
-추가 포착 또는 동선 변경 확인 시 바로 재전파
-
-
-📎 8. 첨부
-별빛A-230/444/498/604 포착 썸네일 및 클립
-동선 지도(4지점 표시)
-
-
-※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
-관제 담당: 김쿠도 / 032-266-3454`;
+관제 담당: **김쿠도 / 032-266-3454**`;
 
   const [editableContent, setEditableContent] = useState(initialContent);
 
@@ -487,59 +457,69 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   </div>
                 </div>
               ) : (
-                // 상세 보기 - 카드 스타일
+                // 상세 보기 - 카드 스타일 (납치 의심 차량 전파)
                 <div className="space-y-3">
-                  {/* 1. 최신 포착 */}
+                  {/* 1. 대상 정보 */}
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
-                      <Icon icon="mdi:alert-circle" className="w-5 h-5 text-red-400" />
-                      <h3 className="text-white font-semibold text-sm">최신 포착(즉시 출동 기준)</h3>
+                      <Icon icon="mdi:car-alert" className="w-5 h-5 text-red-400" />
+                      <h3 className="text-white font-semibold text-sm">1. 대상 정보</h3>
                     </div>
                     <div className="space-y-1.5 text-sm">
-                      <div className="text-gray-300">10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%</div>
-                      <div className="text-gray-400 text-xs">편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측</div>
+                      <div>
+                        <span className="text-gray-400">사건 유형: </span>
+                        <span className="text-red-300 font-medium">납치(의심)</span>
+                        <span className="text-gray-300"> (성인 남성이 성인 여성과 동행 후 차량 이동 정황)</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">관련 차량: </span>
+                        <span className="text-blue-300 font-semibold">번호판 후보 12 324*</span>
+                        <span className="text-gray-400"> (가시성: 높음) / </span>
+                        <span className="text-gray-300">차종·색상·외형 특징 일치(추정)</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* 2. 최인근 파출소 */}
+                  {/* 2. 관제 확인 범위 */}
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
-                      <Icon icon="mdi:police-badge" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">최인근 파출소(출동 거점)</h3>
+                      <Icon icon="mdi:radar" className="w-5 h-5 text-blue-400" />
+                      <h3 className="text-white font-semibold text-sm">2. 관제 확인 범위</h3>
+                    </div>
+                    <div className="space-y-1.5 text-sm">
+                      <div>
+                        <span className="text-gray-400">확인 시간대: </span>
+                        <span className="text-gray-300 font-medium">14:00~현재</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">확인 구역: </span>
+                        <span className="text-gray-300">부천시 ○○로 ○○ 일대 (반경 약 2km)</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">관제 방식: </span>
+                        <span className="text-blue-300 font-medium">차량 중심 객체추적(실시간) 진행 중</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. 포착 현황 */}
+                  <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Icon icon="mdi:cctv" className="w-5 h-5 text-blue-400" />
+                      <h3 className="text-white font-semibold text-sm">3. 포착 현황</h3>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-gray-400">기준 지점(최신 포착지): </span>
-                        <span className="text-gray-300">10:35:56 / 별빛A-230 / 은하동 125-46</span>
+                      <div className="flex items-start gap-2">
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span className="text-gray-300">CCTV-01 | 14:02:18: 성인 남성-성인 여성 동행, 여성 움직임 비자발적 정황 관찰(추정)</span>
                       </div>
-                      <div>
-                        <span className="text-gray-400">최인근 파출소: </span>
-                        <span className="text-gray-300">(파출소명) / 약 (거리)km</span>
+                      <div className="flex items-start gap-2">
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span className="text-gray-300">CCTV-19 | 14:05:08: 차량 <span className="text-blue-300 font-medium">재포착</span>, 번호판 후보 <span className="text-blue-300 font-semibold">12 324*</span> 확보(가시성: 높음)</span>
                       </div>
-                      <div className="text-gray-400 text-xs pt-1">
-                        참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. 대상자 정보 */}
-                  <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Icon icon="mdi:account-alert" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">대상자 정보</h3>
-                    </div>
-                    <div className="space-y-1.5 text-sm">
-                      <div>
-                        <span className="text-gray-400">성명/나이: </span>
-                        <span className="text-gray-300">김도연 / 22세(남)</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">인상착의: </span>
-                        <span className="text-gray-300">회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">실종 접수: </span>
-                        <span className="text-gray-300">09:30경 은하동 125-46 일원</span>
+                      <div className="flex items-start gap-2">
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span className="text-gray-300">이동 방향: <span className="text-gray-100 font-medium">동 방향 진행</span>(추정)</span>
                       </div>
                     </div>
                   </div>
@@ -548,109 +528,50 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:navigation" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">추적 판단 요약(방향/가능 동선)</h3>
+                      <h3 className="text-white font-semibold text-sm">4. 추적 판단 요약</h3>
                     </div>
-                    <ul className="space-y-1.5 text-sm">
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>남서 방향 이동 지속 추정(경로 적합도 83)</span>
+                    <ul className="space-y-1.5 text-sm text-gray-300">
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span>차량이 <span className="text-white font-medium">이동 중</span>으로 판단되어, <span className="text-blue-300 font-medium">차량 중심 추적</span>을 유지하며 후속 포착을 갱신 중입니다.</span>
                       </li>
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>체류 후 동일 방향 이탈 패턴 반복 관측</span>
+                      <li className="flex items-start gap-2">
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span>현재 확보 단서 기준으로 <span className="text-amber-300 font-medium">현장 확인/출동 검토</span>가 필요합니다.</span>
                       </li>
                     </ul>
                   </div>
 
-                  {/* 5. 관제 확인 범위 */}
-                  <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Icon icon="mdi:radar" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">관제 확인 범위(현재 탐색 상태)</h3>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="text-gray-400">시간: </span>
-                        <span className="text-gray-300">09:30~현재</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">범위: </span>
-                        <span className="text-gray-300">은하동 125-46 인근 및 인접 구간 반경 10km 확인</span>
-                      </div>
-                      <div className="text-gray-400 text-xs pt-1">
-                        상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 6. 포착 현황 */}
-                  <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Icon icon="mdi:cctv" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">포착 현황(근거 상세)</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon icon="mdi:magnify" className="w-4 h-4 text-blue-400" />
-                          <span className="text-blue-400 font-semibold text-xs">(고속검색) 10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%</span>
-                        </div>
-                        <div className="text-gray-400 text-xs ml-6">· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측</div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
-                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48</span>
-                        </div>
-                        <div className="text-gray-400 text-xs ml-6">· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단</div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
-                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54</span>
-                        </div>
-                        <div className="text-gray-400 text-xs ml-6">· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단</div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
-                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:12:31 / 별빛A-604 / 은하동 125-32</span>
-                        </div>
-                        <div className="text-gray-400 text-xs ml-6">· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 7. 상호 협조 */}
+                  {/* 5. 상호 협조(요청) */}
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:handshake" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">상호 협조(112 회신 요청)</h3>
+                      <h3 className="text-white font-semibold text-sm">5. 상호 협조(요청)</h3>
                     </div>
                     <div className="space-y-2 text-sm text-gray-300">
-                      <p>112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면 해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행</p>
-                      <p>추가 포착 또는 동선 변경 확인 시 바로 재전파</p>
+                      <p>• 번호판 후보 <span className="text-blue-300 font-semibold">12 324*</span> 및 동일/유사 차량에 대한 <span className="text-amber-300 font-medium">즉시 확인 및 출동 검토</span> 요청드립니다.</p>
+                      <p>• 관제에서 <span className="text-gray-100">추가 포착 발생 시 즉시 업데이트</span> 드리겠습니다.</p>
                     </div>
                   </div>
 
-                  {/* 8. 첨부 */}
+                  {/* 6. 첨부(전달) */}
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:paperclip" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">첨부</h3>
+                      <h3 className="text-white font-semibold text-sm">6. 첨부(전달)</h3>
                     </div>
                     <ul className="space-y-1.5 text-sm">
                       <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>별빛A-230/444/498/604 포착 썸네일 및 클립</span>
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span><span className="text-gray-100 font-medium">캡처 3장</span>(번호판 후보 포함)</span>
                       </li>
                       <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>동선 지도(4지점 표시)</span>
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span><span className="text-gray-100 font-medium">클립 2개</span>(전후 60초 구간)</span>
+                      </li>
+                      <li className="flex items-start gap-2 text-gray-300">
+                        <span className="text-gray-500 mt-0.5">•</span>
+                        <span><span className="text-gray-100 font-medium">지도 스냅샷 1장</span>(포착 지점 및 추정 이동 경로)</span>
                       </li>
                     </ul>
                   </div>

@@ -35,7 +35,6 @@ interface ThreadMessage {
   timestamp: string;
   author?: string; // 신고기관명
   status?: 'read' | 'unread';
-  showCompletionButton?: boolean; // 시뮬레이션 종료 확인 버튼 표시
 }
 
 // 기본 신고 접수 내용 (하늘별빛경찰서)
@@ -62,109 +61,39 @@ const defaultReportContent = `🚨 실종자 신고 접수
 오늘 아침 집을 나선 후 연락이 두절됨.
 휴대전화 위치추적 결과 은하동 일대에서 마지막 신호 확인.`;
 
-// 기본 더미 전파 내용
-const defaultPropagationContent = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
+// 기본 전파 내용 (납치 의심 차량)
+const defaultPropagationContent = `[112 긴급 전파] 납치(의심) 차량 이동 정황 — 번호판 후보 확보(관제 확인)
 
+1. 대상 정보
+· 사건 유형: **납치(의심)** (성인 남성이 성인 여성과 동행 후 차량 이동 정황)
+· 관련 차량: **번호판 후보 12 324*** (가시성: 높음) / 차종·색상·외형 특징 일치(추정)
 
-🚨 1. 최신 포착(즉시 출동 기준)
-10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
-편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
+2. 관제 확인 범위
+· 확인 시간대: **14:00~현재**
+· 확인 구역: **부천시 ○○로 ○○ 일대** (반경 약 2km)
+· 관제 방식: **차량 중심 객체추적(실시간) 진행 중**
 
+3. 포착 현황
+· CCTV-01 | 14:02:18: 성인 남성-성인 여성 동행, 여성 움직임 비자발적 정황 관찰(추정)
+· CCTV-19 | 14:05:08: 차량 **재포착**, 번호판 후보 **12 324*** 확보(가시성: 높음)
+· 이동 방향: **동 방향 진행**(추정)
 
-🚓 2. 최인근 파출소(출동 거점)
-기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하동 125-46
-최인근 파출소: (파출소명) / 약 (거리)km
+4. 추적 판단 요약
+· 차량이 **이동 중**으로 판단되어, **차량 중심 추적**을 유지하며 후속 포착을 갱신 중입니다.
+· 현재 확보 단서 기준으로 **현장 확인/출동 검토**가 필요합니다.
 
-참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
+5. 상호 협조(요청)
+· 번호판 후보 **12 324*** 및 동일/유사 차량에 대한 **즉시 확인 및 출동 검토** 요청드립니다.
+· 관제에서 **추가 포착 발생 시 즉시 업데이트** 드리겠습니다.
 
+6. 첨부(전달)
+· **캡처 3장** (번호판 후보 포함)
+· **클립 2개** (전후 60초 구간)
+· **지도 스냅샷 1장** (포착 지점 및 추정 이동 경로)
 
-👤 3. 대상자 정보
-성명/나이: 김도연 / 22세(남)
-인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg
-실종 접수: 09:30경 은하동 125-46 일원
+※ **AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.**
 
-🧭 4. 추적 판단 요약(방향/가능 동선)
-남서 방향 이동 지속 추정(경로 적합도 83)
-인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능
-체류 후 동일 방향 이탈 패턴 반복 관측
-
-
-📡 5. 관제 확인 범위(현재 탐색 상태)
-시간: 09:30~현재
-범위: 은하동 125-46 인근 및 인접 구간 반경 10km 확인
-상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
-
-
-🎯 6. 포착 현황(근거 상세)
-
-🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
-
-· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
-🔗 (추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48
-
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54
-
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:12:31 / 별빛A-604 / 은하동 125-32
-
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-
-
-🤝 7. 상호 협조(112 회신 요청)
-112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면
-해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행
-
-추가 포착 또는 동선 변경 확인 시 바로 재전파
-
-
-📎 8. 첨부
-별빛A-230/444/498/604 포착 썸네일 및 클립
-동선 지도(4지점 표시)
-
-
-※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
-관제 담당: 김쿠도 / 032-266-3454`;
-
-// 112 회신: 실종자 발견 통보 (경찰관 답신)
-const discoveryReportContent = `📢 [112 회신] 실종자 발견 통보
-
-🚨 실종자 발견 통보
-
-▪ 사건번호: 2026-02-23-은하동-실종
-▪ 대상자: 김도연 / 22세(남)
-
-
-✅ 1. 발견 결과
-
-발견 시각: 11:02:14
-발견 장소: 은하동 127-12 인근 골목
-발견 상태: 생명 징후 정상, 외상 없음
-
-보호자 인계 예정
-현장 출동 경찰관 확인 완료.
-
-
-📍 2. 조치 사항
-
-인근 수색 종료
-추가 CCTV 탐색 중지 요청
-119 이송 필요 없음
-
-
-📡 3. 관제 협조 요청
-
-관련 영상 백업 요청 (10:10~11:10 구간)
-포착 지점 4건 자료 보존 요청
-
-
-🔒 4. 상태 전환
-
-해당 건 수색 종료 처리 요청드립니다.
-추가 특이사항 발생 시 재통보 예정.
-
-담당: 김민수 경위
-하늘별빛경찰서`;
+관제 담당: **김쿠도 / 032-266-3454**`;
 
 const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   isVisible,
@@ -244,7 +173,11 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   const [messageInput, setMessageInput] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // 전파 패널 열림 시 2초 후 경찰관(112 회신) 답신 메시지 추가
+  // 전파 패널 열림 시 하늘별빛경찰서 대화 시퀀스 추가 (2초 → 5초 → 8초)
+  const policeReply1 = '전파 내용 확인했습니다. **112 접수번호(사건번호) 생성**하겠습니다.\n현재 차량이 **어느 방향 도로로 진입**했나요?';
+  const userReply = '최신 포착은 CCTV-19 14:05:08, 위치는 별빛구 은하동 125-32 인근 교차로, 진행은 **동 방향 은하로**입니다.';
+  const policeReply2 = '출동 중입니다. 추가 업데이트만 부탁드립니다.';
+
   useEffect(() => {
     if (!isVisible) {
       hasAddedDiscoveryRef.current = false;
@@ -253,8 +186,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     if (hasAddedDiscoveryRef.current) return;
     hasAddedDiscoveryRef.current = true;
 
-    const timerId = window.setTimeout(() => {
-      const discoveryId = `msg-discovery-${Date.now()}`;
+    const addAgencyMsg = (content: string) => {
       setThreads((prev) =>
         prev.map((thread) =>
           thread.id === currentThreadId
@@ -263,9 +195,9 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                 messages: [
                   ...thread.messages,
                   {
-                    id: discoveryId,
+                    id: `msg-agency-${Date.now()}`,
                     role: 'agency' as const,
-                    content: discoveryReportContent,
+                    content,
                     timestamp: new Date().toLocaleTimeString('ko-KR', {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -273,17 +205,57 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                     }),
                     author: '하늘별빛경찰서',
                     status: 'unread' as const,
-                    showCompletionButton: true as const,
                   },
                 ],
-                status: 'completed' as const,
+                status: 'in-progress' as const,
               }
             : thread
         )
       );
-    }, 2000);
+    };
 
-    return () => window.clearTimeout(timerId);
+    const addUserMsg = (content: string) => {
+      setThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === currentThreadId
+            ? {
+                ...thread,
+                messages: [
+                  ...thread.messages,
+                  {
+                    id: `msg-user-${Date.now()}`,
+                    role: 'user' as const,
+                    content,
+                    timestamp: new Date().toLocaleTimeString('ko-KR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    }),
+                    status: 'read' as const,
+                  },
+                ],
+              }
+            : thread
+        )
+      );
+    };
+
+    const t1 = window.setTimeout(() => addAgencyMsg(policeReply1), 2000);
+    const t2 = window.setTimeout(() => addUserMsg(userReply), 5000);
+    const t3 = window.setTimeout(() => {
+      addAgencyMsg(policeReply2);
+      setThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === currentThreadId ? { ...thread, status: 'completed' as const } : thread
+        )
+      );
+    }, 8000);
+
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
   }, [isVisible, currentThreadId]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -552,19 +524,6 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                 <pre className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">
                                   {message.content}
                                 </pre>
-                                {message.showCompletionButton && (
-                                  <div className="mt-4 pt-4 border-t border-[#31353a]">
-                                    <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
-                                    <button
-                                      type="button"
-                                      onClick={() => onBackToInitial?.()}
-                                      className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
-                                      aria-label="확인"
-                                    >
-                                      확인
-                                    </button>
-                                  </div>
-                                )}
                               </div>
                             )}
 
@@ -577,12 +536,20 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                 </div>
                                 {message.content ? (
                                   <>
-                                    <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans space-y-4">
-                                      {message.content.split('\n\n').map((paragraph, idx) => (
-                                        <div key={idx} className={paragraph.startsWith('👤') || paragraph.startsWith('📡') || paragraph.startsWith('🎯') || paragraph.startsWith('🧭') || paragraph.startsWith('🤝') || paragraph.startsWith('📎') ? 'mt-4 first:mt-0' : ''}>
-                                          {paragraph}
-                                        </div>
-                                      ))}
+                                    <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans space-y-3">
+                                      {message.content.split('\n\n').map((paragraph, idx) => {
+                                        const isSection = /^[1-6]\.\s/.test(paragraph.trim());
+                                        const html = paragraph
+                                          .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+                                          .replace(/\*(.+?)\*/g, '<em class="text-gray-200">$1</em>');
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className={isSection ? 'mt-4 first:mt-0' : ''}
+                                            dangerouslySetInnerHTML={{ __html: html }}
+                                          />
+                                        );
+                                      })}
                                     </div>
                                     
                                     {/* 포착 목록 */}

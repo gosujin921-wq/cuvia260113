@@ -33,6 +33,8 @@ interface AIAgentPopupProps {
   captureNotificationMessage?: string;
   /** 2키: 추적 갱신 메시지 표시 (차량 재포착, 번호판 후보) */
   showFeaturedLayout?: boolean;
+  /** "포착된 CCTV 영상 포함해서 전파 초안 생성해줘" 입력 시 호출 - 별빛A-655 캡처 애니메이션 후 포착목록 추가 */
+  onPropagationDraftRequest?: () => void;
 }
 
 interface ChatMessage {
@@ -565,6 +567,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onReSearchComplete,
   captureNotificationMessage = '',
   showFeaturedLayout = false,
+  onPropagationDraftRequest,
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -1179,6 +1182,14 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     setChatInput('');
     setInputKey((k) => k + 1);
     ignoreNextChangeRef.current = true;
+
+    const isPropagationDraftMessage = (t: string) =>
+      t.includes('포착된 CCTV 영상 포함해서 전파 초안 생성해줘');
+
+    if (isPropagationDraftMessage(text) && onPropagationDraftRequest) {
+      onPropagationDraftRequest();
+      return;
+    }
 
     if (isDeleteLikeMessage(text) && onDeleteLikeRequest) {
       const parsedAttributes = onDeleteLikeRequest({ rawMessage: text });

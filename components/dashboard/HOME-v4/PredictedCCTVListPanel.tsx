@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import PredictedCCTVDetailPopup from './PredictedCCTVDetailPopup';
 
 interface PredictedCCTVListPanelProps {
   isVisible: boolean;
   width?: number;
-  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string, options?: { trackingPinNumber?: number }) => void;
   hoveredCCTVId?: string | null;
   onCCTVHover?: (cctvId: string | null) => void;
   /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
   onRadiusChange?: (radius: number) => void;
   /** true면 별빛A-655 상단 1x1, 나머지 3열 (2키 눌렀을 때) */
   showFeaturedLayout?: boolean;
+  /** '5'일 때 별빛A-655 카드에 캡처 애니메이션 후 포착목록 추가 (전파 초안 요청 시) */
+  triggerCaptureForCctvId?: string | null;
 }
 
 export interface PredictedCCTVItem {
@@ -164,6 +167,9 @@ const ListVideo: React.FC<{ src: string; posterUrl?: string; isPaused: boolean }
   );
 };
 
+const FEATURED_CCTV_ID = '5'; // 별빛A-655
+const FEATURED_ANALYSIS = '차종/색상/외형 특징 일치(추정). 부분 번호판 후보: 12 324 (가시성: 높음). 동 방향 진행.';
+
 const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   isVisible,
   width = 700,
@@ -172,9 +178,19 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   onCCTVHover,
   onRadiusChange,
   showFeaturedLayout = false,
+  triggerCaptureForCctvId = null,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
+  const [isCapturingCctvId, setIsCapturingCctvId] = useState<string | null>(null);
+  const [flyingThumbnail, setFlyingThumbnail] = useState<{
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    imageData: string;
+  } | null>(null);
+  const cardRefMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const [openPopover, setOpenPopover] = useState<'sort' | 'radius' | null>(null);
   const sortPopoverRef = React.useRef<HTMLDivElement>(null);
   const radiusPopoverRef = React.useRef<HTMLDivElement>(null);
@@ -185,8 +201,8 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
   const [tempRadius, setTempRadius] = React.useState<number>(100);
   
-  // 외부에서 받은 hoveredCCTVId 사용
-  const hoveredCCTVId = externalHoveredCCTVId;
+  // 2키(showFeaturedLayout)일 때 별빛A-655 디폴트 호버 상태, 그 외엔 외부 hoveredCCTVId 사용
+  const hoveredCCTVId = externalHoveredCCTVId ?? (showFeaturedLayout ? FEATURED_CCTV_ID : null);
   
   // 팝오버 외부 클릭 감지
   React.useEffect(() => {
@@ -218,6 +234,54 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   }, [onRadiusChange, tempRadius]);
 
   const isPopupOpen = selectedCCTV !== null;
+
+  // 전파 초안 요청 시 별빛A-655 캡처 애니메이션 실행
+  useEffect(() => {
+    if (triggerCaptureForCctvId !== FEATURED_CCTV_ID || !onAddCapture) return;
+
+    const featuredItem = PREDICTED_CCTV_DATA.find((item) => item.id === FEATURED_CCTV_ID);
+    if (!featuredItem) return;
+
+    const cardEl = cardRefMap.current.get(FEATURED_CCTV_ID);
+    if (!cardEl) return;
+
+    const rect = cardEl.getBoundingClientRect();
+    const startX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+
+    const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
+    let endX = 40;
+    let endY = 250;
+    if (captureMenuButton) {
+      const menuRect = captureMenuButton.getBoundingClientRect();
+      endX = menuRect.left + menuRect.width / 2;
+      endY = menuRect.top + menuRect.height / 2;
+    }
+
+    const imageData = featuredItem.posterUrl || featuredItem.thumbnailUrl || '';
+
+    setIsCapturingCctvId(FEATURED_CCTV_ID);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyingThumbnail({ startX, startY, endX, endY, imageData });
+      });
+    });
+
+    setTimeout(() => {
+      onAddCapture(
+        featuredItem.cctvName,
+        featuredItem.location,
+        featuredItem.confidence,
+        imageData,
+        FEATURED_ANALYSIS,
+        featuredItem.thumbnailUrl,
+        { trackingPinNumber: 4 }
+      );
+    }, 300);
+
+    setTimeout(() => setFlyingThumbnail(null), 600);
+    setTimeout(() => setIsCapturingCctvId(null), 1000);
+  }, [triggerCaptureForCctvId, onAddCapture]);
 
   return (
     <>
@@ -401,6 +465,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                         {featuredItem && (
                           <div
                             key={featuredItem.id}
+                            ref={(el) => { if (el) cardRefMap.current.set(featuredItem.id, el); }}
                             onClick={() => setSelectedCCTV(featuredItem)}
                             onMouseEnter={() => onCCTVHover?.(featuredItem.id)}
                             onMouseLeave={() => onCCTVHover?.(null)}
@@ -410,6 +475,17 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                           >
                             <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
                               <ListVideo src={featuredItem.thumbnailUrl} posterUrl={featuredItem.posterUrl} isPaused={isPopupOpen} />
+                              {isCapturingCctvId === featuredItem.id && (
+                                <div className="absolute inset-0 pointer-events-none z-20">
+                                  <div className="absolute inset-0 bg-white animate-capture-flash" />
+                                  <div className="absolute inset-0 border-4 border-blue-500 animate-capture-frame" />
+                                  <div className="absolute inset-0 flex items-center justify-center animate-capture-check">
+                                    <div className="bg-blue-500 rounded-full p-2">
+                                      <Icon icon="mdi:check" className="w-6 h-6 text-white" />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                               <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
                                 <div className="text-[10px] text-gray-200 truncate" title={featuredItem.location}>
                                   {featuredItem.location}
@@ -430,6 +506,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                           {restItems.map((item) => (
                             <div
                               key={item.id}
+                              ref={(el) => { if (el) cardRefMap.current.set(item.id, el); }}
                               id={item.id === '4' ? 'predicted-cctv-7' : undefined}
                               onClick={() => setSelectedCCTV(item)}
                               onMouseEnter={() => onCCTVHover?.(item.id)}
@@ -466,6 +543,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                   {PREDICTED_CCTV_DATA.map((item) => (
                     <div
                       key={item.id}
+                      ref={(el) => { if (el) cardRefMap.current.set(item.id, el); }}
                       id={item.id === '4' ? 'predicted-cctv-7' : undefined}
                       onClick={() => setSelectedCCTV(item)}
                       onMouseEnter={() => onCCTVHover?.(item.id)}
@@ -476,6 +554,17 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                     >
                       <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
                         <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={isPopupOpen} />
+                        {isCapturingCctvId === item.id && (
+                          <div className="absolute inset-0 pointer-events-none z-20">
+                            <div className="absolute inset-0 bg-white animate-capture-flash" />
+                            <div className="absolute inset-0 border-4 border-blue-500 animate-capture-frame" />
+                            <div className="absolute inset-0 flex items-center justify-center animate-capture-check">
+                              <div className="bg-blue-500 rounded-full p-2">
+                                <Icon icon="mdi:check" className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
                           <div className="text-[10px] text-gray-200 truncate" title={item.location}>
                             {item.location}
@@ -506,6 +595,32 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
         cctv={selectedCCTV}
         onAddCapture={onAddCapture}
       />
+
+      {/* 날아가는 썸네일 애니메이션 (전파 초안 요청 시) */}
+      {flyingThumbnail &&
+        createPortal(
+          <div
+            className="fixed pointer-events-none z-[10001]"
+            style={{
+              left: `${flyingThumbnail.startX}px`,
+              top: `${flyingThumbnail.startY}px`,
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <img
+              src={flyingThumbnail.imageData}
+              alt="캡처 썸네일"
+              className="w-32 h-20 object-cover rounded-lg shadow-2xl"
+              style={{
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',
+                animation: 'fly-to-menu-dynamic 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+                ['--end-x' as string]: `${flyingThumbnail.endX - flyingThumbnail.startX}px`,
+                ['--end-y' as string]: `${flyingThumbnail.endY - flyingThumbnail.startY}px`,
+              }}
+            />
+          </div>,
+          document.body
+        )}
     </>
   );
 };
