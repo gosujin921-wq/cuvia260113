@@ -1,13 +1,40 @@
-export interface CameraResponse {
+export interface CameraVmsInfo {
     vms_id: number;
+    vms_mfr: string;
+    vms_product: string;
+    vms_ip: string;
+    vms_port: number;
+    vms_login_id: string;
+    vms_login_pw: string;
+}
+
+export interface CameraListPageData {
+    rtsp_url: string;
     camera_id: string;
     camera_name: string;
-    is_ptz: 0 | 1;
-    auth_ptz_control: 0 | 1;
+    is_ptz: 0 | 1; // 0: no, 1: yes
+    auth_ptz_control: 0 | 1; // 0: no, 1: yes
     resolution_width: number;
     resolution_height: number;
-    camera_login_id: string;
-    camera_login_pw: string;
-    camera_ip: string;
-    camera_port: number;
+    rtsp_ip: string;
+    rtsp_port: number;
+    stream_no: number;
+    vms_info: CameraVmsInfo;
+}
+
+export interface CameraResponse {
+    page: number;
+    page_size: number;
+    total: number;
+    page_data: CameraListPageData[];
+}
+
+export interface IceServerInfo {
+    urls: string;
+    username?: string;
+    credential?: string;
+}
+
+export interface IceServerResponse {
+    ice_servers: IceServerInfo[];
 }

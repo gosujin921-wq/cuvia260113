@@ -32,9 +32,6 @@ const initializeListeners = () => {
 
         // Unity에서 호출할 전역 함수 설정 (한 번만)
         window.__onUnityToReact = (eventName: string, eventData: string) => {
-            console.log(`[unityBridge] Unity 이벤트 수신: ${eventName}`, eventData);
-            console.log(`[unityBridge] 등록된 리스너 수: ${window.__unityToReactListeners?.size}`);
-
             // 모든 등록된 리스너에게 이벤트 전달
             window.__unityToReactListeners?.forEach((callback) => {
                 try {
@@ -44,8 +41,6 @@ const initializeListeners = () => {
                 }
             });
         };
-
-        console.log("[unityBridge] 초기화 완료");
     }
 };
 
@@ -67,14 +62,12 @@ export const subscribeUnityToReact = (callback: UnityToReactCallback): (() => vo
 
     if (window.__unityToReactListeners) {
         window.__unityToReactListeners.add(callback);
-        console.log(`[unityBridge] 리스너 등록됨. 현재 총 ${window.__unityToReactListeners.size}개`);
     }
 
     // unsubscribe 함수 반환
     return () => {
         if (window.__unityToReactListeners) {
             window.__unityToReactListeners.delete(callback);
-            console.log(`[unityBridge] 리스너 해제됨. 현재 총 ${window.__unityToReactListeners.size}개`);
         }
     };
 };
@@ -87,7 +80,6 @@ export const subscribeUnityToReact = (callback: UnityToReactCallback): (() => vo
 export const unsubscribeUnityToReact = (callback: UnityToReactCallback): void => {
     if (window.__unityToReactListeners) {
         window.__unityToReactListeners.delete(callback);
-        console.log(`[unityBridge] 리스너 해제됨. 현재 총 ${window.__unityToReactListeners.size}개`);
     }
 };
 

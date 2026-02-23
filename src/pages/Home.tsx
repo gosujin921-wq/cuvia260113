@@ -28,7 +28,7 @@ export default function Home() {
     const [showAIAgentPopup, setShowAIAgentPopup] = useState<boolean>(false);
     const [isAutoMode, setIsAutoMode] = useState<boolean>(true);
     const [key1PressTime, setKey1PressTime] = useState<Date | undefined>(undefined);
-    const [isUnityMode, setIsUnityMode] = useState<boolean>(false);
+    const [isUnityMode, setIsUnityMode] = useState<boolean>(true);
     /** 에이전트 팝업 최대 높이: 플로팅 버튼(Agent Hub)을 넘지 않도록 */
     const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
     const [missingEventId, setMissingEventId] = useState<string | null>(null);
@@ -305,6 +305,62 @@ export default function Home() {
         sendToUnity(JSON.stringify(eventToUnity));
     };
 
+    // 이벤트 트리거 함수 (키보드 1 또는 웹소켓 이벤트에서 호출)
+    const triggerEventMode = useCallback(
+        (overrideEventId?: string) => {
+            const missingEvent = allConvertedEvents.find((event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004");
+            // 웹소켓 이벤트용 더미 이벤트 생성 (missingEvent가 없을 때)
+            const targetEvent = missingEvent || (overrideEventId ? { id: `ws-event-${overrideEventId}`, eventId: `EVT-${overrideEventId}` } : null);
+
+            if (targetEvent) {
+                setKey1PressTime(new Date());
+                setCctvIndex(1);
+                setVisibleEventIds((prev) => new Set([...prev, targetEvent.id]));
+                setHighlightedEventId(targetEvent.id);
+
+                setTimeout(() => {
+                    setMapZoomLevel(isUnityMode ? 2 : 1);
+
+                    setTimeout(() => {
+                        setSelectedEventId(targetEvent.id);
+
+                        setTimeout(() => {
+                            setHideControls(true);
+                            setPanelsSlidOut(true);
+                            setShowAIAgentPopup(true);
+                            setAiDetectionEventId(targetEvent.id);
+                        }, 3000);
+                    }, 500);
+                }, 300);
+
+                const eventToUnity: EventToUnity = {
+                    methodName: "event",
+                    payload: {
+                        value: {
+                            id: targetEvent.id,
+                            eventId: targetEvent.eventId,
+                            mainCctvId: "Bullet-2",
+                            cctvIdList: ["PTZ-1", "PTZ-2", "PTZ-3"],
+                            eventMessage: "이벤트가 감지되었습니다.",
+                        },
+                    },
+                };
+                console.log(eventToUnity);
+                sendToUnity(JSON.stringify(eventToUnity));
+            }
+        },
+        [allConvertedEvents, isUnityMode]
+    );
+
+    // 웹소켓 이벤트 수신 핸들러
+    const handleWebSocketEventReceived = useCallback(
+        (eventData: { rtspUrl: string; eventId: number }) => {
+            console.log("[Home] 웹소켓 이벤트 수신:", eventData);
+            triggerEventMode(String(eventData.eventId));
+        },
+        [triggerEventMode]
+    );
+
     // 키보드 단축키 핸들러
     useEffect(() => {
         const handleKeyPress = (e: KeyboardEvent) => {
@@ -315,42 +371,7 @@ export default function Home() {
             }
 
             if (e.key === "1") {
-                const missingEvent = allConvertedEvents.find((event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004");
-                if (missingEvent) {
-                    setKey1PressTime(new Date());
-                    setCctvIndex(1);
-                    setVisibleEventIds((prev) => new Set([...prev, missingEvent.id]));
-                    setHighlightedEventId(missingEvent.id);
-
-                    setTimeout(() => {
-                        setMapZoomLevel(isUnityMode ? 2 : 1);
-
-                        setTimeout(() => {
-                            setSelectedEventId(missingEvent.id);
-
-                            setTimeout(() => {
-                                setHideControls(true);
-                                setPanelsSlidOut(true);
-                                setShowAIAgentPopup(true);
-                                setAiDetectionEventId(missingEvent.id);
-                            }, 3000);
-                        }, 500);
-                    }, 300);
-                    const eventToUnity: EventToUnity = {
-                        methodName: "event",
-                        payload: {
-                            value: {
-                                id: missingEvent.id,
-                                eventId: missingEvent.eventId,
-                                mainCctvId: "Bullet-2",
-                                cctvIdList: ["PTZ-1","PTZ-2","PTZ-3"],
-                                eventMessage: "CCTV-V-11에서 폭력(싸움)이벤트가 감지되었습니다.",
-                            },
-                        },
-                    };
-                    console.log(eventToUnity);
-                    sendToUnity(JSON.stringify(eventToUnity));
-                }
+                triggerEventMode();
             } else if (e.key === "u" || e.key === "U") {
                 console.log("unity mode toggle !");
                 // 모드 전환 시 완전 초기화
@@ -372,26 +393,20 @@ export default function Home() {
             } else if (e.key === "Escape" || e.key === "0") {
                 clearSelection();
                 setHideControls(false);
-            }
-            else if(e.key === "4") {
+            } else if (e.key === "4") {
                 const eventToUnity: EventToUnity = {
                     methodName: "showRoad",
                     payload: {
-                        value: {
-                            
-                        },
+                        value: {},
                     },
                 };
                 console.log(eventToUnity);
                 sendToUnity(JSON.stringify(eventToUnity));
-            }
-            else if(e.key === "5") {
+            } else if (e.key === "5") {
                 const eventToUnity: EventToUnity = {
                     methodName: "hideRoad",
                     payload: {
-                        value: {
-                            
-                        },
+                        value: {},
                     },
                 };
                 console.log(eventToUnity);
@@ -411,7 +426,7 @@ export default function Home() {
             {/* 맵 - 전체 화면 */}
             <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
                 {isUnityMode ? (
-                    <UnityMapView events={events} selectedEventId={selectedEventId} aiDetectionEventId={aiDetectionEventId} cctvIndex={cctvIndex} onAiDetectionClose={clearSelection} onMapClick={() => {}} externalZoomLevel={mapZoomLevel} onZoomLevelChange={setMapZoomLevel} hideControls={hideControls} leftPanelWidth={leftPanelCollapsed ? 80 : 416} isAutoMode={isAutoMode} />
+                    <UnityMapView events={events} selectedEventId={selectedEventId} aiDetectionEventId={aiDetectionEventId} cctvIndex={cctvIndex} onAiDetectionClose={clearSelection} onMapClick={() => {}} externalZoomLevel={mapZoomLevel} onZoomLevelChange={setMapZoomLevel} hideControls={hideControls} leftPanelWidth={leftPanelCollapsed ? 80 : 416} isAutoMode={isAutoMode} onWebSocketEventReceived={handleWebSocketEventReceived} />
                 ) : (
                     <MapView
                         events={events}

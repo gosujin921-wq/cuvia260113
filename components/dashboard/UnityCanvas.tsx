@@ -22,19 +22,15 @@ const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
                 SendMessage: (obj: string, method: string, value: string) => {
                     try {
                         sendMessage(obj, method, value);
-                    } catch (error) {
-                        console.error("[UnityCanvas] window.unityInstance.SendMessage 호출 에러:", error);
-                    }
+                    } catch (error) {}
                 },
             };
-            console.log("[UnityCanvas] window.unityInstance 설정 완료");
         }
 
         return () => {
             // Cleanup: window.unityInstance 제거
             if (window.unityInstance) {
                 delete window.unityInstance;
-                console.log("[UnityCanvas] window.unityInstance 해제");
             }
         };
     }, [isLoaded, sendMessage]);

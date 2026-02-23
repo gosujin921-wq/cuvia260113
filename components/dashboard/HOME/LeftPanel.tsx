@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useGetWeather } from '@/src/apis/weather/hooks';
+import { pm10Grade, pm25Grade } from '@/src/apis/weather/types';
 
 interface MonitoringSpot {
   spotId: string;
@@ -46,9 +47,9 @@ interface SensorData {
   pm10: { value: number; level: 'good' | 'normal' | 'bad' };
   temperature: { value: number; level: 'good' | 'normal' | 'bad' };
   humidity: { value: number; level: 'good' | 'normal' | 'bad' };
-  formaldehyde: { value: number; level: 'good' | 'normal' | 'bad' };
-  co2: { value: number; level: 'good' | 'normal' | 'bad' };
-  co: { value: number; level: 'good' | 'normal' | 'bad' };
+  formaldehyde: { value: number; level: pm10Grade | pm25Grade };
+  co2: { value: number; level: pm10Grade | pm25Grade };
+  co: { value: number; level: pm10Grade | pm25Grade };
   lastUpdate: string; // timestamp
 }
 
@@ -149,7 +150,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const energyXAxisTickXMapRef = useRef<Map<number, number>>(new Map());
   const [energyChartRect, setEnergyChartRect] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
-  // const { data: weatherData } = useGetWeather('경기', '주엽동');
+  const { data: weatherData1 } = useGetWeather('경기', '주엽동');
   
   const sensorLocations = useMemo(() => ['신원동', '행신동', '식사동'], []);
   
@@ -410,14 +411,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   }, []);
 
 
-  const getLevelText = (level: 'good' | 'normal' | 'bad') => {
+  const getLevelText = (level: pm10Grade | pm25Grade | undefined) => {
     switch (level) {
-      case 'good':
+      case '1':
         return '좋음';
-      case 'normal':
+      case '2':
         return '보통';
-      case 'bad':
+      case '3':
         return '나쁨';
+      case '4':
+        return '매우 나쁨';
       default:
         return '보통';
     }
@@ -447,22 +450,22 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     return 'bad';
   };
 
-  const getCo2Level = (value: number): 'good' | 'normal' | 'bad' => {
-    if (value <= 600) return 'good';
-    if (value <= 1000) return 'normal';
-    return 'bad';
+  const getCo2Level = (value: number): pm10Grade | pm25Grade => {
+    if (value <= 600) return '1';
+    if (value <= 1000) return '2';
+    return '3';
   };
 
-  const getFormaldehydeLevel = (value: number): 'good' | 'normal' | 'bad' => {
-    if (value <= 0.08) return 'good';
-    if (value <= 0.15) return 'normal';
-    return 'bad';
+  const getFormaldehydeLevel = (value: number):  pm10Grade | pm25Grade => {
+    if (value <= 0.08) return '1';
+    if (value <= 0.15) return '2';
+    return '3';
   };
 
-  const getCoLevel = (value: number): 'good' | 'normal' | 'bad' => {
-    if (value <= 9) return 'good';
-    if (value <= 25) return 'normal';
-    return 'bad';
+  const getCoLevel = (value: number): pm10Grade | pm25Grade => {
+    if (value <= 9) return '1';
+    if (value <= 25) return '2';
+    return '3';
   };
 
   const infrastructureRef = useRef<HTMLDivElement>(null);
@@ -623,14 +626,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     }
   };
 
-  const getLevelColor = (level: 'good' | 'normal' | 'bad') => {
+  const getLevelColor = (level: pm10Grade | pm25Grade | undefined) => {
     switch (level) {
-      case 'good':
+      case '1':
         return 'text-green-400 border-green-400';
-      case 'normal':
+      case '2':
         return 'text-yellow-400 border-yellow-400';
-      case 'bad':
+      case '3':
         return 'text-red-400 border-red-400';
+      case '4':
+        return 'text-yellow-400 border-yellow-400';
       default:
         return 'text-yellow-400 border-yellow-400';
     }
@@ -1107,12 +1112,12 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                   <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                   <span className="text-gray-400 text-xs truncate">미세먼지</span>
                 </div>
-                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm10.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.pm10.level)}
+                <span className={`px-1.5 py-0.5 border ${getLevelColor(weatherData1?.pm10_grade)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                  {getLevelText(weatherData1?.pm10_grade)}
                 </span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300 text-right">
-                {sensorData.pm10.value.toFixed(1)}
+                {weatherData1?.pm10_value}
                 <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
               </div>
             </div>
@@ -1124,12 +1129,12 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                   <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                   <span className="text-gray-400 text-xs truncate">초미세먼지</span>
                 </div>
-                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.pm25.level)}
+                <span className={`px-1.5 py-0.5 border ${getLevelColor(weatherData1?.pm25_grade)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                  {getLevelText(weatherData1?.pm25_grade)}
                 </span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300 text-right">
-                {sensorData.pm25.value.toFixed(1)}
+                {weatherData1?.pm25_value}
                 <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
               </div>
             </div>
@@ -1142,7 +1147,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                 <span className="text-gray-400 text-xs truncate">온도</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300 text-right">
-                {sensorData.temperature.value.toFixed(1)}
+                {weatherData1?.current_temp}
                 <span className="text-gray-400 text-xs ml-0.5">°C</span>
               </div>
             </div>
@@ -1154,7 +1159,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                 <span className="text-gray-400 text-xs truncate">습도</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300 text-right">
-                {sensorData.humidity.value.toFixed(1)}
+                {weatherData1?.current_humidity}
                 <span className="text-gray-400 text-xs ml-0.5">%</span>
               </div>
             </div>
