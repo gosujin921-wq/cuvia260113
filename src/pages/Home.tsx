@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@iconify/react";
 import EventList from "@/components/dashboard/HOME/EventList";
@@ -13,6 +13,8 @@ import { Event, EventSummary as EventSummaryType } from "@/types";
 import { allEvents, convertToDashboardEvent } from "@/lib/events-data";
 import { sendToUnity } from "@/lib/unity/unityBridge";
 import { EventToUnity } from "@/lib/unity/types";
+import { useEventSocket } from "@/src/apis/event/hooks";
+import { BridgeSlot } from "@/components/dashboard/HOME/unity/ConfigurePopup";
 
 export default function Home() {
     const navigate = useNavigate();
@@ -33,6 +35,41 @@ export default function Home() {
     const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
     const [missingEventId, setMissingEventId] = useState<string | null>(null);
     const [openedCCTVCount, setOpenedCCTVCount] = useState<number>(8);
+
+    // 웹소켓 이벤트 관련 상태
+    const { status: socketStatus, lastEvent } = useEventSocket({
+        autoConnect: true,
+        maxEvents: 100,
+        autoReconnect: true,
+    });
+
+    // 현재 활성화된 이벤트 ID (첫 번째 stat=1 이벤트를 잠금)
+    const [activeEventId, setActiveEventId] = useState<number | null>(null);
+    const activeEventIdRef = useRef<number | null>(null);
+    // 활성 이벤트의 카메라 정보 저장
+    const [activeEventCameraInfo, setActiveEventCameraInfo] = useState<{ rtsp_url: string } | null>(null);
+    // bridgeSlots 상태 (UnityMapView에서 전달받음)
+    const [bridgeSlots, setBridgeSlots] = useState<BridgeSlot[]>([]);
+
+    // activeEventId 동기화 (ref로 최신 값 유지)
+    useEffect(() => {
+        activeEventIdRef.current = activeEventId;
+    }, [activeEventId]);
+
+    // 스트리밍 상태: 활성 이벤트가 있는 경우
+    const isEventStreaming = useMemo(() => {
+        return activeEventId !== null && activeEventCameraInfo !== null;
+    }, [activeEventId, activeEventCameraInfo]);
+
+    // 이벤트 상태 전체 초기화 함수
+    const resetEventState = useCallback(() => {
+        setActiveEventId(null);
+        setActiveEventCameraInfo(null);
+    }, []);
+
+    useEffect(() => {
+        console.log("[EventSocket] 연결 상태:", socketStatus);
+    }, [socketStatus]);
 
     /** 에이전트 팝업 maxHeight: (dashboard AIAgentPopup 기본 top) ~ 플로팅 버튼 위까지 */
     useEffect(() => {
@@ -282,7 +319,7 @@ export default function Home() {
     }, []);
 
     // 선택 해제 함수
-    const clearSelection = () => {
+    const clearSelection = useCallback(() => {
         setSelectedEventId(null);
         setHighlightedEventId(null);
         setAiDetectionEventId(null);
@@ -292,6 +329,8 @@ export default function Home() {
         setPanelsSlidOut(false);
         setShowAIAgentPopup(false);
         setKey1PressTime(undefined);
+        // 웹소켓 이벤트 상태도 초기화
+        resetEventState();
         const eventToUnity: EventToUnity = {
             methodName: "endEvent",
             payload: {
@@ -303,7 +342,7 @@ export default function Home() {
         };
         console.log(eventToUnity);
         sendToUnity(JSON.stringify(eventToUnity));
-    };
+    }, [isUnityMode, missingEventId, resetEventState]);
 
     // 이벤트 트리거 함수 (키보드 1 또는 웹소켓 이벤트에서 호출)
     const triggerEventMode = useCallback(
@@ -352,14 +391,34 @@ export default function Home() {
         [allConvertedEvents, isUnityMode]
     );
 
-    // 웹소켓 이벤트 수신 핸들러
-    const handleWebSocketEventReceived = useCallback(
-        (eventData: { rtspUrl: string; eventId: number; mainCctvId: string; cctvIdList: string[]; eventMessage: string }) => {
-            console.log("[Home] 웹소켓 이벤트 수신:", eventData);
-            triggerEventMode(String(eventData.eventId), eventData.mainCctvId, eventData.cctvIdList, eventData.eventMessage);
-        },
-        [triggerEventMode]
-    );
+    // 웹소켓 이벤트 처리: stat=1 첫 이벤트 잠금, stat=4로 해제
+    useEffect(() => {
+        if (!lastEvent?.evt || !lastEvent.camera_info) {
+            return;
+        }
+
+        const stat = Number(lastEvent.evt.stat);
+        const eventId = lastEvent.evt.id;
+
+        if (stat === 1) {
+            // 현재 활성 이벤트가 없을 때만 새 이벤트를 받음
+            if (activeEventIdRef.current === null) {
+                setActiveEventId(eventId);
+                setActiveEventCameraInfo({ rtsp_url: lastEvent.camera_info.rtsp_url });
+
+                // bridgeSlots에서 메인 카메라 ID와 그룹핑된 카메라 ID 리스트 가져오기
+                const mainCctvBridgeId = bridgeSlots.find((slot) => slot.isMain)?.bridgeId || "";
+                const groupedCctvBridgeIds = bridgeSlots.filter((slot) => slot.isGrouped).map((slot) => slot.bridgeId);
+
+                console.log("[Home] 웹소켓 이벤트 수신:", { eventId, mainCctvBridgeId, groupedCctvBridgeIds });
+
+                // 이벤트 트리거 (딜레이 적용)
+                triggerEventMode(String(eventId), mainCctvBridgeId, groupedCctvBridgeIds, `${mainCctvBridgeId}에서 이벤트가 감지되었습니다.`);
+            }
+        } else if (stat === 4) {
+            // 활성 이벤트와 동일한 ID의 종료 이벤트인 경우에만 해제
+        }
+    }, [lastEvent, bridgeSlots, triggerEventMode, resetEventState]);
 
     // 키보드 단축키 핸들러
     useEffect(() => {
@@ -438,7 +497,9 @@ export default function Home() {
                         hideControls={hideControls}
                         leftPanelWidth={leftPanelCollapsed ? 80 : 416}
                         isAutoMode={isAutoMode}
-                        onWebSocketEventReceived={handleWebSocketEventReceived}
+                        isEventStreaming={isEventStreaming}
+                        activeEventCameraInfo={activeEventCameraInfo}
+                        onBridgeSlotsChange={setBridgeSlots}
                     />
                 ) : (
                     <MapView

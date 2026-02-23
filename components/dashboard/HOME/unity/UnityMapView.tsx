@@ -1,6 +1,6 @@
 import { Event } from "@/types";
 import { Icon } from "@iconify/react";
-import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import CCTVIcon from "@/components/common/CCTVIcon";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
@@ -11,7 +11,6 @@ import CameraListPopup, { BridgeSlot, CCTVInfo } from "./ConfigurePopup";
 import { CameraListPageData } from "@/src/apis/camera/types";
 import UnityCCTVMeshTracking from "./UnityCCTVMeshTracking";
 import { useGetCamera, useGetCameraAssignCameraInfo, useGetIceServerList } from "@/src/apis/camera/hooks";
-import { useEventSocket } from "@/src/apis/event/hooks";
 import { useGetAgentList } from "@/src/apis/agent/hooks";
 import UnityBottomPanel from "./UnityBottomPanel";
 
@@ -27,7 +26,10 @@ interface UnityMapViewProps {
     hideControls?: boolean;
     leftPanelWidth?: number;
     isAutoMode?: boolean;
-    onWebSocketEventReceived?: (eventData: { rtspUrl: string; eventId: number; mainCctvId: string; cctvIdList: string[]; eventMessage: string }) => void;
+    // 소켓 관련 props (Home.tsx에서 전달)
+    isEventStreaming?: boolean;
+    activeEventCameraInfo?: { rtsp_url: string } | null;
+    onBridgeSlotsChange?: (slots: BridgeSlot[]) => void;
 }
 
 // Unity Bridge 슬롯 초기값 (PTZ, Bullet 카메라)
@@ -49,7 +51,7 @@ const initialBridgeSlots: BridgeSlot[] = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, onWebSocketEventReceived }: UnityMapViewProps) => {
+const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isEventStreaming = false, activeEventCameraInfo, onBridgeSlotsChange }: UnityMapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [showCCTV, setShowCCTV] = useState(true);
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
@@ -94,92 +96,10 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
         });
     }, [cameraAssignCameraInfo]);
 
-    const { status, lastEvent } = useEventSocket({
-        autoConnect: true,
-        maxEvents: 100,
-        autoReconnect: true,
-    });
-
-    // 현재 활성화된 이벤트 ID (첫 번째 stat=1 이벤트를 잠금)
-    const [activeEventId, setActiveEventId] = useState<number | null>(null);
-    const activeEventIdRef = useRef<number | null>(null);
-    // 활성 이벤트의 카메라 정보 저장
-    const [activeEventCameraInfo, setActiveEventCameraInfo] = useState<{ rtsp_url: string } | null>(null);
-
-    // onWebSocketEventReceived 콜백을 ref로 저장하여 의존성 문제 방지
-    const onWebSocketEventReceivedRef = useRef(onWebSocketEventReceived);
+    // bridgeSlots 변경 시 상위 컴포넌트에 알림
     useEffect(() => {
-        onWebSocketEventReceivedRef.current = onWebSocketEventReceived;
-    });
-
-    // activeEventId 동기화 (ref로 최신 값 유지)
-    useEffect(() => {
-        activeEventIdRef.current = activeEventId;
-    }, [activeEventId]);
-
-    // 이벤트 상태 관리: stat=1 첫 이벤트 잠금, stat=4로 해제
-    // (웹소켓 외부 시스템 연동이므로 useEffect 내 setState 사용)
-    useEffect(() => {
-        if (!lastEvent?.evt || !lastEvent.camera_info) {
-            return;
-        }
-
-        const stat = Number(lastEvent.evt.stat);
-        const eventId = lastEvent.evt.id;
-
-        if (stat === 1) {
-            // 현재 활성 이벤트가 없을 때만 새 이벤트를 받음 (ref 사용하여 의존성 제거)
-            if (activeEventIdRef.current === null) {
-                setActiveEventId(eventId);
-                setActiveEventCameraInfo({ rtsp_url: lastEvent.camera_info.rtsp_url });
-
-                // bridgeSlots에서 메인 카메라 ID와 그룹핑된 카메라 ID 리스트 가져오기
-                const mainCctvBridgeId = bridgeSlots.find((slot) => slot.isMain)?.bridgeId || "";
-                const groupedCctvBridgeIds = bridgeSlots.filter((slot) => slot.isGrouped).map((slot) => slot.bridgeId);
-
-                // 상위 컴포넌트에 이벤트 수신 알림 (키보드 1 누른 것처럼 동작하게)
-                onWebSocketEventReceivedRef.current?.({
-                    rtspUrl: lastEvent.camera_info.rtsp_url,
-                    eventId: eventId,
-                    mainCctvId: mainCctvBridgeId,
-                    cctvIdList: groupedCctvBridgeIds,
-                    eventMessage: `${mainCctvBridgeId}에서 폭력(싸움) 이벤트가 감지되었습니다.`,
-                });
-            }
-        }
-    }, [lastEvent]);
-
-    // 스트리밍 상태: 활성 이벤트가 있고, 수동으로 닫지 않은 경우
-    const isEventStreaming = useMemo(() => {
-        if (activeEventId === null || activeEventCameraInfo === null) {
-            return false;
-        }
-        // 수동으로 닫은 이벤트는 스트리밍하지 않음
-        return true;
-    }, [activeEventId, activeEventCameraInfo]);
-
-    // 이벤트 상태 전체 초기화 함수
-    const resetEventState = useCallback(() => {
-        setActiveEventId(null);
-        setActiveEventCameraInfo(null);
-    }, []);
-
-    // 이벤트 팝업 닫기 핸들러
-    const handleCloseEventPopup = useCallback(() => {
-        // 전체 초기화
-        resetEventState();
-    }, [resetEventState]);
-
-    useEffect(() => {
-        console.log("[EventSocket] 연결 상태:", status);
-    }, [status]);
-
-    // aiDetectionEventId가 null로 바뀌면 (0번, Escape 등으로 초기화) 이벤트 상태도 초기화
-    useEffect(() => {
-        if (aiDetectionEventId === null) {
-            resetEventState();
-        }
-    }, [aiDetectionEventId, resetEventState]);
+        onBridgeSlotsChange?.(bridgeSlots);
+    }, [bridgeSlots, onBridgeSlotsChange]);
 
     // Bridge 슬롯과 실제 CCTV 정보를 결합한 목록 (렌더링용)
     const cctvList: CCTVInfo[] = useMemo(() => {
@@ -680,23 +600,22 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                     const padding = 20;
                     const mainCctv = cctvList.find((cctv) => cctv.isMain) as CCTVInfo;
 
-                    // 웹소켓 이벤트용 더미 Event 객체 생성
-                    const websocketEvent: Event | null =
-                        isEventStreaming && lastEvent?.evt
-                            ? {
-                                  id: `ws-event-${lastEvent.evt.id}`,
-                                  eventId: `EVT-${lastEvent.evt.id}`,
-                                  title: `이벤트 ${lastEvent.evt.type}`,
-                                  description: "",
-                                  timestamp: lastEvent.evt.tm,
-                                  priority: "주의",
-                                  type: "AI-배회",
-                                  status: "NEW",
-                                  location: { name: "", coordinates: [0, 0] },
-                                  processingStage: "생성",
-                                  resolution: { category: "AI", code: "", description: "" },
-                              }
-                            : null;
+                    // 웹소켓 이벤트용 더미 Event 객체 생성 (isEventStreaming일 때 사용)
+                    const websocketEvent: Event | null = isEventStreaming
+                        ? {
+                              id: `ws-event-streaming`,
+                              eventId: `EVT-streaming`,
+                              title: `이벤트 감지`,
+                              description: "",
+                              timestamp: new Date().toISOString(),
+                              priority: "주의",
+                              type: "AI-배회",
+                              status: "NEW",
+                              location: { name: "", coordinates: [0, 0] },
+                              processingStage: "생성",
+                              resolution: { category: "AI", code: "", description: "" },
+                          }
+                        : null;
 
                     // aiDetectionEventId가 있으면 해당 이벤트 사용, 없으면 웹소켓 이벤트 사용
                     const currentEvent = events.find((e) => e.id === aiDetectionEventId) || websocketEvent;
@@ -710,7 +629,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                                 mediaAgentUrl={mediaAgentUrl}
                                 event={currentEvent}
                                 onClose={() => {
-                                    handleCloseEventPopup();
                                     onAiDetectionClose?.();
                                 }}
                                 cctvId={mainCctv?.bridgeId || "main"}
