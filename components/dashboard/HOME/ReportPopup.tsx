@@ -26,6 +26,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   width = 420,
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -33,6 +34,15 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
     setImageError(false);
     setImageLoaded(false);
   }, [event?.id]);
+
+  // 선로드된 이미지(캐시)가 있으면 즉시 표시
+  useEffect(() => {
+    if (!event?.id || imageError) return;
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth > 0) {
+      setImageLoaded(true);
+    }
+  }, [event?.id, imageError]);
 
   useEffect(() => {
     if (!onLayout || !rootRef.current) return;
@@ -99,6 +109,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   <Icon icon="mdi:image-outline" className="w-10 h-10 text-gray-600" aria-hidden />
                 ) : (
                   <img
+                    ref={imgRef}
                     src={REPORT_POPUP_IMAGE_SRC}
                     alt="신고 대상 인물"
                     className={`w-full h-full object-cover object-center transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}

@@ -1,10 +1,23 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 
+interface CaptureItem {
+  id: string;
+  cctvName: string;
+  location: string;
+  timestamp: string;
+  thumbnailUrl: string;
+  videoUrl: string;
+  confidence?: number;
+  analysisResult?: string;
+}
+
 interface PropagationListPanelProps {
   isVisible: boolean;
   width?: number;
   onClose?: () => void;
+  onBackToInitial?: () => void;
+  captureItems?: CaptureItem[];
 }
 
 interface PropagationThread {
@@ -22,14 +35,15 @@ interface ThreadMessage {
   timestamp: string;
   author?: string; // 신고기관명
   status?: 'read' | 'unread';
+  showCompletionButton?: boolean; // 시뮬레이션 종료 확인 버튼 표시
 }
 
-// 기본 신고 접수 내용 (부천원미경찰서)
+// 기본 신고 접수 내용 (하늘별빛경찰서)
 const defaultReportContent = `🚨 실종자 신고 접수
 
 ▪ 신고 접수 정보
 
-신고 기관: 부천원미경찰서
+신고 기관: 하늘별빛경찰서
 접수 시각: 오전 09:45:23
 담당자: 김민수 경위
 
@@ -37,7 +51,7 @@ const defaultReportContent = `🚨 실종자 신고 접수
 
 이름/나이: 김도연 / 22세 (남)
 인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg
-실종 장소: 춘의동 125-46 일원
+실종 장소: 은하동 125-46 일원
 실종 시각: 오전 09:30경
 
 ▪ 특이사항
@@ -46,61 +60,141 @@ const defaultReportContent = `🚨 실종자 신고 접수
 
 보호자 진술에 따르면 평소 익숙한 경로를 벗어나지 않는 편이나, 
 오늘 아침 집을 나선 후 연락이 두절됨.
-휴대전화 위치추적 결과 춘의동 일대에서 마지막 신호 확인.`;
+휴대전화 위치추적 결과 은하동 일대에서 마지막 신호 확인.`;
 
 // 기본 더미 전파 내용
 const defaultPropagationContent = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
 
-👤 1. 대상자 정보
+
+🚨 1. 최신 포착(즉시 출동 기준)
+10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
+편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
+
+
+🚓 2. 최인근 파출소(출동 거점)
+기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하동 125-46
+최인근 파출소: (파출소명) / 약 (거리)km
+
+참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
+
+
+👤 3. 대상자 정보
 성명/나이: 김도연 / 22세(남)
 인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg
-실종 접수: 09:30경 춘의동 125-46 일원
+실종 접수: 09:30경 은하동 125-46 일원
 
-📡 2. 관제 확인 범위
+🧭 4. 추적 판단 요약(방향/가능 동선)
+남서 방향 이동 지속 추정(경로 적합도 83)
+인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능
+체류 후 동일 방향 이탈 패턴 반복 관측
+
+
+📡 5. 관제 확인 범위(현재 탐색 상태)
 시간: 09:30~현재
-범위: 춘의동 125-46 인근 및 인접 구간 반경 10km 확인
+범위: 은하동 125-46 인근 및 인접 구간 반경 10km 확인
 상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
 
-🎯 3. 포착 현황
-🔎 (고속검색) 10:35:56 / 원미A-230 / 춘의동 125-46 / 유사도 95%
+
+🎯 6. 포착 현황(근거 상세)
+
+🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
+
 · 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
-🔗 (추적연계) 10:35:54 / 원미A-444 / 길주로363번길 48
+🔗 (추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48
+
 · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:35:51 / 원미A-498 / 계남로301번길 54
+🔗 (추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54
+
 · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:12:31 / 원미A-604 / 춘의동 125-32
+🔗 (추적연계) 10:12:31 / 별빛A-604 / 은하동 125-32
+
 · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
 
-🧭 4. 추적 판단 요약
-남서 방향 이동 지속 추정(경로 적합도 83)
-인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능 체류 후 동일 방향 이탈 패턴 반복 관측
 
-🤝 5. 상호 협조
-112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면 해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행
+🤝 7. 상호 협조(112 회신 요청)
+112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면
+해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행
+
 추가 포착 또는 동선 변경 확인 시 바로 재전파
 
-📎 6. 첨부
-원미A-230/444/498/604 포착 썸네일 및 클립
+
+📎 8. 첨부
+별빛A-230/444/498/604 포착 썸네일 및 클립
 동선 지도(4지점 표시)
+
 
 ※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
 관제 담당: 김쿠도 / 032-266-3454`;
+
+// 112 회신: 실종자 발견 통보 (경찰관 답신)
+const discoveryReportContent = `📢 [112 회신] 실종자 발견 통보
+
+🚨 실종자 발견 통보
+
+▪ 사건번호: 2026-02-23-은하동-실종
+▪ 대상자: 김도연 / 22세(남)
+
+
+✅ 1. 발견 결과
+
+발견 시각: 11:02:14
+발견 장소: 은하동 127-12 인근 골목
+발견 상태: 생명 징후 정상, 외상 없음
+
+보호자 인계 예정
+현장 출동 경찰관 확인 완료.
+
+
+📍 2. 조치 사항
+
+인근 수색 종료
+추가 CCTV 탐색 중지 요청
+119 이송 필요 없음
+
+
+📡 3. 관제 협조 요청
+
+관련 영상 백업 요청 (10:10~11:10 구간)
+포착 지점 4건 자료 보존 요청
+
+
+🔒 4. 상태 전환
+
+해당 건 수색 종료 처리 요청드립니다.
+추가 특이사항 발생 시 재통보 예정.
+
+담당: 김민수 경위
+하늘별빛경찰서`;
 
 const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   isVisible,
   width = 700,
   onClose,
+  onBackToInitial,
+  captureItems = [],
 }) => {
+  const hasAddedDiscoveryRef = useRef(false);
+
+  // 전파 패널 열림 시 0.5초 후 스크롤을 맨 아래로
+  useEffect(() => {
+    if (!isVisible) return;
+    const scrollTimer = window.setTimeout(() => {
+      const el = scrollContainerRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }, 500);
+    return () => window.clearTimeout(scrollTimer);
+  }, [isVisible]);
+
   // ESC 키로 닫기
   useEffect(() => {
     if (!isVisible) return;
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && onClose) {
         onClose();
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isVisible, onClose]);
@@ -117,7 +211,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
         status: 'pending',
         createdAt: reportTime.toISOString(),
         messages: [
-          // 1. 신고 접수 메시지 (부천원미경찰서)
+          // 1. 신고 접수 메시지 (하늘별빛경찰서)
           {
             id: 'msg-report',
             role: 'agency',
@@ -127,7 +221,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               minute: '2-digit',
               second: '2-digit',
             }),
-            author: '부천원미경찰서',
+            author: '하늘별빛경찰서',
             status: 'read',
           },
           // 2. 전파 전송 메시지 (내가 보낸 전파)
@@ -149,6 +243,48 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   const [currentThreadId, setCurrentThreadId] = useState('thread-1');
   const [messageInput, setMessageInput] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // 전파 패널 열림 시 2초 후 경찰관(112 회신) 답신 메시지 추가
+  useEffect(() => {
+    if (!isVisible) {
+      hasAddedDiscoveryRef.current = false;
+      return;
+    }
+    if (hasAddedDiscoveryRef.current) return;
+    hasAddedDiscoveryRef.current = true;
+
+    const timerId = window.setTimeout(() => {
+      const discoveryId = `msg-discovery-${Date.now()}`;
+      setThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === currentThreadId
+            ? {
+                ...thread,
+                messages: [
+                  ...thread.messages,
+                  {
+                    id: discoveryId,
+                    role: 'agency' as const,
+                    content: discoveryReportContent,
+                    timestamp: new Date().toLocaleTimeString('ko-KR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    }),
+                    author: '하늘별빛경찰서',
+                    status: 'unread' as const,
+                    showCompletionButton: true as const,
+                  },
+                ],
+                status: 'completed' as const,
+              }
+            : thread
+        )
+      );
+    }, 2000);
+
+    return () => window.clearTimeout(timerId);
+  }, [isVisible, currentThreadId]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const inputContainerRef = useRef<HTMLDivElement | null>(null);
@@ -237,7 +373,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
     // 시뮬레이션: 신고기관 응답
     setTimeout(() => {
-      addMessage('agency', '전파 내용 확인했습니다. 현재 현장 파견 중입니다.', '원미경찰서');
+      addMessage('agency', '전파 내용 확인했습니다. 현재 현장 파견 중입니다.', '별빛경찰서');
     }, 2000);
   };
 
@@ -416,6 +552,19 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                 <pre className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">
                                   {message.content}
                                 </pre>
+                                {message.showCompletionButton && (
+                                  <div className="mt-4 pt-4 border-t border-[#31353a]">
+                                    <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => onBackToInitial?.()}
+                                      className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+                                      aria-label="확인"
+                                    >
+                                      확인
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -437,32 +586,28 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                     </div>
                                     
                                     {/* 포착 목록 */}
-                                    <div className="mt-4 pt-4 border-t border-[#31353a]">
-                                      <div className="text-xs font-semibold text-gray-400 mb-3">📎 포착 목록</div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {[
-                                          { video: 'http://192.168.102.102/video/qs_img_59_y.mp4', poster: '/images/fast-search/qs_img_57_48.png', name: '원미A-230 영상' },
-                                          { video: 'http://192.168.102.102/video/qs_img_57_y.mov', poster: '/images/fast-search/qs_img_57_28.png', name: '원미A-604 영상' },
-                                        ].map((item, idx) => (
-                                          <div key={idx} className="relative group">
-                                            <div className="aspect-video bg-black rounded overflow-hidden border border-[#31353a] group-hover:border-blue-500/50 transition-colors relative">
-                                              <video
-                                                src={item.video}
-                                                poster={item.poster}
+                                    {captureItems.length > 0 && (
+                                      <div className="mt-4 pt-4 border-t border-[#31353a]">
+                                        <div className="text-xs font-semibold text-gray-400 mb-3">📎 포착 목록 ({captureItems.length}건)</div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          {captureItems.map((item, idx) => (
+                                            <div key={item.id} className="relative group">
+                                              <div className="aspect-video bg-black rounded overflow-hidden border border-[#31353a] group-hover:border-blue-500/50 transition-colors relative">
+                                                <video
+                                                  src={item.videoUrl}
+                                                  poster={item.thumbnailUrl}
                                                 className="w-full h-full object-cover"
                                                 muted
                                                 playsInline
                                                 preload="metadata"
                                               />
-                                              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                                <Icon icon="mdi:play-circle" className="w-8 h-8 text-white opacity-80" />
                                               </div>
+                                              <div className="text-[10px] text-gray-400 mt-1 text-center truncate">{item.cctvName} - {item.timestamp}</div>
                                             </div>
-                                            <div className="text-[10px] text-gray-400 mt-1 text-center truncate">{item.name}</div>
-                                          </div>
-                                        ))}
+                                          ))}
+                                        </div>
                                       </div>
-                                    </div>
+                                    )}
                                   </>
                                 ) : (
                                   <p className="text-sm text-red-400">내용이 없습니다</p>

@@ -7,6 +7,8 @@ interface ConfirmDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  hideCancel?: boolean;
+  zIndex?: number;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -17,6 +19,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   message,
   confirmText = '확인',
   cancelText = '취소',
+  hideCancel = false,
+  zIndex = 10000,
   onConfirm,
   onCancel,
 }) => {
@@ -24,7 +28,8 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[10000]"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center"
+      style={{ zIndex }}
       onClick={onCancel}
     >
       <div
@@ -52,18 +57,21 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         </div>
 
         {/* 버튼 */}
-        <div className="flex gap-2 px-5 py-4 bg-[#0f0f0f]/50 border-t border-[#31353a]">
+        <div className={`flex gap-2 px-5 py-4 bg-[#0f0f0f]/50 border-t border-[#31353a] ${hideCancel ? 'justify-end' : ''}`}>
+          {!hideCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 bg-[#2a2a2a] hover:bg-[#323232] border border-[#3a3a3a] transition-colors"
+            >
+              {cancelText}
+            </button>
+          )}
           <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-300 bg-[#2a2a2a] hover:bg-[#323232] border border-[#3a3a3a] transition-colors"
-          >
-            {cancelText}
-          </button>
-          <button
+            id="object-tracking-confirm-button"
             type="button"
             onClick={onConfirm}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
+            className={`px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors ${hideCancel ? 'flex-1' : 'flex-1'}`}
             style={{
               background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             }}

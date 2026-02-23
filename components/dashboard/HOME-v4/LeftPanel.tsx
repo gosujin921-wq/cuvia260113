@@ -131,7 +131,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [floodRiskZoneIndex, setFloodRiskZoneIndex] = useState<number>(0);
   const [facilityRiskZoneIndex, setFacilityRiskZoneIndex] = useState<number>(0);
   
-  const sensorLocations = useMemo(() => ['내동', '소사본동', '석천초교', '오정동', '괴안동'], []);
+  const sensorLocations = useMemo(() => ['물결동', '무지개본동', '은하초교', '햇살동', '노을동'], []);
   
   const weatherData = {
     icon: 'mdi:weather-partly-cloudy',
@@ -352,7 +352,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       },
       {
         spotId: '5',
-        spotName: '부천역 광장',
+        spotName: '하늘역 광장',
         fps: 27,
         status: 'delay',
         autoSequence: true,
@@ -463,24 +463,24 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const allIncidentData = useMemo(() => {
     const data = [
       // 🚗 교통·차량
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 상동로 상동역 인근 차량 추돌 사고로 2개 차로 정체 발생' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 송내로 송내역 사거리 승용차 고장으로 부분 통제' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 오정구 산업로 내동 교차로 화물차 정차로 교통 흐름 저하' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 해빛로 해빛역 인근 차량 추돌 사고로 2개 차로 정체 발생' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 구름로 구름역 사거리 승용차 고장으로 부분 통제' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 산업로 물결동 교차로 화물차 정차로 교통 흐름 저하' },
       
       // 🚧 도로·시설
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 중동 중앙공원 인근 도로 포트홀 발생, 차량 서행 필요' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 괴안동 이면도로 맨홀 파손으로 임시 통제' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 오정구 삼정동 공사 차량 진출입으로 일시적 교통 혼잡' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 달빛동 중앙공원 인근 도로 포트홀 발생, 차량 서행 필요' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 노을동 이면도로 맨홀 파손으로 임시 통제' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 이슬동 공사 차량 진출입으로 일시적 교통 혼잡' },
       
       // 🐾 생활·안전
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 약대동 횡단보도 인근 소형 동물 로드킬 발생' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 심곡본동 골목길 쓰러진 가로수로 보행 불편' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 중동역 인근 노상 적치물로 보행자 통행 주의' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 하늘동 횡단보도 인근 소형 동물 로드킬 발생' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 바람본동 골목길 쓰러진 가로수로 보행 불편' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 달빛역 인근 노상 적치물로 보행자 통행 주의' },
       
       // 🌧 기상·환경 연계형
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 원미구 중동 지하차도 인근 강우로 노면 미끄럼 주의' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 소사구 역곡동 일대 강풍으로 간판 흔들림 신고 접수' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '부천시 오정구 내동 비산먼지 발생 민원 접수' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 달빛동 지하차도 인근 강우로 노면 미끄럼 주의' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 성운동 일대 강풍으로 간판 흔들림 신고 접수' },
+      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 물결동 비산먼지 발생 민원 접수' },
     ];
     
     // 랜덤 섞기 (Fisher-Yates shuffle)
@@ -519,16 +519,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       // 안전 비상벨 운영 상태
       emergencyBell: { normalCount: 456, errorCount: 2 },
       floodRiskZones: [
-        { zone: '원미동', currentLevel: 1.2, warningLevel: 3.5, percentage: 35 },
-        { zone: '소사동', currentLevel: 2.1, warningLevel: 3.5, percentage: 60 },
-        { zone: '오정동', currentLevel: 0.8, warningLevel: 3.5, percentage: 23 },
-        { zone: '중동', currentLevel: 1.5, warningLevel: 3.5, percentage: 43 },
+        { zone: '별빛동', currentLevel: 1.2, warningLevel: 3.5, percentage: 35 },
+        { zone: '무지개동', currentLevel: 2.1, warningLevel: 3.5, percentage: 60 },
+        { zone: '햇살동', currentLevel: 0.8, warningLevel: 3.5, percentage: 23 },
+        { zone: '달빛동', currentLevel: 1.5, warningLevel: 3.5, percentage: 43 },
       ],
       facilityRiskZones: [
-        { zone: '원미동', riskLevel: 65, maxLevel: 100, percentage: 65 },
-        { zone: '소사동', riskLevel: 45, maxLevel: 100, percentage: 45 },
-        { zone: '오정동', riskLevel: 78, maxLevel: 100, percentage: 78 },
-        { zone: '중동', riskLevel: 52, maxLevel: 100, percentage: 52 },
+        { zone: '별빛동', riskLevel: 65, maxLevel: 100, percentage: 65 },
+        { zone: '무지개동', riskLevel: 45, maxLevel: 100, percentage: 45 },
+        { zone: '햇살동', riskLevel: 78, maxLevel: 100, percentage: 78 },
+        { zone: '달빛동', riskLevel: 52, maxLevel: 100, percentage: 52 },
       ],
     };
   }, []);
@@ -570,7 +570,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       case 'disconnected':
         return 'text-red-400';
       default:
-        return 'text-gray-800';
+        return 'text-gray-400';
     }
   };
 
@@ -622,7 +622,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       case 'night':
         return 'text-blue-400';
       case 'fog':
-        return 'text-gray-800';
+        return 'text-gray-400';
       case 'rain':
         return 'text-blue-400';
       default:
@@ -775,11 +775,11 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
     return (
       <g transform={`translate(${x},${yToUse})`}>
-        <text x={0} y={0} dy={12} textAnchor="middle" fill="#ffffff" fontSize={12}>
+        <text x={0} y={0} dy={12} textAnchor="middle" fill="#9ca3af" fontSize={12}>
           {label}
         </text>
         {isLast ? (
-          <text x={0} y={0} dy={28} textAnchor="middle" fill="#ffffff" fontSize={12}>
+          <text x={0} y={0} dy={28} textAnchor="middle" fill="#9ca3af" fontSize={12}>
             (시)
           </text>
         ) : null}
@@ -798,11 +798,11 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     return (
       <g transform={`translate(${x},${y})`}>
         {isTop ? (
-          <text x={0} y={0} dy={-8} textAnchor="end" fill="#ffffff" fontSize={12}>
+          <text x={0} y={0} dy={-8} textAnchor="end" fill="#9ca3af" fontSize={12}>
             (MWh)
           </text>
         ) : null}
-        <text x={0} y={0} dy={4} textAnchor="end" fill="#ffffff" fontSize={12}>
+        <text x={0} y={0} dy={4} textAnchor="end" fill="#9ca3af" fontSize={12}>
           {displayValue}
         </text>
       </g>
@@ -844,10 +844,10 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const getHeatmapCellClassName = (count: number) => {
     const bucket = getHeatmapBucket(count);
     // none 은 살짝 더 밝은 blue-gray 톤, 나머지는 현재 톤 유지
-    if (bucket === 'none') return 'bg-gray-200';         // 라이트 그레이
-    if (bucket === 'low') return 'bg-blue-300';          // 1–2건 (연한 파랑)
-    if (bucket === 'mid') return 'bg-blue-500';          // 3–5건 (중간 파랑)
-    return 'bg-red-500';                                 // 6+ (강조 레드)
+    if (bucket === 'none') return 'bg-[#1f2937]';         // 기존보다 살짝 밝은 blue-gray
+    if (bucket === 'low') return 'bg-[#3b5a8c]';          // 1–2건 (파란 계열)
+    if (bucket === 'mid') return 'bg-[#005eb8]';          // 3–5건 (요청 컬러)
+    return 'bg-[#F87171]';                                // 6+ (강조 레드)
   };
 
   const heatmapData = useMemo(() => {
@@ -1086,10 +1086,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         style={{ maxWidth: '100%', height: '100%' }}
       >
         {/* 상단 헤더: 좌측 로고, 우측 날씨 + 시간 */}
-        <div className="glass p-4 flex items-center justify-between" style={{ flexShrink: 0 }}>
-          <div className="shine" />
+        <div className="rounded-lg p-4 flex items-center justify-between gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           {/* 좌측: 패널 로고 */}
-          <div className="flex items-center gap-2 relative z-10">
+          <div className="flex items-center gap-2">
             <img
               src="/logo.svg"
               alt="CUVIA"
@@ -1099,13 +1098,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           </div>
 
           {/* 우측: 날씨 + 시간 (시간을 뒤로) */}
-          <div className="flex items-center gap-3 relative z-10">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Icon icon={weatherData.icon} className="w-6 h-6 text-white" />
               <div className="flex items-baseline gap-1">
                 <span className="text-white text-sm font-medium">{weatherData.high}°</span>
-                <span className="text-white text-xs">/</span>
-                <span className="text-white text-xs">{weatherData.low}°</span>
+                <span className="text-gray-400 text-xs">/</span>
+                <span className="text-gray-400 text-xs">{weatherData.low}°</span>
               </div>
             </div>
             <div className="text-white text-sm font-medium whitespace-nowrap min-w-[90px] text-right">
@@ -1115,23 +1114,22 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 실시간 대기질 모니터링 */}
-        <div className="glass px-4 pt-4 pb-3" style={{ flexShrink: 0 }}>
-          <div className="shine" />
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <h3 className="text-white font-bold text-sm drop-shadow-md">실시간 대기질 모니터링</h3>
-            <span className="text-white text-xs flex items-center gap-1.5 drop-shadow-md">
+        <div className="rounded-lg px-4 pt-4 pb-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white font-semibold text-sm">실시간 대기질 모니터링</h3>
+            <span className="text-gray-400 text-xs flex items-center gap-1.5">
               마지막 업데이트: <span>{sensorLocations[sensorLocationIndex]} 기준</span>
-              <span className="text-white">·</span>
+              <span className="text-gray-400">·</span>
               <span>{lastUpdateTime || '--:--'}</span>
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2 min-w-0 relative z-10">
+          <div className="grid grid-cols-3 gap-2 min-w-0">
             {/* PM2.5 */}
-            <div className="px-3 py-2 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
                 <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-white flex-shrink-0" />
-                  <span className="text-white text-xs truncate">PM2.5</span>
+                  <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">PM2.5</span>
                 </div>
                 <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.pm25.level)}
@@ -1139,16 +1137,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.pm25.value.toFixed(1)}
-                <span className="text-white text-xs ml-0.5">㎍/m³</span>
+                <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
               </div>
             </div>
 
             {/* PM10 */}
-            <div className="px-3 py-2 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
                 <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-white flex-shrink-0" />
-                  <span className="text-white text-xs truncate">PM10</span>
+                  <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <span className="text-gray-400 text-xs truncate">PM10</span>
                 </div>
                 <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm10.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
                   {getLevelText(sensorData.pm10.level)}
@@ -1156,72 +1154,71 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.pm10.value.toFixed(1)}
-                <span className="text-white text-xs ml-0.5">㎍/m³</span>
+                <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
               </div>
             </div>
 
             {/* 온도 */}
-            <div className="px-3 py-2 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-white flex-shrink-0" />
-                <span className="text-white text-xs truncate">온도</span>
+                <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">온도</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.temperature.value.toFixed(1)}
-                <span className="text-white text-xs ml-0.5">°C</span>
+                <span className="text-gray-400 text-xs ml-0.5">°C</span>
               </div>
             </div>
 
             {/* 습도 */}
-            <div className="px-3 py-2 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-white flex-shrink-0" />
-                <span className="text-white text-xs truncate">습도</span>
+                <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">습도</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.humidity.value.toFixed(1)}
-                <span className="text-white text-xs ml-0.5">%</span>
+                <span className="text-gray-400 text-xs ml-0.5">%</span>
               </div>
             </div>
 
             {/* 강수량 */}
-            <div className="px-3 py-2 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-white flex-shrink-0" />
-                <span className="text-white text-xs truncate">강수량</span>
+                <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">강수량</span>
               </div>
               <div className="text-white text-sm font-semibold transition-all duration-300">
                 {sensorData.rainfall.value.toFixed(1)}
-                <span className="text-white text-[10px] ml-0.5">mm</span>
-                <span className="text-white text-[10px] ml-1">(누적량)</span>
+                <span className="text-gray-400 text-[10px] ml-0.5">mm</span>
+                <span className="text-gray-400 text-[10px] ml-1">(누적량)</span>
               </div>
             </div>
 
             {/* 풍속 */}
-            <div className="px-3 py-2 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
               <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-white flex-shrink-0" />
-                <span className="text-white text-xs truncate">풍속</span>
+                <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-400 text-xs truncate">풍속</span>
               </div>
               <div className="text-white text-base font-semibold transition-all duration-300">
                 {sensorData.windSpeed.value.toFixed(1)}
-                <span className="text-white text-xs ml-0.5">m/s</span>
+                <span className="text-gray-400 text-xs ml-0.5">m/s</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* 도시 안전·시설 관리 현황 */}
-        <div className="glass px-4 pt-4 pb-4 flex flex-col gap-3" style={{ flexShrink: 0 }}>
-          <div className="shine" />
-          <h3 className="text-white font-bold text-sm drop-shadow-md relative z-10">도시 안전·시설 관리 현황</h3>
+        <div className="rounded-lg px-4 pt-4 pb-4 flex flex-col gap-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+          <h3 className="text-white font-semibold text-sm">도시 안전·시설 관리 현황</h3>
 
           {/* 침수 위험 & 노후·위험 시설 */}
-            <div className="grid grid-cols-2 gap-3 min-w-0 relative z-10">
+            <div className="grid grid-cols-2 gap-3 min-w-0">
               {/* 침수 위험 관리 수준 */}
-              <div className="px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
-                <div className="flex items-start justify-between" style={{ minHeight: '32px', marginBottom: '2px' }}>
-                  <span className="text-white text-xs font-semibold">침수 위험 관리 수준</span>
+              <div className="bg-[#393a42] px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg">
+                <div className="flex items-start justify-between mb-1" style={{ minHeight: '32px' }}>
+                  <span className="text-gray-400 text-xs font-semibold">침수 위험 관리 수준</span>
                   <span className="text-white text-xs">{infrastructureStatus.floodRiskZones[floodRiskZoneIndex]?.zone}</span>
                 </div>
                 <div className="flex flex-col items-center">
@@ -1278,19 +1275,19 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         if (percentage < 33) {
                           return (
                             <div className="px-2 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                              <span className="text-green-700 text-[10px] font-bold leading-none">정상</span>
+                              <span className="text-green-400 text-[10px] font-medium leading-none">정상</span>
                             </div>
                           );
                         } else if (percentage < 66) {
                           return (
                             <div className="px-2 py-1.5 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 flex items-center justify-center">
-                              <span className="text-yellow-700 text-[10px] font-bold leading-none">주의</span>
+                              <span className="text-yellow-400 text-[10px] font-medium leading-none">주의</span>
                             </div>
                           );
                         } else {
                           return (
                             <div className="px-2 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30 flex items-center justify-center">
-                              <span className="text-red-700 text-[10px] font-bold leading-none">위험</span>
+                              <span className="text-red-400 text-[10px] font-medium leading-none">위험</span>
                             </div>
                           );
                         }
@@ -1301,9 +1298,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               </div>
 
               {/* 노후·위험시설 관리 필요도 */}
-              <div className="px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
-                <div className="flex items-start justify-between" style={{ marginBottom: '2px' }}>
-                  <div className="text-white text-xs font-semibold">
+              <div className="bg-[#393a42] px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg">
+                <div className="flex items-start justify-between mb-1">
+                  <div className="text-gray-400 text-xs font-semibold">
                     <div>노후·위험시설</div>
                     <div>관리 필요도</div>
                   </div>
@@ -1363,19 +1360,19 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         if (percentage < 35) {
                           return (
                             <div className="px-2 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                              <span className="text-green-700 text-[10px] font-bold leading-none">낮음</span>
+                              <span className="text-green-400 text-[10px] font-medium leading-none">낮음</span>
                             </div>
                           );
                         } else if (percentage < 70) {
                           return (
                             <div className="px-2 py-1.5 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 flex items-center justify-center">
-                              <span className="text-yellow-700 text-[10px] font-bold leading-none">보통</span>
+                              <span className="text-yellow-400 text-[10px] font-medium leading-none">보통</span>
                             </div>
                           );
                         } else {
                           return (
                             <div className="px-2 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30 flex items-center justify-center">
-                              <span className="text-red-700 text-[10px] font-bold leading-none">높음</span>
+                              <span className="text-red-400 text-[10px] font-medium leading-none">높음</span>
                             </div>
                           );
                         }
@@ -1389,57 +1386,57 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           {/* 시설물 운영 상태 */}
           <div className="grid grid-cols-3 gap-3">
             {/* 도로 조명 */}
-            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
               <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-white text-xs font-semibold">도로 조명</span>
+                <span className="text-gray-400 text-xs font-semibold">도로 조명</span>
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">정상</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
                   <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.normalCount.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">장애</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
                   <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.errorCount}</span>
                 </div>
               </div>
             </div>
 
             {/* 교통신호 */}
-            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
               <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-white text-xs font-semibold">교통신호</span>
+                <span className="text-gray-400 text-xs font-semibold">교통신호</span>
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">정상</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
                   <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.normalCount.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">장애</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
                   <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.errorCount}</span>
                 </div>
               </div>
             </div>
 
             {/* 안전 비상벨 */}
-            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
               <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-white text-xs font-semibold">안전 비상벨</span>
+                <span className="text-gray-400 text-xs font-semibold">안전 비상벨</span>
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">정상</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
                   <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.normalCount.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">장애</span>
+                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
                   <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.errorCount}</span>
                 </div>
               </div>
@@ -1448,17 +1445,16 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 돌발 정보 */}
-        <div className="glass p-4 flex flex-col" style={{ flexShrink: 0 }}>
-          <div className="shine" />
-          <h3 className="text-white text-sm font-bold mb-3 drop-shadow-md relative z-10">도시 교통 돌발 정보</h3>
-          <div ref={incidentContainerRef} className="flex flex-col gap-2 relative z-10">
+        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+          <h3 className="text-white text-sm font-semibold mb-3">도시 교통 돌발 정보</h3>
+          <div ref={incidentContainerRef} className="flex flex-col gap-2">
             {Array.from({ length: visibleIncidentCount }).map((_, index) => {
               const dataIndex = (incidentOffset + index) % incidentData.length;
               const incident = incidentData[dataIndex];
               return (
-                <div key={`incident-${incidentOffset}-${index}`} className="flex items-start gap-2 px-3 py-2 rounded-lg min-w-0 transition-opacity duration-300" style={{ background: 'rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 -1px 1px rgba(255, 255, 255, 0.03)' }}>
+                <div key={`incident-${incidentOffset}-${index}`} className="flex items-start gap-2 bg-[#393a42] px-3 py-2 rounded-lg min-w-0 transition-opacity duration-300">
                   <Icon icon={incident.icon} className={`w-4 h-4 ${incident.color} flex-shrink-0 mt-0.5`} />
-                  <span className="text-white text-xs leading-relaxed truncate">{incident.text}</span>
+                  <span className="text-gray-300 text-xs leading-relaxed truncate">{incident.text}</span>
                 </div>
               );
             })}
@@ -1466,16 +1462,15 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         </div>
 
         {/* 시간별 에너지 사용량 (X축: 시간, Y축: 에너지 사용량 MWh) */}
-        <div className="glass p-4 flex flex-col relative" style={{ flex: 1, minHeight: '180px' }}>
-          <div className="shine" />
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <h3 className="text-white text-sm font-bold drop-shadow-md">도시 에너지 사용량</h3>
-            <span className="text-white text-xs drop-shadow-md">지난 24시간</span>
+        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col relative" style={{ flex: 1, minHeight: '180px', background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-white text-sm font-semibold">도시 에너지 사용량</h3>
+            <span className="text-gray-400 text-xs">지난 24시간</span>
           </div>
-          <div className="overflow-hidden flex-1 relative z-10">
-            <div className="h-full">
-              <div ref={trendChartContainerRef} className="relative w-full h-full rounded-xl overflow-visible">
-                <ResponsiveContainer width="100%" height="100%">
+          <div className="overflow-hidden flex-1 min-h-[120px]">
+            <div className="h-full min-h-[120px]">
+              <div ref={trendChartContainerRef} className="relative w-full h-full min-h-[120px] rounded-xl overflow-visible">
+                <ResponsiveContainer width="100%" height="100%" minHeight={120}>
                   <AreaChart
                     data={animatedTrendData}
                     margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
@@ -1513,7 +1508,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="1.5 2" stroke="rgba(255, 255, 255, 0.3)" opacity={1} />
+                    <CartesianGrid strokeDasharray="1.5 2" stroke="rgba(107, 114, 128, 0.3)" opacity={1} />
                     <XAxis
                       dataKey="xValue"
                       type="number"
@@ -1521,14 +1516,14 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                       ticks={[0, 3, 6, 9, 12, 15, 18, 21, 24]}
                       tick={renderTrendXAxisTick}
                       tickLine={false}
-                      axisLine={{ stroke: 'rgba(255, 255, 255, 0.4)', strokeWidth: 1 }}
+                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
                       tickMargin={8}
                     />
                     <YAxis
                       domain={[120000, 260000]}
                       tick={renderTrendYAxisTick}
                       tickLine={false}
-                      axisLine={{ stroke: 'rgba(255, 255, 255, 0.4)', strokeWidth: 1 }}
+                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
                       ticks={yAxisTicks}
                       width={35}
                       allowDecimals={false}
@@ -1618,65 +1613,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           </div>
         </div>
       </div>
-
-      <style>{`
-        .glass {
-          border-radius: 28px;
-          position: relative;
-          overflow: hidden;
-          
-          background: rgba(255,255,255,.08);
-          border: 1px solid rgba(255,255,255,.2);
-          
-          backdrop-filter: blur(18px) saturate(140%);
-          -webkit-backdrop-filter: blur(18px) saturate(140%);
-          
-          box-shadow:
-            0 18px 40px rgba(0,0,0,.18),
-            inset 0 1px 0 rgba(255,255,255,.25);
-        }
-
-        .glass::before {
-          content: "";
-          position: absolute;
-          inset: -40%;
-          background:
-            radial-gradient(circle at 30% 30%, rgba(255,255,255,.55), transparent 40%),
-            radial-gradient(circle at 70% 60%, rgba(255,255,255,.25), transparent 45%),
-            linear-gradient(120deg, rgba(255,255,255,.25), rgba(255,255,255,0) 60%);
-          transform: rotate(12deg);
-          filter: blur(2px);
-          opacity: .85;
-        }
-
-        .glass::after {
-          content: "";
-          position: absolute;
-          inset: -20%;
-          background:
-            radial-gradient(circle at 20% 20%, rgba(255,255,255,.20), transparent 35%),
-            radial-gradient(circle at 80% 70%, rgba(255,255,255,.16), transparent 40%);
-          mix-blend-mode: screen;
-          filter: blur(10px);
-          animation: floaty 6s ease-in-out infinite;
-          transform: translate3d(0,0,0);
-        }
-
-        .glass .shine {
-          position: absolute;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
-          opacity: .18;
-          mix-blend-mode: overlay;
-          pointer-events: none;
-        }
-
-        @keyframes floaty {
-          0%   { transform: translate(-2%, -1%) scale(1.02); }
-          50%  { transform: translate( 2%,  1%) scale(1.03); }
-          100% { transform: translate(-2%, -1%) scale(1.02); }
-        }
-      `}</style>
     </div>
   );
 };

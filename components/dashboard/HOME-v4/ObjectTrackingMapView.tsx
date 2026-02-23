@@ -12,7 +12,10 @@ interface ObjectTrackingMapViewProps {
   showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
   pulseRadius?: number; // 펄스 반경 (m)
   showPredictedCCTVList?: boolean; // 예측 CCTV 리스트 패널 표시 여부 (true면 1~3번 핀 영상 일시정지)
+  showFeaturedLayout?: boolean; // 2키: 별빛A-655만 파란색, 나머지 그레이
 }
+
+const FEATURED_CCTV_ID = '5'; // 별빛A-655
 
 const ObjectTrackingMapView = ({ 
   visibleTrackingPins, 
@@ -23,13 +26,15 @@ const ObjectTrackingMapView = ({
   hoveredCCTVId,
   showCCTVLabel = false,
   pulseRadius = 100,
-  showPredictedCCTVList = false
+  showPredictedCCTVList = false,
+  showFeaturedLayout = false
 }: ObjectTrackingMapViewProps) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const zoomOutTriggeredRef = useRef<boolean>(false);
   const initialMapStateRef = useRef(initialMapState);
   const cctvMarkersRef = useRef<Map<string, { container: HTMLElement; el: HTMLElement; iconEl: HTMLElement; infoLabel: HTMLElement }>>(new Map());
+  const showFeaturedLayoutRef = useRef(showFeaturedLayout);
 
   // 지도 초기화 (한 번만)
   useEffect(() => {
@@ -98,6 +103,34 @@ const ObjectTrackingMapView = ({
       }
     }
   }, [flyToLocation]);
+
+  // showFeaturedLayout 변경 시 1) CCTV 아이콘 색상 업데이트 2) 4번 핀 라벨 변경 (예측 지점 ↔ 목격지점 14:05)
+  useEffect(() => {
+    showFeaturedLayoutRef.current = showFeaturedLayout;
+    const map = mapRef.current;
+    if (map) {
+      const pin4LabelEl = (map as any)._pin4LabelEl as HTMLElement | undefined;
+      const pin4Address = (map as any)._pin4Address as string | undefined;
+      if (pin4LabelEl && pin4Address) {
+        const labelSubText = showFeaturedLayout ? '목격지점 14:05' : '예측 지점 (시간없음)';
+        pin4LabelEl.innerHTML = `<div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${labelSubText}</div><div style="font-size: 13px; font-weight: 600; color: white;">${pin4Address}</div>`;
+      }
+    }
+    const markers = cctvMarkersRef.current;
+    if (!markers || markers.size === 0) return;
+    markers.forEach(({ el, iconEl }, cctvId) => {
+      const isBlue = !showFeaturedLayout || cctvId === FEATURED_CCTV_ID;
+      el.style.background = isBlue
+        ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)'
+        : 'linear-gradient(135deg, rgba(100, 100, 100, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+      el.style.borderColor = isBlue ? '#3b82f6' : '#6b7280';
+      el.style.boxShadow = isBlue
+        ? '0 0 15px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2)'
+        : '0 0 15px rgba(107, 114, 128, 0.4), 0 0 30px rgba(107, 114, 128, 0.2)';
+      const svg = iconEl.querySelector('svg') as HTMLElement;
+      if (svg) svg.style.color = isBlue ? '#60a5fa' : '#9ca3af';
+    });
+  }, [showFeaturedLayout]);
 
   // 객체 추적 핀 생성 및 visibility 제어
   useEffect(() => {
@@ -251,9 +284,23 @@ const ObjectTrackingMapView = ({
           const hours = String(currentTime.getHours()).padStart(2, '0');
           const minutes = String(currentTime.getMinutes()).padStart(2, '0');
           const timeString = `${hours}:${minutes}`;
-          const labelType = index === 0 ? '초기 목격 지점' : '목격 지점';
+          // 1~3번: 초기 목격 지점 / 목격 지점, 4번: 예측 지점 (시간없음) → 2키 시 목격지점 14:05
+          let labelType: string;
+          let labelSubText: string;
+          if (index === 0) {
+            labelType = '초기 목격 지점';
+            labelSubText = `${labelType} · ${timeString}`;
+          } else if (index === 3) {
+            labelType = '예측 지점 (시간없음)';
+            labelSubText = labelType;
+            (map as any)._pin4LabelEl = labelEl;
+            (map as any)._pin4Address = pin.address;
+          } else {
+            labelType = '목격 지점';
+            labelSubText = `${labelType} · ${timeString}`;
+          }
 
-          labelEl.innerHTML = `<div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${labelType} · ${timeString}</div><div style="font-size: 13px; font-weight: 600; color: white;">${pin.address}</div>`;
+          labelEl.innerHTML = `<div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${labelSubText}</div><div style="font-size: 13px; font-weight: 600; color: white;">${pin.address}</div>`;
           markerContainer.appendChild(labelEl);
 
           // v2와 동일: anchor center
@@ -649,8 +696,15 @@ const ObjectTrackingMapView = ({
           ];
           
           blueCCTV.forEach((location, index) => {
-            const cctvId = String(index + 1); // 1~10
+            const cctvId = String(index + 1); // 1~10 (5 = 별빛A-655)
             const cctvInfo = cctvInfoList[index];
+            const isBlue = !showFeaturedLayoutRef.current || cctvId === FEATURED_CCTV_ID;
+            const bg = isBlue
+              ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)'
+              : 'linear-gradient(135deg, rgba(100, 100, 100, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+            const border = isBlue ? '#3b82f6' : '#6b7280';
+            const shadow = isBlue ? '0 0 15px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2)' : '0 0 15px rgba(107, 114, 128, 0.4), 0 0 30px rgba(107, 114, 128, 0.2)';
+            const iconColor = isBlue ? '#60a5fa' : '#9ca3af';
             
             const markerContainer = document.createElement('div');
             markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
@@ -659,13 +713,13 @@ const ObjectTrackingMapView = ({
             el.style.cssText = `
               width: 24px;
               height: 24px;
-              background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
-              border: 2px solid #3b82f6;
+              background: ${bg};
+              border: 2px solid ${border};
               border-radius: 12px;
               display: flex;
               align-items: center;
               justify-content: center;
-              box-shadow: 0 0 15px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2);
+              box-shadow: ${shadow};
               backdrop-filter: blur(4px);
               position: relative;
               z-index: 50;
@@ -675,7 +729,7 @@ const ObjectTrackingMapView = ({
             
             const iconEl = document.createElement('div');
             iconEl.innerHTML = `
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #60a5fa; transition: all 0.2s ease;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: ${iconColor}; transition: all 0.2s ease;">
                 <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
               </svg>
             `;
@@ -716,11 +770,16 @@ const ObjectTrackingMapView = ({
             });
             
             markerContainer.addEventListener('mouseleave', () => {
+              const isBlue = !showFeaturedLayoutRef.current || cctvId === FEATURED_CCTV_ID;
               el.style.transform = 'scale(1)';
               el.style.zIndex = '50';
-              el.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+              el.style.background = isBlue
+                ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)'
+                : 'linear-gradient(135deg, rgba(100, 100, 100, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+              el.style.borderColor = isBlue ? '#3b82f6' : '#6b7280';
+              el.style.boxShadow = isBlue ? '0 0 15px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2)' : '0 0 15px rgba(107, 114, 128, 0.4), 0 0 30px rgba(107, 114, 128, 0.2)';
               iconEl.querySelector('svg')!.style.filter = 'none';
-              iconEl.querySelector('svg')!.style.color = '#60a5fa';
+              (iconEl.querySelector('svg') as HTMLElement).style.color = isBlue ? '#60a5fa' : '#9ca3af';
               infoLabel.style.opacity = '0';
               if (onCCTVHover) {
                 onCCTVHover(null, false);

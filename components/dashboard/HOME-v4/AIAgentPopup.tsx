@@ -31,6 +31,8 @@ interface AIAgentPopupProps {
   onReSearchComplete?: () => void;
   /** 포착 알림 메시지 */
   captureNotificationMessage?: string;
+  /** 2키: 추적 갱신 메시지 표시 (차량 재포착, 번호판 후보) */
+  showFeaturedLayout?: boolean;
 }
 
 interface ChatMessage {
@@ -83,7 +85,25 @@ const WELCOME_MSG_CONTENT = {
   btnTracking: '▶ 객체 추적하기',
 };
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView }) => {
+const TRACKING_UPDATE_MSG_CONTENT = {
+  title: '[추적 갱신] 차량 재포착, 번호판 후보 확보',
+  camera: '카메라: CCTV-19 | 시각: 14:05:08',
+  match: '"차종/색상/외형 특징 일치(추정)."',
+  plate: '"부분 번호판 후보: *12 324* **(가시성: 높음)**"',
+  direction: '이동 방향: 동 방향 진행',
+  body: '이동 중인 차량으로 추정되어 골든타임 확보를 위해 112 우선 전파를 권고합니다.',
+  btnPropagate: '▶ 관할 경찰서에 전파하기',
+};
+
+const MessageList: React.FC<MessageListProps> = ({
+  messages,
+  isResponding,
+  listCardCount,
+  cameraCount,
+  isExpanded,
+  onObjectTrackingStart,
+  onVideoView,
+}) => {
   return (
     <>
       {isExpanded && (
@@ -304,7 +324,24 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                       </div>
                     )}
                     <div className={`${isExpanded ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200' : 'rounded-xl border border-gray-200 bg-gray-50 p-4'}`} style={isExpanded ? { borderWidth: '1px' } : {}}>
-                      {message.id === 'welcome-msg' ? (
+                      {message.id === 'tracking-update-msg' ? (
+                        <div className="space-y-3">
+                          <p className="text-sm font-semibold text-gray-900">{TRACKING_UPDATE_MSG_CONTENT.title}</p>
+                          <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.camera}</p>
+                          <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.match}</p>
+                          <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: TRACKING_UPDATE_MSG_CONTENT.plate.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<strong>$1</strong>') }} />
+                          <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.direction}</p>
+                          <p className="text-sm leading-relaxed text-gray-700">{TRACKING_UPDATE_MSG_CONTENT.body}</p>
+                          <button
+                            type="button"
+                            className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors w-full"
+                            aria-label="관할 경찰서에 전파하기"
+                          >
+                            {TRACKING_UPDATE_MSG_CONTENT.btnPropagate}
+                          </button>
+                          <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                        </div>
+                      ) : message.id === 'welcome-msg' ? (
                         <div className="space-y-3">
                           {message.isTyping ? (
                             <>
@@ -527,6 +564,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onReSearchStart, 
   onReSearchComplete,
   captureNotificationMessage = '',
+  showFeaturedLayout = false,
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -928,6 +966,29 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       if (completeTimeout) clearTimeout(completeTimeout);
     };
   }, [showFastSearchProgress]);
+
+  // 2키: 추적 갱신 메시지 추가 (차량 재포착, 번호판 후보)
+  const lastShowFeaturedLayoutRef = useRef<boolean>(false);
+  useEffect(() => {
+    if (showFeaturedLayout && !lastShowFeaturedLayoutRef.current) {
+      lastShowFeaturedLayoutRef.current = true;
+      const trackingUpdateMessage: ChatMessage = {
+        id: 'tracking-update-msg',
+        role: 'assistant',
+        content: '',
+        timestamp: new Date().toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+        type: 'normal',
+      };
+      setMessages((prev) => [...prev, trackingUpdateMessage]);
+    }
+    if (!showFeaturedLayout) {
+      lastShowFeaturedLayoutRef.current = false;
+    }
+  }, [showFeaturedLayout]);
 
   // 객체 추적 완료 시 결과 메시지 추가 (지도 2D 전환 완료 시)
   const lastObjectTrackingCompletedRef = useRef<boolean>(false);
@@ -1463,24 +1524,26 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         </div>
       ) : (
         <div
-          className="absolute z-[1000] transition-transform duration-300 ease-out"
+          className="absolute z-[1000]"
           style={
             positionOverride
               ? {
                   position: 'absolute' as const,
                   ...positionOverride,
                   transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+                  transition: 'transform 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
                 }
               : {
                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
                   right: `${padding}px`,
                   transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+                  transition: 'transform 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
                 }
           }
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px]"
+            className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px] transition-[height] duration-300 ease-out"
             style={{ height: maxHeightProp ?? 600 }}
           >
             <div className="absolute top-3 right-3 z-10 flex items-center gap-2">

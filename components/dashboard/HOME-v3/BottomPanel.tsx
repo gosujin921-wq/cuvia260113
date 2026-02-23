@@ -132,7 +132,7 @@ const BottomPanel = ({
         opacity: hideControls ? 0 : 1,
       }}
     >
-      <div className="rounded-t-lg gradient-border-right-bottom" style={{ height: `${itemHeight + (verticalPadding * 2)}px`, width: '100%', paddingTop: `${verticalPadding}px`, paddingBottom: `${verticalPadding}px`, paddingLeft: `${paddingHorizontal}px`, paddingRight: `${paddingHorizontal}px`, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', boxShadow: 'inset -2px -2px 4px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.4)', overflow: 'hidden' }}>
+      <div className="rounded-lg p-4 gradient-border-right-bottom overflow-hidden" style={{ height: `${itemHeight + (verticalPadding * 2)}px`, width: '100%', minHeight: 0, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', boxShadow: 'inset -2px -2px 4px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.4)' }}>
         <div 
           ref={cctvScrollContainerRef}
           className="flex items-center"
