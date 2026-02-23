@@ -15,6 +15,8 @@ import { sendToUnity } from "@/lib/unity/unityBridge";
 import { EventToUnity } from "@/lib/unity/types";
 import { useEventSocket } from "@/src/apis/event/hooks";
 import { BridgeSlot } from "@/components/dashboard/HOME/unity/ConfigurePopup";
+import { VlmRequest } from "@/src/apis/vlm/types";
+import UnityAIAgentPopup from "@/components/dashboard/HOME/unity/UnityAIAgentPopup";
 
 export default function Home() {
     const navigate = useNavigate();
@@ -35,6 +37,9 @@ export default function Home() {
     const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
     const [missingEventId, setMissingEventId] = useState<string | null>(null);
     const [openedCCTVCount, setOpenedCCTVCount] = useState<number>(8);
+    const [isReadyToAnalyze, setIsReadyToAnalyze] = useState<boolean>(false);
+    const [vlmRequestInfo, setVlmRequestInfo] = useState<VlmRequest | null>(null);
+    const [mainCameraName, setMainCameraName] = useState<string>("");
 
     // 웹소켓 이벤트 관련 상태
     const { status: socketStatus, lastEvent } = useEventSocket({
@@ -65,6 +70,8 @@ export default function Home() {
     const resetEventState = useCallback(() => {
         setActiveEventId(null);
         setActiveEventCameraInfo(null);
+        setIsReadyToAnalyze(false);
+        setMainCameraName("");
     }, []);
 
     useEffect(() => {
@@ -109,12 +116,6 @@ export default function Home() {
     // 가상 이벤트 데이터 (레이아웃 확인용)
     const mockEvents: Event[] = useMemo(() => {
         const now = new Date();
-        const formatDate = () => {
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, "0");
-            const day = String(now.getDate()).padStart(2, "0");
-            return `${year}.${month}.${day}`;
-        };
         const formatTime = (hours: number, minutes: number) => {
             return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00`;
         };
@@ -259,28 +260,6 @@ export default function Home() {
         return [...mockEvents, ...visibleRealEvents];
     }, [allConvertedEvents, visibleEventIds, mockEvents]);
 
-    // 이벤트 요약 계산 (처리결과 기준) - 모든 이벤트 포함 (종결 포함)
-    const eventSummary: EventSummaryType = useMemo(() => {
-        const allEventsForSummary = allEvents.map((event, index) => convertToDashboardEvent(event, index));
-
-        // 대기: 생성, 선별
-        const pendingStages: Array<"생성" | "선별"> = ["생성", "선별"];
-        const pending = allEventsForSummary.filter((event) => pendingStages.includes(event.processingStage as any)).length;
-
-        // 진행중: 착수, 사실 검증, 추적 · 지원, 전파
-        const inProgressStages: Array<"착수" | "사실 검증" | "추적 · 지원" | "전파"> = ["착수", "사실 검증", "추적 · 지원", "전파"];
-        const inProgress = allEventsForSummary.filter((event) => inProgressStages.includes(event.processingStage as any)).length;
-
-        const closed = allEventsForSummary.filter((event) => event.processingStage === "종결").length;
-
-        return {
-            total: allEventsForSummary.length,
-            pending,
-            inProgress,
-            closed,
-        };
-    }, []);
-
     // 이벤트 선택/클릭 핸들러 (통합)
     const handleEventAction = (eventId: string) => {
         const event = events.find((e) => e.id === eventId);
@@ -409,6 +388,7 @@ export default function Home() {
                 // bridgeSlots에서 메인 카메라 ID와 그룹핑된 카메라 ID 리스트 가져오기
                 const mainCctvBridgeId = bridgeSlots.find((slot) => slot.isMain)?.bridgeId || "";
                 const groupedCctvBridgeIds = bridgeSlots.filter((slot) => slot.isGrouped).map((slot) => slot.bridgeId);
+                setMainCameraName(mainCctvBridgeId);
 
                 console.log("[Home] 웹소켓 이벤트 수신:", { eventId, mainCctvBridgeId, groupedCctvBridgeIds });
 
@@ -417,6 +397,12 @@ export default function Home() {
             }
         } else if (stat === 4) {
             // 활성 이벤트와 동일한 ID의 종료 이벤트인 경우에만 해제
+            setIsReadyToAnalyze(true);
+            setVlmRequestInfo({
+                event_id: Number(eventId),
+                vms_id: lastEvent.vms_info.vms_id,
+                camera_id: `${lastEvent.evt.uid}`,
+            });
         }
     }, [lastEvent, bridgeSlots, triggerEventMode, resetEventState]);
 
@@ -489,9 +475,7 @@ export default function Home() {
                         events={events}
                         selectedEventId={selectedEventId}
                         aiDetectionEventId={aiDetectionEventId}
-                        cctvIndex={cctvIndex}
                         onAiDetectionClose={clearSelection}
-                        onMapClick={() => {}}
                         externalZoomLevel={mapZoomLevel}
                         onZoomLevelChange={setMapZoomLevel}
                         hideControls={hideControls}
@@ -534,7 +518,8 @@ export default function Home() {
                 </div>
             </div>
 
-            {showAIAgentPopup && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} />}
+            {showAIAgentPopup && isUnityMode && <UnityAIAgentPopup mainCameraName={mainCameraName} isUnityMode={true} vlmRequestInfo={vlmRequestInfo ?? undefined} isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} isReadyToAnalyze={isReadyToAnalyze} />}
+            {showAIAgentPopup && !isUnityMode && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} />}
         </div>
     );
 }

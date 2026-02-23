@@ -18,8 +18,6 @@ interface UnityMapViewProps {
     events: Event[];
     selectedEventId?: string | null;
     aiDetectionEventId?: string | null;
-    cctvIndex?: number | null;
-    onMapClick?: () => void;
     externalZoomLevel?: number;
     onZoomLevelChange?: (level: number) => void;
     onAiDetectionClose?: () => void;
@@ -51,7 +49,7 @@ const initialBridgeSlots: BridgeSlot[] = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isEventStreaming = false, activeEventCameraInfo, onBridgeSlotsChange }: UnityMapViewProps) => {
+const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetectionClose, hideControls = false, leftPanelWidth = 480, isEventStreaming = false, activeEventCameraInfo, onBridgeSlotsChange }: UnityMapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(1);
     const [showCCTV, setShowCCTV] = useState(true);
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
@@ -434,17 +432,6 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, 
                 width: "100%",
                 height: "100%",
                 position: "relative",
-            }}
-            onClick={(e) => {
-                const target = e.target as HTMLElement;
-                const isPin = target.closest("[data-event-pin]");
-                const isTooltip = target.closest("[data-tooltip]");
-                const isButton = target.closest("button") || target.tagName === "BUTTON";
-                const isClickable = target.closest("[data-no-drag]") || target.closest("[data-drag-handle]");
-
-                if (!isPin && !isTooltip && !isButton && !isClickable) {
-                    onMapClick?.();
-                }
             }}
             onMouseDown={(e) => {
                 const target = e.target as HTMLElement;
