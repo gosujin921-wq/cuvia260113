@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import ConfirmDialog from './ConfirmDialog';
 
 interface CaptureItem {
   id: string;
@@ -36,6 +35,7 @@ interface ThreadMessage {
   timestamp: string;
   author?: string; // 신고기관명
   status?: 'read' | 'unread';
+  showCompletionButton?: boolean; // 시뮬레이션 종료 확인 버튼 표시
 }
 
 // 기본 신고 접수 내용 (하늘별빛경찰서)
@@ -126,6 +126,46 @@ const defaultPropagationContent = `[112요청건/협조] 실종자 김도연(남
 ※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
 관제 담당: 김쿠도 / 032-266-3454`;
 
+// 112 회신: 실종자 발견 통보 (경찰관 답신)
+const discoveryReportContent = `📢 [112 회신] 실종자 발견 통보
+
+🚨 실종자 발견 통보
+
+▪ 사건번호: 2026-02-23-은하동-실종
+▪ 대상자: 김도연 / 22세(남)
+
+
+✅ 1. 발견 결과
+
+발견 시각: 11:02:14
+발견 장소: 은하동 127-12 인근 골목
+발견 상태: 생명 징후 정상, 외상 없음
+
+보호자 인계 예정
+현장 출동 경찰관 확인 완료.
+
+
+📍 2. 조치 사항
+
+인근 수색 종료
+추가 CCTV 탐색 중지 요청
+119 이송 필요 없음
+
+
+📡 3. 관제 협조 요청
+
+관련 영상 백업 요청 (10:10~11:10 구간)
+포착 지점 4건 자료 보존 요청
+
+
+🔒 4. 상태 전환
+
+해당 건 수색 종료 처리 요청드립니다.
+추가 특이사항 발생 시 재통보 예정.
+
+담당: 김민수 경위
+하늘별빛경찰서`;
+
 const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   isVisible,
   width = 700,
@@ -133,24 +173,17 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   onBackToInitial,
   captureItems = [],
 }) => {
-  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const hasAddedDiscoveryRef = useRef(false);
 
-  // 전파 패널 열림 시 10초 후 완료 다이얼로그 표시
+  // 전파 패널 열림 시 0.5초 후 스크롤을 맨 아래로
   useEffect(() => {
-    if (!isVisible || !onBackToInitial) return;
-    setShowCompletionDialog(false);
-
-    const timerId = window.setTimeout(() => {
-      setShowCompletionDialog(true);
-    }, 10000);
-
-    return () => window.clearTimeout(timerId);
-  }, [isVisible, onBackToInitial]);
-
-  const handleCompletionConfirm = () => {
-    setShowCompletionDialog(false);
-    onBackToInitial?.();
-  };
+    if (!isVisible) return;
+    const scrollTimer = window.setTimeout(() => {
+      const el = scrollContainerRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }, 500);
+    return () => window.clearTimeout(scrollTimer);
+  }, [isVisible]);
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -210,6 +243,48 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   const [currentThreadId, setCurrentThreadId] = useState('thread-1');
   const [messageInput, setMessageInput] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // 전파 패널 열림 시 2초 후 경찰관(112 회신) 답신 메시지 추가
+  useEffect(() => {
+    if (!isVisible) {
+      hasAddedDiscoveryRef.current = false;
+      return;
+    }
+    if (hasAddedDiscoveryRef.current) return;
+    hasAddedDiscoveryRef.current = true;
+
+    const timerId = window.setTimeout(() => {
+      const discoveryId = `msg-discovery-${Date.now()}`;
+      setThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === currentThreadId
+            ? {
+                ...thread,
+                messages: [
+                  ...thread.messages,
+                  {
+                    id: discoveryId,
+                    role: 'agency' as const,
+                    content: discoveryReportContent,
+                    timestamp: new Date().toLocaleTimeString('ko-KR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    }),
+                    author: '하늘별빛경찰서',
+                    status: 'unread' as const,
+                    showCompletionButton: true as const,
+                  },
+                ],
+                status: 'completed' as const,
+              }
+            : thread
+        )
+      );
+    }, 2000);
+
+    return () => window.clearTimeout(timerId);
+  }, [isVisible, currentThreadId]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const inputContainerRef = useRef<HTMLDivElement | null>(null);
@@ -477,6 +552,19 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                 <pre className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">
                                   {message.content}
                                 </pre>
+                                {message.showCompletionButton && (
+                                  <div className="mt-4 pt-4 border-t border-[#31353a]">
+                                    <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => onBackToInitial?.()}
+                                      className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+                                      aria-label="확인"
+                                    >
+                                      확인
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -603,18 +691,6 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
           </div>
         </div>
       </div>
-
-      {/* 실종 시뮬레이션 완료 다이얼로그 */}
-      <ConfirmDialog
-        isOpen={showCompletionDialog}
-        title="실종 시뮬레이션 완료"
-        message="실종 시뮬레이션이 완료되었습니다. 초기화면으로 돌아갑니다."
-        confirmText="확인"
-        hideCancel
-        zIndex={10003}
-        onConfirm={handleCompletionConfirm}
-        onCancel={handleCompletionConfirm}
-      />
     </>
   );
 };

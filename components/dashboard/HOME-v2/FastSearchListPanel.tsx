@@ -31,6 +31,8 @@ interface FastSearchListPanelProps {
   showSkeleton?: boolean;
   /** 대상 포착 시 호출 */
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string) => void;
+  /** 이 값이 'wrong-button-1'일 때 리스트를 맨 아래로 스크롤 (틀림 시퀀스 유도용) */
+  scrollToBottomTrigger?: string | null;
 }
 
 interface CaptureItem {
@@ -107,6 +109,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   onCandidateOpened,
   showSkeleton = false,
   onAddCapture,
+  scrollToBottomTrigger = null,
 }) => {
   const [radius, setRadius] = useState<number>(200); // 반경 (m) - 실제 적용된 값
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
@@ -144,6 +147,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   const timePopoverRef = useRef<HTMLDivElement>(null);
   const zonePopoverRef = useRef<HTMLDivElement>(null);
   const sortPopoverRef = useRef<HTMLDivElement>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
   
   // 듀얼 슬라이더 드래그 상태
   const sliderTrackRef = useRef<HTMLDivElement>(null);
@@ -411,6 +415,15 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       }
     }
   }, [openCandidateId, isVisible, captureList, onCandidateOpened]);
+
+  // 틀림 시퀀스 시 리스트 맨 아래로 스크롤
+  useEffect(() => {
+    if (scrollToBottomTrigger !== 'wrong-button-1' || !listScrollRef.current) return;
+    const el = listScrollRef.current;
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
+  }, [scrollToBottomTrigger]);
 
   return (
     <>
@@ -746,6 +759,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             </button>
           </div>
           <div
+            ref={listScrollRef}
             className="flex-1 overflow-y-auto"
             style={{
               padding: '16px',

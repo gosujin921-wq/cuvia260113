@@ -16,7 +16,7 @@ export default defineConfig({
       overlay: true, // HMR 에러 발생 시 오버레이 표시 (문제 진단용)
     },
     watch: {
-      usePolling: false, // 필요 시 true로 변경 (Docker/WSL 등에서 파일 감지 안 될 때)
+      usePolling: true, // macOS 등에서 파일 변경 감지 안 될 때 강제 폴링
     },
   },
   css: {

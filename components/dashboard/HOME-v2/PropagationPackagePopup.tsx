@@ -18,6 +18,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
   const [activeTab, setActiveTab] = useState<'summary' | 'preview'>('preview');
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContentRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -97,6 +98,16 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
       setEditableContent(initialContent);
     }
   }, [isOpen, initialContent]);
+
+  // 팝업이 열릴 때 0.5초 후 스크롤 영역을 맨 아래로
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setTimeout(() => {
+      const el = scrollContentRef.current;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -442,10 +453,14 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
             </div>
 
             {/* 탭 컨텐츠 */}
-            <div className="flex-1 overflow-y-auto min-h-0 p-4" style={{
-              scrollbarWidth: 'thin',
-              scrollbarColor: '#31353a #0f0f0f',
-            }}>
+            <div
+              ref={scrollContentRef}
+              className="flex-1 overflow-y-auto min-h-0 p-4"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#31353a #0f0f0f',
+              }}
+            >
               {activeTab === 'preview' ? (
                 // 전파 내용 미리보기 - 수정 가능한 텍스트 영역
                 <div className="h-full flex flex-col gap-3">
@@ -673,9 +688,6 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
             id="send-propagation-package-button"
             type="button"
             onClick={() => {
-              console.log('전파 패키지 전송 클릭');
-              console.log('선택된 아이템:', selectedItems);
-              
               setIsClosing(true);
               setTimeout(() => {
                 setIsClosing(false);

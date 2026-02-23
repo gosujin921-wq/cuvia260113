@@ -68,22 +68,21 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정 (팝업 열리면 영상 일시정지)
+  // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정
   useEffect(() => {
     if (!cctv) return;
     setVideoSrc(cctv.thumbnailUrl); // 리스트에서 할당된 비디오 사용
     setCurrentTime(0);
     setDuration(0);
-    setIsPlaying(false);
   }, [cctv?.id, cctv?.thumbnailUrl]);
 
-  // 팝업 열릴 때 비디오 일시정지 (autoPlay 방지)
+  // 팝업 열릴 때 비디오 자동 재생
   useEffect(() => {
     if (!isOpen || !cctv) return;
     const video = videoRef.current;
     if (video) {
-      video.pause();
-      setIsPlaying(false);
+      video.play().catch(() => {});
+      setIsPlaying(true);
     }
   }, [isOpen, cctv?.id]);
 
@@ -350,6 +349,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                 className="w-full h-full object-contain"
                 muted
                 playsInline
+                autoPlay
                 aria-label="CCTV 영상"
               />
               

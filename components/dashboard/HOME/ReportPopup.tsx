@@ -27,9 +27,11 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     setImageError(false);
+    setImageLoaded(false);
   }, [event?.id]);
 
   useEffect(() => {
@@ -99,7 +101,9 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   <img
                     src={REPORT_POPUP_IMAGE_SRC}
                     alt="신고 대상 인물"
-                    className="w-full h-full object-cover object-center"
+                    className={`w-full h-full object-cover object-center transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    fetchPriority="high"
+                    onLoad={() => setImageLoaded(true)}
                     onError={() => setImageError(true)}
                   />
                 )}

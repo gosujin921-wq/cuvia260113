@@ -26,7 +26,6 @@ export interface PredictedCCTVItem {
 // CCTV 비디오 파일 목록
 const CCTV_VIDEOS = [
   '/cctv_img/cctv1.mov',
-  '/cctv_img/cctv2.mov',
   '/cctv_img/cctv3.mov',
   '/cctv_img/cctv4.mov',
 ];

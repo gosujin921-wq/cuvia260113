@@ -28,15 +28,15 @@ interface UnityMapViewProps {
 // 사용 가능한 실제 CCTV 목록
 const initialAvailableCCTVs: RealCCTV[] = [
     { cctvId: "카메라01", cctvName: "1번 카메라", rtspURL: "/public/cctv_img/cctv1.mov" },
-    { cctvId: "카메라02", cctvName: "2번 카메라", rtspURL: "/public/cctv_img/cctv2.mov" },
+    { cctvId: "카메라02", cctvName: "2번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
     { cctvId: "카메라03", cctvName: "3번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
     { cctvId: "카메라04", cctvName: "4번 카메라", rtspURL: "/public/cctv_img/cctv4.mov" },
     { cctvId: "카메라05", cctvName: "5번 카메라", rtspURL: "/public/cctv_img/cctv1.mov" },
-    { cctvId: "카메라06", cctvName: "6번 카메라", rtspURL: "/public/cctv_img/cctv2.mov" },
+    { cctvId: "카메라06", cctvName: "6번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
     { cctvId: "카메라07", cctvName: "7번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
     { cctvId: "카메라08", cctvName: "8번 카메라", rtspURL: "/public/cctv_img/cctv4.mov" },
     { cctvId: "카메라09", cctvName: "9번 카메라", rtspURL: "/public/cctv_img/cctv1.mov" },
-    { cctvId: "카메라10", cctvName: "10번 카메라", rtspURL: "/public/cctv_img/cctv2.mov" },
+    { cctvId: "카메라10", cctvName: "10번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
     { cctvId: "카메라11", cctvName: "11번 카메라", rtspURL: "/public/cctv_img/cctv3.mov" },
 ];
 

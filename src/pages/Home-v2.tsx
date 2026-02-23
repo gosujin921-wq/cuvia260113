@@ -488,7 +488,17 @@ export default function HomeV2() {
   // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
   const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
     dispatch({ type: 'SET_MENU', payload: menuId });
-    
+
+    if (showMouseGuide) {
+      if (menuId === 'fast-search') {
+        jumpToStep('radius-chip');
+      } else if (menuId === 'object-tracking') {
+        jumpToStep('object-tracking-confirm');
+      } else if (menuId === 'capture-list') {
+        jumpToStep('capture-item-0');
+      }
+    }
+
     if (menuId === 'net-monitoring') {
       dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
     } else if (menuId === 'fast-search') {
@@ -497,7 +507,7 @@ export default function HomeV2() {
       setObjectTrackingCompleted(false);
       setVisibleTrackingPins(0);
       // 고속검색 시작 시 신고 팝업을 위한 이벤트 선택
-      const missingEvent = allConvertedEvents.find(event => 
+      const missingEvent = allConvertedEvents.find(event =>
         event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
       );
       if (missingEvent) {
@@ -517,7 +527,7 @@ export default function HomeV2() {
     } else if (menuId === 'propagation') {
       dispatch({ type: 'SHOW_PROPAGATION_LIST' });
     }
-  }, [allConvertedEvents]);
+  }, [allConvertedEvents, showMouseGuide, jumpToStep]);
 
   // 포착 아이템 추가 핸들러
   const handleAddCaptureItem = useCallback((
@@ -622,6 +632,24 @@ export default function HomeV2() {
     setShowPredictedCCTVList(false);
     setObjectTrackingCompleted(false);
     setVisibleTrackingPins(0);
+    resetGuide();
+  }, [resetGuide]);
+
+  // 완전 초기화: 시작 메시지 다이얼로그가 떠 있는 상태로 되돌림
+  const handleBackToInitial = useCallback(() => {
+    dispatch({ type: 'CLEAR_ALL' });
+    setShowStartMessage(true);
+    setCaptureItems([]);
+    setPinOffset({ x: 0, y: 0 });
+    setExcludedAttributes([]);
+    setExcludedImageIds([]);
+    setFlyToLocation(null);
+    setShowPredictedCCTVList(false);
+    setObjectTrackingCompleted(false);
+    setVisibleTrackingPins(0);
+    setReSearchResult(null);
+    setCaptureDetailCloseCount(0);
+    setOpenCandidateId(null);
     resetGuide();
   }, [resetGuide]);
 
@@ -998,7 +1026,7 @@ export default function HomeV2() {
       <PropagationListPanel
         isVisible={uiState.showPropagationList}
         onClose={() => dispatch({ type: 'HIDE_PROPAGATION_LIST' })}
-        onBackToInitial={() => dispatch({ type: 'CLEAR_ALL' })}
+        onBackToInitial={handleBackToInitial}
         captureItems={captureItems}
       />
 

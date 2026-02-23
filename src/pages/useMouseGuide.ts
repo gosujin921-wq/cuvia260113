@@ -186,14 +186,14 @@ const GUIDE_STEPS: GuideStep[] = [
   {
     id: 'capture-checkbox-0',
     targetId: 'capture-checkbox-0',
-    message: '별빛A-638을 선택하세요.',
+    message: '객체추적 썸네일을 선택하세요.',
     type: 'mouse',
     delayAfterClick: 1000,
   },
   {
     id: 'capture-checkbox-1',
     targetId: 'capture-checkbox-1',
-    message: '별빛A-604를 선택하세요.',
+    message: '고속검색 클립을 선택하세요.',
     type: 'mouse',
     delayAfterClick: 1000,
   },

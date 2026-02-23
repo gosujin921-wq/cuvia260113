@@ -586,7 +586,6 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('[CaptureListPanel] 전파 패키지 생성 버튼 클릭');
                   setShowPropagationPopup(true);
                 }}
                 className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-white bg-blue-500 hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/20 border border-blue-400/50"

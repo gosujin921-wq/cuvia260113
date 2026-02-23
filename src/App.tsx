@@ -11,7 +11,7 @@ import CuviaLinkPage from './pages/cuvia-link';
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/v2" replace />} />
+      <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="/home" element={<Home />} />
       <Route path="/v2" element={<HomeV2 />} />
       <Route path="/v3" element={<HomeV3 />} />
