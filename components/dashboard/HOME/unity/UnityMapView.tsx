@@ -51,9 +51,10 @@ const initialBridgeSlots: BridgeSlot[] = [
     { bridgeId: "Bullet-2", assignedCctvId: "카메라07", isGrouped: false, isMain: true },
     { bridgeId: "Bullet-3", assignedCctvId: "카메라08", isGrouped: false, isMain: false },
     { bridgeId: "Bullet-4", assignedCctvId: "카메라09", isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-6", assignedCctvId: "카메라10", isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-7", assignedCctvId: "카메라11", isGrouped: false, isMain: false },
-    { bridgeId: "Bullet-8", assignedCctvId: "카메라12", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-5", assignedCctvId: "카메라10", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-6", assignedCctvId: "카메라11", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-7", assignedCctvId: "카메라12", isGrouped: false, isMain: false },
+    { bridgeId: "Bullet-8", assignedCctvId: "카메라13", isGrouped: false, isMain: false },
 ];
 
 const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, cctvIndex, onMapClick, onAiDetectionClose, hideControls = false, leftPanelWidth = 480 }: UnityMapViewProps) => {
