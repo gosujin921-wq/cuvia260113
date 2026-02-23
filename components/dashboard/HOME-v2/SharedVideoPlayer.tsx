@@ -39,7 +39,7 @@ const SharedVideoPlayer: React.FC<SharedVideoPlayerProps> = ({
       muted
       playsInline
       autoPlay
-      preload="auto"
+      preload="metadata"
       aria-label={ariaLabel}
       onEnded={onEnded}
     />
