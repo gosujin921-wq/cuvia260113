@@ -97,6 +97,16 @@ const TRACKING_UPDATE_MSG_CONTENT = {
   btnPropagate: '▶ 관할 경찰서에 전파하기',
 };
 
+/** 추적 갱신 메시지 타이핑 애니메이션용 전체 텍스트 */
+const TRACKING_UPDATE_FULL_TEXT = [
+  TRACKING_UPDATE_MSG_CONTENT.title,
+  TRACKING_UPDATE_MSG_CONTENT.camera,
+  TRACKING_UPDATE_MSG_CONTENT.match,
+  '"부분 번호판 후보: 12 324 (가시성: 높음)"',
+  TRACKING_UPDATE_MSG_CONTENT.direction,
+  TRACKING_UPDATE_MSG_CONTENT.body,
+].join('\n');
+
 const MessageList: React.FC<MessageListProps> = ({
   messages,
   isResponding,
@@ -328,20 +338,32 @@ const MessageList: React.FC<MessageListProps> = ({
                     <div className={`${isExpanded ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200' : 'rounded-xl border border-gray-200 bg-gray-50 p-4'}`} style={isExpanded ? { borderWidth: '1px' } : {}}>
                       {message.id === 'tracking-update-msg' ? (
                         <div className="space-y-3">
-                          <p className="text-sm font-semibold text-gray-900">{TRACKING_UPDATE_MSG_CONTENT.title}</p>
-                          <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.camera}</p>
-                          <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.match}</p>
-                          <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: TRACKING_UPDATE_MSG_CONTENT.plate.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<strong>$1</strong>') }} />
-                          <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.direction}</p>
-                          <p className="text-sm leading-relaxed text-gray-700">{TRACKING_UPDATE_MSG_CONTENT.body}</p>
-                          <button
-                            type="button"
-                            className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors w-full"
-                            aria-label="관할 경찰서에 전파하기"
-                          >
-                            {TRACKING_UPDATE_MSG_CONTENT.btnPropagate}
-                          </button>
-                          <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                          {message.isTyping ? (
+                            <>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                                {message.displayedContent ?? ''}
+                                <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse align-middle" aria-hidden="true" />
+                              </p>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm font-semibold text-gray-900">{TRACKING_UPDATE_MSG_CONTENT.title}</p>
+                              <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.camera}</p>
+                              <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.match}</p>
+                              <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: TRACKING_UPDATE_MSG_CONTENT.plate.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<strong>$1</strong>') }} />
+                              <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.direction}</p>
+                              <p className="text-sm leading-relaxed text-gray-700">{TRACKING_UPDATE_MSG_CONTENT.body}</p>
+                              <button
+                                type="button"
+                                className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors w-full"
+                                aria-label="관할 경찰서에 전파하기"
+                              >
+                                {TRACKING_UPDATE_MSG_CONTENT.btnPropagate}
+                              </button>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          )}
                         </div>
                       ) : message.id === 'welcome-msg' ? (
                         <div className="space-y-3">
@@ -970,27 +992,64 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     };
   }, [showFastSearchProgress]);
 
-  // 2키: 추적 갱신 메시지 추가 (차량 재포착, 번호판 후보)
+  // 2키: 추적 갱신 메시지 추가 (차량 재포착, 번호판 후보) + 타이핑 애니메이션
   const lastShowFeaturedLayoutRef = useRef<boolean>(false);
+  const trackingUpdateTypingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (showFeaturedLayout && !lastShowFeaturedLayoutRef.current) {
       lastShowFeaturedLayoutRef.current = true;
       const trackingUpdateMessage: ChatMessage = {
         id: 'tracking-update-msg',
         role: 'assistant',
-        content: '',
+        content: TRACKING_UPDATE_FULL_TEXT,
         timestamp: new Date().toLocaleTimeString('ko-KR', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
         }),
         type: 'normal',
+        isTyping: true,
+        displayedContent: '',
       };
       setMessages((prev) => [...prev, trackingUpdateMessage]);
+
+      let currentIndex = 0;
+      trackingUpdateTypingRef.current = setInterval(() => {
+        currentIndex++;
+
+        if (currentIndex <= TRACKING_UPDATE_FULL_TEXT.length) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === 'tracking-update-msg'
+                ? { ...msg, displayedContent: TRACKING_UPDATE_FULL_TEXT.substring(0, currentIndex) }
+                : msg
+            )
+          );
+        } else {
+          if (trackingUpdateTypingRef.current) {
+            clearInterval(trackingUpdateTypingRef.current);
+            trackingUpdateTypingRef.current = null;
+          }
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === 'tracking-update-msg'
+                ? { ...msg, isTyping: false, displayedContent: TRACKING_UPDATE_FULL_TEXT }
+                : msg
+            )
+          );
+        }
+      }, 25);
     }
     if (!showFeaturedLayout) {
       lastShowFeaturedLayoutRef.current = false;
     }
+
+    return () => {
+      if (trackingUpdateTypingRef.current) {
+        clearInterval(trackingUpdateTypingRef.current);
+        trackingUpdateTypingRef.current = null;
+      }
+    };
   }, [showFeaturedLayout]);
 
   // 객체 추적 완료 시 결과 메시지 추가 (지도 2D 전환 완료 시)
@@ -1481,11 +1540,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     <>
       {isExpanded ? (
         <div
-          className="fixed inset-y-0 right-0 z-[2000] transition-transform duration-300 ease-out"
+          className="fixed inset-y-0 right-0 transition-all duration-300 ease-out"
           onClick={(e) => e.stopPropagation()}
           style={{
-            zIndex: 2000,
+            zIndex: 90,
             transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+            opacity: slideEntered ? 1 : 0,
           }}
         >
           <div
@@ -1535,20 +1595,24 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         </div>
       ) : (
         <div
-          className="absolute z-[1000]"
+          className="absolute"
           style={
             positionOverride
               ? {
                   position: 'absolute' as const,
                   ...positionOverride,
+                  zIndex: 90,
                   transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
-                  transition: 'transform 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
+                  opacity: slideEntered ? 1 : 0,
+                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
                 }
               : {
                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
                   right: `${padding}px`,
+                  zIndex: 90,
                   transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
-                  transition: 'transform 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
+                  opacity: slideEntered ? 1 : 0,
+                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
                 }
           }
           onClick={(e) => e.stopPropagation()}

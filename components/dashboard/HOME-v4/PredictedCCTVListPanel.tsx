@@ -27,6 +27,9 @@ export interface PredictedCCTVItem {
   direction: string; // 예: "북동쪽", "남쪽"
   thumbnailUrl: string;
   posterUrl?: string;
+  /** 2키 눌렀을 때 크게 나오는 영상 (리스트 썸네일과 별도) */
+  featuredThumbnailUrl?: string;
+  featuredPosterUrl?: string;
 }
 
 // Mock 데이터 - 4번 핀(은하동 125-32) 근처 CCTV 10개
@@ -83,8 +86,10 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:15',
     confidence: 80,
     direction: '남동쪽',
-    thumbnailUrl: '/hijacking/cnc_04.mp4',
-    posterUrl: '/hijacking/cnc_04.png',
+    thumbnailUrl: '/fastsearch_img/qs_img_59_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_59_y.png',
+    featuredThumbnailUrl: '/hijacking/cnc_04_1.mp4',
+    featuredPosterUrl: '/hijacking/cnc_04.png',
   },
   {
     id: '6',
@@ -149,9 +154,20 @@ const ListVideo: React.FC<{ src: string; posterUrl?: string; isPaused: boolean }
   React.useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (isPaused) v.pause();
-    else v.play().catch(() => {});
-  }, [isPaused]);
+    if (isPaused) {
+      v.pause();
+      return;
+    }
+    const play = () => v.play().catch(() => {});
+    if (v.readyState >= 2) {
+      play();
+      return;
+    }
+    v.load();
+    const onLoaded = () => play();
+    v.addEventListener('loadeddata', onLoaded, { once: true });
+    return () => v.removeEventListener('loadeddata', onLoaded);
+  }, [isPaused, src]);
   if (!src?.trim()) return <div className="absolute inset-0 bg-black" aria-hidden />;
   return (
     <video
@@ -234,6 +250,10 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   }, [onRadiusChange, tempRadius]);
 
   const isPopupOpen = selectedCCTV !== null;
+  /** 2키 눌렀을 때 featured 별빛A-655(cnc_04_1.mp4)만 자동 재생 */
+  const shouldPlayFeaturedVideo = isVisible && !isPopupOpen && showFeaturedLayout;
+  /** 리스트 그리드 영상들: 패널 보일 때 재생 (featured 제외) */
+  const shouldPlayListVideo = isVisible && !isPopupOpen;
 
   // 전파 초안 요청 시 별빛A-655 캡처 애니메이션 실행
   useEffect(() => {
@@ -258,7 +278,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
       endY = menuRect.top + menuRect.height / 2;
     }
 
-    const imageData = featuredItem.posterUrl || featuredItem.thumbnailUrl || '';
+    const imageData = featuredItem.featuredPosterUrl ?? featuredItem.posterUrl ?? featuredItem.featuredThumbnailUrl ?? featuredItem.thumbnailUrl ?? '';
 
     setIsCapturingCctvId(FEATURED_CCTV_ID);
     requestAnimationFrame(() => {
@@ -274,7 +294,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
         featuredItem.confidence,
         imageData,
         FEATURED_ANALYSIS,
-        featuredItem.thumbnailUrl,
+        featuredItem.featuredThumbnailUrl ?? featuredItem.thumbnailUrl,
         { trackingPinNumber: 4 }
       );
     }, 300);
@@ -474,7 +494,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                             }`}
                           >
                             <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
-                              <ListVideo src={featuredItem.thumbnailUrl} posterUrl={featuredItem.posterUrl} isPaused={isPopupOpen} />
+                              <ListVideo src={featuredItem.featuredThumbnailUrl ?? featuredItem.thumbnailUrl} posterUrl={featuredItem.featuredPosterUrl ?? featuredItem.posterUrl} isPaused={!shouldPlayFeaturedVideo} />
                               {isCapturingCctvId === featuredItem.id && (
                                 <div className="absolute inset-0 pointer-events-none z-20">
                                   <div className="absolute inset-0 bg-white animate-capture-flash" />
@@ -516,7 +536,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                               }`}
                             >
                               <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
-                                <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={isPopupOpen} />
+                                <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={!shouldPlayListVideo} />
                                 <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
                                   <div className="text-[10px] text-gray-200 truncate" title={item.location}>
                                     {item.location}
@@ -553,7 +573,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                       }`}
                     >
                       <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
-                        <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={isPopupOpen} />
+                        <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={!shouldPlayListVideo} />
                         {isCapturingCctvId === item.id && (
                           <div className="absolute inset-0 pointer-events-none z-20">
                             <div className="absolute inset-0 bg-white animate-capture-flash" />
@@ -593,6 +613,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
         isOpen={selectedCCTV !== null}
         onClose={() => setSelectedCCTV(null)}
         cctv={selectedCCTV}
+        showFeaturedLayout={showFeaturedLayout}
         onAddCapture={onAddCapture}
       />
 

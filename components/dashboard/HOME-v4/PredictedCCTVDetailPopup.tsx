@@ -13,12 +13,16 @@ export interface PredictedCCTVItem {
   confidence: number;
   direction: string;
   thumbnailUrl: string;
+  /** 2키 눌렀을 때 크게 나오는 영상 (리스트 썸네일과 별도) */
+  featuredThumbnailUrl?: string;
 }
 
 interface PredictedCCTVDetailPopupProps {
   isOpen: boolean;
   onClose: () => void;
   cctv: PredictedCCTVItem | null;
+  /** 2키 눌렀을 때 별빛A-655 상단 1x1 레이아웃 상태면 featured 영상 사용 */
+  showFeaturedLayout?: boolean;
   onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string) => void;
 }
 
@@ -26,6 +30,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   isOpen,
   onClose,
   cctv,
+  showFeaturedLayout = false,
   onAddCapture,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -68,13 +73,16 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정
+  // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정 (2키 featured 시 featuredThumbnailUrl 사용)
   useEffect(() => {
     if (!cctv) return;
-    setVideoSrc(cctv.thumbnailUrl); // 리스트에서 할당된 비디오 사용
+    const src = showFeaturedLayout && cctv.featuredThumbnailUrl
+      ? cctv.featuredThumbnailUrl
+      : cctv.thumbnailUrl;
+    setVideoSrc(src);
     setCurrentTime(0);
     setDuration(0);
-  }, [cctv?.id, cctv?.thumbnailUrl]);
+  }, [cctv?.id, cctv?.thumbnailUrl, cctv?.featuredThumbnailUrl, showFeaturedLayout]);
 
   // 팝업 열릴 때 비디오 자동 재생
   useEffect(() => {

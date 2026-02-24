@@ -693,6 +693,8 @@ export default function HomeV2() {
   const AGENT_TOP_GAP = 16;
   const AGENT_BOTTOM_GAP = 16;
   const REPORT_POPUP_GAP = 24;
+  /** 초기화면 Agent Hub 플로팅 버튼: 패널 위 30px + 버튼 높이 56px + 여백 8px */
+  const AGENT_FLOATING_BUTTON_RESERVE = 198 + 30 + 56 + 8;
   const reportPopupVisible = !!(uiState.selectedEventId && !uiState.showPropagationList && (uiState.showObjectTracking || isObjectTrackingTransitioning));
   const reportHeightForAgent = reportPopupHeight > 0 ? reportPopupHeight : 180; // 전환 시 폴백
   const agentTopPx = reportPopupVisible ? 20 + reportHeightForAgent + REPORT_POPUP_GAP : AGENT_TOP_GAP;
@@ -703,7 +705,7 @@ export default function HomeV2() {
       const topPx = reportPopupVisible ? 20 + (reportPopupHeight > 0 ? reportPopupHeight : 180) + REPORT_POPUP_GAP : AGENT_TOP_GAP;
       const reserveBottom = (uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList || isObjectTrackingTransitioning) ? 24 : 24 + 56 + 8;
       const height = bottomPanelVisible
-        ? window.innerHeight - BOTTOM_PANEL_HEIGHT - AGENT_BOTTOM_GAP - topPx
+        ? window.innerHeight - AGENT_FLOATING_BUTTON_RESERVE - topPx
         : window.innerHeight - topPx - reserveBottom;
       setAgentPopupMaxHeight(Math.max(200, height));
     };
@@ -737,9 +739,8 @@ export default function HomeV2() {
 
   // 키보드 단축키 핸들러 (시나리오 프로토타입용)
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
-    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-      return;
-    }
+    const isInputFocused = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+    if (isInputFocused && e.key !== '2') return;
     
     const missingEvent = allConvertedEvents.find(event => 
       event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
