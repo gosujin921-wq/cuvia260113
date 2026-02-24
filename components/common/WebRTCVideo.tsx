@@ -16,6 +16,7 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
     const wsRef = useRef<WebSocket | null>(null);
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const isConnectingRef = useRef(false);
+    const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -80,7 +81,6 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
             return;
         }
 
-        console.log("[WebRTC] ICE 서버 목록:", currentIceServers);
         const pc = new RTCPeerConnection({ iceServers: currentIceServers });
         pcRef.current = pc;
 
@@ -96,6 +96,14 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
                 setIsConnected(true);
                 setConnectionError(null);
                 onConnectionChangeRef.current?.(true);
+
+                // 기존 ping interval 정리 후 새로 시작
+                if (pingIntervalRef.current) {
+                    clearInterval(pingIntervalRef.current);
+                }
+                pingIntervalRef.current = setInterval(() => {
+                    sendMessage({ id: "ping" });
+                }, 5000);
             }
         };
 
@@ -131,6 +139,12 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
 
     const stopStreaming = useCallback(() => {
         isConnectingRef.current = false;
+
+        // Ping interval 정리
+        if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+            pingIntervalRef.current = null;
+        }
 
         if (pcRef.current) {
             pcRef.current.close();
@@ -195,6 +209,9 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
                         console.error("[WebRTC] 서버 에러:", parsedMessage.message);
                         setConnectionError(parsedMessage.message);
                         onErrorRef.current?.(parsedMessage.message);
+                        break;
+                    case "pong":
+                        // ping 응답 무시
                         break;
                     default:
                         console.warn("[WebRTC] 알 수 없는 메시지:", parsedMessage);
