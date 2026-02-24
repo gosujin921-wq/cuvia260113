@@ -27,21 +27,32 @@ interface BottomPanelCCTVItemProps {
 const BottomPanelCCTVItem = ({ cctv, width, height, mediaAgentUrl, iceServerList }: BottomPanelCCTVItemProps) => {
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const [retryKey, setRetryKey] = useState(0);
 
     const handleConnectionChange = (connected: boolean) => {
         setIsConnected(connected);
         if (connected) {
             setConnectionError(null);
+            setRetryCount(0);
         }
     };
 
     const handleError = (error: string) => {
-        setConnectionError(error);
+        if (retryCount < 1) {
+            console.log(`[CCTV] ${cctv.camera_name} 연결 실패, 재시도 중... (${retryCount + 1}/1)`);
+            setRetryCount((prev) => prev + 1);
+            setTimeout(() => {
+                setRetryKey((prev) => prev + 1);
+            }, 1000);
+        } else {
+            setConnectionError(error);
+        }
     };
 
     return (
         <div className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0" style={{ width: `${width}px`, height: `${height}px` }}>
-            <WebRTCVideo iceServerList={iceServerList ?? []} mediaAgentUrl={mediaAgentUrl} rtspUrl={cctv.rtsp_url} className="w-full h-full" autoConnect={true} onConnectionChange={handleConnectionChange} onError={handleError} />
+            <WebRTCVideo key={retryKey} iceServerList={iceServerList ?? []} mediaAgentUrl={mediaAgentUrl} rtspUrl={cctv.rtsp_url} className="w-full h-full" autoConnect={true} onConnectionChange={handleConnectionChange} onError={handleError} />
             <div className="absolute top-2 left-2" style={{ zIndex: 10 }}>
                 <span className={`px-2 py-0.5 ${isConnected ? "bg-red-500/90" : connectionError ? "bg-orange-500/90" : "bg-gray-500/90"} text-white text-xs font-semibold rounded flex items-center gap-1`}>
                     {isConnected && <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>}
@@ -149,13 +160,13 @@ const UnityBottomPanel = ({ iceServerList, showCCTV, hideControls, leftPanelWidt
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [showCCTV, hideControls, windowWidth, leftPanelWidth]);
 
-    if (!showCCTV || !cctvList || cctvList.length === 0) {
+    if (!cctvList || cctvList.length === 0) {
         return null;
     }
 
     return (
         <div
-            className="absolute transition-all duration-500 ease-in-out"
+            className={`absolute transition-all duration-500 ease-in-out ${!showCCTV ? "hidden" : ""}`}
             style={{
                 left: `${leftPanelWidth + leftPanelGap}px`,
                 right: `${rightPanelWidth + rightPanelGap}px`,
