@@ -36,6 +36,8 @@ export interface UseVlmSocketReturn {
     progressMessage: string;
     /** 진행 순서 (IN_PROGRESS 상태) */
     progressSequence: number;
+    /** 처리 시간 */
+    processingTime: number;
     /** 완료된 분석 결과 (COMPLETED 상태) */
     result: {
         oneLine: string;
@@ -67,6 +69,7 @@ export const useVlmSocket = (options: UseVlmSocketOptions = {}): UseVlmSocketRet
     const [progressMessage, setProgressMessage] = useState("");
     const [progressSequence, setProgressSequence] = useState(0);
     const [result, setResult] = useState<UseVlmSocketReturn["result"]>(null);
+    const [processingTime, setProcessingTime] = useState(0);
 
     const socketRef = useRef<VlmSocket | null>(null);
     const isInitializedRef = useRef(false);
@@ -92,9 +95,10 @@ export const useVlmSocket = (options: UseVlmSocketOptions = {}): UseVlmSocketRet
                 setProgressMessage("");
                 setProgressSequence(0);
             },
-            onProgress: (_id, sequence, message) => {
+            onProgress: (_id, sequence, message, time) => {
                 setProgressSequence(sequence);
                 setProgressMessage(message);
+                setProcessingTime(time);
             },
             onCompleted: (_id, data) => {
                 setResult(data);
@@ -118,7 +122,7 @@ export const useVlmSocket = (options: UseVlmSocketOptions = {}): UseVlmSocketRet
             socketRef.current = null;
             isInitializedRef.current = false;
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // 빈 의존성 배열 - 마운트 시 한 번만 실행 (의도적으로 초기 옵션만 사용)
 
     const connect = useCallback(() => {
@@ -133,13 +137,11 @@ export const useVlmSocket = (options: UseVlmSocketOptions = {}): UseVlmSocketRet
     const subscribeToAnalysis = useCallback((eventId: number, vmsId: number, cameraId: string) => {
         const socket = socketRef.current;
         if (!socket) {
-            console.warn("[useVlmSocket] 소켓 인스턴스가 없습니다.");
             return;
         }
 
         // 연결되지 않은 상태면 먼저 연결
         if (socket.getStatus() !== "connected") {
-            console.log("[useVlmSocket] 연결 시작 후 구독 예정...");
             socket.connect();
         }
 
@@ -159,6 +161,7 @@ export const useVlmSocket = (options: UseVlmSocketOptions = {}): UseVlmSocketRet
         progressMessage,
         progressSequence,
         result,
+        processingTime,
         connect,
         disconnect,
         subscribeToAnalysis,

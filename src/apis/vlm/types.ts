@@ -27,6 +27,8 @@ export interface VlmAnalysisData {
     recommendations?: string;
     /** 원본 텍스트 */
     raw_text?: string;
+    time: number | null;
+    progress: number;
 }
 
 /** VLM 분석 결과 메시지 (WebSocket) */

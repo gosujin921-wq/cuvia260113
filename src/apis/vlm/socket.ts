@@ -11,7 +11,7 @@ export interface VlmSocketCallbacks {
     onError?: (error: string) => void;
     /** 분석 상태별 콜백 */
     onRequested?: (jobId: string) => void;
-    onProgress?: (jobId: string, sequence: number, progressMessage: string) => void;
+    onProgress?: (jobId: string, sequence: number, progressMessage: string, time: number) => void;
     onCompleted?: (jobId: string, data: { oneLine: string; summary: string; evidence: string; recommendations: string; rawText: string }) => void;
     onFailed?: (jobId: string) => void;
     onCancelled?: (jobId: string) => void;
@@ -80,7 +80,6 @@ export class VlmSocket {
                 heartbeatOutgoing: 4000,
 
                 onConnect: () => {
-                    console.log("[VlmSocket] STOMP 연결 성공");
                     this.reconnectAttempts = 0;
                     this.setStatus("connected");
 
@@ -105,7 +104,6 @@ export class VlmSocket {
                 },
 
                 onDisconnect: () => {
-                    console.log("[VlmSocket] 연결 종료");
                     this.setStatus("disconnected");
                 },
 
@@ -174,8 +172,8 @@ export class VlmSocket {
                 break;
 
             case "IN_PROGRESS":
-                console.log("[VlmSocket] 분석 진행 중:", data.sequence, data.progress_message);
-                this.options.onProgress?.(jobId, data.sequence ?? 0, data.progress_message ?? "");
+                console.log("[VlmSocket] 분석 진행 중:", data.progress, data.progress_message, data.time);
+                this.options.onProgress?.(jobId, data.progress, data.progress_message ?? "", data.time ?? 0);
                 break;
 
             case "COMPLETED":

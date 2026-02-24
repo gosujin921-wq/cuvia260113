@@ -25,8 +25,6 @@ interface ChatMessage {
     timestamp: string;
     type?: "normal" | "analyzing";
     progress?: number;
-    currentStep?: number;
-    totalSteps?: number;
     processingTime?: number;
     transmissionTime?: number;
     analysisResult?: {
@@ -70,7 +68,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     const { mutate: postVlmRequest } = usePostVlmRequest();
 
     // VLM 웹소켓 훅
-    const { analysisStatus, progressMessage, progressSequence, result: vlmResult, subscribeToAnalysis, unsubscribe: unsubscribeVlm } = useVlmSocket({ autoConnect: false });
+    const { analysisStatus, progressMessage, progressSequence, result: vlmResult, subscribeToAnalysis, unsubscribe: unsubscribeVlm, processingTime } = useVlmSocket({ autoConnect: false });
 
     // VLM 분석 상태 변경 시 메시지 업데이트 (웹소켓 콜백에서 상태 업데이트 - 의도된 패턴)
     useEffect(() => {
@@ -85,8 +83,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                         idx === prev.length - 1
                             ? {
                                   ...msg,
-                                  content: progressMessage || "비디오를 분석하고 있습니다.",
-                                  progress: progressSequence > 0 ? progressSequence / 100 : msg.progress,
+                                  content: progressMessage,
+                                  progress: progressSequence / 100,
+                                  processingTime: processingTime,
                               }
                             : msg
                     );
@@ -227,8 +226,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                 }),
                 type: "analyzing",
                 progress: 0,
-                currentStep: 1,
-                totalSteps: 4,
+                processingTime: 0,
             };
 
             setMessages((prev) => [...prev, analyzingMessage]);
@@ -309,7 +307,8 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                     <div className="mb-3">
                                                                         <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
                                                                         <p className="text-sm text-gray-700 leading-relaxed">
-                                                                            {message.content} (처리 : {message.processingTime}초, 전송 : {message.transmissionTime}초)
+                                                                            {/* 소요시간만 */}
+                                                                            {message.content} (소요시간 : {message.processingTime}초)
                                                                         </p>
                                                                     </div>
                                                                     <div className="mb-2">
@@ -322,9 +321,6 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                                 }}
                                                                             />
                                                                         </div>
-                                                                    </div>
-                                                                    <div className="text-xs text-gray-500 mt-2">
-                                                                        {message.currentStep}/{message.totalSteps}
                                                                     </div>
                                                                 </>
                                                             )}
@@ -518,7 +514,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                             <div className="mb-3">
                                                                 <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
                                                                 <p className="text-sm text-gray-700 leading-relaxed">
-                                                                    {message.content} (처리 : {message.processingTime}초, 전송 : {message.transmissionTime}초)
+                                                                    {message.content} (소요시간 : {message.processingTime}초)
                                                                 </p>
                                                             </div>
                                                             <div className="mb-2">
@@ -531,9 +527,6 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                         }}
                                                                     />
                                                                 </div>
-                                                            </div>
-                                                            <div className="text-xs text-gray-500 mt-2">
-                                                                {message.currentStep}/{message.totalSteps}
                                                             </div>
 
                                                             {/* 분석 결과 표시 (프로그래스 완료 시) */}
