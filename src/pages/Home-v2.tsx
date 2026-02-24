@@ -971,16 +971,13 @@ export default function HomeV2() {
         onListCardCountChange={setListCardCount}
         onRadiusChange={setFastSearchRadius}
         onAppliedRadiusChange={setAppliedSearchRadius}
-        showReSearchDim={false}
-        onReSearchComplete={() => {
-          dispatch({ type: 'COMPLETE_RE_SEARCH' });
-          isReSearchingRef.current = true;
-        }}
         onReSearchClick={() => {
           // 짧은 스켈레톤 표시 (0.5초)
           setShowReSearchSkeleton(true);
           setTimeout(() => {
             setShowReSearchSkeleton(false);
+            dispatch({ type: 'COMPLETE_RE_SEARCH' });
+            isReSearchingRef.current = true;
             
             // 재검색 결과를 에이전트 팝업에 표시
             setReSearchResult({

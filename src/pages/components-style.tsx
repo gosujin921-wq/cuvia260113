@@ -20,14 +20,11 @@ import {
   fontWeights,
 } from '@/components/shared/styles';
 import { BasePopup } from '@/components/shared/BasePopup';
-import { NotificationPopup } from '@/components/shared/NotificationPopup';
 import CCTVIcon from '@/components/common/CCTVIcon';
 
 export default function ComponentsStylePage() {
   const [activeSection, setActiveSection] = useState<string>('popups');
   const [isBasePopupOpen, setIsBasePopupOpen] = useState(false);
-  const [isNotificationPopupOpen, setIsNotificationPopupOpen] = useState(false);
-  const [notificationPosition, setNotificationPosition] = useState<'bottom-right' | 'center'>('bottom-right');
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -122,75 +119,6 @@ export default function ComponentsStylePage() {
                     <li>• 오버레이 클릭으로 닫기</li>
                     <li>• 헤더, 컨텐츠, 푸터 구조</li>
                     <li>• maxWidth, maxHeight 커스터마이징 가능</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* NotificationPopup */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4">NotificationPopup (알림 팝업)</h2>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <div className="mb-4 space-y-2">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setNotificationPosition('bottom-right');
-                          setIsNotificationPopupOpen(true);
-                        }}
-                        className={getPrimaryButtonClassName()}
-                      >
-                        우측 하단 알림 열기
-                      </button>
-                      <button
-                        onClick={() => {
-                          setNotificationPosition('center');
-                          setIsNotificationPopupOpen(true);
-                        }}
-                        className={getSecondaryButtonClassName()}
-                      >
-                        중앙 알림 열기
-                      </button>
-                    </div>
-                  </div>
-                  <div className={getCardClassName()}>
-                    <pre className="text-xs text-gray-300 overflow-x-auto">
-                      <code>{`import { NotificationPopup } from '@/components/shared/NotificationPopup';
-
-<NotificationPopup
-  isOpen={isOpen}
-  onClose={() => setIsOpen(false)}
-  title="알림 제목"
-  titleIcon={<Icon icon="mdi:bell" />}
-  position="bottom-right" // 또는 "center"
-  width="w-[420px]"
->
-  <div className="p-4">
-    알림 내용
-  </div>
-  <div className="p-4 border-t border-[#31353a]">
-    버튼 영역
-  </div>
-</NotificationPopup>`}</code>
-                    </pre>
-                    <button
-                      onClick={() => copyToClipboard(`import { NotificationPopup } from '@/components/shared/NotificationPopup';\n\n<NotificationPopup\n  isOpen={isOpen}\n  onClose={() => setIsOpen(false)}\n  title="알림 제목"\n  titleIcon={<Icon icon="mdi:bell" />}\n  position="bottom-right"\n  width="w-[420px]"\n>\n  <div className="p-4">\n    알림 내용\n  </div>\n  <div className="p-4 border-t border-[#31353a]">\n    버튼 영역\n  </div>\n</NotificationPopup>`)}
-                      className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
-                    >
-                      코드 복사
-                    </button>
-                  </div>
-                </div>
-                <div className={getCardClassName()}>
-                  <h3 className="text-sm font-semibold mb-4 text-gray-400">특징</h3>
-                  <ul className="text-sm text-gray-300 space-y-2">
-                    <li>• 알림 스타일 팝업</li>
-                    <li>• 위치: bottom-right (우측 하단) 또는 center (중앙)</li>
-                    <li>• ESC 키로 닫기 지원</li>
-                    <li>• 작은 크기 (기본: w-[420px])</li>
-                    <li>• 헤더, 컨텐츠, 푸터 구조</li>
-                    <li>• rounded-lg 스타일</li>
                   </ul>
                 </div>
               </div>
@@ -975,41 +903,6 @@ const getLevelColor = (level: 'good' | 'normal' | 'bad') => {
             </div>
           </div>
         </BasePopup>
-
-        {/* NotificationPopup 데모 */}
-        <NotificationPopup
-          isOpen={isNotificationPopupOpen}
-          onClose={() => setIsNotificationPopupOpen(false)}
-          title="알림 팝업 예시"
-          titleIcon={<Icon icon="mdi:bell-alert" className="w-5 h-5 text-yellow-400" />}
-          position={notificationPosition}
-        >
-          <div className="p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Icon icon="mdi:clock-outline" className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-300 text-sm">2024-01-15 14:30:00</span>
-            </div>
-            <div className="bg-[#0f0f0f] border border-[#31353a] rounded p-3">
-              <p className="text-gray-300 text-sm">이것은 NotificationPopup 컴포넌트의 예시입니다.</p>
-            </div>
-          </div>
-          <div className="p-4 border-t border-[#31353a]">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setIsNotificationPopupOpen(false)}
-                className={`flex-1 ${getSecondaryButtonClassName()}`}
-              >
-                닫기
-              </button>
-              <button
-                onClick={() => setIsNotificationPopupOpen(false)}
-                className={`flex-1 ${getPrimaryButtonClassName()}`}
-              >
-                확인
-              </button>
-            </div>
-          </div>
-        </NotificationPopup>
       </div>
     </div>
   );

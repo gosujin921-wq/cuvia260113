@@ -849,10 +849,12 @@ export default function HomeV2() {
         isVisible={uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
         onListCardCountChange={setListCardCount}
         onRadiusChange={setFastSearchRadius}
-        showReSearchDim={false}
-        onReSearchComplete={() => {
-          dispatch({ type: 'COMPLETE_RE_SEARCH' });
-          isReSearchingRef.current = true;
+        onReSearchClick={() => {
+          dispatch({ type: 'START_RE_SEARCH' });
+          setTimeout(() => {
+            dispatch({ type: 'COMPLETE_RE_SEARCH' });
+            isReSearchingRef.current = true;
+          }, 500);
         }}
         excludedAttributes={excludedAttributes}
         openCandidateId={openCandidateId}

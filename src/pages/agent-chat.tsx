@@ -2,9 +2,41 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useSearchParams } from 'react-router-dom';
 import { ScaledLayout } from '@/components/layouts/ScaledLayout';
-import { ChatMessage } from '@/components/event-detail/types';
-import { chatBlocks } from '@/components/event-detail/constants';
 import CCTVIcon from '@/components/common/CCTVIcon';
+
+interface ChatMessage {
+  id: string;
+  role: 'assistant' | 'user';
+  content: string;
+  timestamp: string;
+  buttons?: string[];
+  isCCTVRecommendation?: boolean;
+}
+
+const chatBlocks = [
+  {
+    title: '사건 해석',
+    icon: 'mdi:lightbulb-on',
+    content:
+      '유괴 의심 사건이 확인되었습니다. 검은 후드티 남성이 파란 가방 멘 아이를 억지로 끌고 가는 장면이 CCTV에 포착되었습니다.',
+  },
+  {
+    title: '관련 행동 분석',
+    icon: 'mdi:run-fast',
+    content:
+      '용의자가 아이를 안고 산책로 쪽으로 뛰어갔으며, 이후 차량에 아이를 태우는 장면이 세 번째 CCTV에서 포착되었습니다.',
+  },
+  {
+    title: '인물 추정',
+    icon: 'mdi:account-badge',
+    content: '용의자는 검은색 후드티 착용 남성. 아이는 파란 가방을 멘 상태로 확인됨. 차량을 이용한 도주 추정.',
+  },
+  {
+    title: '대응 추천',
+    icon: 'mdi:shield-check',
+    content: '즉시 경찰 출동이 필요합니다. 차량 도주 추적을 위해 주변 CCTV 집중 모니터링 및 전방 차단이 필요합니다.',
+  },
+];
 import { BasePopup } from '@/components/shared/BasePopup';
 
 interface ChatSession {

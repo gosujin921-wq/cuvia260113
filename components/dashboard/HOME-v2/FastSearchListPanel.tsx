@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
-import FastSearchProgress from '@/components/dashboard/HOME-v2/FastSearchProgress';
 import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v2/FastSearchCandidateDetailPopup';
 import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
 
@@ -13,11 +12,7 @@ interface FastSearchListPanelProps {
   onRadiusChange?: (radius: number) => void;
   /** 반경(m) 확정 시 부모에 전달 (CCTV 필터링용) */
   onAppliedRadiusChange?: (radius: number) => void;
-  /** 재검색 중일 때 카드 리스트 박스(상단 버튼 포함) 딤 + 프로그래스 표시 */
-  showReSearchDim?: boolean;
-  /** 재검색 프로그래스 완료 시 호출 */
-  onReSearchComplete?: () => void;
-  /** 결과 재검색 버튼 클릭 시 호출 (딤+프로그래스 트리거) */
+  /** 결과 재검색 버튼 클릭 시 호출 */
   onReSearchClick?: () => void;
   /** 에이전트 "속성 삭제"로 제외할 속성 목록. 해당 속성 이미지 카드는 리스트에서 숨김 */
   excludedAttributes?: string[];
@@ -100,8 +95,6 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   onListCardCountChange,
   onRadiusChange,
   onAppliedRadiusChange,
-  showReSearchDim = false,
-  onReSearchComplete,
   onReSearchClick,
   excludedAttributes = [],
   excludedImageIds = [],
@@ -724,22 +717,6 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             overflow: 'hidden',
           }}
         >
-          {showReSearchDim && (
-            <>
-              <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm z-10"
-                style={{ pointerEvents: 'none' }}
-                aria-hidden
-              />
-              <FastSearchProgress
-                isVisible
-                hideDim
-                titleOverride="결과를 재검색합니다."
-                inContainer
-                onComplete={onReSearchComplete}
-              />
-            </>
-          )}
           {/* 리스트 상단 고정: 결과 재검색 */}
           <div
             className="flex items-center justify-end gap-2 flex-shrink-0 px-4 py-3 border-b border-[#31353a]"
