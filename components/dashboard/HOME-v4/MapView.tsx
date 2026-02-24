@@ -453,6 +453,33 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         align-items: center;
       `;
       
+      // 1키 이벤트 핀 위 영상 (초기화면, 고속검색 모드 아닐 때만)
+      if (!showFastSearchList) {
+        const videoWrapper = document.createElement('div');
+        videoWrapper.style.cssText = `
+          width: 480px;
+          height: 270px;
+          border-radius: 6px;
+          overflow: hidden;
+          background: #0f0f0f;
+          border: 1px solid #31353a;
+          margin-bottom: 8px;
+          flex-shrink: 0;
+          position: relative;
+          z-index: 145;
+        `;
+        const videoEl = document.createElement('video');
+        videoEl.src = '/hijacking/cnc_01_1.mp4';
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+        videoEl.autoplay = true;
+        videoEl.loop = true;
+        videoEl.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+        videoEl.setAttribute('aria-label', '사건 발생 지점 영상');
+        videoWrapper.appendChild(videoEl);
+        markerContainer.appendChild(videoWrapper);
+      }
+      
       const centerWrapper = document.createElement('div');
       centerWrapper.style.cssText = `
         position: relative;
@@ -551,12 +578,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       markerEl.appendChild(iconEl);
       
       centerWrapper.appendChild(markerEl);
-      markerContainer.appendChild(centerWrapper);
       
-      // 주소 라벨
+      // 주소 라벨 (비디오와 핀 사이)
       const labelEl = document.createElement('div');
       labelEl.style.cssText = `
         margin-top: 8px;
+        margin-bottom: 8px;
         padding: 6px 8px;
         border-radius: 8px;
         background: rgba(15, 15, 15, 0.95);
@@ -569,12 +596,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         <div style="font-size: 12px; font-weight: 600; color: white;">은하동 125-46</div>
       `;
       markerContainer.appendChild(labelEl);
+      markerContainer.appendChild(centerWrapper);
       
-      // 새 마커 생성 및 추가 (pinOffset: 지도 내에서 핀 위치 오프셋, -100 = 왼쪽 100px)
+      // anchor: 'bottom' → 핀 끝이 지도 좌표에 정확히 위치 (맵에 삽입)
       const newMarker = new maplibregl.Marker({
         element: markerContainer,
-        anchor: 'center',
-        offset: [pinOffset.x, pinOffset.y]
+        anchor: 'bottom',
+        offset: [pinOffset.x, pinOffset.y],
       })
         .setLngLat(flyToLocation as [number, number])
         .addTo(map);

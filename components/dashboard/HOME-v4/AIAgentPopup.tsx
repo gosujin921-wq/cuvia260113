@@ -35,6 +35,8 @@ interface AIAgentPopupProps {
   showFeaturedLayout?: boolean;
   /** "포착된 CCTV 영상 포함해서 전파 초안 생성해줘" 입력 시 호출 - 별빛A-655 캡처 애니메이션 후 포착목록 추가 */
   onPropagationDraftRequest?: () => void;
+  /** "사건 영상 바로 보기" 버튼 클릭 시 호출 - 고속검색 팝업 표시 */
+  onVideoView?: () => void;
 }
 
 interface ChatMessage {
@@ -590,6 +592,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   captureNotificationMessage = '',
   showFeaturedLayout = false,
   onPropagationDraftRequest,
+  onVideoView,
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -1572,7 +1575,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   cameraCount={cameraCount}
                   isExpanded={true}
                   onObjectTrackingStart={onObjectTrackingStart}
-                  onVideoView={undefined}
+                  onVideoView={onVideoView}
                 />
               </div>
 
@@ -1641,7 +1644,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   cameraCount={cameraCount}
                   isExpanded={false}
                   onObjectTrackingStart={onObjectTrackingStart}
-                  onVideoView={undefined}
+                  onVideoView={onVideoView}
                 />
               </div>
 

@@ -9,6 +9,8 @@ import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME-v4/ReportPopup';
 import FastSearchListPanel from '@/components/dashboard/HOME-v4/FastSearchListPanel';
+import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v4/FastSearchCandidateDetailPopup';
+import { getCctvNameForCaptureItem, getLocationForCaptureItem, getConfidenceForCaptureItem } from '@/lib/fast-search-image-attributes';
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v4/PredictedCCTVListPanel';
 import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v4/CaptureListPanel';
 import PropagationListPanel from '@/components/dashboard/HOME-v4/PropagationListPanel';
@@ -300,6 +302,7 @@ export default function HomeV2() {
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
   const [triggerCaptureForCctvId, setTriggerCaptureForCctvId] = useState<string | null>(null); // 전파 초안 요청 시 별빛A-655 캡처 트리거
+  const [showFastSearchPopupOverlay, setShowFastSearchPopupOverlay] = useState<boolean>(false); // 사건 영상 바로 보기 시 딤+고속검색 팝업
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -751,7 +754,7 @@ export default function HomeV2() {
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SHOW_AGENT_POPUP' });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-      setPinOffset({ x: -100, y: 0 });
+      setPinOffset({ x: -150, y: 0 });
       setFlyToLocation([126.783853180335, 37.5049838114765]);
     } else if (e.key === '2') {
       setShowPredictedCCTVList(true);
@@ -905,7 +908,23 @@ export default function HomeV2() {
         </div>
       )}
 
-      {/* FastSearchListPanel */}
+      {/* 고속검색 팝업 (사건 영상 바로 보기 클릭 시) - 딤 + 후보 상세 팝업 */}
+      <FastSearchCandidateDetailPopup
+        isOpen={showFastSearchPopupOverlay}
+        onClose={() => setShowFastSearchPopupOverlay(false)}
+        videoUrlOverride="/hijacking/cnc_01_1.mp4"
+        candidate={showFastSearchPopupOverlay ? {
+          id: '5',
+          cctvId: getCctvNameForCaptureItem({ id: '5' }),
+          cctvName: getCctvNameForCaptureItem({ id: '5' }),
+          timestamp: '10:33:40',
+          confidence: getConfidenceForCaptureItem({ id: '5' }),
+          location: getLocationForCaptureItem({ id: '5' }),
+        } : null}
+        onAddCapture={handleAddCaptureItem}
+      />
+
+      {/* FastSearchListPanel (고속검색 화면 진입 시) */}
       <FastSearchListPanel
         isVisible={uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
         onListCardCountChange={setListCardCount}
@@ -1040,6 +1059,7 @@ export default function HomeV2() {
               setTriggerCaptureForCctvId('5');
               setTimeout(() => setTriggerCaptureForCctvId(null), 1500);
             }}
+            onVideoView={() => setShowFastSearchPopupOverlay(true)}
             showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });

@@ -26,6 +26,8 @@ interface FastSearchCandidateDetailPopupProps {
   onClose: () => void;
   candidate: CandidateCard | null;
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string, options?: { hideOverlayWithPopup?: boolean }) => void;
+  /** 영상 경로 오버라이드 (사건 영상 바로 보기 등) */
+  videoUrlOverride?: string;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
@@ -33,6 +35,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   onClose,
   candidate,
   onAddCapture,
+  videoUrlOverride,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -512,7 +515,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const timeRange = `${candidate.timestamp} ~ ${timeEnd}`;
   
   const videoPath = getVideoPathForImageId(imageId);
-  const videoSrc = videoPath || getRandomCCTVVideo(candidate.cctvId);
+  const videoSrc = videoUrlOverride ?? (videoPath || getRandomCCTVVideo(candidate.cctvId));
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
