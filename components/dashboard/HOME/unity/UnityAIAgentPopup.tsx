@@ -29,19 +29,27 @@ interface ChatMessage {
     transmissionTime?: number;
     analysisResult?: {
         conclusion: string;
-        summary: {
-            time: string;
-            location: string;
-            personnel: string;
-            status: string;
-            riskLevel: string;
-        };
+        summary: string;
         evidence: string[];
         recommendations: string[];
     };
 }
 
 const AGENT_GRADIENT = "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)";
+
+/** "], [" 구분자로 묶인 단일 문자열을 개별 권장사항 배열로 변환 */
+const parseRecommendations = (value: string | string[] | null | undefined): string[] => {
+    if (!value) return [];
+
+    // 이미 배열이면 그대로 반환 (API 스펙 변경 대비)
+    if (Array.isArray(value)) return value;
+
+    // 문자열이지만 빈 값이면 []
+    if (typeof value !== "string" || value.trim() === "") return [];
+
+    const matches = value.match(/\[(.*?)\]/g);
+    return matches ? matches.map((v) => v.replace(/[\[\]]/g, "").trim()) : [];
+};
 
 const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo }) => {
     const [chatInput, setChatInput] = useState("네, 분석해 주세요.");
@@ -105,15 +113,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                   progress: 1,
                                   analysisResult: {
                                       conclusion: vlmResult.oneLine || "",
-                                      summary: {
-                                          time: new Date().toLocaleString("ko-KR"),
-                                          location: vlmRequestInfo?.camera_id || "",
-                                          personnel: "-",
-                                          status: "분석 완료",
-                                          riskLevel: "-",
-                                      },
+                                      summary: vlmResult.summary || "",
                                       evidence: vlmResult.evidence ? [vlmResult.evidence] : [],
-                                      recommendations: vlmResult.recommendations ? [vlmResult.recommendations] : [],
+                                      recommendations: parseRecommendations(vlmResult.recommendations),
                                   },
                               }
                             : msg
@@ -209,9 +211,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
         // Unity 모드에서는 VLM API 호출 및 웹소켓 구독
         if (isUnityMode && isPositiveResponse(text)) {
             const vlmRequest: VlmRequest = {
-                event_id: vlmRequestInfo?.event_id ?? 0,
-                vms_id: vlmRequestInfo?.vms_id ?? 0,
-                camera_id: vlmRequestInfo?.camera_id ?? "",
+                "event_id": 2095,
+                "vms_id": 12,
+                "camera_id": "2",
             };
 
             // 분석 중 메시지 추가
@@ -344,21 +346,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 발생 시각:</span> {message.analysisResult.summary.time}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 위치/카메라:</span> {message.analysisResult.summary.location}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 관여 인원(추정):</span> {message.analysisResult.summary.personnel}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 진행 상태:</span> {message.analysisResult.summary.status}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 위험도:</span> <span dangerouslySetInnerHTML={{ __html: message.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
-                                                                            </div>
+                                                                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{message.analysisResult.summary}</p>
                                                                         </div>
                                                                     </div>
 
@@ -368,14 +356,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-600" />
                                                                             <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
                                                                         </div>
-                                                                        <ul className="space-y-1.5">
-                                                                            {message.analysisResult.evidence.map((item, idx) => (
-                                                                                <li key={idx} className="text-gray-700 text-sm leading-relaxed flex items-start">
-                                                                                    <span className="text-gray-400 mr-2">-</span>
-                                                                                    <span>{item}</span>
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
+                                                                        <div className="space-y-1.5 text-sm">
+                                                                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{message.analysisResult.evidence}</p>
+                                                                        </div>
                                                                     </div>
 
                                                                     {/* 대응 추천 (퀵 버튼) */}
@@ -472,7 +455,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                         }}
                                         rows={1}
                                     />
-                                    <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || !isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 self-center" style={{ background: AGENT_GRADIENT }} aria-label="전송">
+                                    <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 self-center" style={{ background: AGENT_GRADIENT }} aria-label="전송">
                                         <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
                                     </button>
                                 </div>
@@ -548,21 +531,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 발생 시각:</span> {message.analysisResult.summary.time}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 위치/카메라:</span> {message.analysisResult.summary.location}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 관여 인원(추정):</span> {message.analysisResult.summary.personnel}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 진행 상태:</span> {message.analysisResult.summary.status}
-                                                                            </div>
-                                                                            <div className="text-gray-700">
-                                                                                <span className="text-gray-500">- 위험도:</span> <span dangerouslySetInnerHTML={{ __html: message.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
-                                                                            </div>
+                                                                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{message.analysisResult.summary}</p>
                                                                         </div>
                                                                     </div>
 
@@ -679,7 +648,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                     }}
                                     rows={1}
                                 />
-                                <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || !isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95" style={{ background: AGENT_GRADIENT }} aria-label="전송">
+                                <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95" style={{ background: AGENT_GRADIENT }} aria-label="전송">
                                     <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
                                 </button>
                             </div>
