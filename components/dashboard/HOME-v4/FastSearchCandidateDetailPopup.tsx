@@ -28,6 +28,19 @@ interface FastSearchCandidateDetailPopupProps {
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string, options?: { hideOverlayWithPopup?: boolean }) => void;
   /** 영상 경로 오버라이드 (사건 영상 바로 보기 등) */
   videoUrlOverride?: string;
+  /** 관찰 요약 오버라이드 (사건 영상 바로 보기용) */
+  observationSummaryOverride?: string;
+  /** 시간 기반 관찰 기록 오버라이드 (사건 영상 바로 보기용) */
+  timelineOverride?: Array<{ time: string; label: string; remarks?: string; seconds: number; endSeconds?: number }>;
+  /** 후보 메타 정보 오버라이드 - 인물/차량별 상세 (사건 영상 바로 보기용) */
+  metaDetailOverride?: Array<{
+    title: string;
+    detectedObject: string;
+    mainAttributes: string;
+    behavior: string;
+    exitDirection: string;
+    icon?: string;
+  }>;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
@@ -36,6 +49,9 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   candidate,
   onAddCapture,
   videoUrlOverride,
+  observationSummaryOverride,
+  timelineOverride,
+  metaDetailOverride,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -511,6 +527,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     cameraId: candidate.cctvId,
     score: candidate.confidence,
   });
+  const displayTimeline = videoUrlOverride && timelineOverride ? timelineOverride : detail.timeline;
   const timeEnd = addMinutesToTime(candidate.timestamp, 6);
   const timeRange = `${candidate.timestamp} ~ ${timeEnd}`;
   
@@ -771,7 +788,11 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                 <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
               </div>
-              <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {videoUrlOverride && observationSummaryOverride
+                  ? observationSummaryOverride
+                  : detail.observationSummary}
+              </p>
             </div>
           </div>
 
@@ -835,10 +856,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                   }}
                 />
                 
-                {detail.timeline.map((entry, idx) => {
-                  // 현재 재생 중인 구간인지 확인
+                {displayTimeline.map((entry, idx) => {
+                  const endSec = 'endSeconds' in entry ? (entry as { endSeconds?: number }).endSeconds : undefined;
                   const isActive = currentTime >= entry.seconds && 
-                    (idx === detail.timeline.length - 1 || currentTime < detail.timeline[idx + 1].seconds);
+                    (endSec != null ? currentTime < endSec : (idx === displayTimeline.length - 1 || currentTime < displayTimeline[idx + 1].seconds));
                   
                   return (
                     <li key={idx} className="relative">
@@ -868,6 +889,11 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                           <span className="text-sm text-gray-300 group-hover:text-white">
                             {entry.label}
                           </span>
+                          {'remarks' in entry && entry.remarks && (
+                            <span className="text-xs text-purple-400/90">
+                              {entry.remarks}
+                            </span>
+                          )}
                         </div>
                       </button>
                     </li>
@@ -879,26 +905,67 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
 
               {activeTab === 'detail' && (
                 <div className="space-y-2.5">
-                  {/* 후보 메타정보 - 카드 형태 */}
-                  {[
-                    { icon: 'mdi:cctv', label: '카메라 ID', value: detail.meta.cameraId },
-                    { icon: 'mdi:account-outline', label: '감지 객체', value: detail.meta.detectedObject },
-                    { icon: 'mdi:palette-outline', label: '주요 속성', value: detail.meta.mainAttributes },
-                    { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
-                    { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
-                  ].map((item, idx) => (
-                    <div key={idx} id={idx === 0 ? 'candidate-meta-info' : undefined} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
-                      <div className="flex items-start gap-3">
-                        <Icon icon={item.icon} className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs text-gray-400 mb-1">{item.label}</div>
-                          <div className="text-sm text-white">{item.value}</div>
+                  {/* 후보 메타정보 - 카드 형태 (metaDetailOverride 있으면 인물/차량별 분리 표시) */}
+                  {videoUrlOverride && metaDetailOverride && metaDetailOverride.length > 0 ? (
+                    metaDetailOverride.map((entity, entityIdx) => (
+                      <div key={entityIdx} id={entityIdx === 0 ? 'candidate-meta-info' : undefined} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
+                        <div className="px-3 pt-3 pb-2">
+                          <h4 className="text-sm font-semibold text-blue-400">{entity.title}</h4>
+                        </div>
+                        <div className="px-3 pb-3 space-y-2">
+                          <div className="flex items-start gap-3">
+                            <Icon icon={entity.icon ?? 'mdi:account-outline'} className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-gray-500 mb-0.5">감지 객체</div>
+                              <div className="text-sm text-gray-300">{entity.detectedObject}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Icon icon="mdi:palette-outline" className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-gray-500 mb-0.5">주요 속성</div>
+                              <div className="text-sm text-gray-300">{entity.mainAttributes}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Icon icon="mdi:walk" className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-gray-500 mb-0.5">행동 특징</div>
+                              <div className="text-sm text-gray-300 leading-relaxed">{entity.behavior}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                            <Icon icon="mdi:arrow-right-bold" className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs text-gray-500 mb-0.5">이탈 방향</div>
+                              <div className="text-sm text-gray-300">{entity.exitDirection}</div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  
-                  {/* 유사도 카드 - 토글 가능 */}
+                    ))
+                  ) : (
+                    [
+                      { icon: 'mdi:cctv', label: '카메라 ID', value: detail.meta.cameraId },
+                      { icon: 'mdi:account-outline', label: '감지 객체', value: detail.meta.detectedObject },
+                      { icon: 'mdi:palette-outline', label: '주요 속성', value: detail.meta.mainAttributes },
+                      { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
+                      { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
+                    ].map((item, idx) => (
+                      <div key={idx} id={idx === 0 ? 'candidate-meta-info' : undefined} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
+                        <div className="flex items-start gap-3">
+                          <Icon icon={item.icon} className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs text-gray-400 mb-1">{item.label}</div>
+                            <div className="text-sm text-white">{item.value}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {/* 유사도 카드 - metaDetailOverride 사용 시 숨김 */}
+                  {!(videoUrlOverride && metaDetailOverride?.length) && (
                   <div id="similarity-dropdown" className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
                     <button
                       type="button"
@@ -971,6 +1038,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                       </>
                     )}
                   </div>
+                  )}
                 </div>
               )}
             </div>

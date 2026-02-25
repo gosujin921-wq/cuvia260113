@@ -8,6 +8,8 @@ export interface PredictedCCTVDetail {
   movementTrend: string;
   expectedArrivalTime: string;
   routeFitScore: number;
+  /** 정성 평가 등 텍스트로 표시할 때 사용 (routeFitScore 대신 표시) */
+  routeFitScoreText?: string;
   detailedAnalysis: {
     movementDirection: string;
     movementSpeed: string;
@@ -120,7 +122,7 @@ export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
       movementSpeed: '보행 중 휴대폰을 주머니에서 꺼내는 행동이 있으나 속도 저하는 미미함.',
       pathStructure: '\'요리 전문점\' 앞 좁은 이면도로이며 보행로 구분이 명확하지 않음.',
       cctvLinkage: '도로 표지판 상단에 설치된 카메라로 상단 뷰 확보가 양호함.',
-      previousPath: '계남로 주택가를 빠져나와 다시 상가 밀집 지역으로 진입하는 동선.',
+      previousPath: '달빛로 주택가를 빠져나와 다시 상가 밀집 지역으로 진입하는 동선.',
       similarCases: '보행자들이 길을 찾기 위해 휴대폰 지도를 자주 확인하는 지점임.',
     },
   },
@@ -135,7 +137,7 @@ export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
       movementSpeed: '스마트폰 타이핑으로 인해 보행 속도가 간헐적으로 느려짐.',
       pathStructure: '\'치킨 붑붑\' 앞 사거리 구간으로 다방면의 이동 경로가 존재함.',
       cctvLinkage: '사거리 중심에 설치되어 4개 방향의 진출입 객체를 모두 감지함.',
-      previousPath: '길주로377번길에서 이동해와 부천로 대로변 방면으로 향함.',
+      previousPath: '길주로377번길에서 이동해와 은하로 대로변 방면으로 향함.',
       similarCases: '인근 편의점이나 카페를 목적으로 이동하는 보행자 패턴이 많음.',
     },
   },
@@ -154,6 +156,22 @@ export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
       similarCases: '야간 시간대 밝은 상점가 조명을 따라 이동하는 실종자 행동 양식과 일치.',
     },
   },
+  'cnc_04_1': {
+    objectAttributes: '종류: 차량(승용/SUV 계열로 보임)\n색상: 흰색\n특징: 후면이 보이는 상태로 카메라에서 멀어지는 방향으로 이동(도로 중앙 차로 이용)',
+    expectedDistance: '약 1.5km (인근 중동대로 합류 지점까지의 직선거리)',
+    movementTrend: '[위험] 객체 전원 차량 탑승 완료 후 화면 상단(북서 방향)으로 급가속 이탈 준비',
+    expectedArrivalTime: '16:55:20 (현 시각 기준 약 3분 내 주요 관제 구역 이탈 및 대로 진입 예상)',
+    routeFitScore: 96,
+    routeFitScoreText: '96점 (강제 연행 및 이동 자유 억압 범죄 시나리오와 매우 높은 일치율)',
+    detailedAnalysis: {
+      movementDirection: '차량 우측 뒷좌석 진입 후 화면 상단 방향(북서 방향)으로 도주로 확보',
+      movementSpeed: '인물 승차 시까지 정지 상태였으나, 문 폐쇄 직후 급격한 가속 예상',
+      pathStructure: '보차 구분이 없는 협소한 주택가 이면도로 구조로 인해 타인의 시선을 피하기 용이함',
+      cctvLinkage: '별빛A-444 영역 이탈 시, 예상 경로상에 위치한 은하로 일대 12개소 CCTV 자동 연계 및 핸드오버 실시',
+      previousPath: '달빛로 방면에서 진입하여 해당 지점(은하로363번길 48)에 급정차한 것으로 분석됨',
+      similarCases: '',
+    },
+  },
   'qs_img_59_y': {
     objectAttributes: '회색 후드티, 어두운색 바지, 휴대폰 통화 또는 조작',
     expectedDistance: '약 18m',
@@ -165,17 +183,21 @@ export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
       movementSpeed: '체류 중 정지와 이동을 반복하며 불규칙한 속도 패턴을 보임.',
       pathStructure: 'emart24 편의점 앞 개방된 공간으로 다방향 이동이 가능한 구간.',
       cctvLinkage: '최종 포착 지점으로 이후 추적을 위한 주변 CCTV 연계가 필요함.',
-      previousPath: '부천로245번길 검지3-B 지점에서 직선 이동하여 편의점에 도착.',
+      previousPath: '은하로391번길 검지3-B 지점에서 직선 이동하여 편의점에 도착.',
       similarCases: '야간 실종자들이 편의점에서 휴식 후 방향을 잃고 이동하는 패턴과 유사.',
     },
   },
 };
 
 export const getPredictedCCTVDetail = (thumbnailUrl: string): PredictedCCTVDetail | null => {
+  // hijacking/cnc_04_1.mp4 등 (객체추적 2키 featured 영상)
+  const cncMatch = thumbnailUrl.match(/cnc_04_1/);
+  if (cncMatch) return PREDICTED_CCTV_DETAILS['cnc_04_1'] || null;
+
   // thumbnailUrl에서 파일명 추출 (예: /fastsearch_img/qs_img_05_n.mov -> qs_img_05_n)
   const match = thumbnailUrl.match(/qs_img_\d+_[yn]/);
   if (!match) return null;
-  
+
   const key = match[0];
   return PREDICTED_CCTV_DETAILS[key] || null;
 };

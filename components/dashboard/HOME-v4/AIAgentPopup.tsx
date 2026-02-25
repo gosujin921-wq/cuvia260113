@@ -77,37 +77,45 @@ interface MessageListProps {
   isExpanded: boolean;
   onObjectTrackingStart?: () => void;
   onVideoView?: () => void;
+  welcomeMsgContent?: ReturnType<typeof getWelcomeMsgContent>;
+  trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
 }
 
-const WELCOME_MSG_CONTENT = {
-  title: '[긴급 알림] 납치(의심) 이벤트 감지',
-  camera: '카메라: CCTV-01 | 30초 정문',
-  detectedAt: '감지 시각: 14:02:18 | 사건 위치: 부천시 원미로 123',
-  body: '성인 남성이 성인 여성과 함께 차량 방향으로 이동하며, 여성의 움직임이 비자발적으로 보입니다.\n\n주변을 살피는 동작과 동선 변경이 반복되어 후속 확인이 필요합니다.\n\n차량 이동 중으로 판단되어 **객체추적 전환**을 권장합니다',
-  footer: '※ 자동 분석 결과이며 추가 확인이 필요합니다.',
-  btnVideo: '▶ 사건 영상 바로 보기',
-  btnTracking: '▶ 객체 추적하기',
+const getWelcomeMsgContent = () => {
+  const timeStr = new Date().toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  return {
+    title: '[긴급 알림] 납치(의심) 이벤트 감지',
+    camera: '카메라: 별빛A-444 | 은빛 부동산',
+    detectedAt: `감지 시각: ${timeStr} | 사건 위치: 은하로363번길 48`,
+    body: '성인 남성이 성인 여성과 함께 차량 방향으로 이동하며, 여성의 움직임이 비자발적으로 보입니다.\n\n주변을 살피는 동작과 동선 변경이 반복되어 후속 확인이 필요합니다.\n\n차량 이동 중으로 판단되어 **객체추적 전환**을 권장합니다',
+    footer: '※ 자동 분석 결과이며 추가 확인이 필요합니다.',
+    btnVideo: '▶ 사건 영상 바로 보기',
+    btnTracking: '▶ 객체 추적하기',
+  };
 };
 
-const TRACKING_UPDATE_MSG_CONTENT = {
-  title: '[추적 갱신] 차량 재포착, 번호판 후보 확보',
-  camera: '카메라: CCTV-19 | 시각: 14:05:08',
-  match: '"차종/색상/외형 특징 일치(추정)."',
-  plate: '"부분 번호판 후보: *12 324* **(가시성: 높음)**"',
-  direction: '이동 방향: 동 방향 진행',
-  body: '이동 중인 차량으로 추정되어 골든타임 확보를 위해 112 우선 전파를 권고합니다.',
-  btnPropagate: '▶ 관할 경찰서에 전파하기',
+const getTrackingUpdateMsgContent = () => {
+  const timeStr = new Date().toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  return {
+    title: '[추적 갱신] 차량 재포착, 번호판 후보 확보',
+    camera: `카메라: 별빛A-655 | 시각: ${timeStr}`,
+    match: '"차종/색상/외형 특징 일치(추정)."',
+    plate: '"부분 번호판 후보: *12 324* **(가시성: 높음)**"',
+    direction: '이동 방향: 동 방향 진행',
+    body: '이동 중인 차량으로 추정되어 골든타임 확보를 위해 112 우선 전파를 권고합니다.',
+    btnPropagate: '▶ 관할 경찰서에 전파하기',
+  };
 };
-
-/** 추적 갱신 메시지 타이핑 애니메이션용 전체 텍스트 */
-const TRACKING_UPDATE_FULL_TEXT = [
-  TRACKING_UPDATE_MSG_CONTENT.title,
-  TRACKING_UPDATE_MSG_CONTENT.camera,
-  TRACKING_UPDATE_MSG_CONTENT.match,
-  '"부분 번호판 후보: 12 324 (가시성: 높음)"',
-  TRACKING_UPDATE_MSG_CONTENT.direction,
-  TRACKING_UPDATE_MSG_CONTENT.body,
-].join('\n');
 
 const MessageList: React.FC<MessageListProps> = ({
   messages,
@@ -117,7 +125,11 @@ const MessageList: React.FC<MessageListProps> = ({
   isExpanded,
   onObjectTrackingStart,
   onVideoView,
+  welcomeMsgContent,
+  trackingUpdateMsgContent,
 }) => {
+  const welcomeContent = welcomeMsgContent ?? getWelcomeMsgContent();
+  const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
   return (
     <>
       {isExpanded && (
@@ -350,18 +362,18 @@ const MessageList: React.FC<MessageListProps> = ({
                             </>
                           ) : (
                             <>
-                              <p className="text-sm font-semibold text-gray-900">{TRACKING_UPDATE_MSG_CONTENT.title}</p>
-                              <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.camera}</p>
-                              <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.match}</p>
-                              <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: TRACKING_UPDATE_MSG_CONTENT.plate.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<strong>$1</strong>') }} />
-                              <p className="text-xs text-gray-600">{TRACKING_UPDATE_MSG_CONTENT.direction}</p>
-                              <p className="text-sm leading-relaxed text-gray-700">{TRACKING_UPDATE_MSG_CONTENT.body}</p>
+                              <p className="text-sm font-semibold text-gray-900">{trackingContent.title}</p>
+                              <p className="text-xs text-gray-600">{trackingContent.camera}</p>
+                              <p className="text-xs text-gray-600">{trackingContent.match}</p>
+                              <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: trackingContent.plate.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<strong>$1</strong>') }} />
+                              <p className="text-xs text-gray-600">{trackingContent.direction}</p>
+                              <p className="text-sm leading-relaxed text-gray-700">{trackingContent.body}</p>
                               <button
                                 type="button"
                                 className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors w-full"
                                 aria-label="관할 경찰서에 전파하기"
                               >
-                                {TRACKING_UPDATE_MSG_CONTENT.btnPropagate}
+                                {trackingContent.btnPropagate}
                               </button>
                               <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
                             </>
@@ -379,11 +391,11 @@ const MessageList: React.FC<MessageListProps> = ({
                             </>
                           ) : (
                             <>
-                              <p className="text-sm font-semibold text-gray-900">{WELCOME_MSG_CONTENT.title}</p>
-                              <p className="text-xs text-gray-600">{WELCOME_MSG_CONTENT.camera}</p>
-                              <p className="text-xs text-gray-600">{WELCOME_MSG_CONTENT.detectedAt}</p>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700" dangerouslySetInnerHTML={{ __html: WELCOME_MSG_CONTENT.body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-                              <p className="text-xs text-gray-500">{WELCOME_MSG_CONTENT.footer}</p>
+                              <p className="text-sm font-semibold text-gray-900">{welcomeContent.title}</p>
+                              <p className="text-xs text-gray-600">{welcomeContent.camera}</p>
+                              <p className="text-xs text-gray-600">{welcomeContent.detectedAt}</p>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700" dangerouslySetInnerHTML={{ __html: welcomeContent.body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                              <p className="text-xs text-gray-500">{welcomeContent.footer}</p>
                               <div className="flex flex-col gap-2 pt-1">
                                 <button
                                   type="button"
@@ -391,7 +403,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                   className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
                                   aria-label="사건 영상 바로 보기"
                                 >
-                                  {WELCOME_MSG_CONTENT.btnVideo}
+                                  {welcomeContent.btnVideo}
                                 </button>
                                 <button
                                   type="button"
@@ -399,7 +411,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                   className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
                                   aria-label="객체 추적하기"
                                 >
-                                  {WELCOME_MSG_CONTENT.btnTracking}
+                                  {welcomeContent.btnTracking}
                                 </button>
                               </div>
                               <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
@@ -596,6 +608,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  const [welcomeMsgContent, setWelcomeMsgContent] = useState<ReturnType<typeof getWelcomeMsgContent> | null>(null);
+  const [trackingUpdateMsgContent, setTrackingUpdateMsgContent] = useState<ReturnType<typeof getTrackingUpdateMsgContent> | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -612,14 +626,16 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   // 초기 메시지 타이핑 애니메이션
   useEffect(() => {
     if (!isOpen) return;
+    const content = getWelcomeMsgContent();
+    setWelcomeMsgContent(content);
     const fullText = [
-      WELCOME_MSG_CONTENT.title,
-      WELCOME_MSG_CONTENT.camera,
-      WELCOME_MSG_CONTENT.detectedAt,
+      content.title,
+      content.camera,
+      content.detectedAt,
       '',
-      WELCOME_MSG_CONTENT.body,
+      content.body,
       '',
-      WELCOME_MSG_CONTENT.footer,
+      content.footer,
     ].join('\n');
     let currentIndex = 0;
     const typingInterval = setInterval(() => {
@@ -802,15 +818,24 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (bottomRef.current) {
-      // 프로그래스 메시지 업데이트 시에는 스크롤하지 않음 (화면 튐 방지)
-      const hasProgressUpdate = messages.some(msg => 
-        msg.type === 'analyzing' && (msg.progress || 0) > 0 && (msg.progress || 0) < 1
-      );
-      
-      if (!hasProgressUpdate) {
-        bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // 프로그래스 메시지 업데이트 시에는 스크롤하지 않음 (화면 튐 방지)
+    const hasProgressUpdate = messages.some(msg =>
+      msg.type === 'analyzing' && (msg.progress || 0) > 0 && (msg.progress || 0) < 1
+    );
+
+    if (!hasProgressUpdate) {
+      // requestAnimationFrame으로 DOM 업데이트 후 스크롤 적용
+      const rafId = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        });
+      });
+      return () => cancelAnimationFrame(rafId);
     }
   }, [messages, isResponding]);
 
@@ -1001,10 +1026,20 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   useEffect(() => {
     if (showFeaturedLayout && !lastShowFeaturedLayoutRef.current) {
       lastShowFeaturedLayoutRef.current = true;
+      const content = getTrackingUpdateMsgContent();
+      setTrackingUpdateMsgContent(content);
+      const fullText = [
+        content.title,
+        content.camera,
+        content.match,
+        '"부분 번호판 후보: 12 324 (가시성: 높음)"',
+        content.direction,
+        content.body,
+      ].join('\n');
       const trackingUpdateMessage: ChatMessage = {
         id: 'tracking-update-msg',
         role: 'assistant',
-        content: TRACKING_UPDATE_FULL_TEXT,
+        content: fullText,
         timestamp: new Date().toLocaleTimeString('ko-KR', {
           hour: '2-digit',
           minute: '2-digit',
@@ -1020,11 +1055,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       trackingUpdateTypingRef.current = setInterval(() => {
         currentIndex++;
 
-        if (currentIndex <= TRACKING_UPDATE_FULL_TEXT.length) {
+        if (currentIndex <= fullText.length) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === 'tracking-update-msg'
-                ? { ...msg, displayedContent: TRACKING_UPDATE_FULL_TEXT.substring(0, currentIndex) }
+                ? { ...msg, displayedContent: fullText.substring(0, currentIndex) }
                 : msg
             )
           );
@@ -1036,7 +1071,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === 'tracking-update-msg'
-                ? { ...msg, isTyping: false, displayedContent: TRACKING_UPDATE_FULL_TEXT }
+                ? { ...msg, isTyping: false, displayedContent: fullText }
                 : msg
             )
           );
@@ -1576,6 +1611,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   isExpanded={true}
                   onObjectTrackingStart={onObjectTrackingStart}
                   onVideoView={onVideoView}
+                  welcomeMsgContent={welcomeMsgContent ?? undefined}
+                  trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                 />
               </div>
 
@@ -1645,6 +1682,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   isExpanded={false}
                   onObjectTrackingStart={onObjectTrackingStart}
                   onVideoView={onVideoView}
+                  welcomeMsgContent={welcomeMsgContent ?? undefined}
+                  trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                 />
               </div>
 

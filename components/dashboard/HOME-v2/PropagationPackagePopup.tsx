@@ -31,12 +31,12 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 
 
 🚨 1. 최신 포착(즉시 출동 기준)
-10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
+10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%
 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
 
 
 🚓 2. 최인근 파출소(출동 거점)
-기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하동 125-46
+기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하로363번길 48
 최인근 파출소: (파출소명) / 약 (거리)km
 
 참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
@@ -45,7 +45,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 👤 3. 대상자 정보
 성명/나이: 김도연 / 22세(남)
 인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg
-실종 접수: 09:30경 은하동 125-46 일원
+실종 접수: 09:30경 은하로363번길 48 일원
 
 🧭 4. 추적 판단 요약(방향/가능 동선)
 남서 방향 이동 지속 추정(경로 적합도 83)
@@ -55,13 +55,13 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 
 📡 5. 관제 확인 범위(현재 탐색 상태)
 시간: 09:30~현재
-범위: 은하동 125-46 인근 및 인접 구간 반경 10km 확인
+범위: 은하로363번길 48 인근 및 인접 구간 반경 10km 확인
 상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
 
 
 🎯 6. 포착 현황(근거 상세)
 
-🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%
+🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%
 
 · 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
 🔗 (추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48
@@ -70,7 +70,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 🔗 (추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54
 
 · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:12:31 / 별빛A-604 / 은하동 125-32
+🔗 (추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28
 
 · 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
 
@@ -496,7 +496,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       <h3 className="text-white font-semibold text-sm">최신 포착(즉시 출동 기준)</h3>
                     </div>
                     <div className="space-y-1.5 text-sm">
-                      <div className="text-gray-300">10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%</div>
+                      <div className="text-gray-300">10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%</div>
                       <div className="text-gray-400 text-xs">편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측</div>
                     </div>
                   </div>
@@ -510,7 +510,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                     <div className="space-y-2 text-sm">
                       <div>
                         <span className="text-gray-400">기준 지점(최신 포착지): </span>
-                        <span className="text-gray-300">10:35:56 / 별빛A-230 / 은하동 125-46</span>
+                        <span className="text-gray-300">10:35:56 / 별빛A-230 / 은하로363번길 48</span>
                       </div>
                       <div>
                         <span className="text-gray-400">최인근 파출소: </span>
@@ -539,7 +539,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       </div>
                       <div>
                         <span className="text-gray-400">실종 접수: </span>
-                        <span className="text-gray-300">09:30경 은하동 125-46 일원</span>
+                        <span className="text-gray-300">09:30경 은하로363번길 48 일원</span>
                       </div>
                     </div>
                   </div>
@@ -579,7 +579,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       </div>
                       <div>
                         <span className="text-gray-400">범위: </span>
-                        <span className="text-gray-300">은하동 125-46 인근 및 인접 구간 반경 10km 확인</span>
+                        <span className="text-gray-300">은하로363번길 48 인근 및 인접 구간 반경 10km 확인</span>
                       </div>
                       <div className="text-gray-400 text-xs pt-1">
                         상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
@@ -597,7 +597,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <Icon icon="mdi:magnify" className="w-4 h-4 text-blue-400" />
-                          <span className="text-blue-400 font-semibold text-xs">(고속검색) 10:35:56 / 별빛A-230 / 은하동 125-46 / 유사도 95%</span>
+                          <span className="text-blue-400 font-semibold text-xs">(고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%</span>
                         </div>
                         <div className="text-gray-400 text-xs ml-6">· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측</div>
                       </div>
@@ -618,7 +618,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
-                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:12:31 / 별빛A-604 / 은하동 125-32</span>
+                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28</span>
                         </div>
                         <div className="text-gray-400 text-xs ml-6">· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단</div>
                       </div>

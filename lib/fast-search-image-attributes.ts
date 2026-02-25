@@ -176,9 +176,9 @@ export const IMAGE_CCTV_NAME: Partial<Record<ImageId, string>> = {
 
 /** 이미지 ID별 위치 */
 export const IMAGE_LOCATION: Partial<Record<ImageId, string>> = {
-  '05': '별빛구 은하동 125-46',
-  '11': '별빛구 은하동 125-46',
-  '15': '별빛구 은하동 125-46',
+  '05': '은하로363번길 48',
+  '11': '은하로363번길 48',
+  '15': '은하로363번길 48',
   '21': '은하로363번길 48',
   '25': '은하로363번길 48',
   '30': '달빛로301번길 28',
@@ -251,7 +251,7 @@ export const getCctvNameForCaptureItem = (item: { id: string }): string => {
 /** 캡처 아이템의 위치 */
 export const getLocationForCaptureItem = (item: { id: string }): string => {
   const imageId = getImageIdFromCaptureItem(item);
-  return IMAGE_LOCATION[imageId] ?? '별빛구 은하동 125-46';
+  return IMAGE_LOCATION[imageId] ?? '은하로363번길 48';
 };
 
 /** 해당 이미지가 제외 대상 속성 중 하나라도 가지는지 */

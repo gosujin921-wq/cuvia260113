@@ -40,8 +40,8 @@ const LOCATION_DISTANCE_MAP: Record<string, number> = {
   '길주로363번길 48': 150,
   '길주로391번길 29': 280,
   '길주로395번길 12': 310,
-  '계남로301번길 28': 420,
-  '계남로301번길 54': 450,
+  '달빛로301번길 28': 420,
+  '달빛로301번길 54': 450,
 };
 
 const getDistanceFromReportLocation = (location: string): number => {

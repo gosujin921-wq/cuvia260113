@@ -35,7 +35,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 
 2. **관제 확인 범위**
 - 확인 시간대: **14:00~현재**
-- 확인 구역: **부천시 ○○로 ○○ 일대** (반경 약 2km)
+- 확인 구역: **은하로363번길 48 일대** (반경 약 2km)
 - 관제 방식: **차량 중심 객체추적(실시간) 진행 중**
 
 3. **포착 현황**
@@ -493,7 +493,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       </div>
                       <div>
                         <span className="text-gray-400">확인 구역: </span>
-                        <span className="text-gray-300">부천시 ○○로 ○○ 일대 (반경 약 2km)</span>
+                        <span className="text-gray-300">은하로363번길 48 일대 (반경 약 2km)</span>
                       </div>
                       <div>
                         <span className="text-gray-400">관제 방식: </span>

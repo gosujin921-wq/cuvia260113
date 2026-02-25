@@ -41,13 +41,13 @@ interface CaptureItem {
 
 /** 신고 위치로부터의 거리(m) 계산 (mock) - 위치별 가상 거리 */
 const LOCATION_DISTANCE_MAP: Record<string, number> = {
-  '별빛구 은하동 125-46': 0,
+  '은하로363번길 48': 0,
   '별빛구 하늘로 245번길 41': 30,
   '길주로363번길 48': 150,
   '길주로391번길 29': 280,
   '길주로395번길 12': 310,
-  '계남로301번길 28': 420,
-  '계남로301번길 54': 450,
+  '달빛로301번길 28': 420,
+  '달빛로301번길 54': 450,
 };
 
 const getDistanceFromReportLocation = (location: string): number => {

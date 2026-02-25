@@ -456,13 +456,13 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                 
                 {/* 예측 정보 카드들 */}
                 {(() => {
-                  const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
+                  const detail = getPredictedCCTVDetail(showFeaturedLayout && cctv.featuredThumbnailUrl ? cctv.featuredThumbnailUrl : cctv.thumbnailUrl);
                   return [
                     { icon: 'mdi:account-details', label: '객체 속성', value: detail?.objectAttributes || '정보 없음' },
                     { icon: 'mdi:map-marker-distance', label: '예상 이동 거리', value: detail?.expectedDistance || `약 ${cctv.distance}m (이전 위치 기준)` },
                     { icon: 'mdi:navigation', label: '이동 추세', value: detail?.movementTrend || `${cctv.direction} (최근 3프레임 평균)` },
                     { icon: 'mdi:clock-outline', label: '예상 도달 시각', value: detail?.expectedArrivalTime || `${cctv.predictedTime} (현재 시각 +30초)` },
-                    { icon: 'mdi:chart-timeline-variant', label: '경로 적합도(유사도)', value: `${detail?.routeFitScore || cctv.confidence}점` },
+                    { icon: 'mdi:chart-timeline-variant', label: '경로 적합도(유사도)', value: detail?.routeFitScoreText ?? `${detail?.routeFitScore ?? cctv.confidence}점` },
                   ];
                 })().map((item, idx) => (
                   <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
@@ -503,7 +503,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                       {/* 각 분석 항목 */}
                       <div className="p-3 space-y-2">
                         {(() => {
-                          const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
+                          const detail = getPredictedCCTVDetail(showFeaturedLayout && cctv.featuredThumbnailUrl ? cctv.featuredThumbnailUrl : cctv.thumbnailUrl);
                           if (!detail?.detailedAnalysis) {
                             return [
                               { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향을 유지하며 이동 중임.' },

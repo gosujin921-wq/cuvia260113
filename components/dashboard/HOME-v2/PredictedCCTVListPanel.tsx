@@ -24,12 +24,12 @@ export interface PredictedCCTVItem {
   posterUrl?: string;
 }
 
-// Mock 데이터 - 4번 핀(은하동 125-32) 근처 CCTV 10개
+// Mock 데이터 - 4번 핀(달빛로301번길 28) 근처 CCTV 10개
 const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '1',
     cctvName: '별빛A-583',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 15,
     predictedTime: '09:35:15',
     confidence: 92,
@@ -40,7 +40,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '2',
     cctvName: '별빛A-604',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 20,
     predictedTime: '09:35:30',
     confidence: 88,
@@ -51,7 +51,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '3',
     cctvName: '별빛A-621',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 18,
     predictedTime: '09:35:45',
     confidence: 85,
@@ -62,7 +62,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '4',
     cctvName: '별빛A-638',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 22,
     predictedTime: '09:36:00',
     confidence: 83,
@@ -73,7 +73,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '5',
     cctvName: '별빛A-655',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 25,
     predictedTime: '09:36:15',
     confidence: 80,
@@ -84,7 +84,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '6',
     cctvName: '별빛A-672',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 25,
     predictedTime: '09:36:30',
     confidence: 78,
@@ -95,7 +95,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '7',
     cctvName: '별빛A-689',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 28,
     predictedTime: '09:36:45',
     confidence: 75,
@@ -106,7 +106,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '8',
     cctvName: '별빛A-706',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 30,
     predictedTime: '09:37:00',
     confidence: 73,
@@ -117,7 +117,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '9',
     cctvName: '별빛A-723',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 32,
     predictedTime: '09:37:15',
     confidence: 70,
@@ -128,7 +128,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '10',
     cctvName: '별빛A-740',
-    location: '별빛구 은하동 125-32',
+    location: '달빛로301번길 28',
     distance: 30,
     predictedTime: '09:37:30',
     confidence: 68,

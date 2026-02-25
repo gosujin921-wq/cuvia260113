@@ -174,10 +174,10 @@ const ObjectTrackingMapView = ({
     
     // 모든 추적 핀 정의
     const allTrackingPins = [
-      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '은하동 125-46', name: '별빛A-230', color: 'gray' },
-      { location: [126.7843434, 37.5042779] as [number, number], address: '은하동 126-18', name: '별빛A-444', color: 'gray' },
-      { location: [126.7828196, 37.50501939999999] as [number, number], address: '은하동 125-46', name: '별빛A-481', color: 'gray' },
-      { location: [126.7828168, 37.504067] as [number, number], address: '은하동 125-32', name: '별빛A-498', color: 'blue' },
+      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '은하로363번길 48', name: '별빛A-230', color: 'gray' },
+      { location: [126.7843434, 37.5042779] as [number, number], address: '은하로363번길 52', name: '별빛A-444', color: 'gray' },
+      { location: [126.7828196, 37.50501939999999] as [number, number], address: '달빛로301번길 28', name: '별빛A-481', color: 'gray' },
+      { location: [126.7828168, 37.504067] as [number, number], address: '달빛로301번길 28', name: '별빛A-498', color: 'blue' },
     ];
     
     const initPins = () => {
@@ -597,28 +597,28 @@ const ObjectTrackingMapView = ({
             return;
           }
           
-          // 1번 핀(은하동 125-46) 근처 CCTV 좌표 - 초기 목격 지점
+          // 1번 핀(은하로363번길 48) 근처 CCTV 좌표 - 초기 목격 지점
           const nearbyCCTV1 = [
             [126.7840, 37.5050], // 동쪽 약 15m
             [126.7837, 37.5049], // 서쪽 약 15m
             [126.7839, 37.5048], // 남동쪽 약 20m
           ];
           
-          // 2번 핀(은하동 126-18) 근처 CCTV 좌표 - 목격 지점
+          // 2번 핀(은하로363번길 48) 근처 CCTV 좌표 - 목격 지점
           const nearbyCCTV2 = [
             [126.7845, 37.5043], // 동쪽 약 15m
             [126.7842, 37.5042], // 서쪽 약 15m
             [126.7844, 37.5041], // 남동쪽 약 20m
           ];
           
-          // 3번 핀(은하동 125-46) 근처 CCTV 좌표 - 목격 지점
+          // 3번 핀(은하로363번길 48) 근처 CCTV 좌표 - 목격 지점
           const nearbyCCTV3 = [
             [126.7830, 37.5051], // 북동쪽 약 20m
             [126.7826, 37.5050], // 서쪽 약 15m
             [126.7829, 37.5049], // 남동쪽 약 15m
           ];
           
-          // 4번 핀(은하동 125-32) 근처 CCTV 좌표 - 목격 지점 (붉은 원 60m 반경 안)
+          // 4번 핀(달빛로301번길 28) 근처 CCTV 좌표 - 목격 지점 (붉은 원 60m 반경 안)
           const predictedCCTV4 = [
             [126.7829, 37.5042],   // 북동쪽 약 15m
             [126.7826, 37.5041],   // 북서쪽 약 20m
@@ -683,16 +683,16 @@ const ObjectTrackingMapView = ({
           // 블루 CCTV 마커 추가 (4번 핀 근처)
           // CCTV 정보 배열 (예측 CCTV 리스트와 동일)
           const cctvInfoList = [
-            { cctvName: '별빛A-583', location: '별빛구 은하동 125-32', confidence: 92 },
-            { cctvName: '별빛A-604', location: '별빛구 은하동 125-32', confidence: 88 },
-            { cctvName: '별빛A-621', location: '별빛구 은하동 125-32', confidence: 85 },
-            { cctvName: '별빛A-638', location: '별빛구 은하동 125-32', confidence: 83 },
-            { cctvName: '별빛A-655', location: '별빛구 은하동 125-32', confidence: 80 },
-            { cctvName: '별빛A-672', location: '별빛구 은하동 125-32', confidence: 78 },
-            { cctvName: '별빛A-689', location: '별빛구 은하동 125-32', confidence: 75 },
-            { cctvName: '별빛A-706', location: '별빛구 은하동 125-32', confidence: 73 },
-            { cctvName: '별빛A-723', location: '별빛구 은하동 125-32', confidence: 70 },
-            { cctvName: '별빛A-740', location: '별빛구 은하동 125-32', confidence: 68 },
+            { cctvName: '별빛A-583', location: '달빛로301번길 28', confidence: 92 },
+            { cctvName: '별빛A-604', location: '달빛로301번길 28', confidence: 88 },
+            { cctvName: '별빛A-621', location: '달빛로301번길 28', confidence: 85 },
+            { cctvName: '별빛A-638', location: '달빛로301번길 28', confidence: 83 },
+            { cctvName: '별빛A-655', location: '달빛로301번길 28', confidence: 80 },
+            { cctvName: '별빛A-672', location: '달빛로301번길 28', confidence: 78 },
+            { cctvName: '별빛A-689', location: '달빛로301번길 28', confidence: 75 },
+            { cctvName: '별빛A-706', location: '달빛로301번길 28', confidence: 73 },
+            { cctvName: '별빛A-723', location: '달빛로301번길 28', confidence: 70 },
+            { cctvName: '별빛A-740', location: '달빛로301번길 28', confidence: 68 },
           ];
           
           blueCCTV.forEach((location, index) => {

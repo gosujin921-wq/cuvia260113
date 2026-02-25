@@ -593,7 +593,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       `;
       labelEl.innerHTML = `
         <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
-        <div style="font-size: 12px; font-weight: 600; color: white;">은하동 125-46</div>
+        <div style="font-size: 12px; font-weight: 600; color: white;">은하로363번길 48</div>
       `;
       markerContainer.appendChild(labelEl);
       markerContainer.appendChild(centerWrapper);

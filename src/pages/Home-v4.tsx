@@ -342,7 +342,7 @@ export default function HomeV2() {
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
-        location: { name: '하늘시 별빛구 달빛동 지하주차장', coordinates: [126.98, 37.42] as [number, number] },
+        location: { name: '하늘시 별빛구 달빛로 지하주차장', coordinates: [126.98, 37.42] as [number, number] },
         processingStage: '생성',
         resolution: { category: '112', code: '001', description: '' },
       },
@@ -364,7 +364,7 @@ export default function HomeV2() {
         priority: '일반' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
-        location: { name: '하늘시 별빛구 달빛동 사거리', coordinates: [126.97, 37.41] as [number, number] },
+        location: { name: '하늘시 별빛구 달빛로 사거리', coordinates: [126.97, 37.41] as [number, number] },
         processingStage: '착수',
         resolution: { category: '112', code: '003', description: '' },
       },
@@ -432,7 +432,7 @@ export default function HomeV2() {
         priority: '경계' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
-        location: { name: '하늘시 별빛구 달빛동 아파트 단지 내 쓰레기 수거함', coordinates: [126.96, 37.4] as [number, number] },
+        location: { name: '하늘시 별빛구 달빛로 아파트 단지 내 쓰레기 수거함', coordinates: [126.96, 37.4] as [number, number] },
         processingStage: '착수',
         resolution: { category: '119', code: '009', description: '' },
       },
@@ -443,7 +443,7 @@ export default function HomeV2() {
         priority: '경계' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
-        location: { name: '하늘시 별빛구 달빛동 상가 앞', coordinates: [126.95, 37.39] as [number, number] },
+        location: { name: '하늘시 별빛구 달빛로 상가 앞', coordinates: [126.95, 37.39] as [number, number] },
         processingStage: '선별',
         resolution: { category: '112', code: '010', description: '' },
       },
@@ -661,9 +661,9 @@ export default function HomeV2() {
     // 추적 경로 좌표
     const trackingSequence = [
       [126.783853180335, 37.5049838114765], // 1번: 초기 목격 지점
-      [126.7843434, 37.5042779],            // 2번: 목격 지점 (은하동 126-18)
-      [126.7828196, 37.50501939999999],     // 3번: 목격 지점 (은하동 125-46)
-      [126.7828168, 37.504067],             // 4번: 목격 지점 (은하동 125-32)
+      [126.7843434, 37.5042779],            // 2번: 목격 지점 (은하로363번길 48)
+      [126.7828196, 37.50501939999999],     // 3번: 목격 지점 (은하로363번길 48)
+      [126.7828168, 37.504067],             // 4번: 목격 지점 (달빛로301번길 28)
     ];
     
     // 1단계: 1번 핀 표시 및 줌인 (초기화 후 약간의 딜레이)
@@ -848,14 +848,14 @@ export default function HomeV2() {
       >
         <HeatmapPanel 
           areaLabels={{
-            zone1: '달빛동',
-            zone2: '해빛동',
-            zone3: '바람동',
-            zone4: '무지개동',
-            zone5: '성운동',
-            zone6: '구름동',
-            zone7: '햇살동',
-            zone8: '여명동',
+            zone1: '달빛로',
+            zone2: '해빛로',
+            zone3: '바람로',
+            zone4: '무지개로',
+            zone5: '성운로',
+            zone6: '구름대로',
+            zone7: '햇살로',
+            zone8: '여명로',
           }}
         />
         <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
@@ -913,6 +913,36 @@ export default function HomeV2() {
         isOpen={showFastSearchPopupOverlay}
         onClose={() => setShowFastSearchPopupOverlay(false)}
         videoUrlOverride="/hijacking/cnc_01_1.mp4"
+        observationSummaryOverride="흰색 SUV(014저 4515)가 별빛A-444 검지 영역 중앙 도로상에 급정차한 후, 남색 상의를 착용한 인물이 하늘색 상의 인물의 신체를 강하게 결착하여 뒷좌석 승차를 강요함. 피해 의심 인물이 승차하자마자 즉시 문을 폐쇄하고 현장을 이탈하려는 긴박한 행동 패턴이 관찰됨."
+        timelineOverride={[
+          { time: '00:00 - 00:01', label: '흰색 SUV 차량이 은하로363번길 48 지점에 정차. 차량 뒤편에서 인물 2명 포착.', remarks: '상황 발생', seconds: 0, endSeconds: 2 },
+          { time: '00:02 - 00:04', label: '남색 상의 인물이 상대방의 팔을 강하게 잡고 뒷좌석으로 밀어 넣는 강제 승차 시도 감지.', remarks: '위험 단계', seconds: 2, endSeconds: 5 },
+          { time: '00:05 - 00:06', label: '피해 의심 인물 승차 완료 확인 및 즉각적인 차량 도어 폐쇄.', remarks: '상황 종료 및 이탈', seconds: 5, endSeconds: 7 },
+        ]}
+        metaDetailOverride={[
+          {
+            title: '1. 인물 A (가해자 추정)',
+            detectedObject: '사람 (성인 남성)',
+            mainAttributes: '남색 상의, 어두운색 바지',
+            behavior: '인물 B의 신체를 강하게 결착하여 이동 경로를 강제로 제어함. 인물 B를 차량 뒷좌석으로 밀어 넣은 뒤, 즉시 문을 폐쇄하고 주변을 감시하는 행동 패턴을 보임.',
+            exitDirection: '차량 뒷좌석 탑승 및 차량 이동 방향과 동일 (상단 방향)',
+          },
+          {
+            title: '2. 인물 B (피해자 추정)',
+            detectedObject: '사람 (고령자 또는 거동 불편자 추정)',
+            mainAttributes: '하늘색 상의, 밝은색 바지',
+            behavior: '자의적인 보행이 아닌 인물 A의 물리력에 의해 이동됨. 신체적 저항 능력이 현저히 낮은 상태로 관찰되며, 인물 A에 의해 차량 내부로 강제 진입됨.',
+            exitDirection: '차량 내부 (뒷좌석)',
+          },
+          {
+            title: '3. 차량',
+            icon: 'mdi:car',
+            detectedObject: '차량 (흰색 SUV)',
+            mainAttributes: '번호판 014저 4515, 도로 중앙 정차',
+            behavior: '좁은 이면도로 중앙을 점유하여 정차한 상태로 인물 B의 승차를 대기함. 엔진 가동 상태를 유지하며, 인물들이 모두 승차한 직후 즉각 현장을 이탈하려는 준비 동작이 감지됨.',
+            exitDirection: '화면 상단 (북서 방향)',
+          },
+        ]}
         candidate={showFastSearchPopupOverlay ? {
           id: '5',
           cctvId: getCctvNameForCaptureItem({ id: '5' }),
