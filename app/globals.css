@@ -859,3 +859,112 @@ input[type="range"].slider::-moz-range-thumb {
   animation: featured-grid-fade 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards;
   opacity: 0;
 }
+
+/* ========== Agent Chat HTML 렌더링 스타일 ========== */
+.agent-html-content {
+  line-height: 1.6;
+}
+
+.agent-html-content .agent-conclusion {
+  font-weight: 600;
+  color: #1f2937;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.agent-html-content .agent-evidence {
+  margin: 12px 0;
+}
+
+.agent-html-content .agent-rationale {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 12px;
+  padding: 8px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.agent-html-content .agent-criteria {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.agent-html-content .agent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 8px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.agent-html-content .agent-table-header {
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.agent-html-content .agent-table-cell {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+}
+
+.agent-html-content .agent-table tbody tr:last-child .agent-table-cell {
+  border-bottom: none;
+}
+
+.agent-html-content .agent-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.agent-html-content .agent-table-cell[data-color] {
+  position: relative;
+}
+
+.agent-html-content .agent-table-cell[data-color]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: attr(data-color);
+}
+
+.agent-html-content .agent-table tbody tr:nth-child(1) .agent-table-cell {
+  border-left: 3px solid #FF6B6B;
+}
+
+.agent-html-content .agent-table tbody tr:nth-child(2) .agent-table-cell {
+  border-left: 3px solid #4ECDC4;
+}
+
+.agent-html-content .agent-table tbody tr:nth-child(3) .agent-table-cell {
+  border-left: 3px solid #45B7D1;
+}
+
+.agent-html-content .agent-table tbody tr:nth-child(1) .agent-table-cell:first-child {
+  border-left: 3px solid #FF6B6B;
+}
+
+.agent-html-content .agent-table tbody tr:nth-child(2) .agent-table-cell:first-child {
+  border-left: 3px solid #4ECDC4;
+}
+
+.agent-html-content .agent-table tbody tr:nth-child(3) .agent-table-cell:first-child {
+  border-left: 3px solid #45B7D1;
+}
+
+.agent-html-content .agent-table tbody tr:nth-child(n+4) .agent-table-cell:first-child {
+  border-left: 3px solid #9CA3AF;
+}

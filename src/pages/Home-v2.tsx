@@ -12,13 +12,14 @@ import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPa
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
 import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/CaptureListPanel';
 import PropagationListPanel from '@/components/dashboard/HOME-v2/PropagationListPanel';
-import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
+import AIAgentPopup from '@/components/dashboard/HOME-v4/AIAgentPopup';
 import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
 import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
 import { useMouseGuide } from '@/src/pages/useMouseGuide';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
+import type { MapStreamData } from '@/types/streamJson.types';
 
 // UI 상태 관리를 위한 reducer
 type UIState = {
@@ -69,7 +70,8 @@ type UIAction =
   | { type: 'CLEAR_ALL' }
   | { type: 'COMPLETE_FAST_SEARCH_PROGRESS' }
   | { type: 'SHOW_NET_MONITORING_DIALOG' }
-  | { type: 'HIDE_NET_MONITORING_DIALOG' };
+  | { type: 'HIDE_NET_MONITORING_DIALOG' }
+  | { type: 'TOGGLE_AI_AGENT_POPUP' };
 
 const uiReducer = (state: UIState, action: UIAction): UIState => {
   switch (action.type) {
@@ -212,6 +214,8 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
       return { ...state, showNetMonitoringDialog: true };
     case 'HIDE_NET_MONITORING_DIALOG':
       return { ...state, showNetMonitoringDialog: false };
+    case 'TOGGLE_AI_AGENT_POPUP':
+      return { ...state, showAIAgentPopup: !state.showAIAgentPopup };
     case 'SET_MENU':
       return { ...state, selectedMenuId: action.payload };
     case 'TOGGLE_LEFT_PANEL':
@@ -266,7 +270,7 @@ export default function HomeV2() {
   });
 
   // 나머지 필요한 state들
-  const [showStartMessage, setShowStartMessage] = useState<boolean>(true); // 시작 메시지창 표시 여부
+  const [showStartMessage, setShowStartMessage] = useState<boolean>(false); // 시작 메시지창 표시 여부
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
   const [fastSearchRadius, setFastSearchRadius] = useState<number>(200);
@@ -296,6 +300,7 @@ export default function HomeV2() {
   });
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
+  const [streamMapData, setStreamMapData] = useState<MapStreamData | null>(null); // 스트림에서 받은 맵 데이터
   const {
     showMouseGuide,
     setShowMouseGuide,
@@ -672,6 +677,11 @@ export default function HomeV2() {
     }
   }, [showMouseGuide, jumpToStep]);
 
+  // 스트림 맵 데이터 수신 핸들러
+  const handleMapDataReceived = useCallback((data: MapStreamData) => {
+    setStreamMapData(data);
+  }, []);
+
   // syncToAppState: 타겟 요소가 없을 때 앱 상태에 맞춰 가이드 단계 동기화
   useEffect(() => {
     const inputEl = document.getElementById('agent-chat-input') as HTMLTextAreaElement | null;
@@ -832,6 +842,8 @@ export default function HomeV2() {
       dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
+    } else if (e.key === 'l' || e.key === 'L') {
+      dispatch({ type: 'TOGGLE_AI_AGENT_POPUP' });
     }
   }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide]);
 
@@ -882,6 +894,7 @@ export default function HomeV2() {
             flyToLocation={flyToLocation}
             externalShowCCTV={!uiState.showObjectTracking}
             onMapStateChange={setLastMapState}
+            streamMapData={streamMapData}
           />
         )}
       </div>
@@ -907,7 +920,7 @@ export default function HomeV2() {
       </div>
 
       <div 
-        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${uiState.panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${(uiState.panelsSlidOut || uiState.showAIAgentPopup) ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
         <HeatmapPanel 
@@ -932,9 +945,9 @@ export default function HomeV2() {
         </div>
       </div>
 
-      {/* BottomPanel (CCTV 화면) - 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드 또는 전파 모드일 때 숨김 */}
+      {/* BottomPanel (CCTV 화면) - 고속검색/객체추적/포착목록/전파 모드 또는 AI 에이전트 팝업 열림 시 숨김 */}
       <BottomPanel
-        showCCTV={uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
+        showCCTV={uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList && !uiState.showAIAgentPopup}
         hideControls={uiState.hideControls}
         leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
         windowWidth={windowWidth}
@@ -1058,64 +1071,49 @@ export default function HomeV2() {
         <div style={{ display: uiState.showPropagationList ? 'none' : 'block' }}>
           <AIAgentPopup
             isOpen={uiState.showAIAgentPopup && !uiState.showPropagationList}
-            onClose={() => dispatch({ type: 'COMPLETE_FAST_SEARCH' })}
+            onClose={() => {
+              dispatch({ type: 'TOGGLE_AI_AGENT_POPUP' });
+              setStreamMapData(null);
+            }}
             hideControls={uiState.hideControls}
             position={{
               top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424}px`,
               right: '20px',
             }}
-            listCardCount={listCardCount}
+            maxHeight={agentPopupMaxHeight}
             onDeleteLikeRequest={({ rawMessage }) => {
               const parsed = parseExcludedAttributesFromMessage(rawMessage);
-              
               if (parsed.length) {
                 previousListCardCountRef.current = listCardCount;
                 currentExcludedAttributesRef.current = parsed;
                 setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
               }
-              
               return parsed;
             }}
-            maxHeight={agentPopupMaxHeight}
-            reSearchResult={reSearchResult}
-            isObjectTracking={uiState.showObjectTracking}
-            captureNotificationMessage={captureNotificationMessage}
             onObjectTrackingStart={() => {
               if (uiState.showFastSearchList) {
-                // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
                 dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
               } else {
-                // 고속검색 리스트가 없으면 바로 시작
                 dispatch({ type: 'START_OBJECT_TRACKING' });
                 handleStartTrackingSequence();
               }
             }}
-            objectTrackingCompleted={objectTrackingCompleted}
-            showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
               setPinOffset({ x: 0, y: 0 });
-              
-              if (showMouseGuide) {
-                jumpToStep('radius-chip');
-              }
+              if (showMouseGuide) jumpToStep('radius-chip');
             }}
             onReSearchStart={() => {
               dispatch({ type: 'START_RE_SEARCH' });
-              
-              // 짧은 스켈레톤 표시 (0.5초)
               setShowReSearchSkeleton(true);
-              setTimeout(() => {
-                setShowReSearchSkeleton(false);
-              }, 500);
+              setTimeout(() => setShowReSearchSkeleton(false), 500);
             }}
             onReSearchComplete={() => {
               dispatch({ type: 'COMPLETE_RE_SEARCH' });
               isReSearchingRef.current = true;
-              if (showMouseGuide) {
-                jumpToStep('fast-search-candidate-10');
-              }
+              if (showMouseGuide) jumpToStep('fast-search-candidate-10');
             }}
+            onMapDataReceived={handleMapDataReceived}
           />
         </div>
       )}

@@ -5,8 +5,8 @@ import type {
   GeoJsonFeature,
   GeoJsonFeatureCollection,
   MapStreamData,
-} from "../../public/streamJson/streamJson.types";
-import { isMapStreamPayload } from "../../public/streamJson/streamJson.types";
+} from "@/types/streamJson.types";
+import { isMapStreamPayload } from "@/types/streamJson.types";
 
 interface ParseResult {
   success: boolean;

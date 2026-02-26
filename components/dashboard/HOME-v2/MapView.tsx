@@ -13,7 +13,7 @@ import {
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
 import { getCCTVPanelLayout } from '@/lib/dashboard-cctv-layout';
-import { isMapStreamPayload } from '@/public/streamJson/streamJson.types';
+import type { MapStreamData, MapStreamWmsLayer } from '@/types/streamJson.types';
 import { mapDataToFeatureCollection } from '@/src/hooks/useMapStreamParser';
 
 const PIXEL_RATIO = 2;
@@ -96,9 +96,10 @@ interface MapViewProps {
   flyToLocation?: [number, number] | null; // 지도를 특정 위치로 이동시키는 좌표
   externalShowCCTV?: boolean; // 외부에서 CCTV 표시 제어
   onMapStateChange?: (state: { center: [number, number]; zoom: number; pitch: number; bearing: number }) => void; // 지도 상태 변경 콜백
+  streamMapData?: MapStreamData | null; // 스트림에서 받은 맵 데이터
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, streamMapData }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -447,44 +448,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       });
 
-      // mapType.json 기반 스트림 마커 (정규화 → FeatureCollection)
-      const streamSourceId = 'stream-marker';
-      const streamLayerId = 'stream-marker-layer';
-
-      const streamMarkerIconId = 'stream-marker-icon';
-      const addStreamMarkers = (featureCollection: ReturnType<typeof mapDataToFeatureCollection>) => {
-        if (map.getSource(streamSourceId)) return;
-        map.addSource(streamSourceId, {
-          type: 'geojson',
-          data: featureCollection
-        });
-        if (!map.hasImage(streamMarkerIconId)) {
-          const img = createStreamMarkerImage();
-          map.addImage(streamMarkerIconId, img, { pixelRatio: PIXEL_RATIO });
-        }
-        if (map.getLayer(streamLayerId)) return;
-        map.addLayer({
-          id: streamLayerId,
-          type: 'symbol',
-          source: streamSourceId,
-          layout: {
-            'icon-image': streamMarkerIconId,
-            'icon-size': 1,
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'icon-anchor': 'center'
-          }
-        });
-      };
-
-      fetch('/streamJson/mapType.json')
-        .then((res) => res.json())
-        .then((payload: unknown) => {
-          if (!isMapStreamPayload(payload) || !payload.data?.markers?.length) return;
-          const featureCollection = mapDataToFeatureCollection(payload.data);
-          addStreamMarkers(featureCollection);
-        })
-        .catch((err) => console.warn('mapType.json 로드 실패:', err));
     });
 
     mapRef.current = map;
@@ -513,6 +476,140 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       mapRef.current = null;
     };
   }, [onMapStateChange]);
+
+  // streamMapData가 변경되면 마커와 WMS 레이어 업데이트
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const streamSourceId = 'stream-marker';
+    const streamLayerId = 'stream-marker-layer';
+    const streamMarkerIconId = 'stream-marker-icon';
+
+    const clearStreamLayers = () => {
+      // WMS 레이어 제거 (최대 10개까지)
+      for (let i = 0; i < 10; i++) {
+        const layerId = `wms-layer-${i}`;
+        const sourceId = `wms-source-${i}`;
+        if (map.getLayer(layerId)) {
+          map.removeLayer(layerId);
+        }
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId);
+        }
+      }
+      // 마커 레이어/소스 제거
+      if (map.getLayer(streamLayerId)) {
+        map.removeLayer(streamLayerId);
+      }
+      if (map.getSource(streamSourceId)) {
+        map.removeSource(streamSourceId);
+      }
+    };
+
+    const addStreamMarkers = (data: MapStreamData) => {
+      const featureCollection = mapDataToFeatureCollection(data);
+      
+      if (map.getSource(streamSourceId)) {
+        // 소스가 이미 있으면 데이터만 업데이트
+        (map.getSource(streamSourceId) as maplibregl.GeoJSONSource).setData(featureCollection);
+      } else {
+        // 새 소스 추가
+        map.addSource(streamSourceId, {
+          type: 'geojson',
+          data: featureCollection
+        });
+      }
+      
+      if (!map.hasImage(streamMarkerIconId)) {
+        const img = createStreamMarkerImage();
+        map.addImage(streamMarkerIconId, img, { pixelRatio: PIXEL_RATIO });
+      }
+      
+      if (!map.getLayer(streamLayerId)) {
+        map.addLayer({
+          id: streamLayerId,
+          type: 'symbol',
+          source: streamSourceId,
+          layout: {
+            'icon-image': streamMarkerIconId,
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-anchor': 'center'
+          }
+        });
+      }
+    };
+
+    const addWmsLayers = (wmsLayers: MapStreamWmsLayer[]) => {
+      wmsLayers.forEach((wmsLayer, idx) => {
+        const sourceId = `wms-source-${idx}`;
+        const layerId = `wms-layer-${idx}`;
+        
+        if (map.getSource(sourceId)) return;
+
+        const urlObj = new URL(wmsLayer.url);
+        urlObj.searchParams.set('srs', 'EPSG:3857');
+        urlObj.searchParams.delete('bbox');
+        const baseUrl = urlObj.toString() + '&bbox={bbox-epsg-3857}';
+
+        map.addSource(sourceId, {
+          type: 'raster',
+          tiles: [baseUrl],
+          tileSize: 256
+        });
+
+        if (!map.getLayer(layerId)) {
+          map.addLayer({
+            id: layerId,
+            type: 'raster',
+            source: sourceId,
+            paint: {
+              'raster-opacity': wmsLayer.opacity ?? 0.5
+            }
+          });
+        }
+      });
+    };
+
+    const updateStreamData = () => {
+      if (!streamMapData) {
+        clearStreamLayers();
+        return;
+      }
+
+      // 기존 레이어 제거
+      clearStreamLayers();
+
+      // WMS 레이어를 먼저 추가 (아래에 깔림)
+      if (streamMapData.wms_layers?.length) {
+        addWmsLayers(streamMapData.wms_layers);
+      }
+
+      // 마커를 나중에 추가 (위에 표시)
+      if (streamMapData.markers?.length) {
+        addStreamMarkers(streamMapData);
+      }
+
+      // 지도 중심 및 줌 레벨 이동
+      if (streamMapData.center && streamMapData.zoom) {
+        map.flyTo({
+          center: [streamMapData.center.lng, streamMapData.center.lat],
+          zoom: streamMapData.zoom,
+          duration: 1500,
+          essential: true
+        });
+      }
+    };
+
+    // 맵이 로드된 후 실행
+    if (map.loaded()) {
+      updateStreamData();
+    } else {
+      map.once('load', updateStreamData);
+    }
+  }, [streamMapData]);
 
   // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
   useEffect(() => {
@@ -2019,57 +2116,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
 
       {/* Agent Hub 버튼 - 초기: CCTV 위 30px / 1번: 아래로만 / 고속검색: 우측 하단 */}
-      {(() => {
-        const rightPanelWidth = 370;
-        const panelGap = 16;
-        const { buttonBottom } = getCCTVPanelLayout();
-        const cctvPanelRight = rightPanelWidth + panelGap;
-        const isInitial = showCCTV && !hideControls;
-        const isFastSearch = showFastSearch || showFastSearchList;
-        const bottom = isInitial ? buttonBottom : 24;
-        const right = isInitial ? cctvPanelRight : isFastSearch ? 24 : cctvPanelRight;
-        return (
-          <div
-            className="absolute group"
-            style={{
-              bottom: `${bottom}px`,
-              right: `${right}px`,
-              zIndex: 200,
-              transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out',
-            }}
-          >
-            <a
-              href="/cuvia-link"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
-              style={{
-                background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
-                boxShadow: '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)';
-              }}
-              aria-label="Agent Hub"
-            >
-              <img 
-                src="/simbol.svg" 
-                alt="AI" 
-                className="w-6 h-6"
-                style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-              />
-            </a>
-            {/* 툴팁 */}
-            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">
-              Agent Hub 이동
-              <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-[#1a1a1a]"></div>
-            </div>
-          </div>
-        );
-      })()}
+      
 
 
     </div>

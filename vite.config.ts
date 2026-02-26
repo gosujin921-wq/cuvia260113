@@ -30,7 +30,13 @@ export default defineConfig({
     css: {
         devSourcemap: false, // CSS 소스맵 비활성화로 분석 오류 방지
     },
+    optimizeDeps: {
+        esbuildOptions: {
+            target: "es2022",
+        },
+    },
     build: {
+        target: "es2022",
         outDir: "dist",
     },
 });

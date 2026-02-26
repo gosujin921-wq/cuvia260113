@@ -1,5 +1,5 @@
 /**
- * public/streamJson 폴더 내 JSON 스트림 데이터 파싱용 타입 정의
+ * streamJson 스트림 데이터 파싱용 타입 정의
  * - stepType.json, messageType.json, chartType.json, mapType.json
  */
 
@@ -93,12 +93,45 @@ export interface MapStreamPayload {
   data: MapStreamData;
 }
 
+// ========== completeType (최종 응답) ==========
+export interface CompleteStreamTableData {
+  columns: string[];
+  rows: (string | number)[][];
+  title: string | null;
+  format: string;
+  html?: string;
+}
+
+export interface CompleteStreamData {
+  map_data?: MapStreamData;
+  tables?: CompleteStreamTableData[];
+  table?: CompleteStreamTableData & { html?: string };
+  chart_data?: ChartStreamData | null;
+  show_table?: boolean;
+}
+
+export interface CompleteStreamPayload {
+  success: boolean;
+  message: string;
+  rationale?: string;
+  data?: CompleteStreamData;
+  actions?: unknown[];
+  status?: string;
+  context?: {
+    slots?: Record<string, string>;
+    meta?: Record<string, string>;
+  };
+  type?: string;
+  intent?: string;
+}
+
 // ========== 유니온: 스트림 페이로드 공통 타입 ==========
 export type StreamPayload =
   | StepStreamPayload
   | MessageStreamPayload
   | ChartStreamPayload
-  | MapStreamPayload;
+  | MapStreamPayload
+  | CompleteStreamPayload;
 
 // ========== 타입 가드 (런타임 파싱 검증용) ==========
 export const isStepStreamPayload = (
@@ -132,6 +165,14 @@ export const isMapStreamPayload = (
   payload !== null &&
   (payload as MapStreamPayload).type === "map" &&
   typeof (payload as MapStreamPayload).data === "object";
+
+export const isCompleteStreamPayload = (
+  payload: unknown
+): payload is CompleteStreamPayload =>
+  typeof payload === "object" &&
+  payload !== null &&
+  typeof (payload as CompleteStreamPayload).success === "boolean" &&
+  typeof (payload as CompleteStreamPayload).message === "string";
 
 /** JSON 문자열을 파싱 후 StreamPayload로 타입 단언 (검증은 타입 가드 사용 권장) */
 export const parseStreamJson = (json: string): StreamPayload =>
