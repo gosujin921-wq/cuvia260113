@@ -458,7 +458,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
             }}
           >
             {/* 메시지 영역 */}
-            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
               {/* 메시지 헤더 */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-[#31353a] flex-shrink-0 bg-[#0a0a0a]/50">
                 <div className="flex-1 min-w-0">
@@ -495,7 +495,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                 </button>
               </div>
 
-              {/* 메시지 영역 - 타임라인 스타일 */}
+              {/* 메시지 영역 - 채팅 스타일 */}
               <div 
                 ref={scrollContainerRef}
                 className="flex-1 overflow-y-auto p-4"
@@ -504,103 +504,97 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                   scrollbarColor: '#31353a #0f0f0f',
                 }}
               >
-                <div className="max-w-full">
-                  {/* 타임라인 컨테이너 */}
-                  <div className="relative pl-12">
-                    {/* 타임라인 세로선 */}
-                    <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#31353a]" />
-                    
-                    {/* 메시지들 */}
-                    <div className="space-y-6">
-                      {threadMessages.map((message, index) => (
-                        <div key={message.id} className="relative flex items-start gap-4" style={{
-                          marginLeft: (message.role === 'system' || message.role === 'user') ? '40px' : '0px',
-                        }}>
-                          {/* 타임라인 아이콘 */}
-                          <div className="relative z-10 flex-shrink-0 -ml-12">
-                            {message.role === 'agency' && (
-                              <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center border-4 border-[#0a0a0a] shadow-md">
-                                <Icon icon="mdi:alert-circle" className="w-4 h-4 text-white" />
-                              </div>
-                            )}
-                            {message.role === 'system' && (
-                              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center border-4 border-[#0a0a0a] shadow-md">
-                                <Icon icon="mdi:send" className="w-4 h-4 text-white" />
-                              </div>
-                            )}
-                            {message.role === 'user' && (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center border-4 border-[#0a0a0a] shadow-md">
-                                <Icon icon="mdi:account" className="w-4 h-4 text-white" />
-                              </div>
-                            )}
+                <div className="flex flex-col gap-4 max-w-full">
+                  {threadMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={message.role === 'agency' ? 'flex items-start gap-3' : 'flex justify-end'}
+                    >
+                      {/* 왼쪽 정렬: agency (신고기관) - 수신 메시지 */}
+                      {message.role === 'agency' && (
+                        <div className="flex items-start gap-3 w-[80%] min-w-[80%]">
+                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center border-2 border-[#0a0a0a] shadow-sm">
+                            <Icon icon="mdi:alert-circle" className="w-4 h-4 text-white" />
                           </div>
-
-                          {/* 메시지 내용 */}
                           <div className="flex-1 min-w-0">
-                            {message.role === 'agency' && (
-                              <div className="bg-[#0f0f0f]/70 border border-[#31353a] rounded-lg p-4 shadow-sm">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <span className="text-sm font-bold text-red-400">{message.author || '신고기관'}</span>
-                                  <span className="text-sm text-gray-500">•</span>
-                                  <span className="text-sm text-gray-500">{message.timestamp}</span>
-                                  {message.status === 'unread' && (
-                                    <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold ml-auto">
-                                      NEW
-                                    </span>
-                                  )}
-                                </div>
-                                <pre className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">
-                                  {message.content}
-                                </pre>
-                                {message.showCompletionButton && (
-                                  <div className="mt-4 pt-4 border-t border-[#31353a]">
-                                    <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
-                                    <button
-                                      type="button"
-                                      onClick={() => onBackToInitial?.()}
-                                      className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
-                                      aria-label="확인"
-                                    >
-                                      확인
-                                    </button>
-                                  </div>
+                            <div className="bg-[#0f0f0f]/70 border border-[#31353a] rounded-2xl rounded-tl-sm p-4 shadow-sm">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm font-bold text-red-400">{message.author || '신고기관'}</span>
+                                {message.status === 'unread' && (
+                                  <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">
+                                    NEW
+                                  </span>
                                 )}
                               </div>
-                            )}
+                              <div
+                                className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans"
+                                dangerouslySetInnerHTML={{
+                                  __html: message.content
+                                    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+                                    .replace(/\*(.+?)\*/g, '<em class="text-gray-200">$1</em>'),
+                                }}
+                              />
+                              {message.showCompletionButton && (
+                                <div className="mt-4 pt-4 border-t border-[#31353a]">
+                                  <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => onBackToInitial?.()}
+                                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+                                    aria-label="확인"
+                                  >
+                                    확인
+                                  </button>
+                                </div>
+                              )}
+                              <div className="text-xs text-gray-500 mt-2">{message.timestamp}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
+                      {/* 오른쪽 정렬: system (전파 전송), user (담당자) - 발신 메시지 */}
+                      {(message.role === 'system' || message.role === 'user') && (
+                        <div className="flex items-end gap-2 w-[80%] min-w-[80%]">
+                          <div className="flex-1 min-w-0 flex flex-col items-end">
                             {message.role === 'system' && (
-                              <div className="bg-[#393a42] border border-[#31353a] rounded-lg p-4 shadow-sm">
-                                <div className="flex items-center gap-2 mb-3">
+                              <div className="bg-[#393a42] border border-[#31353a] rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
+                                <div className="flex items-center justify-end gap-2 mb-2">
                                   <span className="text-sm font-bold text-gray-200">전파 전송</span>
-                                  <span className="text-sm text-gray-500">•</span>
-                                  <span className="text-sm text-gray-500">{message.timestamp}</span>
                                 </div>
                                 {message.content ? (
                                   <>
                                     <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans space-y-4">
-                                      {message.content.split('\n\n').map((paragraph, idx) => (
-                                        <div key={idx} className={paragraph.startsWith('👤') || paragraph.startsWith('📡') || paragraph.startsWith('🎯') || paragraph.startsWith('🧭') || paragraph.startsWith('🤝') || paragraph.startsWith('📎') ? 'mt-4 first:mt-0' : ''}>
-                                          {paragraph}
-                                        </div>
-                                      ))}
+                                      {message.content.split('\n\n').map((paragraph, idx) => {
+                                        const isSection = paragraph.startsWith('👤') || paragraph.startsWith('📡') || paragraph.startsWith('🎯') || paragraph.startsWith('🧭') || paragraph.startsWith('🤝') || paragraph.startsWith('📎') || paragraph.startsWith('🚨') || paragraph.startsWith('🚓') || paragraph.startsWith('🔎') || paragraph.startsWith('🔗') || paragraph.startsWith('📍') || paragraph.startsWith('🔒');
+                                        const html = paragraph
+                                          .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+                                          .replace(/\*(.+?)\*/g, '<em class="text-gray-200">$1</em>');
+                                        return (
+                                          <div
+                                            key={idx}
+                                            className={isSection ? 'mt-4 first:mt-0' : ''}
+                                            dangerouslySetInnerHTML={{ __html: html }}
+                                          />
+                                        );
+                                      })}
                                     </div>
-                                    
-                                    {/* 포착 목록 */}
+
                                     {captureItems.length > 0 && (
                                       <div className="mt-4 pt-4 border-t border-[#31353a]">
                                         <div className="text-xs font-semibold text-gray-400 mb-3">📎 포착 목록 ({captureItems.length}건)</div>
                                         <div className="grid grid-cols-2 gap-2">
-                                          {captureItems.map((item, idx) => (
+                                          {captureItems.map((item) => (
                                             <div key={item.id} className="relative group">
                                               <div className="aspect-video bg-black rounded overflow-hidden border border-[#31353a] group-hover:border-blue-500/50 transition-colors relative">
                                                 <video
                                                   src={item.videoUrl}
                                                   poster={item.thumbnailUrl}
-                                                className="w-full h-full object-cover"
-                                                muted
-                                                playsInline
-                                                preload="metadata"
-                                              />
+                                                  className="w-full h-full object-cover"
+                                                  muted
+                                                  playsInline
+                                                  preload="metadata"
+                                                />
                                               </div>
                                               <div className="text-[10px] text-gray-400 mt-1 text-center truncate">{item.cctvName} - {item.timestamp}</div>
                                             </div>
@@ -612,26 +606,34 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                 ) : (
                                   <p className="text-sm text-red-400">내용이 없습니다</p>
                                 )}
+                                <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
                               </div>
                             )}
 
                             {message.role === 'user' && (
-                              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-lg p-4 shadow-sm">
-                                <div className="flex items-center gap-2 mb-3">
+                              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-2xl rounded-tr-sm p-4 shadow-sm">
+                                <div className="flex items-center justify-end gap-2 mb-2">
                                   <span className="text-sm font-semibold text-blue-300">담당자</span>
-                                  <span className="text-sm text-gray-500">•</span>
-                                  <span className="text-sm text-gray-500">{message.timestamp}</span>
                                 </div>
-                                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
-                                  {message.content}
-                                </p>
+                                <div
+                                  className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap"
+                                  dangerouslySetInnerHTML={{
+                                    __html: message.content
+                                      .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
+                                      .replace(/\*(.+?)\*/g, '<em class="text-gray-200">$1</em>'),
+                                  }}
+                                />
+                                <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
                               </div>
                             )}
                           </div>
+                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center border-2 border-[#0a0a0a] shadow-sm">
+                            <Icon icon={message.role === 'system' ? 'mdi:send' : 'mdi:account'} className="w-4 h-4 text-white" />
+                          </div>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  </div>
+                  ))}
                   <div ref={bottomRef} />
                 </div>
               </div>
@@ -669,7 +671,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                     </button>
                   </div>
                   <p className="text-[10px] text-gray-500 mt-1.5 text-center">
-                    신고기관과의 소통 스레드입니다. 상황 진행 사항을 실시간으로 확인하세요.
+                    신고기관과의 채팅입니다. 상황 진행 사항을 실시간으로 확인하세요.
                   </p>
                 </div>
               </div>
