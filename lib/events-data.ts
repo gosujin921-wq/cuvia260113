@@ -84,6 +84,8 @@ const eventSpecificData: Record<string, {
     category: ResolutionCategory;
     code: string;
   };
+  /** 이벤트별 실제 좌표 [lng, lat] (없으면 generateCoordinates 사용) */
+  coordinates?: [number, number];
 }> = {
   'A-20241124-001': {
     type: '112-치안',
@@ -108,6 +110,8 @@ const eventSpecificData: Record<string, {
       category: '112',
       code: 'CCTV 확인 완료',
     },
+    // 1키 시나리오용 실제 사건 위치 (은하로363번길 48) [lng, lat]
+    coordinates: [126.783853180335, 37.5049838114765] as [number, number],
   },
 };
 
@@ -162,12 +166,12 @@ export const getEventCategory = (event: BaseEvent): string => {
   return domainLabels[event.domain];
 };
 
-// 좌표 생성 (하늘시 기준)
+// 좌표 생성 (하늘시 기준) - GeoJSON/MapLibre 형식 [lng, lat]
 const generateCoordinates = (index: number): [number, number] => {
   const baseLat = 37.5034; // 하늘시 위도
   const baseLng = 126.7660; // 하늘시 경도
   const offset = index * 0.001;
-  return [baseLat + offset, baseLng + offset];
+  return [baseLng + offset, baseLat + offset];
 };
 
 // 대시보드용 Event 타입으로 변환
@@ -210,6 +214,8 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
     eventData.resolution.code
   );
 
+  const coordinates = eventData.coordinates ?? generateCoordinates(index);
+
   return {
     id: event.id,
     eventId: event.eventId,
@@ -220,7 +226,7 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
     timestamp: event.time,
     location: {
       name: event.location,
-      coordinates: generateCoordinates(index),
+      coordinates,
     },
     description: event.description || event.title,
     processingStage: eventData.processingStage,

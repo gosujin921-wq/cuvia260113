@@ -859,3 +859,20 @@ input[type="range"].slider::-moz-range-thumb {
   animation: featured-grid-fade 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards;
   opacity: 0;
 }
+
+/* 1키 이벤트 영상 프레임 - 레드 스트로크 깜빡임 */
+@keyframes red-stroke-blink {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 1);
+    border-color: #ef4444;
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+}
+
+.video-frame-red-blink {
+  animation: red-stroke-blink 1s ease-in-out infinite;
+}

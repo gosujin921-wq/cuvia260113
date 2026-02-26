@@ -391,7 +391,7 @@ const MessageList: React.FC<MessageListProps> = ({
                             </>
                           ) : (
                             <>
-                              <p className="text-sm font-semibold text-gray-900">{welcomeContent.title}</p>
+                              <p className="text-sm font-semibold text-red-500">{welcomeContent.title}</p>
                               <p className="text-xs text-gray-600">{welcomeContent.camera}</p>
                               <p className="text-xs text-gray-600">{welcomeContent.detectedAt}</p>
                               <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700" dangerouslySetInnerHTML={{ __html: welcomeContent.body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />

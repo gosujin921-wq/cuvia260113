@@ -44,7 +44,7 @@ const defaultReportContent = `🚨 실종자 신고 접수
 
 신고 기관: 하늘별빛경찰서
 접수 시각: 오전 09:45:23
-담당자: 김민수 경위
+담당자: 김쿠도
 
 ▪ 실종자 정보
 
@@ -140,20 +140,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
         status: 'pending',
         createdAt: reportTime.toISOString(),
         messages: [
-          // 1. 신고 접수 메시지 (하늘별빛경찰서)
-          {
-            id: 'msg-report',
-            role: 'agency',
-            content: defaultReportContent,
-            timestamp: reportTime.toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            }),
-            author: '하늘별빛경찰서',
-            status: 'read',
-          },
-          // 2. 전파 전송 메시지 (내가 보낸 전파)
+          // 1. 전파 전송 메시지 (내가 보낸 전파) — 2번부터 시작
           {
             id: 'msg-propagation',
             role: 'system',
@@ -241,20 +228,17 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     };
 
     const t1 = window.setTimeout(() => addAgencyMsg(policeReply1), 2000);
-    const t2 = window.setTimeout(() => addUserMsg(userReply), 5000);
-    const t3 = window.setTimeout(() => {
-      addAgencyMsg(policeReply2);
+    const t2 = window.setTimeout(() => {
       setThreads((prev) =>
         prev.map((thread) =>
           thread.id === currentThreadId ? { ...thread, status: 'completed' as const } : thread
         )
       );
-    }, 8000);
+    }, 3000);
 
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
-      window.clearTimeout(t3);
     };
   }, [isVisible, currentThreadId]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -449,7 +433,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                   onClick={() => {
                     // 전파 내용 다운로드
                     const content = threadMessages.map(msg => 
-                      `[${msg.role === 'agency' ? msg.author : msg.role === 'system' ? '전파 전송' : '담당자'}] ${msg.timestamp}\n\n${msg.content}\n\n---\n\n`
+                      `[${msg.role === 'agency' ? msg.author : msg.role === 'system' ? '전파 전송' : '김쿠도'}] ${msg.timestamp}\n\n${msg.content}\n\n---\n\n`
                     ).join('');
                     
                     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -585,7 +569,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                             {message.role === 'user' && (
                               <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-lg p-4 shadow-sm">
                                 <div className="flex items-center gap-2 mb-3">
-                                  <span className="text-sm font-semibold text-blue-300">담당자</span>
+                                  <span className="text-sm font-semibold text-blue-300">김쿠도</span>
                                   <span className="text-sm text-gray-500">•</span>
                                   <span className="text-sm text-gray-500">{message.timestamp}</span>
                                 </div>
