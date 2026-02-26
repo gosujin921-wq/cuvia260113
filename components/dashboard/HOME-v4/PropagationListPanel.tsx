@@ -165,6 +165,52 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   const userReply = '최신 포착은 CCTV-19 14:05:08, 위치는 달빛로301번길 28 인근 교차로, 진행은 **동 방향 은하로**입니다.';
   const policeReply2 = '출동 중입니다. 추가 업데이트만 부탁드립니다.';
 
+  const typingIntervalRef = useRef<number | null>(null);
+  const autoTypingTimeoutRef = useRef<number | null>(null);
+  const autoSendTimeoutRef = useRef<number | null>(null);
+
+  const startAutoTypingReply = () => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    const fullText = `최신 포착은 별빛A-655 ${timeStr}, 위치는 은하빌딩, 진행은 **달빛동 방향** 입니다.`;
+
+    if (typingIntervalRef.current !== null) {
+      window.clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+
+    if (autoSendTimeoutRef.current !== null) {
+      window.clearTimeout(autoSendTimeoutRef.current);
+      autoSendTimeoutRef.current = null;
+    }
+
+    setMessageInput('');
+    let index = 0;
+
+    const intervalId = window.setInterval(() => {
+      index += 1;
+      setMessageInput(fullText.slice(0, index));
+
+      if (index >= fullText.length) {
+        window.clearInterval(intervalId);
+        typingIntervalRef.current = null;
+
+        const sendTimeoutId = window.setTimeout(() => {
+          handleSendMessage(fullText);
+        }, 300);
+
+        autoSendTimeoutRef.current = sendTimeoutId;
+      }
+    }, 40);
+
+    typingIntervalRef.current = intervalId;
+  };
+
   useEffect(() => {
     if (!isVisible) {
       hasAddedDiscoveryRef.current = false;
@@ -227,7 +273,19 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
       );
     };
 
-    const t1 = window.setTimeout(() => addAgencyMsg(policeReply1), 2000);
+    const t1 = window.setTimeout(() => {
+      addAgencyMsg(policeReply1);
+
+      const typingTimeoutId = window.setTimeout(() => {
+        startAutoTypingReply();
+      }, 1000);
+
+      if (autoTypingTimeoutRef.current !== null) {
+        window.clearTimeout(autoTypingTimeoutRef.current);
+      }
+
+      autoTypingTimeoutRef.current = typingTimeoutId;
+    }, 2000);
     const t2 = window.setTimeout(() => {
       setThreads((prev) =>
         prev.map((thread) =>
@@ -239,6 +297,15 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
+      if (autoTypingTimeoutRef.current !== null) {
+        window.clearTimeout(autoTypingTimeoutRef.current);
+      }
+      if (typingIntervalRef.current !== null) {
+        window.clearInterval(typingIntervalRef.current);
+      }
+      if (autoSendTimeoutRef.current !== null) {
+        window.clearTimeout(autoSendTimeoutRef.current);
+      }
     };
   }, [isVisible, currentThreadId]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -320,8 +387,8 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     );
   };
 
-  const handleSendMessage = () => {
-    const text = messageInput.trim();
+  const handleSendMessage = (overrideText?: string) => {
+    const text = (overrideText ?? messageInput).trim();
     if (!text) return;
 
     addMessage('user', text);

@@ -473,26 +473,15 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                     })}
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    // 전파 내용 다운로드
-                    const content = threadMessages.map(msg => 
-                      `[${msg.role === 'agency' ? msg.author : msg.role === 'system' ? '전파 전송' : '담당자'}] ${msg.timestamp}\n\n${msg.content}\n\n---\n\n`
-                    ).join('');
-                    
-                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `사건처리결과보고서_${currentThread?.title}_${new Date().toISOString().slice(0, 10)}.txt`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
+                <a
+                  href="https://docs.google.com/document/d/1_--OP0DBT21tfMWvO2NGB9aWc_eVwgBo/edit"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors flex items-center gap-1.5"
                 >
                   <Icon icon="mdi:download" className="w-4 h-4" />
                   <span>사건 처리 결과 보고서 다운로드</span>
-                </button>
+                </a>
               </div>
 
               {/* 메시지 영역 - 채팅 스타일 */}
