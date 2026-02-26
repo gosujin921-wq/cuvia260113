@@ -304,7 +304,8 @@ export default function HomeV2() {
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
   const [triggerCaptureForCctvId, setTriggerCaptureForCctvId] = useState<string | null>(null); // 전파 초안 요청 시 별빛A-655 캡처 트리거
   const [showFastSearchPopupOverlay, setShowFastSearchPopupOverlay] = useState<boolean>(false); // 사건 영상 바로 보기 시 딤+고속검색 팝업
-  
+  const [captureProgressMessage, setCaptureProgressMessage] = useState<string | null>(null); // 2키 시 에이전트 팝업 프로그레스 문구
+
   // Refs
   const previousListCardCountRef = useRef<number>(0);
   const currentExcludedAttributesRef = useRef<string[]>([]);
@@ -758,9 +759,18 @@ export default function HomeV2() {
       setPinOffset({ x: -100, y: 0 }); // 좌표 기준 좌측 100px
       setFlyToLocation(missingEvent.location.coordinates as [number, number]);
     } else if (e.key === '2') {
-      setShowPredictedCCTVList(true);
-      setShowFeaturedLayout(true); // 별빛A-655 상단 1x1 레이아웃으로 전환
-      setObjectTrackingCompleted(true);
+      // 예측 CCTV에서 포착대상 감지 시나리오: 에이전트 로딩 완료 후 5번 핀 이동
+      setCaptureProgressMessage('예측 CCTV 분석 중...');
+      setTimeout(() => setCaptureProgressMessage('포착 가능 구역 산정 중...'), 600);
+      setTimeout(() => setCaptureProgressMessage('포착대상 감지 중...'), 1400);
+      setTimeout(() => setCaptureProgressMessage('별빛A-655에서 포착 확인'), 2200);
+      setTimeout(() => {
+        setCaptureProgressMessage(null);
+        setShowFeaturedLayout(true);
+        setObjectTrackingCompleted(true);
+        setVisibleTrackingPins(5);
+        setShowPredictedCCTVList(true);
+      }, 3000);
     } else if (e.key === '3') {
       handleStartTrackingSequence();
     } else if (e.key === '4') {
@@ -914,9 +924,14 @@ export default function HomeV2() {
         isOpen={showFastSearchPopupOverlay}
         onClose={() => setShowFastSearchPopupOverlay(false)}
         thumbnailItems={[
-          { id: 'people01', thumbnailUrl: '/hijacking/people01.png' },
-          { id: 'people02', thumbnailUrl: '/hijacking/people02.png' },
-          { id: 'car', thumbnailUrl: '/hijacking/car.png' },
+          { id: 'people01', thumbnailUrl: '/hijacking/people01.png', label: '인물A (가해자 추정)' },
+          { id: 'people02', thumbnailUrl: '/hijacking/people02.png', label: '인물B (피해자 추정)' },
+          {
+            id: 'car',
+            thumbnailUrl: '/hijacking/car.png',
+            label: '차량',
+            bbox: { x: 720, y: 320, width: 480, height: 360 },
+          },
         ]}
         videoUrlOverride="/hijacking/cnc_01_1.mp4"
         observationSummaryOverride="흰색 SUV(014저 4515)가 별빛A-444 검지 영역 중앙 도로상에 급정차한 후, 남색 상의를 착용한 인물이 하늘색 상의 인물의 신체를 강하게 결착하여 뒷좌석 승차를 강요함. 피해 의심 인물이 승차하자마자 즉시 문을 폐쇄하고 현장을 이탈하려는 긴박한 행동 패턴이 관찰됨."
@@ -958,6 +973,19 @@ export default function HomeV2() {
           location: getLocationForCaptureItem({ id: '5' }),
         } : null}
         onAddCapture={handleAddCaptureItem}
+        onObjectTracking={() => {
+          if (uiState.showFastSearchList) {
+            dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+          } else {
+            setIsObjectTrackingTransitioning(true);
+            setTimeout(() => {
+              dispatch({ type: 'START_OBJECT_TRACKING' });
+              handleStartTrackingSequence();
+              setIsObjectTrackingTransitioning(false);
+              setReportFadeIn(false);
+            }, 350);
+          }
+        }}
       />
 
       {/* FastSearchListPanel (고속검색 화면 진입 시) */}
@@ -1091,11 +1119,13 @@ export default function HomeV2() {
             }}
             objectTrackingCompleted={objectTrackingCompleted}
             showFeaturedLayout={showFeaturedLayout}
+            captureProgressMessage={captureProgressMessage}
             onPropagationDraftRequest={() => {
               setTriggerCaptureForCctvId('5');
               setTimeout(() => setTriggerCaptureForCctvId(null), 1500);
             }}
             onVideoView={() => setShowFastSearchPopupOverlay(true)}
+            onPropagationPanelRequest={() => dispatch({ type: 'SHOW_PROPAGATION_LIST' })}
             showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });

@@ -6,7 +6,6 @@ import {
   getCandidateDetailData,
   addMinutesToTime,
   generateMarkdownAnalysis,
-  getSimilarityTableForImageId,
   type TimelineEntry,
 } from '@/lib/fast-search-candidate-detail';
 import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes';
@@ -25,6 +24,10 @@ export interface ThumbnailItem {
   id: string;
   thumbnailUrl: string;
   videoUrl?: string;
+  /** 썸네일 하단 표시 텍스트 */
+  label?: string;
+  /** 영상 위에 표시할 박스 영역 (1920x1080 기준 좌표). 썸네일 선택 시 파란색 스트로크로 표시 */
+  bbox?: { x: number; y: number; width: number; height: number };
 }
 
 interface TargetCapturePopupProps {
@@ -34,6 +37,8 @@ interface TargetCapturePopupProps {
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string, options?: { hideOverlayWithPopup?: boolean }) => void;
   /** 관찰요약 아래 썸네일 리스트용 아이템 (미지정 시 후보 이미지로 기본 목록 생성) */
   thumbnailItems?: ThumbnailItem[];
+  /** 객체 추적 버튼 클릭 시 호출 */
+  onObjectTracking?: () => void;
   /** 영상 경로 오버라이드 (사건 영상 바로 보기 등) */
   videoUrlOverride?: string;
   /** 관찰 요약 오버라이드 (사건 영상 바로 보기용) */
@@ -57,6 +62,7 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
   candidate,
   onAddCapture,
   thumbnailItems: thumbnailItemsProp,
+  onObjectTracking,
   videoUrlOverride,
   observationSummaryOverride,
   timelineOverride,
@@ -83,7 +89,6 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
   const [greenBoxSize, setGreenBoxSize] = useState({ width: 80, height: 80 });
   const [showGreenBox, setShowGreenBox] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(true);
-  const [isSimilarityOpen, setIsSimilarityOpen] = useState(false);
   const [isCaptureAnimating, setIsCaptureAnimating] = useState(false);
   const [flyingThumbnail, setFlyingThumbnail] = useState<{
     startX: number;
@@ -445,33 +450,17 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 헤더 */}
+          {/* 헤더 - 고속검색과 동일: 영상정보만 표시 */}
           <div className="flex flex-wrap items-start justify-between gap-3 p-4 flex-shrink-0 border-b border-[#31353a]">
             <div className="flex flex-col gap-1.5 min-w-0">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                <span className="text-white font-semibold text-sm">대상포착팝업</span>
+                <span className="text-white font-semibold text-sm">{candidate.cctvId}</span>
                 <span className="text-gray-400 text-sm">·</span>
-                <span className="text-gray-300 text-sm truncate">{candidate.cctvId} · {candidate.location}</span>
+                <span className="text-gray-300 text-sm truncate">{candidate.location}</span>
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                 <span className="text-gray-400">시간 범위</span>
                 <span className="text-gray-300">{timeRange}</span>
-                <span className="text-gray-500">|</span>
-                <span className="text-gray-400">유사도</span>
-                <span className="text-white font-semibold">{candidate.confidence}%</span>
-                <div
-                  className="h-2 rounded-full bg-[#0f0f0f] overflow-hidden border border-[#31353a]"
-                  style={{ width: 100 }}
-                  role="progressbar"
-                  aria-valuenow={candidate.confidence}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                >
-                  <div
-                    className="h-full rounded-full bg-blue-500"
-                    style={{ width: `${candidate.confidence}%` }}
-                  />
-                </div>
               </div>
             </div>
             <button
@@ -486,7 +475,7 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
 
           {/* 2컬럼 레이아웃 */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
-            {/* 좌측: 영상 + 관찰요약 + 썸네일 리스트 */}
+            {/* 좌측: 영상 + 썸네일 리스트 */}
             <div className="flex-shrink-0 p-4 border-r border-[#31353a]/50 flex flex-col gap-3" style={{ width: '65%' }}>
               <div
                 ref={containerRef}
@@ -552,6 +541,34 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
                   );
                 })()}
 
+                {/* 썸네일 선택 시 파란색 스트로크 박스 (선택된 썸네일에 bbox가 있을 때) */}
+                {(() => {
+                  const selectedThumb = thumbnailList[currentThumbnailIndex];
+                  const bbox = selectedThumb?.bbox;
+                  if (!bbox || !videoRef.current) return null;
+                  const video = videoRef.current;
+                  const cw = video.clientWidth;
+                  const ch = video.clientHeight;
+                  if (!cw || !ch) return null;
+                  const scaleX = cw / ORIGINAL_VIDEO_WIDTH;
+                  const scaleY = ch / ORIGINAL_VIDEO_HEIGHT;
+                  return (
+                    <div
+                      className="absolute pointer-events-none"
+                      style={{
+                        left: bbox.x * scaleX - 40,
+                        top: bbox.y * scaleY + 30,
+                        width: bbox.width * scaleX,
+                        height: bbox.height * scaleY,
+                        border: '3px solid #3b82f6',
+                        borderRadius: '4px',
+                        zIndex: 6,
+                      }}
+                      aria-hidden="true"
+                    />
+                  );
+                })()}
+
                 <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
                   <div
                     className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pointer-events-auto"
@@ -600,20 +617,7 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
                 </div>
               </div>
 
-              {/* 관찰 요약 - 영상 아래 */}
-              <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
-                </div>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  {videoUrlOverride && observationSummaryOverride
-                    ? observationSummaryOverride
-                    : detail.observationSummary}
-                </p>
-              </div>
-
-              {/* 썸네일 리스트 - 관찰 요약 아래 (전파패키지 스타일) */}
+              {/* 썸네일 리스트 (전파패키지 스타일) */}
               <div
                 className="flex gap-2 overflow-x-auto flex-shrink-0"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#31353a #0f0f0f' }}
@@ -623,26 +627,34 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
                     key={item.id}
                     type="button"
                     onClick={() => setCurrentThumbnailIndex(index)}
-                    className={`flex-shrink-0 w-24 h-16 rounded border-2 overflow-hidden transition-all ${
+                    className={`flex-shrink-0 flex flex-col items-center gap-1 rounded border-2 overflow-hidden transition-all pb-1.5 ${
                       currentThumbnailIndex === index
                         ? 'border-blue-500 ring-2 ring-blue-500/50'
                         : 'border-[#31353a] hover:border-blue-400'
                     }`}
+                    style={{ width: 96 }}
                   >
-                    {item.videoUrl ? (
-                      <video
-                        src={item.videoUrl}
-                        poster={item.thumbnailUrl}
-                        className="w-full h-full object-cover pointer-events-none"
-                        muted
-                        playsInline
-                      />
-                    ) : (
-                      <img
-                        src={item.thumbnailUrl}
-                        alt=""
-                        className="w-full h-full object-cover pointer-events-none"
-                      />
+                    <div className="w-full h-20 flex-shrink-0 bg-black">
+                      {item.videoUrl ? (
+                        <video
+                          src={item.videoUrl}
+                          poster={item.thumbnailUrl}
+                          className="w-full h-full object-cover pointer-events-none"
+                          muted
+                          playsInline
+                        />
+                      ) : (
+                        <img
+                          src={item.thumbnailUrl}
+                          alt=""
+                          className="w-full h-full object-cover pointer-events-none"
+                        />
+                      )}
+                    </div>
+                    {item.label && (
+                      <span className="text-[10px] text-gray-400 px-1 text-center leading-tight">
+                        {item.label}
+                      </span>
                     )}
                   </button>
                 ))}
@@ -686,7 +698,20 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
                 style={{ scrollbarWidth: 'thin', scrollbarColor: '#31353a #0f0f0f' }}
               >
                 {activeTab === 'timeline' && (
-                  <ul className="relative">
+                  <div className="space-y-3">
+                    {/* 관찰 요약 - 타임라인 위 */}
+                    <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
+                      </div>
+                      <p className="text-sm text-gray-300 leading-relaxed">
+                        {videoUrlOverride && observationSummaryOverride
+                          ? observationSummaryOverride
+                          : detail.observationSummary}
+                      </p>
+                    </div>
+                    <ul className="relative">
                     <div className="absolute w-[1px] bg-gray-600" style={{ left: '6px', top: '14px', height: 'calc(100% - 14px - 32px)' }} />
                     {displayTimeline.map((entry, idx) => {
                       const endSec = 'endSeconds' in entry ? (entry as { endSeconds?: number }).endSeconds : undefined;
@@ -718,6 +743,7 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
                       );
                     })}
                   </ul>
+                  </div>
                 )}
 
                 {activeTab === 'detail' && (
@@ -780,60 +806,6 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
                       ))
                     )}
 
-                    {!(videoUrlOverride && metaDetailOverride?.length) && (
-                      <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232]">
-                        <button
-                          type="button"
-                          onClick={() => setIsSimilarityOpen(!isSimilarityOpen)}
-                          className="w-full p-3 flex items-start gap-3 text-left"
-                        >
-                          <Icon icon="mdi:star-outline" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs text-gray-400 mb-1">유사도</div>
-                            <div className="text-sm text-white">{detail.meta.score}점</div>
-                          </div>
-                          <Icon icon={isSimilarityOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'} className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                        </button>
-                        {isSimilarityOpen && (
-                          <>
-                            <div className="border-t border-[#3a3a3a]" />
-                            <div className="p-3">
-                              <div className="bg-[#1a1a1a]/50 rounded overflow-hidden">
-                                <div className="grid grid-cols-4 gap-2 bg-[#0f0f0f] p-3 border-b border-[#3a3a3a]">
-                                  <div className="text-xs text-gray-400 font-medium">항목</div>
-                                  <div className="text-xs text-gray-400 font-medium">실종자 정보</div>
-                                  <div className="text-xs text-gray-400 font-medium">포착 인물 정보</div>
-                                  <div className="text-xs text-gray-400 font-medium text-center">일치 여부</div>
-                                </div>
-                                {getSimilarityTableForImageId(imageId).map((item, idx, arr) => (
-                                  <div
-                                    key={idx}
-                                    className={`grid grid-cols-4 gap-2 p-3 ${idx !== arr.length - 1 ? 'border-b border-[#3a3a3a]' : ''}`}
-                                  >
-                                    <div className="text-sm text-gray-300 font-medium">{item.category}</div>
-                                    <div className="text-sm text-gray-400">{item.missing}</div>
-                                    <div className="text-sm text-gray-400">{item.captured}</div>
-                                    <div className="flex items-center justify-center">
-                                      {item.match === 'special' ? (
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">특이점</span>
-                                      ) : item.match ? (
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">일치</span>
-                                      ) : (
-                                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">불일치</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="bg-blue-500/10 border border-blue-500/30 rounded p-3 flex items-center justify-between mt-3">
-                                <span className="text-sm text-blue-300 font-semibold">최종 유사도</span>
-                                <span className="text-base text-blue-400 font-bold">{detail.meta.score}점</span>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -843,13 +815,16 @@ const TargetCapturePopup: React.FC<TargetCapturePopupProps> = ({
           <div className="flex items-center justify-end px-4 py-3 flex-shrink-0 border-t border-[#31353a]">
             <button
               type="button"
-              onClick={handleCaptureTarget}
+              onClick={() => {
+                onClose();
+                onObjectTracking?.();
+              }}
               className="px-4 py-2 rounded-lg text-xs font-medium text-white focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-1.5"
               style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)' }}
-              aria-label="대상 포착"
+              aria-label="객체 추적"
             >
-              <Icon icon="mdi:account-check" className="w-3.5 h-3.5" />
-              대상 포착
+              <Icon icon="mdi:radar" className="w-3.5 h-3.5" />
+              객체 추적
             </button>
           </div>
         </div>

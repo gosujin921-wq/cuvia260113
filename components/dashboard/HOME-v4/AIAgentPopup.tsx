@@ -33,10 +33,14 @@ interface AIAgentPopupProps {
   captureNotificationMessage?: string;
   /** 2키: 추적 갱신 메시지 표시 (차량 재포착, 번호판 후보) */
   showFeaturedLayout?: boolean;
+  /** 2키: 예측 CCTV 포착 시퀀스 중 에이전트 팝업 프로그레스 문구 */
+  captureProgressMessage?: string | null;
   /** "포착된 CCTV 영상 포함해서 전파 초안 생성해줘" 입력 시 호출 - 별빛A-655 캡처 애니메이션 후 포착목록 추가 */
   onPropagationDraftRequest?: () => void;
   /** "사건 영상 바로 보기" 버튼 클릭 시 호출 - 고속검색 팝업 표시 */
   onVideoView?: () => void;
+  /** "전파해줘" 등 타이핑 시 전파 패널 호출 (객체추적 2키 후) */
+  onPropagationPanelRequest?: () => void;
 }
 
 interface ChatMessage {
@@ -111,7 +115,7 @@ const getTrackingUpdateMsgContent = () => {
     camera: `카메라: 별빛A-655 | 시각: ${timeStr}`,
     match: '"차종/색상/외형 특징 일치(추정)."',
     plate: '"부분 번호판 후보: *12 324* **(가시성: 높음)**"',
-    direction: '이동 방향: 동 방향 진행',
+    direction: '이동 방향: 달빛동 방향 진행',
     body: '이동 중인 차량으로 추정되어 골든타임 확보를 위해 112 우선 전파를 권고합니다.',
     btnPropagate: '▶ 관할 경찰서에 전파하기',
   };
@@ -160,10 +164,31 @@ const MessageList: React.FC<MessageListProps> = ({
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     {message.id !== 'object-tracking-progress' && (
                       <div className="mb-3">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2">{message.id === 'capture-progress' ? '포착 분석 중' : 'AI 분석 중'}</h3>
                         <p className="text-sm text-gray-700 leading-relaxed">
                           {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
                         </p>
+                      </div>
+                    )}
+                    {/* 포착분석 단계별 표시 (다른 프로그레스와 동일 스타일) */}
+                    {message.id === 'capture-progress' && message.totalSteps === 4 && (
+                      <div className="space-y-2 mb-3 text-xs">
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
+                          <span>1. 예측 CCTV 분석 중 {(message.currentStep || 0) === 1 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                          <span>2. 포착 가능 구역 산정 중 {(message.currentStep || 0) === 2 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                          <span>3. 포착대상 감지 중 {(message.currentStep || 0) === 3 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
+                          <span>4. 별빛A-655에서 포착 확인 {(message.currentStep || 0) === 4 && '⏳'}</span>
+                        </div>
                       </div>
                     )}
                     
@@ -247,20 +272,25 @@ const MessageList: React.FC<MessageListProps> = ({
                       </div>
                     )}
                     
-                    <div className="mb-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-300"
-                          style={{
-                            width: `${(message.progress || 0) * 100}%`,
-                            background: AGENT_GRADIENT,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      {message.currentStep}/{message.totalSteps}
-                    </div>
+                    {/* 프로그레스바 (포착분석 포함 모든 프로그레스 동일 스타일) */}
+                    {message.totalSteps != null ? (
+                      <>
+                        <div className="mb-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-300"
+                              style={{
+                                width: `${(message.progress || 0) * 100}%`,
+                                background: AGENT_GRADIENT,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          {message.currentStep}/{message.totalSteps}
+                        </div>
+                      </>
+                    ) : null}
 
                     {/* 분석 결과 표시 (프로그래스 완료 시) */}
                     {message.progress && message.progress >= 1 && message.analysisResult && (
@@ -603,8 +633,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onReSearchComplete,
   captureNotificationMessage = '',
   showFeaturedLayout = false,
+  captureProgressMessage = null,
   onPropagationDraftRequest,
   onVideoView,
+  onPropagationPanelRequest,
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -1020,12 +1052,44 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     };
   }, [showFastSearchProgress]);
 
+  // 2키: 프로그레스 메시지 노출 (예측 CCTV 포착 시퀀스) - 다른 프로그레스와 동일 totalSteps/currentStep/progress
+  const captureStepMap: Record<string, number> = {
+    '예측 CCTV 분석 중...': 1,
+    '포착 가능 구역 산정 중...': 2,
+    '포착대상 감지 중...': 3,
+    '별빛A-655에서 포착 확인': 4,
+  };
+  useEffect(() => {
+    if (captureProgressMessage) {
+      const currentStep = captureStepMap[captureProgressMessage] ?? 1;
+      const totalSteps = 4;
+      const progress = currentStep / totalSteps;
+      setMessages((prev) => {
+        const without = prev.filter((msg) => msg.id !== 'capture-progress');
+        const progressMsg: ChatMessage = {
+          id: 'capture-progress',
+          role: 'assistant',
+          content: captureProgressMessage,
+          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          type: 'analyzing',
+          totalSteps,
+          currentStep,
+          progress,
+        };
+        return [...without, progressMsg];
+      });
+    } else {
+      setMessages((prev) => prev.filter((msg) => msg.id !== 'capture-progress'));
+    }
+  }, [captureProgressMessage]);
+
   // 2키: 추적 갱신 메시지 추가 (차량 재포착, 번호판 후보) + 타이핑 애니메이션
   const lastShowFeaturedLayoutRef = useRef<boolean>(false);
   const trackingUpdateTypingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (showFeaturedLayout && !lastShowFeaturedLayoutRef.current) {
       lastShowFeaturedLayoutRef.current = true;
+      setMessages((prev) => prev.filter((msg) => msg.id !== 'capture-progress'));
       const content = getTrackingUpdateMsgContent();
       setTrackingUpdateMsgContent(content);
       const fullText = [
@@ -1285,6 +1349,14 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
     if (isPropagationDraftMessage(text) && onPropagationDraftRequest) {
       onPropagationDraftRequest();
+      return;
+    }
+
+    const isPropagationPanelMessage = (t: string) =>
+      (t.includes('전파해줘') || (t.includes('전파') && t.includes('해줘'))) && showFeaturedLayout;
+
+    if (isPropagationPanelMessage(text) && onPropagationPanelRequest) {
+      onPropagationPanelRequest();
       return;
     }
 

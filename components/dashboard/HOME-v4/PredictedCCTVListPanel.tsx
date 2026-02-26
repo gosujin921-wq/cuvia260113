@@ -211,14 +211,17 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   const sortPopoverRef = React.useRef<HTMLDivElement>(null);
   const radiusPopoverRef = React.useRef<HTMLDivElement>(null);
   const cctvMarkersRef = React.useRef<Map<string, HTMLElement>>(new Map());
+  /** 2키 눌렀을 때 스켈레톤 표시 후 레이아웃 전환 */
+  const [showSkeleton, setShowSkeleton] = useState<boolean>(true);
+  const skeletonTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 반경 필터 상태
   const [radius, setRadius] = React.useState<number>(100); // 반경 (m) - 실제 적용된 값
   
   // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
   const [tempRadius, setTempRadius] = React.useState<number>(100);
   
-  // 2키(showFeaturedLayout)일 때 별빛A-655 디폴트 호버 상태, 그 외엔 외부 hoveredCCTVId 사용
-  const hoveredCCTVId = externalHoveredCCTVId ?? (showFeaturedLayout ? FEATURED_CCTV_ID : null);
+  const hoveredCCTVId = externalHoveredCCTVId ?? null;
   
   // 팝오버 외부 클릭 감지
   React.useEffect(() => {
@@ -249,9 +252,33 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
 
+  // 2키로 패널 표시 시 스켈레톤 → 일정 시간 후 실제 레이아웃
+  React.useEffect(() => {
+    if (!isVisible) {
+      setShowSkeleton(true);
+      if (skeletonTimeoutRef.current) {
+        clearTimeout(skeletonTimeoutRef.current);
+        skeletonTimeoutRef.current = null;
+      }
+      return;
+    }
+    setShowSkeleton(true);
+    if (skeletonTimeoutRef.current) clearTimeout(skeletonTimeoutRef.current);
+    skeletonTimeoutRef.current = setTimeout(() => {
+      setShowSkeleton(false);
+      skeletonTimeoutRef.current = null;
+    }, 1800);
+    return () => {
+      if (skeletonTimeoutRef.current) {
+        clearTimeout(skeletonTimeoutRef.current);
+        skeletonTimeoutRef.current = null;
+      }
+    };
+  }, [isVisible]);
+
   const isPopupOpen = selectedCCTV !== null;
   /** 2키 눌렀을 때 featured 별빛A-655(cnc_04_1.mp4)만 자동 재생 */
-  const shouldPlayFeaturedVideo = isVisible && !isPopupOpen && showFeaturedLayout;
+  const shouldPlayFeaturedVideo = isVisible && !isPopupOpen && showFeaturedLayout && !showSkeleton;
   /** 리스트 그리드 영상들: 패널 보일 때 재생 (featured 제외) */
   const shouldPlayListVideo = isVisible && !isPopupOpen;
 
@@ -320,6 +347,40 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
         }}
       >
         <div className="flex flex-col gap-3 h-full" style={{ paddingTop: isVisible ? '0.5rem' : '16px', minHeight: 0 }}>
+          {showSkeleton ? (
+            <>
+              {/* 스켈레톤 헤더 (고속검색 리스트와 동일) */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="h-9 w-24 rounded-full bg-[#2a2b32]" style={{ animation: 'skeleton-width-0 1.5s ease-in-out infinite' }} />
+                <div className="h-9 w-28 rounded-full bg-[#2a2b32]" style={{ animation: 'skeleton-width-1 1.5s ease-in-out infinite' }} />
+              </div>
+              {/* 스켈레톤 리스트 영역 */}
+              <div
+                className="rounded-lg flex-1 border border-[#31353a] overflow-hidden flex flex-col min-h-0"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
+                }}
+              >
+                <div className="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1 min-h-0" style={{ minHeight: 'min-content', alignContent: 'start' }}>
+                  {Array.from({ length: 9 }).map((_, idx) => (
+                    <div key={`skeleton-${idx}`} className="bg-[#393a42] rounded-lg overflow-hidden flex flex-col">
+                      <div className="relative w-full bg-[#2a2b32]" style={{ paddingTop: '56.25%' }}>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Icon icon="mdi:image-outline" className="w-10 h-10 text-gray-600" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 p-3 space-y-2">
+                        <div className="h-3 bg-[#2a2b32] rounded" style={{ animation: `skeleton-width-${idx % 3} 1.5s ease-in-out infinite`, animationDelay: `${idx * 0.1}s` }} />
+                        <div className="h-3 bg-[#2a2b32] rounded" style={{ animation: `skeleton-width-${(idx + 1) % 3} 1.5s ease-in-out infinite`, animationDelay: `${idx * 0.1 + 0.2}s` }} />
+                        <div className="h-5 w-14 bg-[#2a2b32] rounded mt-1" style={{ animation: `skeleton-width-${(idx + 2) % 3} 1.5s ease-in-out infinite`, animationDelay: `${idx * 0.1 + 0.4}s` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
           {/* 헤더 */}
           <div
             className="rounded-lg flex-shrink-0"
@@ -489,7 +550,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                             onClick={() => setSelectedCCTV(featuredItem)}
                             onMouseEnter={() => onCCTVHover?.(featuredItem.id)}
                             onMouseLeave={() => onCCTVHover?.(null)}
-                            className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group animate-featured-fade-slide ${
+                            className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group animate-featured-fade-slide border-2 border-red-500 ${
                               hoveredCCTVId === featuredItem.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-[1.02]' : ''
                             }`}
                           >
@@ -605,6 +666,8 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
               )}
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
 
