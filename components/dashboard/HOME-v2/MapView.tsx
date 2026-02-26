@@ -13,6 +13,61 @@ import {
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
 import { getCCTVPanelLayout } from '@/lib/dashboard-cctv-layout';
+import { isMapStreamPayload } from '@/public/streamJson/streamJson.types';
+import { mapDataToFeatureCollection } from '@/src/hooks/useMapStreamParser';
+
+const PIXEL_RATIO = 2;
+const MARKER_SIZE = 28 * PIXEL_RATIO;
+
+const createStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
+  const canvas = document.createElement('canvas');
+  canvas.width = MARKER_SIZE;
+  canvas.height = MARKER_SIZE;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return { width: MARKER_SIZE, height: MARKER_SIZE, data: new Uint8ClampedArray(MARKER_SIZE * MARKER_SIZE * 4) };
+
+  const r = 12 * PIXEL_RATIO;
+  const pad = 2 * PIXEL_RATIO;
+  const ringR = 14 * PIXEL_RATIO;
+
+  ctx.clearRect(0, 0, MARKER_SIZE, MARKER_SIZE);
+
+  ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
+  ctx.shadowBlur = 20 * PIXEL_RATIO;
+  ctx.beginPath();
+  ctx.roundRect(pad, pad, MARKER_SIZE - pad * 2, MARKER_SIZE - pad * 2, r);
+  const gradient = ctx.createLinearGradient(0, 0, MARKER_SIZE, MARKER_SIZE);
+  gradient.addColorStop(0, 'rgba(220, 38, 38, 0.2)');
+  gradient.addColorStop(0.5, 'rgb(26, 26, 26)');
+  gradient.addColorStop(1, 'rgb(15, 15, 15)');
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = pad;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.roundRect(0, 0, MARKER_SIZE, MARKER_SIZE, ringR);
+  ctx.strokeStyle = 'rgba(239, 68, 68, 0.3)';
+  ctx.stroke();
+
+  const pinPath = new Path2D('M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z');
+  const pinSize = 16 * PIXEL_RATIO;
+  const pinScale = pinSize / 24;
+  const pinX = (MARKER_SIZE - pinSize) / 2;
+  const pinY = (MARKER_SIZE - pinSize) / 2;
+  ctx.save();
+  ctx.translate(pinX, pinY);
+  ctx.scale(pinScale, pinScale);
+  ctx.fillStyle = '#f87171';
+  ctx.fill(pinPath);
+  ctx.restore();
+
+  const imageData = ctx.getImageData(0, 0, MARKER_SIZE, MARKER_SIZE);
+  return { width: MARKER_SIZE, height: MARKER_SIZE, data: imageData.data };
+};
 
 interface MapViewProps {
   events: Event[];
@@ -391,6 +446,45 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           }
         }
       });
+
+      // mapType.json 기반 스트림 마커 (정규화 → FeatureCollection)
+      const streamSourceId = 'stream-marker';
+      const streamLayerId = 'stream-marker-layer';
+
+      const streamMarkerIconId = 'stream-marker-icon';
+      const addStreamMarkers = (featureCollection: ReturnType<typeof mapDataToFeatureCollection>) => {
+        if (map.getSource(streamSourceId)) return;
+        map.addSource(streamSourceId, {
+          type: 'geojson',
+          data: featureCollection
+        });
+        if (!map.hasImage(streamMarkerIconId)) {
+          const img = createStreamMarkerImage();
+          map.addImage(streamMarkerIconId, img, { pixelRatio: PIXEL_RATIO });
+        }
+        if (map.getLayer(streamLayerId)) return;
+        map.addLayer({
+          id: streamLayerId,
+          type: 'symbol',
+          source: streamSourceId,
+          layout: {
+            'icon-image': streamMarkerIconId,
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-anchor': 'center'
+          }
+        });
+      };
+
+      fetch('/streamJson/mapType.json')
+        .then((res) => res.json())
+        .then((payload: unknown) => {
+          if (!isMapStreamPayload(payload) || !payload.data?.markers?.length) return;
+          const featureCollection = mapDataToFeatureCollection(payload.data);
+          addStreamMarkers(featureCollection);
+        })
+        .catch((err) => console.warn('mapType.json 로드 실패:', err));
     });
 
     mapRef.current = map;
