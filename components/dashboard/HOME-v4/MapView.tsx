@@ -462,12 +462,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           border-radius: 6px;
           overflow: hidden;
           background: #0f0f0f;
-          border: 1px solid #31353a;
+          border: 2px solid #ef4444;
           margin-bottom: 8px;
           flex-shrink: 0;
           position: relative;
           z-index: 145;
         `;
+        videoWrapper.className = 'video-frame-red-blink';
         const videoEl = document.createElement('video');
         videoEl.src = '/hijacking/cnc_01_1.mp4';
         videoEl.muted = true;

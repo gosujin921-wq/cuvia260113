@@ -176,7 +176,7 @@ const ObjectTrackingMapView = ({
     const allTrackingPins = [
       { location: [126.783853180335, 37.5049838114765] as [number, number], address: '은하로363번길 48', name: '별빛A-230', color: 'gray' },
       { location: [126.7843434, 37.5042779] as [number, number], address: '은하로363번길 52', name: '별빛A-444', color: 'gray' },
-      { location: [126.7828196, 37.50501939999999] as [number, number], address: '달빛로301번길 28', name: '별빛A-481', color: 'gray' },
+      { location: [126.7828196, 37.50501939999999] as [number, number], address: '달빛로301번길 24', name: '별빛A-481', color: 'gray' },
       { location: [126.7828168, 37.504067] as [number, number], address: '달빛로301번길 28', name: '별빛A-498', color: 'blue' },
     ];
     

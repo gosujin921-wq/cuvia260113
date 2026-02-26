@@ -270,9 +270,12 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
 
     const analysisResult = (cctv.cctvName === '별빛A-638' || cctv.cctvName === '원미A-638') ? generateAnalysisMarkdown(cctv) : undefined;
 
+    const videoUrlForCapture = showFeaturedLayout && cctv.featuredThumbnailUrl
+      ? cctv.featuredThumbnailUrl
+      : cctv.thumbnailUrl;
     setTimeout(() => {
       if (onAddCapture) {
-        onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData, analysisResult, cctv.thumbnailUrl);
+        onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData, analysisResult, videoUrlForCapture);
       }
     }, 300);
 

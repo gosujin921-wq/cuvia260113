@@ -10,6 +10,7 @@ import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME-v4/ReportPopup';
 import FastSearchListPanel from '@/components/dashboard/HOME-v4/FastSearchListPanel';
 import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v4/FastSearchCandidateDetailPopup';
+import TargetCapturePopup from '@/components/dashboard/HOME-v4/TargetCapturePopup';
 import { getCctvNameForCaptureItem, getLocationForCaptureItem, getConfidenceForCaptureItem } from '@/lib/fast-search-image-attributes';
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v4/PredictedCCTVListPanel';
 import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v4/CaptureListPanel';
@@ -499,8 +500,8 @@ export default function HomeV2() {
         dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
         // 이벤트 핀을 지도에 표시하기 위해 visibleEventIds에 추가
         setVisibleEventIds(new Set([missingEvent.id]));
-        // 이벤트 위치로 지도 이동
-        setFlyToLocation([126.783853180335, 37.5049838114765]);
+        // 이벤트 좌표로 지도 이동
+        setFlyToLocation(missingEvent.location.coordinates as [number, number]);
       }
       dispatch({ type: 'START_FAST_SEARCH' });
     } else if (menuId === 'object-tracking') {
@@ -754,8 +755,8 @@ export default function HomeV2() {
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SHOW_AGENT_POPUP' });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-      setPinOffset({ x: -150, y: 0 });
-      setFlyToLocation([126.783853180335, 37.5049838114765]);
+      setPinOffset({ x: -100, y: 0 }); // 좌표 기준 좌측 100px
+      setFlyToLocation(missingEvent.location.coordinates as [number, number]);
     } else if (e.key === '2') {
       setShowPredictedCCTVList(true);
       setShowFeaturedLayout(true); // 별빛A-655 상단 1x1 레이아웃으로 전환
@@ -908,10 +909,15 @@ export default function HomeV2() {
         </div>
       )}
 
-      {/* 고속검색 팝업 (사건 영상 바로 보기 클릭 시) - 딤 + 후보 상세 팝업 */}
-      <FastSearchCandidateDetailPopup
+      {/* 대상포착 팝업 (사건 영상 바로 보기 클릭 시) */}
+      <TargetCapturePopup
         isOpen={showFastSearchPopupOverlay}
         onClose={() => setShowFastSearchPopupOverlay(false)}
+        thumbnailItems={[
+          { id: 'people01', thumbnailUrl: '/hijacking/people01.png' },
+          { id: 'people02', thumbnailUrl: '/hijacking/people02.png' },
+          { id: 'car', thumbnailUrl: '/hijacking/car.png' },
+        ]}
         videoUrlOverride="/hijacking/cnc_01_1.mp4"
         observationSummaryOverride="흰색 SUV(014저 4515)가 별빛A-444 검지 영역 중앙 도로상에 급정차한 후, 남색 상의를 착용한 인물이 하늘색 상의 인물의 신체를 강하게 결착하여 뒷좌석 승차를 강요함. 피해 의심 인물이 승차하자마자 즉시 문을 폐쇄하고 현장을 이탈하려는 긴박한 행동 패턴이 관찰됨."
         timelineOverride={[

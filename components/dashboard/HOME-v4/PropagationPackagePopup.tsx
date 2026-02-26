@@ -39,8 +39,8 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 - 관제 방식: **차량 중심 객체추적(실시간) 진행 중**
 
 3. **포착 현황**
-- CCTV-01 | 14:02:18: 성인 남성-성인 여성 동행, 여성 움직임 비자발적 정황 관찰(추정)
-- CCTV-19 | 14:05:08: 차량 **재포착**, 번호판 후보 **12 324*** 확보(가시성: 높음)
+- 별빛A-444 | 14:02:18: 성인 남성-성인 여성 동행, 여성 움직임 비자발적 정황 관찰(추정)
+- 별빛A-655 | 14:05:08: 차량 **재포착**, 번호판 후보 **12 324*** 확보(가시성: 높음)
 - 이동 방향: **동 방향 진행**(추정)
 
 4. **추적 판단 요약**
@@ -62,10 +62,11 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 
   const [editableContent, setEditableContent] = useState(initialContent);
 
-  // 팝업이 열릴 때마다 초기 컨텐츠로 리셋
+  // 팝업이 열릴 때마다 초기 컨텐츠 및 비디오 인덱스 리셋
   useEffect(() => {
     if (isOpen) {
       setEditableContent(initialContent);
+      setCurrentVideoIndex(0);
     }
   }, [isOpen, initialContent]);
 
@@ -297,6 +298,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
               style={{ aspectRatio: '16/9', width: '100%', maxHeight: '100%' }}
             >
               <video
+                key={currentItem.id}
                 ref={videoRef}
                 src={currentItem.videoUrl}
                 poster={currentItem.thumbnailUrl}
@@ -511,11 +513,11 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                     <div className="space-y-2 text-sm">
                       <div className="flex items-start gap-2">
                         <span className="text-gray-500 mt-0.5">•</span>
-                        <span className="text-gray-300">CCTV-01 | 14:02:18: 성인 남성-성인 여성 동행, 여성 움직임 비자발적 정황 관찰(추정)</span>
+                        <span className="text-gray-300">별빛A-444 | 14:02:18: 성인 남성-성인 여성 동행, 여성 움직임 비자발적 정황 관찰(추정)</span>
                       </div>
                       <div className="flex items-start gap-2">
                         <span className="text-gray-500 mt-0.5">•</span>
-                        <span className="text-gray-300">CCTV-19 | 14:05:08: 차량 <span className="text-blue-300 font-medium">재포착</span>, 번호판 후보 <span className="text-blue-300 font-semibold">12 324*</span> 확보(가시성: 높음)</span>
+                        <span className="text-gray-300">별빛A-655 | 14:05:08: 차량 <span className="text-blue-300 font-medium">재포착</span>, 번호판 후보 <span className="text-blue-300 font-semibold">12 324*</span> 확보(가시성: 높음)</span>
                       </div>
                       <div className="flex items-start gap-2">
                         <span className="text-gray-500 mt-0.5">•</span>
