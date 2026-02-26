@@ -216,9 +216,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
         // Unity 모드에서는 VLM API 호출 및 웹소켓 구독
         if (isUnityMode && isPositiveResponse(text)) {
             const vlmRequest: VlmRequest = {
-                "event_id": 1,
-                "vms_id": 13,
-                "camera_id": "3",
+                event_id: vlmRequestInfo?.event_id ?? 0,
+                vms_id: vlmRequestInfo?.vms_id ?? 0,
+                camera_id: vlmRequestInfo?.camera_id ?? "",
             };
 
             // 분석 중 메시지 추가
@@ -316,9 +316,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                     <div className="mb-3">
                                                                         <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
                                                                         <p className="text-sm text-gray-700 leading-relaxed flex items-center gap-2">
-                                                                            {!hasReceivedFirstVlmResponse && (
-                                                                                <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />
-                                                                            )}
+                                                                            {!hasReceivedFirstVlmResponse && <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />}
                                                                             {message.content} (소요시간 : {message.processingTime}초)
                                                                         </p>
                                                                     </div>
@@ -516,9 +514,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                             <div className="mb-3">
                                                                 <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
                                                                 <p className="text-sm text-gray-700 leading-relaxed flex items-center gap-2">
-                                                                    {!hasReceivedFirstVlmResponse && (
-                                                                        <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />
-                                                                    )}
+                                                                    {!hasReceivedFirstVlmResponse && <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />}
                                                                     {message.content} (소요시간 : {message.processingTime}초)
                                                                 </p>
                                                             </div>
