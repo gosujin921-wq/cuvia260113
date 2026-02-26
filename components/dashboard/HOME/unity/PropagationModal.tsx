@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
+import Markdown from "react-markdown";
 import { VlmAnalysisResult } from "./UnityAIAgentPopup";
 import { EventType } from "@/src/apis/event/types";
 
@@ -317,7 +318,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                                                     <span className="text-sm text-gray-500">{message.timestamp}</span>
                                                                     {message.status === "unread" && <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold ml-auto">NEW</span>}
                                                                 </div>
-                                                                <pre className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans">{message.content}</pre>
+                                                                <pre className="text-sm text-gray-300 whitespace-pre-wrap font-sans">{message.content}</pre>
                                                                 {message.showCompletionButton && (
                                                                     <div className="mt-4 pt-4 border-t border-[#31353a]">
                                                                         <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
@@ -337,15 +338,9 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                                                     <span className="text-sm text-gray-500">{message.timestamp}</span>
                                                                 </div>
                                                                 {message.content ? (
-                                                                    <>
-                                                                        <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans space-y-4">
-                                                                            {message.content.split("\n\n").map((paragraph, idx) => (
-                                                                                <div key={idx} className={paragraph.startsWith("👤") || paragraph.startsWith("📡") || paragraph.startsWith("🎯") || paragraph.startsWith("🧭") || paragraph.startsWith("🤝") || paragraph.startsWith("📎") ? "mt-4 first:mt-0" : ""}>
-                                                                                    {paragraph}
-                                                                                </div>
-                                                                            ))}
-                                                                        </div>
-                                                                    </>
+                                                                    <div className="text-sm text-gray-300 whitespace-pre-wrap font-sans">
+                                                                        <Markdown>{message.content}</Markdown>
+                                                                    </div>
                                                                 ) : (
                                                                     <p className="text-sm text-red-400">내용이 없습니다</p>
                                                                 )}
@@ -359,7 +354,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                                                     <span className="text-sm text-gray-500">•</span>
                                                                     <span className="text-sm text-gray-500">{message.timestamp}</span>
                                                                 </div>
-                                                                <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                                                <p className="text-sm text-gray-300whitespace-pre-wrap">{message.content}</p>
                                                             </div>
                                                         )}
                                                     </div>

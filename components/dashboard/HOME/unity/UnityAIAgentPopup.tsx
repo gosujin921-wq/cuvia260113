@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { usePostVlmRequest, useVlmSocket } from "@/src/apis/vlm/hooks";
 import { VlmRequest } from "@/src/apis/vlm/types";
+import Markdown from "react-markdown";
 import { EventType } from "@/src/apis/event/types";
 
 interface UnityAIAgentPopupProps {
@@ -26,7 +27,7 @@ interface UnityAIAgentPopupProps {
 export interface VlmAnalysisResult {
     conclusion: string;
     summary: string;
-    evidence: string[];
+    evidence: string;
     recommendations: string[];
 }
 
@@ -63,6 +64,8 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     ]);
     const [isResponding, setIsResponding] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+    /** 웹소켓 첫 응답 수신 전에만 스피너 표시 */
+    const [hasReceivedFirstVlmResponse, setHasReceivedFirstVlmResponse] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const ignoreNextChangeRef = useRef(false);
@@ -79,6 +82,8 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     // VLM 분석 상태 변경 시 메시지 업데이트 (웹소켓 콜백에서 상태 업데이트 - 의도된 패턴)
     useEffect(() => {
         if (!analysisStatus) return;
+
+        setHasReceivedFirstVlmResponse(true);
 
         if (analysisStatus === "IN_PROGRESS") {
             // 진행 중 메시지 업데이트
@@ -103,7 +108,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
             const result: VlmAnalysisResult = {
                 conclusion: vlmResult.oneLine || "",
                 summary: vlmResult.summary || "",
-                evidence: vlmResult.evidence ? [vlmResult.evidence] : [],
+                evidence: vlmResult.evidence || "",
                 recommendations: vlmResult.recommendations === "" || vlmResult.recommendations === null || vlmResult.recommendations === "해당없음" || vlmResult.recommendations === "해당 없음" ? [] : ["관련 인물 고속 검색", "전파하기"],
             };
             setIsAnalyzing(false);
@@ -211,9 +216,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
         // Unity 모드에서는 VLM API 호출 및 웹소켓 구독
         if (isUnityMode && isPositiveResponse(text)) {
             const vlmRequest: VlmRequest = {
-                event_id: vlmRequestInfo?.event_id ?? 0,
-                vms_id: vlmRequestInfo?.vms_id ?? 0,
-                camera_id: vlmRequestInfo?.camera_id ?? "",
+                "event_id": 1,
+                "vms_id": 13,
+                "camera_id": "3",
             };
 
             // 분석 중 메시지 추가
@@ -234,6 +239,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
             setMessages((prev) => [...prev, analyzingMessage]);
             setIsResponding(false);
             setIsAnalyzing(true);
+            setHasReceivedFirstVlmResponse(false);
 
             // VLM 요청 후 웹소켓 구독
             postVlmRequest(vlmRequest, {
@@ -245,6 +251,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                 onError: (error) => {
                     console.error("[VLM] 요청 실패:", error);
                     setIsAnalyzing(false);
+                    setHasReceivedFirstVlmResponse(true);
                     setMessages((prev) =>
                         prev.map((msg, idx) =>
                             idx === prev.length - 1 && msg.type === "analyzing"
@@ -308,8 +315,10 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                 <>
                                                                     <div className="mb-3">
                                                                         <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
-                                                                        <p className="text-sm text-gray-700 leading-relaxed">
-                                                                            {/* 소요시간만 */}
+                                                                        <p className="text-sm text-gray-700 leading-relaxed flex items-center gap-2">
+                                                                            {!hasReceivedFirstVlmResponse && (
+                                                                                <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />
+                                                                            )}
                                                                             {message.content} (소요시간 : {message.processingTime}초)
                                                                         </p>
                                                                     </div>
@@ -328,7 +337,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                             )}
 
                                                             {/* 분석 결과 표시 (프로그래스 완료 시) */}
-                                                            {message.progress && message.progress >= 1 && message.analysisResult && (
+                                                            {(message.progress ?? 0) >= 1 && message.analysisResult && (
                                                                 <div className={`space-y-4 ${isAnalyzing ? "border-t border-gray-300 pt-4 mt-4 " : ""}`}>
                                                                     {/* 한 줄 결론 */}
                                                                     <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
@@ -336,7 +345,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
                                                                             <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
                                                                         </div>
-                                                                        <p className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: message.analysisResult.conclusion.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
+                                                                        <div className="text-gray-700 text-sm leading-relaxed">
+                                                                            <Markdown>{message.analysisResult.conclusion}</Markdown>
+                                                                        </div>
                                                                     </div>
 
                                                                     {/* 사건 요약 */}
@@ -346,7 +357,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{message.analysisResult.summary}</p>
+                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                                <Markdown>{message.analysisResult.summary}</Markdown>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
 
@@ -357,7 +370,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{message.analysisResult.evidence}</p>
+                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                                <Markdown>{message.analysisResult.evidence}</Markdown>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
 
@@ -500,7 +515,10 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                                                             <div className="mb-3">
                                                                 <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
-                                                                <p className="text-sm text-gray-700 leading-relaxed">
+                                                                <p className="text-sm text-gray-700 leading-relaxed flex items-center gap-2">
+                                                                    {!hasReceivedFirstVlmResponse && (
+                                                                        <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />
+                                                                    )}
                                                                     {message.content} (소요시간 : {message.processingTime}초)
                                                                 </p>
                                                             </div>
@@ -517,7 +535,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                             </div>
 
                                                             {/* 분석 결과 표시 (프로그래스 완료 시) */}
-                                                            {message.progress && message.progress >= 1 && message.analysisResult && (
+                                                            {(message.progress ?? 0) >= 1 && message.analysisResult && (
                                                                 <div className="mt-4 space-y-4 pt-4 border-t border-gray-300">
                                                                     {/* 한 줄 결론 */}
                                                                     <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
@@ -525,7 +543,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
                                                                             <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
                                                                         </div>
-                                                                        <p className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: message.analysisResult.conclusion.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
+                                                                        <div className="text-gray-700 text-sm leading-relaxed">
+                                                                            <Markdown>{message.analysisResult.conclusion}</Markdown>
+                                                                        </div>
                                                                     </div>
 
                                                                     {/* 사건 요약 */}
@@ -535,7 +555,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{message.analysisResult.summary}</p>
+                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                                <Markdown>{message.analysisResult.summary}</Markdown>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
 
@@ -546,12 +568,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
                                                                         </div>
                                                                         <ul className="space-y-1.5">
-                                                                            {message.analysisResult.evidence.map((item, idx) => (
-                                                                                <li key={idx} className="text-gray-700 text-sm leading-relaxed flex items-start">
-                                                                                    <span className="text-gray-400 mr-2">-</span>
-                                                                                    <span>{item}</span>
-                                                                                </li>
-                                                                            ))}
+                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                                <Markdown>{message.analysisResult.evidence}</Markdown>
+                                                                            </div>
                                                                         </ul>
                                                                     </div>
 
