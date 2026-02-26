@@ -15,7 +15,9 @@ import { EventToUnity } from "@/lib/unity/types";
 import { useEventSocket } from "@/src/apis/event/hooks";
 import { BridgeSlot } from "@/components/dashboard/HOME/unity/ConfigurePopup";
 import { VlmRequest } from "@/src/apis/vlm/types";
-import UnityAIAgentPopup from "@/components/dashboard/HOME/unity/UnityAIAgentPopup";
+import UnityAIAgentPopup, { VlmAnalysisResult } from "@/components/dashboard/HOME/unity/UnityAIAgentPopup";
+import Propagation from "@/components/dashboard/HOME/unity/Propagation";
+import { EventType } from "../apis/event/types";
 
 export default function Home() {
     const navigate = useNavigate();
@@ -39,7 +41,10 @@ export default function Home() {
     const [isReadyToAnalyze, setIsReadyToAnalyze] = useState<boolean>(false);
     const [vlmRequestInfo, setVlmRequestInfo] = useState<VlmRequest | null>(null);
     const [mainCameraName, setMainCameraName] = useState<string>("");
-
+    const [showPropagationModal, setShowPropagationModal] = useState<boolean>(false);
+    const [vlmAnalysisResult, setVlmAnalysisResult] = useState<VlmAnalysisResult | null>();
+    const [eventType, setEventType] = useState<EventType>(0);
+    const [propagationTime, setPropagationTime] = useState<Date>(new Date());
     // 웹소켓 이벤트 관련 상태
     const { status: socketStatus, lastEvent } = useEventSocket({
         autoConnect: true,
@@ -71,6 +76,10 @@ export default function Home() {
         setActiveEventCameraInfo(null);
         setIsReadyToAnalyze(false);
         setMainCameraName("");
+        setEventType(0);
+        setShowPropagationModal(false);
+        setVlmAnalysisResult(null);
+        setPropagationTime(new Date());
     }, []);
 
     useEffect(() => {
@@ -274,6 +283,10 @@ export default function Home() {
         setHighlightedEventId(eventId);
     };
 
+    const handleVlmAnalysisResult = (result: VlmAnalysisResult) => {
+        setVlmAnalysisResult(result);
+    };
+
     // 공통 이벤트 애니메이션 함수
     // 순서: 1. 이벤트 표시 및 하이라이트 (즉시) → 2. 줌인 시작 (300ms 후) → 3. 팝업 표시 (줌인 완료 후 800ms)
     const animateToEvent = useCallback((event: Event, callback?: () => void) => {
@@ -383,6 +396,7 @@ export default function Home() {
             if (activeEventIdRef.current === null) {
                 setActiveEventId(eventId);
                 setActiveEventCameraInfo({ rtsp_url: lastEvent.camera_info.rtsp_url });
+                setEventType(lastEvent.evt.type);
 
                 // bridgeSlots에서 메인 카메라 ID와 그룹핑된 카메라 ID 리스트 가져오기
                 const mainCctvBridgeId = bridgeSlots.find((slot) => slot.isMain)?.bridgeId || "";
@@ -392,7 +406,7 @@ export default function Home() {
                 console.log("[Home] 웹소켓 이벤트 수신:", { eventId, mainCctvBridgeId, groupedCctvBridgeIds });
 
                 // 이벤트 트리거 (딜레이 적용)
-                triggerEventMode(String(eventId), mainCctvBridgeId, groupedCctvBridgeIds, `${mainCctvBridgeId}에서 이벤트가 감지되었습니다.`);
+                triggerEventMode(String(eventId), mainCctvBridgeId, groupedCctvBridgeIds, `${mainCctvBridgeId || "Bullet-2"}에서 ${lastEvent.evt.type === 12 ? "폭력(싸움) 의심" : lastEvent.evt.type === 10 ? "쓰러짐" : ""} 이벤트가 감지되었습니다.`);
             }
         } else if (stat === 4) {
             // 활성 이벤트와 동일한 ID의 종료 이벤트인 경우에만 해제
@@ -415,7 +429,7 @@ export default function Home() {
             }
 
             if (e.key === "1") {
-                triggerEventMode();
+                triggerEventMode("1", "Bullet-2", ["PTZ-1", "PTZ-2"], "Bullet-2에서 이벤트가 감지되었습니다.");
             } else if (e.key === "u" || e.key === "U") {
                 console.log("unity mode toggle !");
                 // 모드 전환 시 완전 초기화
@@ -516,9 +530,24 @@ export default function Home() {
                     <EventList events={eventsForList} selectedEventId={selectedEventId || undefined} onEventSelect={handleEventAction} onEventHover={handleEventHover} key1PressTime={key1PressTime} />
                 </div>
             </div>
-
-            {showAIAgentPopup && isUnityMode && <UnityAIAgentPopup mainCameraName={mainCameraName} isUnityMode={true} vlmRequestInfo={vlmRequestInfo ?? undefined} isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} isReadyToAnalyze={isReadyToAnalyze} />}
+            {showAIAgentPopup && isUnityMode && (
+                <UnityAIAgentPopup
+                    mainCameraName={mainCameraName}
+                    eventType={eventType}
+                    isUnityMode={true}
+                    vlmRequestInfo={vlmRequestInfo ?? undefined}
+                    isOpen={showAIAgentPopup}
+                    onClose={() => setShowAIAgentPopup(false)}
+                    hideControls={hideControls}
+                    eventTime={key1PressTime as Date}
+                    isReadyToAnalyze={isReadyToAnalyze}
+                    onChangePropagationTime={setPropagationTime}
+                    onChangeShowPropagationModal={setShowPropagationModal}
+                    onChangeVlmAnalysisResult={handleVlmAnalysisResult}
+                />
+            )}
             {showAIAgentPopup && !isUnityMode && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} />}
+            {showPropagationModal && isUnityMode && vlmAnalysisResult && <Propagation eventType={eventType} vlmAnalysisResult={vlmAnalysisResult} propagationTime={propagationTime} onClose={() => setShowPropagationModal(false)} />}
         </div>
     );
 }

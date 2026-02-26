@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { usePostVlmRequest, useVlmSocket } from "@/src/apis/vlm/hooks";
 import { VlmRequest } from "@/src/apis/vlm/types";
+import { EventType } from "@/src/apis/event/types";
 
 interface UnityAIAgentPopupProps {
     isOpen: boolean;
@@ -16,6 +17,17 @@ interface UnityAIAgentPopupProps {
     isUnityMode?: boolean;
     vlmRequestInfo?: VlmRequest;
     mainCameraName: string;
+    eventType: EventType;
+    onChangeShowPropagationModal: (show: boolean) => void;
+    onChangePropagationTime: (time: Date) => void;
+    onChangeVlmAnalysisResult: (result: VlmAnalysisResult) => void;
+}
+
+export interface VlmAnalysisResult {
+    conclusion: string;
+    summary: string;
+    evidence: string[];
+    recommendations: string[];
 }
 
 interface ChatMessage {
@@ -27,31 +39,12 @@ interface ChatMessage {
     progress?: number;
     processingTime?: number;
     transmissionTime?: number;
-    analysisResult?: {
-        conclusion: string;
-        summary: string;
-        evidence: string[];
-        recommendations: string[];
-    };
+    analysisResult?: VlmAnalysisResult;
 }
 
 const AGENT_GRADIENT = "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)";
 
-/** "], [" 구분자로 묶인 단일 문자열을 개별 권장사항 배열로 변환 */
-const parseRecommendations = (value: string | string[] | null | undefined): string[] => {
-    if (!value) return [];
-
-    // 이미 배열이면 그대로 반환 (API 스펙 변경 대비)
-    if (Array.isArray(value)) return value;
-
-    // 문자열이지만 빈 값이면 []
-    if (typeof value !== "string" || value.trim() === "") return [];
-
-    const matches = value.match(/\[(.*?)\]/g);
-    return matches ? matches.map((v) => v.replace(/[\[\]]/g, "").trim()) : [];
-};
-
-const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo }) => {
+const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, eventType, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo, onChangePropagationTime, onChangeShowPropagationModal, onChangeVlmAnalysisResult }) => {
     const [chatInput, setChatInput] = useState("네, 분석해 주세요.");
     const [inputKey, setInputKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -60,7 +53,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
         {
             id: "welcome-msg",
             role: "assistant",
-            content: `${mainCameraName}에서 싸움 이벤트가 감지되었습니다. 사건을 분석해드릴까요?`,
+            content: `${mainCameraName || "Bullet-2"}에서 ${eventType === 12 ? "폭력(싸움) 의심" : eventType === 10 ? "쓰러짐" : ""} 이벤트가 감지되었습니다. 사건을 분석해드릴까요?`,
             timestamp: eventTime.toLocaleTimeString("ko-KR", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -77,6 +70,11 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
 
     // VLM 웹소켓 훅
     const { analysisStatus, progressMessage, progressSequence, result: vlmResult, subscribeToAnalysis, unsubscribe: unsubscribeVlm, processingTime } = useVlmSocket({ autoConnect: false });
+
+    const handleClickPropagationButton = () => {
+        onChangeShowPropagationModal(true);
+        onChangePropagationTime(new Date());
+    };
 
     // VLM 분석 상태 변경 시 메시지 업데이트 (웹소켓 콜백에서 상태 업데이트 - 의도된 패턴)
     useEffect(() => {
@@ -102,6 +100,12 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
             });
         } else if (analysisStatus === "COMPLETED" && vlmResult) {
             // 분석 완료 - 결과 표시
+            const result: VlmAnalysisResult = {
+                conclusion: vlmResult.oneLine || "",
+                summary: vlmResult.summary || "",
+                evidence: vlmResult.evidence ? [vlmResult.evidence] : [],
+                recommendations: vlmResult.recommendations === "" || vlmResult.recommendations === null || vlmResult.recommendations === "해당없음" || vlmResult.recommendations === "해당 없음" ? [] : ["관련 인물 고속 검색", "전파하기"],
+            };
             setIsAnalyzing(false);
             setMessages((prev) => {
                 const lastMsg = prev[prev.length - 1];
@@ -111,18 +115,14 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                             ? {
                                   ...msg,
                                   progress: 1,
-                                  analysisResult: {
-                                      conclusion: vlmResult.oneLine || "",
-                                      summary: vlmResult.summary || "",
-                                      evidence: vlmResult.evidence ? [vlmResult.evidence] : [],
-                                      recommendations: parseRecommendations(vlmResult.recommendations),
-                                  },
+                                  analysisResult: result,
                               }
                             : msg
                     );
                 }
                 return prev;
             });
+            onChangeVlmAnalysisResult(result);
             unsubscribeVlm();
         } else if (analysisStatus === "FAILED" || analysisStatus === "CANCELLED") {
             // 분석 실패/취소
@@ -211,9 +211,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
         // Unity 모드에서는 VLM API 호출 및 웹소켓 구독
         if (isUnityMode && isPositiveResponse(text)) {
             const vlmRequest: VlmRequest = {
-                "event_id": 2095,
-                "vms_id": 12,
-                "camera_id": "2",
+                event_id: vlmRequestInfo?.event_id ?? 0,
+                vms_id: vlmRequestInfo?.vms_id ?? 0,
+                camera_id: vlmRequestInfo?.camera_id ?? "",
             };
 
             // 분석 중 메시지 추가
@@ -362,28 +362,32 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                     </div>
 
                                                                     {/* 대응 추천 (퀵 버튼) */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
-                                                                        <div className="flex items-center gap-2 mb-3">
-                                                                            <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">4. 대응 추천</h4>
+                                                                    {message.analysisResult.recommendations.length > 0 && (
+                                                                        <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                            <div className="flex items-center gap-2 mb-3">
+                                                                                <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-600" />
+                                                                                <h4 className="text-gray-900 font-semibold text-sm">4. 대응 추천</h4>
+                                                                            </div>
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        // 퀵 버튼 기능 (나중에 구현)
+                                                                                    }}
+                                                                                    className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                                                                    style={{ borderWidth: "1px" }}>
+                                                                                    관련 인물 고속 검색
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        handleClickPropagationButton();
+                                                                                    }}
+                                                                                    className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                                                                    style={{ borderWidth: "1px" }}>
+                                                                                    전파하기
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="flex flex-wrap gap-2">
-                                                                            {message.analysisResult.recommendations.map((rec, idx) => {
-                                                                                const buttonText = rec.match(/\[(.*?)\]/)?.[1] || rec;
-                                                                                return (
-                                                                                    <button
-                                                                                        key={idx}
-                                                                                        onClick={() => {
-                                                                                            // 퀵 버튼 기능 (나중에 구현)
-                                                                                        }}
-                                                                                        className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                                                                                        style={{ borderWidth: "1px" }}>
-                                                                                        {buttonText}
-                                                                                    </button>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                    </div>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -455,7 +459,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                         }}
                                         rows={1}
                                     />
-                                    <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 self-center" style={{ background: AGENT_GRADIENT }} aria-label="전송">
+                                    <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || !isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 self-center" style={{ background: AGENT_GRADIENT }} aria-label="전송">
                                         <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
                                     </button>
                                 </div>
@@ -648,7 +652,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                     }}
                                     rows={1}
                                 />
-                                <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95" style={{ background: AGENT_GRADIENT }} aria-label="전송">
+                                <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || !isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95" style={{ background: AGENT_GRADIENT }} aria-label="전송">
                                     <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
                                 </button>
                             </div>
