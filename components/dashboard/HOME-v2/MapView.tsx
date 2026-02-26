@@ -592,8 +592,34 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         addStreamMarkers(streamMapData);
       }
 
-      // 지도 중심 및 줌 레벨 이동
-      if (streamMapData.center && streamMapData.zoom) {
+      // 지도 뷰 이동: 마커가 있으면 bbox에 맞춰 fitBounds, 없으면 center+zoom으로 flyTo
+      const markers = streamMapData.markers ?? [];
+      if (markers.length >= 2) {
+        const bounds = new maplibregl.LngLatBounds();
+        markers.forEach((m) => {
+          if (typeof m.lng === 'number' && typeof m.lat === 'number' && !isNaN(m.lng) && !isNaN(m.lat)) {
+            bounds.extend([m.lng, m.lat]);
+          }
+        });
+        if (!bounds.isEmpty()) {
+          map.fitBounds(bounds, {
+            padding: { top: 80, bottom: 80, left: 80, right: 80 },
+            maxZoom: 18,
+            duration: 1500,
+            essential: true
+          });
+        }
+      } else if (markers.length === 1) {
+        const m = markers[0];
+        if (typeof m.lng === 'number' && typeof m.lat === 'number' && !isNaN(m.lng) && !isNaN(m.lat)) {
+          map.flyTo({
+            center: [m.lng, m.lat],
+            zoom: 17,
+            duration: 1500,
+            essential: true
+          });
+        }
+      } else if (streamMapData.center && streamMapData.zoom) {
         map.flyTo({
           center: [streamMapData.center.lng, streamMapData.center.lat],
           zoom: streamMapData.zoom,
