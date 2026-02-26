@@ -343,7 +343,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
                                                                             <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
                                                                         </div>
-                                                                        <div className="text-gray-700 text-sm leading-relaxed">
+                                                                        <div className="text-gray-700 text-sm">
                                                                             <Markdown>{message.analysisResult.conclusion}</Markdown>
                                                                         </div>
                                                                     </div>
@@ -355,7 +355,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.summary}</Markdown>
                                                                             </div>
                                                                         </div>
@@ -368,7 +368,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.evidence}</Markdown>
                                                                             </div>
                                                                         </div>
@@ -539,7 +539,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
                                                                             <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
                                                                         </div>
-                                                                        <div className="text-gray-700 text-sm leading-relaxed">
+                                                                        <div className="text-gray-700 text-sm">
                                                                             <Markdown>{message.analysisResult.conclusion}</Markdown>
                                                                         </div>
                                                                     </div>
@@ -551,7 +551,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.summary}</Markdown>
                                                                             </div>
                                                                         </div>
@@ -564,7 +564,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                             <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
                                                                         </div>
                                                                         <ul className="space-y-1.5">
-                                                                            <div className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.evidence}</Markdown>
                                                                             </div>
                                                                         </ul>
