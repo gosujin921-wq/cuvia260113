@@ -19,6 +19,7 @@ import UnityAIAgentPopup, { VlmAnalysisResult } from "@/components/dashboard/HOM
 import PropagationLeftMenu from "@/components/dashboard/HOME/unity/PropagationLeftMenu";
 import { EventType } from "../apis/event/types";
 import PropagationModal from "@/components/dashboard/HOME/unity/PropagationModal";
+import { formatCustomTimestamp } from "@/lib/unity/formatTime";
 
 /** 20260227T100655.707 형태를 Date로 파싱 */
 const parseEventTime = (tm: string): Date => {
@@ -54,6 +55,7 @@ export default function Home() {
     const [eventType, setEventType] = useState<EventType>(0);
     const [currentPropagationMenu, setCurrentPropagationMenu] = useState<"net-monitoring" | "propagation">("net-monitoring");
     const [propagationTime, setPropagationTime] = useState<Date>(new Date());
+    const [occurredTime, setOccurredTime] = useState<string>("");
     // 웹소켓 이벤트 관련 상태
     const { status: socketStatus, lastEvent } = useEventSocket({
         autoConnect: true,
@@ -89,6 +91,7 @@ export default function Home() {
         setShowPropagationModal(false);
         setVlmAnalysisResult(null);
         setPropagationTime(new Date());
+        setOccurredTime("");
     }, []);
 
     useEffect(() => {
@@ -408,7 +411,7 @@ export default function Home() {
                 setActiveEventId(eventId);
                 setActiveEventCameraInfo({ rtsp_url: lastEvent.camera_info.rtsp_url });
                 setEventType(lastEvent.evt.type);
-
+                setOccurredTime(formatCustomTimestamp(lastEvent.evt.tm));
                 // bridgeSlots에서 메인 카메라 ID와 그룹핑된 카메라 ID 리스트 가져오기
                 const mainCctvBridgeId = bridgeSlots.find((slot) => slot.isMain)?.bridgeId || "";
                 const groupedCctvBridgeIds = bridgeSlots.filter((slot) => slot.isGrouped).map((slot) => slot.bridgeId);
@@ -559,6 +562,7 @@ export default function Home() {
                     mainCameraName={mainCameraName}
                     eventType={eventType}
                     isUnityMode={true}
+                    occurredTime={occurredTime}
                     vlmRequestInfo={vlmRequestInfo ?? undefined}
                     isOpen={showAIAgentPopup}
                     onClose={() => setShowAIAgentPopup(false)}
