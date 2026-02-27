@@ -293,7 +293,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                                                 <span className="text-sm font-bold text-red-600">{message.author || "신고기관"}</span>
                                                                 {message.status === "unread" && <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">NEW</span>}
                                                             </div>
-                                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{message.content}</pre>
+                                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">{message.content}</pre>
                                                             {message.showCompletionButton && (
                                                                 <div className="mt-4 pt-4 border-t border-gray-200">
                                                                     <p className="text-sm text-gray-600 mb-4">해당 시뮬레이션을 종료합니다.</p>
@@ -315,7 +315,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                                                 <span className="text-sm font-bold text-gray-800">전파 전송</span>
                                                             </div>
                                                             {message.content ? (
-                                                                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans [&_p]:my-1 [&_p:last-child]:mb-0 [&_*:last-child]:mb-0">
+                                                                <div className="text-sm text-gray-700 whitespace-pre-wrap font-sans [&_p]:my-1 [&_p:last-child]:mb-0 [&_*:last-child]:mb-0">
                                                                     <Markdown>{message.content}</Markdown>
                                                                 </div>
                                                             ) : (
@@ -330,7 +330,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                                         <div className="flex items-center justify-end gap-2 mb-2">
                                                             <span className="text-sm font-semibold text-blue-600">담당자</span>
                                                         </div>
-                                                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{message.content}</p>
                                                         <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
                                                     </div>
                                                 )}
