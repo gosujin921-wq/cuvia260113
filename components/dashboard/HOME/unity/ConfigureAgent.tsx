@@ -67,7 +67,7 @@ export default function ConfigureAgent() {
     });
 
     // Key-Value 데이터 상태 (Agent별로 관리)
-    const [agentKeyValues, setAgentKeyValues] = useState<Record<number, { key: string; value: string }[]>>({});
+    const [selectedAgentKeyValues, setSelectedAgentKeyValues] = useState<Record<string, string>[]>([]);
     const [newKeyInput, setNewKeyInput] = useState("");
     const [newValueInput, setNewValueInput] = useState("");
     const [editingKvIndex, setEditingKvIndex] = useState<number | null>(null);
@@ -75,7 +75,6 @@ export default function ConfigureAgent() {
     const [editKvValue, setEditKvValue] = useState("");
 
     const selectedAgent = agentList.find((agent) => agent.agent_id === selectedAgentId);
-    const selectedAgentKeyValues = selectedAgentId !== null ? agentKeyValues[selectedAgentId] || [] : [];
 
     const invalidateAgentList = () => {
         queryClient.invalidateQueries({ queryKey: ["agentList"] });
@@ -98,6 +97,7 @@ export default function ConfigureAgent() {
                 username: newStunTurnConfig.username,
                 credential: newStunTurnConfig.credential,
             }),
+            custom_config: {},
         };
 
         addAgent(newAgent, {
@@ -114,8 +114,14 @@ export default function ConfigureAgent() {
     };
 
     const handleSelectAgent = (agentId: number) => {
+        const agent = agentList.find((a) => a.agent_id === agentId);
+        if (!agent) return;
+        const customConfig = Object.entries(agent.custom_config).map(([key, value]) => ({ key, value }));
+        setSelectedAgentKeyValues(customConfig);
         setSelectedAgentId(agentId);
         setEditingAgentId(null);
+        setNewKeyInput("");
+        setNewValueInput("");
     };
 
     const handleDeleteAgent = () => {
@@ -174,6 +180,7 @@ export default function ConfigureAgent() {
                 username: editStunTurnConfig.username,
                 credential: editStunTurnConfig.credential,
             }),
+            custom_config: agent.custom_config,
         };
 
         updateAgent(payload, {
@@ -206,6 +213,7 @@ export default function ConfigureAgent() {
             priority: agent.priority,
             username: agent.username,
             credential: agent.credential,
+            custom_config: agent.custom_config,
         };
 
         updateAgent(payload, {
@@ -221,29 +229,92 @@ export default function ConfigureAgent() {
 
     // Key-Value 핸들러
     const handleAddKeyValue = () => {
-        if (!newKeyInput.trim() || selectedAgentId === null) return;
+        if (!newKeyInput.trim() || selectedAgentId === null || !newValueInput.trim()) return;
 
-        setAgentKeyValues((prev) => ({
-            ...prev,
-            [selectedAgentId]: [...(prev[selectedAgentId] || []), { key: newKeyInput.trim(), value: newValueInput.trim() }],
-        }));
-        setNewKeyInput("");
-        setNewValueInput("");
+        const agent = agentList.find((a) => a.agent_id === selectedAgentId);
+        if (!agent) return;
+
+        const newObj = {
+            [newKeyInput.trim()]: newValueInput.trim(),
+        };
+
+        const newCustomConfig = {
+            ...agent.custom_config,
+            ...newObj,
+        };
+
+        const payload: AgentUpdateRequest = {
+            agent_id: selectedAgentId,
+            agent_type: agent.agent_type,
+            agent_ip: agent.agent_ip,
+            agent_port: agent.agent_port,
+            agent_name: agent.agent_name,
+            ...(agent.agent_type === 4 && {
+                protocol: agent.protocol,
+                priority: agent.priority,
+                username: agent.username,
+                credential: agent.credential,
+            }),
+            custom_config: newCustomConfig,
+            is_used: agent.is_used,
+        };
+
+        updateAgent(payload, {
+            onSuccess: (response) => {
+                if (response.error === 0) {
+                    invalidateAgentList();
+                    setNewKeyInput("");
+                    setNewValueInput("");
+                    setSelectedAgentKeyValues((prev) => [...prev, { key: newKeyInput.trim(), value: newValueInput.trim() }]);
+                }
+            },
+        });
     };
 
     const handleDeleteKeyValue = (index: number) => {
         if (selectedAgentId === null) return;
 
-        setAgentKeyValues((prev) => ({
-            ...prev,
-            [selectedAgentId]: prev[selectedAgentId]?.filter((_, i) => i !== index) || [],
-        }));
+        const agent = agentList.find((a) => a.agent_id === selectedAgentId);
+        if (!agent) return;
+
+        const keyToDelete = selectedAgentKeyValues[index]?.key;
+        if (keyToDelete == null) return;
+
+        const currentConfig = (agent.custom_config ?? {}) as Record<string, string>;
+        const newCustomConfig = { ...currentConfig };
+        delete newCustomConfig[keyToDelete];
+
+        const payload: AgentUpdateRequest = {
+            agent_id: selectedAgentId,
+            agent_type: agent.agent_type,
+            agent_ip: agent.agent_ip,
+            agent_port: agent.agent_port,
+            agent_name: agent.agent_name,
+            ...(agent.agent_type === 4 && {
+                protocol: agent.protocol,
+                priority: agent.priority,
+                username: agent.username,
+                credential: agent.credential,
+            }),
+            custom_config: newCustomConfig,
+            is_used: agent.is_used,
+        };
+
+        updateAgent(payload, {
+            onSuccess: (response) => {
+                if (response.error === 0) {
+                    invalidateAgentList();
+                    setSelectedAgentKeyValues((prev) => prev.filter((_, i) => i !== index));
+                }
+            },
+        });
     };
 
     const handleStartEditKeyValue = (index: number) => {
         if (selectedAgentId === null) return;
 
         const kv = selectedAgentKeyValues[index];
+        
         if (kv) {
             setEditingKvIndex(index);
             setEditKvKey(kv.key);
@@ -254,13 +325,48 @@ export default function ConfigureAgent() {
     const handleSaveEditKeyValue = () => {
         if (selectedAgentId === null || editingKvIndex === null) return;
 
-        setAgentKeyValues((prev) => ({
-            ...prev,
-            [selectedAgentId]: prev[selectedAgentId]?.map((kv, i) => (i === editingKvIndex ? { key: editKvKey.trim(), value: editKvValue.trim() } : kv)) || [],
-        }));
-        setEditingKvIndex(null);
-        setEditKvKey("");
-        setEditKvValue("");
+        const agent = agentList.find((a) => a.agent_id === selectedAgentId);
+        if (!agent) return;
+
+        const oldKey = selectedAgentKeyValues[editingKvIndex]?.key;
+        const newKey = editKvKey.trim();
+        const newValue = editKvValue.trim();
+        if (oldKey == null) return;
+
+        const currentConfig = (agent.custom_config ?? {}) as Record<string, string>;
+        const newCustomConfig = { ...currentConfig };
+        delete newCustomConfig[oldKey];
+        if (newKey) newCustomConfig[newKey] = newValue;
+
+        const payload: AgentUpdateRequest = {
+            agent_id: selectedAgentId,
+            agent_type: agent.agent_type,
+            agent_ip: agent.agent_ip,
+            agent_port: agent.agent_port,
+            agent_name: agent.agent_name,
+            ...(agent.agent_type === 4 && {
+                protocol: agent.protocol,
+                priority: agent.priority,
+                username: agent.username,
+                credential: agent.credential,
+            }),
+            custom_config: newCustomConfig,
+            is_used: agent.is_used,
+        };
+
+        updateAgent(payload, {
+            onSuccess: (response) => {
+                if (response.error === 0) {
+                    invalidateAgentList();
+                    setSelectedAgentKeyValues((prev) =>
+                        prev.map((item, i) => (i === editingKvIndex ? { key: newKey, value: newValue } : item))
+                    );
+                    setEditingKvIndex(null);
+                    setEditKvKey("");
+                    setEditKvValue("");
+                }
+            },
+        });
     };
 
     const handleCancelEditKeyValue = () => {
@@ -544,50 +650,39 @@ export default function ConfigureAgent() {
                             {/* Key-Value 목록 */}
                             {selectedAgentKeyValues.length > 0 && (
                                 <div className="space-y-2 mb-3">
-                                    {selectedAgentKeyValues.map((kv, index) => (
-                                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                                            {editingKvIndex === index ? (
-                                                <>
-                                                    <input
-                                                        type="text"
-                                                        value={editKvKey}
-                                                        onChange={(e) => setEditKvKey(e.target.value)}
-                                                        onKeyDown={handleInputKeyDown}
-                                                        placeholder="Key"
-                                                        className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        value={editKvValue}
-                                                        onChange={(e) => setEditKvValue(e.target.value)}
-                                                        onKeyDown={handleInputKeyDown}
-                                                        placeholder="Value"
-                                                        className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                                                    />
-                                                    <button type="button" onClick={handleSaveEditKeyValue} className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors" aria-label="저장" tabIndex={0}>
-                                                        <Icon icon="mdi:check" className="w-4 h-4" />
-                                                    </button>
-                                                    <button type="button" onClick={handleCancelEditKeyValue} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors" aria-label="취소" tabIndex={0}>
-                                                        <Icon icon="mdi:close" className="w-4 h-4" />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className="text-xs font-medium text-blue-600">{kv.key}</span>
-                                                        <span className="text-xs text-gray-400 mx-1">:</span>
-                                                        <span className="text-xs text-gray-700 break-all">{kv.value || <span className="text-gray-400 italic">비어있음</span>}</span>
-                                                    </div>
-                                                    <button type="button" onClick={() => handleStartEditKeyValue(index)} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" aria-label="수정" tabIndex={0}>
-                                                        <Icon icon="mdi:pencil" className="w-3.5 h-3.5" />
-                                                    </button>
-                                                    <button type="button" onClick={() => handleDeleteKeyValue(index)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" aria-label="삭제" tabIndex={0}>
-                                                        <Icon icon="mdi:delete" className="w-3.5 h-3.5" />
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))}
+                                    {selectedAgentKeyValues.map((kv, index) => {
+                                        const { key, value } = kv;
+                                        return (
+                                            <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                                {editingKvIndex === index ? (
+                                                    <>
+                                                        <input type="text" value={editKvKey} onChange={(e) => setEditKvKey(e.target.value)} onKeyDown={handleInputKeyDown} placeholder="Key" className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" />
+                                                        <input type="text" value={editKvValue} onChange={(e) => setEditKvValue(e.target.value)} onKeyDown={handleInputKeyDown} placeholder="Value" className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" />
+                                                        <button type="button" onClick={handleSaveEditKeyValue} className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors" aria-label="저장" tabIndex={0}>
+                                                            <Icon icon="mdi:check" className="w-4 h-4" />
+                                                        </button>
+                                                        <button type="button" onClick={handleCancelEditKeyValue} className="p-1 text-gray-400 hover:bg-gray-100 rounded transition-colors" aria-label="취소" tabIndex={0}>
+                                                            <Icon icon="mdi:close" className="w-4 h-4" />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex-1 min-w-0">
+                                                            <span className="text-xs font-medium text-blue-600">{key}</span>
+                                                            <span className="text-xs text-gray-400 mx-1">:</span>
+                                                            <span className="text-xs text-gray-700 break-all">{value || <span className="text-gray-400 italic">비어있음</span>}</span>
+                                                        </div>
+                                                        <button type="button" onClick={() => handleStartEditKeyValue(index)} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" aria-label="수정" tabIndex={0}>
+                                                            <Icon icon="mdi:pencil" className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button type="button" onClick={() => handleDeleteKeyValue(index)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" aria-label="삭제" tabIndex={0}>
+                                                            <Icon icon="mdi:delete" className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
 
