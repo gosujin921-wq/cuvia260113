@@ -16,17 +16,9 @@ import { useEventSocket } from "@/src/apis/event/hooks";
 import { BridgeSlot } from "@/components/dashboard/HOME/unity/ConfigurePopup";
 import { VlmRequest } from "@/src/apis/vlm/types";
 import UnityAIAgentPopup, { VlmAnalysisResult } from "@/components/dashboard/HOME/unity/UnityAIAgentPopup";
-import Propagation from "@/components/dashboard/HOME/unity/Propagation";
 import PropagationLeftMenu from "@/components/dashboard/HOME/unity/PropagationLeftMenu";
 import { EventType } from "../apis/event/types";
 import PropagationModal from "@/components/dashboard/HOME/unity/PropagationModal";
-
-/** 20260227T100655.707 형태를 yyyy.MM.dd HH:mm:ss 로 포맷 */
-const formatEventTime = (tm: string): string => {
-    const m = tm?.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
-    if (!m) return "";
-    return `${m[1]}.${m[2]}.${m[3]} ${m[4]}:${m[5]}:${m[6]}`;
-};
 
 /** 20260227T100655.707 형태를 Date로 파싱 */
 const parseEventTime = (tm: string): Date => {
@@ -508,7 +500,7 @@ export default function Home() {
             </div>
 
             {/* 좌측: 전파용 좌측 메뉴 - 패널 슬라이드 아웃 시 슬라이드 인 */}
-            <div className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`} style={{ zIndex: 100 }}>
+            <div className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`} style={{ zIndex: 100001 }}>
                 <PropagationLeftMenu currentMenu={currentPropagationMenu} />
             </div>
 
