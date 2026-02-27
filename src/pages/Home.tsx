@@ -62,6 +62,12 @@ export default function Home() {
     const [eventType, setEventType] = useState<EventType>(0);
     const [currentPropagationMenu, setCurrentPropagationMenu] = useState<"net-monitoring" | "propagation">("net-monitoring");
     const [propagationTime, setPropagationTime] = useState<Date>(new Date());
+    /** 플로팅 알림 메시지 (값이 있으면 화면 중앙 상단에 표시, null이면 숨김) */
+    const [floatingNotificationMessage, setFloatingNotificationMessage] = useState<string | null>(null);
+    /** 플로팅 알림 등장 애니메이션 완료 여부 */
+    const [floatingNotificationEntered, setFloatingNotificationEntered] = useState(false);
+    /** 플로팅 알림 퇴장 애니메이션 진행 여부 (true면 페이드아웃 후 메시지 제거) */
+    const [floatingNotificationExiting, setFloatingNotificationExiting] = useState(false);
     // 웹소켓 이벤트 관련 상태
     const { status: socketStatus, lastEvent } = useEventSocket({
         autoConnect: true,
@@ -81,6 +87,27 @@ export default function Home() {
     useEffect(() => {
         activeEventIdRef.current = activeEventId;
     }, [activeEventId]);
+
+    // 플로팅 알림 등장: 마운트 후 한 프레임 뒤 opacity/transform 전환
+    useEffect(() => {
+        if (!floatingNotificationMessage) return;
+        const id = requestAnimationFrame(() => {
+            requestAnimationFrame(() => setFloatingNotificationEntered(true));
+        });
+        return () => cancelAnimationFrame(id);
+    }, [floatingNotificationMessage]);
+
+    // 플로팅 알림 퇴장: exiting 후 300ms 뒤 메시지 제거 및 플래그 초기화
+    const FLOATING_NOTIFICATION_EXIT_MS = 300;
+    useEffect(() => {
+        if (!floatingNotificationExiting || !floatingNotificationMessage) return;
+        const id = setTimeout(() => {
+            setFloatingNotificationMessage(null);
+            setFloatingNotificationExiting(false);
+            setFloatingNotificationEntered(false);
+        }, FLOATING_NOTIFICATION_EXIT_MS);
+        return () => clearTimeout(id);
+    }, [floatingNotificationExiting, floatingNotificationMessage]);
 
     // 스트리밍 상태: 활성 이벤트가 있는 경우
     const isEventStreaming = useMemo(() => {
@@ -340,6 +367,7 @@ export default function Home() {
         // 웹소켓 이벤트 상태도 초기화
         resetEventState();
         setCurrentPropagationMenu("net-monitoring");
+        setFloatingNotificationExiting(true);
         const eventToUnity: EventToUnity = {
             methodName: "endEvent",
             payload: {
@@ -396,6 +424,12 @@ export default function Home() {
                 };
                 console.log(eventToUnity);
                 sendToUnity(JSON.stringify(eventToUnity));
+                const messageToShow = eventMessage || "이벤트가 감지되었습니다.";
+                setTimeout(() => {
+                    setFloatingNotificationExiting(false);
+                    setFloatingNotificationEntered(false);
+                    setFloatingNotificationMessage(messageToShow);
+                }, 1000);
             }
         },
         [allConvertedEvents, isUnityMode]
@@ -516,6 +550,37 @@ export default function Home() {
             <div className="absolute top-0 right-0 bottom-0 transition-all duration-300 ease-out" style={{ left: panelsSlidOut ? propagationMenuWidth : 0 }}>
                 {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
                 <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
+
+                {/* 플로팅 알림 - 화면 중앙 하단 */}
+                {floatingNotificationMessage && (
+                    <div
+                        className={`absolute left-1/2 z-[200] -translate-x-1/2 transition-all duration-300 ease-out ${
+                            floatingNotificationEntered && !floatingNotificationExiting
+                                ? "translate-y-0 opacity-100"
+                                : "translate-y-4 opacity-0"
+                        }`}
+                        style={{
+                            bottom: "100px",
+                            padding: "12px 16px",
+                            borderRadius: "8px",
+                            background: "linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(23, 23, 23, 0.8) 100%)",
+                            backdropFilter: "blur(8px)",
+                            WebkitBackdropFilter: "blur(8px)",
+                            border: "2px solid rgba(239, 68, 68, 0.9)",
+                            boxShadow: "0 4px 24px rgba(0, 0, 0, 0.4)",
+                            fontSize: "28px",
+                            lineHeight: 1.25,
+                            color: "#fff",
+                            maxWidth: "min(90vw, 1200px)",
+                            textAlign: "center",
+                        }}
+                        role="alert"
+                        aria-live="assertive"
+                        aria-label="이벤트 알림"
+                    >
+                        {floatingNotificationMessage}
+                    </div>
+                )}
 
                 {/* 맵 - 메인 영역 전체 */}
                 <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
