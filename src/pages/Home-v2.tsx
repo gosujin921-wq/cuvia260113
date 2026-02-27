@@ -1077,7 +1077,7 @@ export default function HomeV2() {
             }}
             hideControls={uiState.hideControls}
             position={{
-              top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424}px`,
+              top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 480}px`,
               right: '20px',
             }}
             maxHeight={agentPopupMaxHeight}

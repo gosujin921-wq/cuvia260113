@@ -118,6 +118,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [is3DMode, setIs3DMode] = useState(true);
   const [mapBearing, setMapBearing] = useState(-17.6);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
+  const [streamMarkerViewType, setStreamMarkerViewType] = useState<'individual' | 'cluster' | 'heatmap'>('individual');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -359,14 +360,29 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const style = map.getStyle();
       if (!style || !style.layers) return;
 
+      const REGION_LABEL_IDS = new Set([
+        'Country labels',
+        'Disputed country labels',
+        'State labels',
+        'City labels',
+        'Capital city labels',
+        'Town labels',
+        'Village labels',
+        'Place labels',
+        'Island labels',
+        'Archipelago labels',
+        'Continent labels',
+      ]);
+
       // 모든 레이어 확인
       const layers = style.layers;
       // 레이어 처리
       layers.forEach((layer: any) => {
         const layerId = layer.id.toLowerCase();
-        
-        // 도로명, 건물명 등 텍스트 라벨 숨기기
+
+        // 도로명, POI 등만 숨기고 지역 레이어는 유지
         if (layer.type === 'symbol') {
+          if (REGION_LABEL_IDS.has(layer.id)) return; // 지역 레이어는 스킵
           try {
             if (map.getLayer(layer.id)) {
               map.setLayoutProperty(layer.id, 'visibility', 'none');
@@ -448,6 +464,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       });
 
+      // 지역 라벨을 건물 위로 올려서 글씨가 보이도록
+      REGION_LABEL_IDS.forEach((id) => {
+        if (map.getLayer(id)) {
+          map.moveLayer(id);
+        }
+      });
     });
 
     mapRef.current = map;
@@ -484,6 +506,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     const streamSourceId = 'stream-marker';
     const streamLayerId = 'stream-marker-layer';
+    const streamClusterLayerId = 'stream-marker-cluster';
+    const streamClusterCountLayerId = 'stream-marker-cluster-count';
+    const streamHeatmapLayerId = 'stream-marker-heatmap';
     const streamMarkerIconId = 'stream-marker-icon';
 
     const clearStreamLayers = () => {
@@ -498,7 +523,16 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           map.removeSource(sourceId);
         }
       }
-      // 마커 레이어/소스 제거
+      // 스트림 마커 관련 레이어 모두 제거
+      if (map.getLayer(streamClusterCountLayerId)) {
+        map.removeLayer(streamClusterCountLayerId);
+      }
+      if (map.getLayer(streamClusterLayerId)) {
+        map.removeLayer(streamClusterLayerId);
+      }
+      if (map.getLayer(streamHeatmapLayerId)) {
+        map.removeLayer(streamHeatmapLayerId);
+      }
       if (map.getLayer(streamLayerId)) {
         map.removeLayer(streamLayerId);
       }
@@ -507,26 +541,39 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }
     };
 
-    const addStreamMarkers = (data: MapStreamData) => {
+    const addStreamMarkers = (data: MapStreamData, viewType: 'individual' | 'cluster' | 'heatmap') => {
       const featureCollection = mapDataToFeatureCollection(data);
       
+      // 소스 옵션: cluster 모드일 때만 클러스터링 활성화
+      const sourceOptions: maplibregl.GeoJSONSourceSpecification = {
+        type: 'geojson',
+        data: featureCollection,
+        cluster: viewType === 'cluster',
+        clusterMaxZoom: 18,
+        clusterRadius: 50
+      };
+      
+      // 기존 소스가 있으면 제거 후 다시 추가 (클러스터 옵션 변경을 위해)
       if (map.getSource(streamSourceId)) {
-        // 소스가 이미 있으면 데이터만 업데이트
-        (map.getSource(streamSourceId) as maplibregl.GeoJSONSource).setData(featureCollection);
-      } else {
-        // 새 소스 추가
-        map.addSource(streamSourceId, {
-          type: 'geojson',
-          data: featureCollection
-        });
+        // 레이어들 먼저 제거
+        if (map.getLayer(streamClusterCountLayerId)) map.removeLayer(streamClusterCountLayerId);
+        if (map.getLayer(streamClusterLayerId)) map.removeLayer(streamClusterLayerId);
+        if (map.getLayer(streamHeatmapLayerId)) map.removeLayer(streamHeatmapLayerId);
+        if (map.getLayer(streamLayerId)) map.removeLayer(streamLayerId);
+        map.removeSource(streamSourceId);
       }
       
+      // 새 소스 추가
+      map.addSource(streamSourceId, sourceOptions);
+      
+      // 마커 아이콘 이미지 추가
       if (!map.hasImage(streamMarkerIconId)) {
         const img = createStreamMarkerImage();
         map.addImage(streamMarkerIconId, img, { pixelRatio: PIXEL_RATIO });
       }
       
-      if (!map.getLayer(streamLayerId)) {
+      // 뷰 타입별 레이어 추가
+      if (viewType === 'individual') {
         map.addLayer({
           id: streamLayerId,
           type: 'symbol',
@@ -539,17 +586,182 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             'icon-anchor': 'center'
           }
         });
+      } else if (viewType === 'cluster') {
+        // 클러스터 원 레이어
+        map.addLayer({
+          id: streamClusterLayerId,
+          type: 'circle',
+          source: streamSourceId,
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': [
+              'step',
+              ['get', 'point_count'],
+              '#ef4444',
+              10, '#dc2626',
+              50, '#b91c1c',
+              100, '#991b1b'
+            ],
+            'circle-radius': [
+              'step',
+              ['get', 'point_count'],
+              20,
+              10, 25,
+              50, 30,
+              100, 40
+            ],
+            'circle-stroke-width': 2,
+            'circle-stroke-color': 'rgba(255, 255, 255, 0.5)'
+          }
+        });
+        
+        // 클러스터 카운트 텍스트 레이어
+        map.addLayer({
+          id: streamClusterCountLayerId,
+          type: 'symbol',
+          source: streamSourceId,
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': '{point_count_abbreviated}',
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 14
+          },
+          paint: {
+            'text-color': '#ffffff'
+          }
+        });
+        
+        // 클러스터 해제된 개별 마커 레이어
+        map.addLayer({
+          id: streamLayerId,
+          type: 'symbol',
+          source: streamSourceId,
+          filter: ['!', ['has', 'point_count']],
+          layout: {
+            'icon-image': streamMarkerIconId,
+            'icon-size': 1,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-anchor': 'center'
+          }
+        });
+      } else if (viewType === 'heatmap') {
+        map.addLayer({
+          id: streamHeatmapLayerId,
+          type: 'heatmap',
+          source: streamSourceId,
+          paint: {
+            'heatmap-weight': 1,
+            'heatmap-intensity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0, 1,
+              18, 3
+            ],
+            'heatmap-radius': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0, 2,
+              18, 30
+            ],
+            'heatmap-color': [
+              'interpolate',
+              ['linear'],
+              ['heatmap-density'],
+              0, 'rgba(0, 0, 255, 0)',
+              0.1, 'rgba(65, 105, 225, 0.5)',
+              0.3, 'rgba(0, 255, 255, 0.6)',
+              0.5, 'rgba(0, 255, 0, 0.7)',
+              0.7, 'rgba(255, 255, 0, 0.8)',
+              0.9, 'rgba(255, 165, 0, 0.9)',
+              1, 'rgba(255, 0, 0, 1)'
+            ],
+            'heatmap-opacity': 0.8
+          }
+        });
       }
+    };
+
+    /** EPSG:3857 (미터) bbox를 EPSG:4326 (경위도)로 변환 */
+    const bbox3857To4326 = (
+      minx: number,
+      miny: number,
+      maxx: number,
+      maxy: number
+    ): { minLng: number; minLat: number; maxLng: number; maxLat: number } => {
+      const toLon = (x: number) => (x / 20037508.34) * 180;
+      const toLat = (y: number) =>
+        (Math.atan(Math.exp((y / 20037508.34) * Math.PI)) * (360 / Math.PI)) - 90;
+      return {
+        minLng: toLon(minx),
+        minLat: toLat(miny),
+        maxLng: toLon(maxx),
+        maxLat: toLat(maxy)
+      };
     };
 
     const addWmsLayers = (wmsLayers: MapStreamWmsLayer[]) => {
       wmsLayers.forEach((wmsLayer, idx) => {
         const sourceId = `wms-source-${idx}`;
         const layerId = `wms-layer-${idx}`;
-        
+
         if (map.getSource(sourceId)) return;
 
         const urlObj = new URL(wmsLayer.url);
+        const bboxParam = urlObj.searchParams.get('bbox');
+
+        if (bboxParam) {
+          const parts = bboxParam.split(',').map(Number);
+          if (parts.length >= 4) {
+            const srs =
+              urlObj.searchParams.get('srs')?.toUpperCase() ??
+              urlObj.searchParams.get('crs')?.toUpperCase() ??
+              'EPSG:3857';
+            let minLng: number, minLat: number, maxLng: number, maxLat: number;
+            if (srs.includes('3857')) {
+              const b = bbox3857To4326(parts[0], parts[1], parts[2], parts[3]);
+              minLng = b.minLng;
+              minLat = b.minLat;
+              maxLng = b.maxLng;
+              maxLat = b.maxLat;
+            } else {
+              minLng = parts[0];
+              minLat = parts[1];
+              maxLng = parts[2];
+              maxLat = parts[3];
+            }
+            const coordinates: [
+              [number, number],
+              [number, number],
+              [number, number],
+              [number, number]
+            ] = [
+              [minLng, minLat],
+              [maxLng, minLat],
+              [maxLng, maxLat],
+              [minLng, maxLat]
+            ];
+            map.addSource(sourceId, {
+              type: 'image',
+              url: urlObj.toString(),
+              coordinates
+            });
+            if (!map.getLayer(layerId)) {
+              map.addLayer({
+                id: layerId,
+                type: 'raster',
+                source: sourceId,
+                paint: {
+                  'raster-opacity': wmsLayer.opacity ?? 0.5
+                }
+              });
+            }
+            return;
+          }
+        }
+
         urlObj.searchParams.set('srs', 'EPSG:3857');
         urlObj.searchParams.delete('bbox');
         const baseUrl = urlObj.toString() + '&bbox={bbox-epsg-3857}';
@@ -589,7 +801,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
       // 마커를 나중에 추가 (위에 표시)
       if (streamMapData.markers?.length) {
-        addStreamMarkers(streamMapData);
+        addStreamMarkers(streamMapData, streamMarkerViewType);
       }
 
       // 지도 뷰 이동: 마커가 있으면 bbox에 맞춰 fitBounds, 없으면 center+zoom으로 flyTo
@@ -629,13 +841,51 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }
     };
 
+    // 클러스터 클릭 핸들러 (클러스터 모드일 때만)
+    const handleClusterClick = async (e: maplibregl.MapMouseEvent) => {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: [streamClusterLayerId]
+      });
+      if (!features.length) return;
+      
+      const clusterId = features[0].properties?.cluster_id;
+      if (clusterId === undefined) return;
+      
+      const source = map.getSource(streamSourceId) as maplibregl.GeoJSONSource;
+      try {
+        const zoom = await source.getClusterExpansionZoom(clusterId);
+        const geometry = features[0].geometry;
+        if (geometry.type === 'Point') {
+          map.flyTo({
+            center: geometry.coordinates as [number, number],
+            zoom: zoom ?? 14,
+            duration: 500
+          });
+        }
+      } catch {
+        // 클러스터 확장 줌 가져오기 실패 시 무시
+      }
+    };
+
     // 맵이 로드된 후 실행
     if (map.loaded()) {
       updateStreamData();
+      if (streamMarkerViewType === 'cluster') {
+        map.on('click', streamClusterLayerId, handleClusterClick);
+      }
     } else {
-      map.once('load', updateStreamData);
+      map.once('load', () => {
+        updateStreamData();
+        if (streamMarkerViewType === 'cluster') {
+          map.on('click', streamClusterLayerId, handleClusterClick);
+        }
+      });
     }
-  }, [streamMapData]);
+
+    return () => {
+      map.off('click', streamClusterLayerId, handleClusterClick);
+    };
+  }, [streamMapData, streamMarkerViewType]);
 
   // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
   useEffect(() => {
@@ -1996,6 +2246,66 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
        </div>
        )}
 
+      {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
+      {(!hideControls || showFastSearchList) && streamMapData?.markers && streamMapData.markers.length > 0 && (
+      <div 
+        className="absolute top-[340px] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+        style={{ 
+          left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
+          zIndex: 250,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setStreamMarkerViewType('individual');
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            streamMarkerViewType === 'individual'
+              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          aria-label="개별 마커"
+          aria-pressed={streamMarkerViewType === 'individual'}
+          tabIndex={0}
+        >
+          <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setStreamMarkerViewType('cluster');
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            streamMarkerViewType === 'cluster'
+              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          aria-label="클러스터"
+          aria-pressed={streamMarkerViewType === 'cluster'}
+          tabIndex={0}
+        >
+          <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setStreamMarkerViewType('heatmap');
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            streamMarkerViewType === 'heatmap'
+              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          aria-label="히트맵"
+          aria-pressed={streamMarkerViewType === 'heatmap'}
+          tabIndex={0}
+        >
+          <Icon icon="mdi:fire-circle" className="w-5 h-5" />
+        </button>
+      </div>
+      )}
 
       {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
       {(!hideControls || showFastSearchList) && (

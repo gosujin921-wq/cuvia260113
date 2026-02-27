@@ -1,9 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   MapStreamData,
+  ChartStreamData,
+  type CompleteStreamData,
   isStepStreamPayload,
   isMessageStreamPayload,
   isMapStreamPayload,
+  isChartStreamPayload,
   isCompleteStreamPayload,
 } from '@/types/streamJson.types';
 
@@ -15,6 +18,7 @@ export interface ChatStreamState {
   stepMessage: string;
   messageContent: string;
   mapData: MapStreamData | null;
+  chartData: ChartStreamData | null;
   error: string | null;
   isComplete: boolean;
 }
@@ -23,7 +27,8 @@ interface UseChatStreamOptions {
   onStepChange?: (step: number, message: string) => void;
   onMessageReceived?: (content: string, intent?: string) => void;
   onMapDataReceived?: (data: MapStreamData) => void;
-  onComplete?: (success: boolean, message: string) => void;
+  onChartDataReceived?: (data: ChartStreamData) => void;
+  onComplete?: (success: boolean, message: string, data?: CompleteStreamData) => void;
   onError?: (error: string) => void;
 }
 
@@ -40,6 +45,7 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
     stepMessage: '',
     messageContent: '',
     mapData: null,
+    chartData: null,
     error: null,
     isComplete: false,
   });
@@ -67,6 +73,7 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
       stepMessage: '',
       messageContent: '',
       mapData: null,
+      chartData: null,
       error: null,
       isComplete: false,
     });
@@ -161,15 +168,22 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
                   mapData: payload.data,
                 }));
                 options.onMapDataReceived?.(payload.data);
+              } else if (isChartStreamPayload(payload)) {
+                setState((prev) => ({
+                  ...prev,
+                  chartData: payload.data,
+                }));
+                options.onChartDataReceived?.(payload.data);
               } else if (isCompleteStreamPayload(payload)) {
                 setState((prev) => ({
                   ...prev,
                   isComplete: true,
                   isStreaming: false,
                   messageContent: payload.message,
-                  mapData: payload.data?.map_data || prev.mapData,
+                  mapData: payload.data?.map_data ?? prev.mapData,
+                  chartData: payload.data?.chart_data ?? prev.chartData,
                 }));
-                options.onComplete?.(payload.success, payload.message);
+                options.onComplete?.(payload.success, payload.message, payload.data);
               }
             } catch (parseError) {
               console.warn('[useChatStream] JSON 파싱 실패:', jsonStr);

@@ -866,12 +866,16 @@ input[type="range"].slider::-moz-range-thumb {
 }
 
 .agent-html-content .agent-conclusion {
-  font-weight: 600;
-  color: #1f2937;
-  padding: 8px 12px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-  border-radius: 8px;
-  margin-bottom: 8px;
+  font-weight: 700;
+  color: #18181b;
+  padding: 16px 24px;
+  background: linear-gradient(101deg, #eef2ff 0%, #f5ebff 70%, #fff0ea 100%);
+  border-radius: 14px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 2px 8px 0 rgba(80, 80, 200, 0.09), 0 1px 4px 0 rgba(229, 90, 108, 0.08);
+  letter-spacing: -0.01em;
+  white-space: pre-line;
 }
 
 .agent-html-content .agent-evidence {
@@ -882,10 +886,10 @@ input[type="range"].slider::-moz-range-thumb {
   font-size: 13px;
   color: #4b5563;
   margin-bottom: 12px;
-  padding: 8px;
-  background: #f9fafb;
-  border-radius: 6px;
-  border-left: 3px solid #3b82f6;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
 }
 
 .agent-html-content .agent-criteria {
@@ -894,77 +898,46 @@ input[type="range"].slider::-moz-range-thumb {
   margin-top: 8px;
 }
 
+/* 테이블 공통: 일반 table / .agent-table 모두 심플 스타일 */
+.agent-html-content table,
 .agent-html-content .agent-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  margin: 8px 0;
+  margin: 14px 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.agent-html-content .agent-table-header {
-  background: #f3f4f6;
-  color: #374151;
+.agent-html-content thead th,
+.agent-html-content .agent-table-header,
+.agent-html-content .agent-table .agent-table-header {
+  background: #f1f5f9;
+  color: #334155;
   font-weight: 600;
-  padding: 10px 12px;
+  padding: 10px 14px;
   text-align: left;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 12px;
 }
 
-.agent-html-content .agent-table-cell {
-  padding: 10px 12px;
-  border-bottom: 1px solid #f3f4f6;
-  color: #4b5563;
+.agent-html-content tbody td,
+.agent-html-content .agent-table-cell,
+.agent-html-content .agent-table .agent-table-cell {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
 }
 
+.agent-html-content table tbody tr:last-child td,
 .agent-html-content .agent-table tbody tr:last-child .agent-table-cell {
   border-bottom: none;
 }
 
-.agent-html-content .agent-table tbody tr:hover {
-  background: #f9fafb;
-}
-
-.agent-html-content .agent-table-cell[data-color] {
-  position: relative;
-}
-
-.agent-html-content .agent-table-cell[data-color]::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: attr(data-color);
-}
-
-.agent-html-content .agent-table tbody tr:nth-child(1) .agent-table-cell {
-  border-left: 3px solid #FF6B6B;
-}
-
-.agent-html-content .agent-table tbody tr:nth-child(2) .agent-table-cell {
-  border-left: 3px solid #4ECDC4;
-}
-
-.agent-html-content .agent-table tbody tr:nth-child(3) .agent-table-cell {
-  border-left: 3px solid #45B7D1;
-}
-
-.agent-html-content .agent-table tbody tr:nth-child(1) .agent-table-cell:first-child {
-  border-left: 3px solid #FF6B6B;
-}
-
-.agent-html-content .agent-table tbody tr:nth-child(2) .agent-table-cell:first-child {
-  border-left: 3px solid #4ECDC4;
-}
-
-.agent-html-content .agent-table tbody tr:nth-child(3) .agent-table-cell:first-child {
-  border-left: 3px solid #45B7D1;
-}
-
-.agent-html-content .agent-table tbody tr:nth-child(n+4) .agent-table-cell:first-child {
-  border-left: 3px solid #9CA3AF;
+.agent-html-content table tbody tr:nth-child(even) td,
+.agent-html-content .agent-table tbody tr:nth-child(even) .agent-table-cell {
+  background: #fafbfc;
 }

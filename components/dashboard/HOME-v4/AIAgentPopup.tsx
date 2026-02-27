@@ -1,7 +1,21 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 import { useChatStream } from '@/src/hooks/useChatStream';
-import type { MapStreamData } from '@/types/streamJson.types';
+import type { MapStreamData, ChartStreamData } from '@/types/streamJson.types';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  type ChartOptions,
+} from 'chart.js';
+import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 
 interface AIAgentPopupProps {
   isOpen: boolean;
@@ -70,9 +84,86 @@ interface ChatMessage {
   displayedContent?: string;
   htmlContent?: string;
   stepMessage?: string;
+  /** 스트림 type: 'chart' 수신 시 차트 데이터 */
+  chartData?: ChartStreamData | null;
 }
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
+
+// Chart.js 등록 (한 번만)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const CHART_COLORS = [
+  'rgba(255, 99, 132, 0.6)',
+  'rgba(54, 162, 235, 0.6)',
+  'rgba(255, 206, 86, 0.6)',
+  'rgba(75, 192, 192, 0.6)',
+  'rgba(153, 102, 255, 0.6)',
+];
+
+const getChartOptions = (title: string): ChartOptions<'bar' | 'line' | 'pie' | 'doughnut'> => ({
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: {
+    legend: { position: 'top' as const },
+    title: { display: !!title, text: title },
+  },
+});
+
+/** 스트림 chart 타입 데이터를 Chart.js로 렌더링 */
+const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
+  const chartType = (data.type || 'bar').toLowerCase();
+  const labels = data.labels ?? [];
+  const datasets = (data.datasets ?? []).map((ds, i) => ({
+    label: ds.label ?? `데이터 ${i + 1}`,
+    data: ds.data ?? [],
+    backgroundColor: ds.backgroundColor ?? CHART_COLORS[i % CHART_COLORS.length],
+  }));
+
+  const chartData = {
+    labels,
+    datasets,
+  };
+
+  const options = getChartOptions(data.title ?? '');
+
+  if (chartType === 'line') {
+    return (
+      <div className="w-full max-w-md h-64">
+        <Line data={chartData} options={options as ChartOptions<'line'>} />
+      </div>
+    );
+  }
+  if (chartType === 'pie') {
+    return (
+      <div className="w-full max-w-xs h-64 mx-auto">
+        <Pie data={chartData} options={options as ChartOptions<'pie'>} />
+      </div>
+    );
+  }
+  if (chartType === 'doughnut') {
+    return (
+      <div className="w-full max-w-xs h-64 mx-auto">
+        <Doughnut data={chartData} options={options as ChartOptions<'doughnut'>} />
+      </div>
+    );
+  }
+  return (
+    <div className="w-full max-w-md h-64">
+      <Bar data={chartData} options={options as ChartOptions<'bar'>} />
+    </div>
+  );
+};
 
 // 메시지 렌더링 공통 컴포넌트
 interface MessageListProps {
@@ -388,6 +479,21 @@ const MessageList: React.FC<MessageListProps> = ({
                             {message.displayedContent ?? message.content ?? ''}
                           </p>
                           <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                        </>
+                      ) : message.chartData ? (
+                        <>
+                          {message.htmlContent && (
+                            <div
+                              className="text-sm leading-relaxed text-gray-700 agent-html-content mb-3"
+                              dangerouslySetInnerHTML={{ __html: message.htmlContent }}
+                            />
+                          )}
+                          <div className="rounded-lg border border-gray-200 bg-white p-3 overflow-hidden">
+                            <StreamChart data={message.chartData} />
+                          </div>
+                          <div className={`text-xs text-gray-500 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
+                            {message.timestamp}
+                          </div>
                         </>
                       ) : message.htmlContent ? (
                         <>
@@ -730,6 +836,15 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
   // Chat Stream 훅
   const chatStream = useChatStream({
+    onChartDataReceived: useCallback((data: ChartStreamData) => {
+      const msgId = streamMessageIdRef.current;
+      if (!msgId) return;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === msgId ? { ...msg, type: 'normal' as const, chartData: data } : msg
+        )
+      );
+    }, []),
     onStepChange: useCallback((step: number, message: string) => {
       const msgId = streamMessageIdRef.current;
       if (!msgId) return;
@@ -755,15 +870,21 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     onMapDataReceived: useCallback((data: MapStreamData) => {
       onMapDataReceivedRef.current?.(data);
     }, []),
-    onComplete: useCallback((success: boolean, message: string) => {
+    onComplete: useCallback((success: boolean, message: string, data?: { chart_data?: ChartStreamData | null }) => {
       const msgId = streamMessageIdRef.current;
       if (!msgId) return;
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === msgId
-            ? { ...msg, type: 'normal', htmlContent: message, stepMessage: undefined }
-            : msg
-        )
+        prev.map((msg) => {
+          if (msg.id !== msgId) return msg;
+          const next: ChatMessage = {
+            ...msg,
+            type: 'normal',
+            htmlContent: message,
+            stepMessage: undefined,
+          };
+          if (data?.chart_data) next.chartData = data.chart_data;
+          return next;
+        })
       );
       setIsResponding(false);
       streamMessageIdRef.current = null;
