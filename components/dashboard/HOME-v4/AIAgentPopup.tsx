@@ -1653,7 +1653,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           className="fixed inset-y-0 right-0 transition-all duration-300 ease-out"
           onClick={(e) => e.stopPropagation()}
           style={{
-            zIndex: 90,
+            zIndex: 310,
             transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
             opacity: slideEntered ? 1 : 0,
           }}
@@ -1716,7 +1716,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   zIndex: 90,
                   transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
                   opacity: slideEntered ? 1 : 0,
-                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
+                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out, bottom 0.3s ease-out',
                 }
               : {
                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,

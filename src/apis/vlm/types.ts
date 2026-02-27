@@ -2,6 +2,7 @@ export interface VlmRequest {
     event_id: number;
     vms_id: number;
     camera_id: string;
+    occurred_at: string;
 }
 
 /** VLM 분석 상태 */

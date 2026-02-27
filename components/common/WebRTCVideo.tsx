@@ -194,13 +194,13 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
             createPeerConnection();
         };
 
-        ws.onmessage = (message) => {
+        ws.onmessage = async (message) => {
             try {
                 const parsedMessage = JSON.parse(message.data);
 
                 switch (parsedMessage.id) {
                     case "sdpAnswer":
-                        handleSdpAnswer(parsedMessage);
+                        await handleSdpAnswer(parsedMessage);
                         break;
                     case "iceCandidate":
                         handleIceCandidate(parsedMessage);

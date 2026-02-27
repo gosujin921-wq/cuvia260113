@@ -19,6 +19,7 @@ interface UnityAIAgentPopupProps {
     vlmRequestInfo?: VlmRequest;
     mainCameraName: string;
     eventType: EventType;
+    occurredTime: string;
     onChangeShowPropagationModal: (show: boolean) => void;
     onChangePropagationTime: (time: Date) => void;
     onChangeVlmAnalysisResult: (result: VlmAnalysisResult) => void;
@@ -46,7 +47,7 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)";
 
-const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, eventType, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo, onChangePropagationTime, onChangeShowPropagationModal, onChangeVlmAnalysisResult, onChangeCurrentPropagationMenu }) => {
+const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, eventType, occurredTime, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo, onChangePropagationTime, onChangeShowPropagationModal, onChangeVlmAnalysisResult, onChangeCurrentPropagationMenu }) => {
     const [chatInput, setChatInput] = useState("네, 분석해 주세요.");
     const [inputKey, setInputKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -221,6 +222,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                 event_id: vlmRequestInfo?.event_id ?? 0,
                 vms_id: vlmRequestInfo?.vms_id ?? 0,
                 camera_id: vlmRequestInfo?.camera_id ?? "",
+                occurred_at: occurredTime,
             };
 
             // 분석 중 메시지 추가
@@ -657,6 +659,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {
                                             e.preventDefault();
+                                            if (!chatInput.trim() || isResponding || !isReadyToAnalyze) return;
                                             handleSendMessage();
                                         }
                                     }}
