@@ -199,11 +199,11 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
     return (
         <>
             {/* 딤 배경 */}
-            <div className="fixed inset-0 bg-black/70 transition-opacity duration-500" style={{ zIndex: 10001 }} onClick={onClose} />
+            <div className="fixed inset-0 bg-black/30 transition-opacity duration-500" style={{ zIndex: 10001 }} onClick={onClose} />
 
             {/* 중앙 패널 */}
             <div
-                className="fixed top-1/2 left-1/2 flex flex-col transition-all duration-500 ease-out opacity-100 scale-100"
+                className="fixed top-1/2 left-1/2 flex flex-col transition-all duration-500 ease-out opacity-100 scale-100 bg-gray-100 rounded-xl p-4 shadow-2xl"
                 style={{
                     transform: "translate(-50%, -50%)",
                     width: "900px",
@@ -211,7 +211,6 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                     height: "90vh",
                     maxHeight: "90vh",
                     zIndex: 10002,
-                    padding: "16px",
                 }}>
                 <div className="flex flex-col gap-3 h-full" style={{ minHeight: 0 }}>
                     {/* 헤더 */}
@@ -224,14 +223,21 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                         <div className="flex items-center justify-between gap-2 flex-wrap relative">
                             <div className="flex items-center gap-2">
                                 {/* 전파 건수 칩 */}
-                                <div className="px-4 py-2 rounded-full text-xs font-medium bg-[#0f0f0f]/50 text-gray-300 flex items-center gap-2 border border-[#31353a]" style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
+                                <div className="px-4 py-2 rounded-full text-xs font-medium bg-white/90 text-gray-700 flex items-center gap-2 border border-gray-200 shadow-sm" style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
                                     <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                                     <span>전파 건수: {threads.length}건</span>
                                 </div>
+                                {/* 상태 칩 - 완료됨 또는 진행 중일 때만 표시 */}
+                                {currentThread && currentThread.status !== "pending" && (
+                                    <div className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-2 border shadow-sm ${currentThread.status === "completed" ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"}`} style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
+                                        <span className={`w-2 h-2 rounded-full ${currentThread.status === "completed" ? "bg-green-400" : "bg-blue-400"} animate-pulse`}></span>
+                                        <span>{currentThread.status === "completed" ? "완료됨" : "진행 중"}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* 닫기 버튼 */}
-                            <button type="button" onClick={onClose} className="flex-shrink-0 w-8 h-8 rounded-full bg-[#0f0f0f]/50 border border-[#31353a] hover:border-red-500/50 hover:bg-red-500/10 flex items-center justify-center text-gray-400 hover:text-red-400 transition-all" aria-label="닫기">
+                            <button type="button" onClick={onClose} className="flex-shrink-0 w-8 h-8 rounded-full bg-white/90 border border-gray-200 hover:border-red-300 hover:bg-red-50 flex items-center justify-center text-gray-600 hover:text-red-500 transition-all shadow-sm" aria-label="닫기">
                                 <Icon icon="mdi:close" className="w-5 h-5" />
                             </button>
                         </div>
@@ -239,21 +245,18 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
 
                     {/* 메인 영역 - 메시지 영역만 표시 */}
                     <div
-                        className="rounded-lg flex-1 gradient-border-right-bottom border border-[#31353a] relative flex flex-col overflow-hidden"
+                        className="rounded-lg flex-1 border border-gray-200 relative flex flex-col overflow-hidden bg-white shadow-lg"
                         style={{
                             minHeight: 0,
                             maxHeight: "100%",
-                            background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
-                            backdropFilter: "blur(2px)",
-                            WebkitBackdropFilter: "blur(2px)",
                         }}>
                         {/* 메시지 영역 */}
-                        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                        <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
                             {/* 메시지 헤더 */}
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-[#31353a] flex-shrink-0 bg-[#0a0a0a]/50">
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0 bg-gray-50">
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-base font-semibold text-gray-200 truncate">{currentThread?.title || "전파"}</h3>
-                                    <p className="text-sm text-gray-500 mt-0.5">
+                                    <h3 className="text-base font-semibold text-gray-800 truncate">{currentThread?.title || "전파"}</h3>
+                                    <p className="text-sm text-gray-600 mt-0.5">
                                         {currentThread &&
                                             new Date(currentThread.createdAt).toLocaleString("ko-KR", {
                                                 year: "numeric",
@@ -266,110 +269,85 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                 </div>
                             </div>
 
-                            {/* 메시지 영역 - 타임라인 스타일 */}
+                            {/* 메시지 영역 - 채팅 스타일 (HOME-v2 PropagationListPanel 참고) */}
                             <div
                                 ref={scrollContainerRef}
-                                className="flex-1 overflow-y-auto p-4"
+                                className="flex-1 overflow-y-auto p-4 bg-gray-50/50"
                                 style={{
                                     scrollbarWidth: "thin",
-                                    scrollbarColor: "#31353a #0f0f0f",
+                                    scrollbarColor: "#d1d5db #f3f4f6",
                                 }}>
-                                <div className="max-w-full">
-                                    {/* 타임라인 컨테이너 */}
-                                    <div className="relative pl-12">
-                                        {/* 타임라인 세로선 */}
-                                        <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-[#31353a]" />
-
-                                        {/* 메시지들 */}
-                                        <div className="space-y-6">
-                                            {threadMessages.map((message) => (
-                                                <div
-                                                    key={message.id}
-                                                    className="relative flex items-start gap-4"
-                                                    style={{
-                                                        marginLeft: message.role === "system" || message.role === "user" ? "40px" : "0px",
-                                                    }}>
-                                                    {/* 타임라인 아이콘 */}
-                                                    <div className="relative z-10 flex-shrink-0 -ml-12">
-                                                        {message.role === "agency" && (
-                                                            <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center border-4 border-[#0a0a0a] shadow-md">
-                                                                <Icon icon="mdi:alert-circle" className="w-4 h-4 text-white" />
-                                                            </div>
-                                                        )}
-                                                        {message.role === "system" && (
-                                                            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center border-4 border-[#0a0a0a] shadow-md">
-                                                                <Icon icon="mdi:send" className="w-4 h-4 text-white" />
-                                                            </div>
-                                                        )}
-                                                        {message.role === "user" && (
-                                                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center border-4 border-[#0a0a0a] shadow-md">
-                                                                <Icon icon="mdi:account" className="w-4 h-4 text-white" />
-                                                            </div>
-                                                        )}
+                                {/* 메시지들 */}
+                                <div className="flex flex-col gap-4 max-w-full">
+                                    {threadMessages.map((message) => (
+                                        <div key={message.id} className={message.role === "agency" ? "flex items-start gap-3" : "flex justify-end"}>
+                                            {/* 왼쪽 정렬: agency (신고기관) - 수신 메시지 */}
+                                            {message.role === "agency" && (
+                                                <div className="flex items-start gap-3 w-[80%] min-w-[80%]">
+                                                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center border-2 border-white shadow-sm">
+                                                        <Icon icon="mdi:alert-circle" className="w-4 h-4 text-white" />
                                                     </div>
-
-                                                    {/* 메시지 내용 */}
                                                     <div className="flex-1 min-w-0">
-                                                        {message.role === "agency" && (
-                                                            <div className="bg-[#0f0f0f]/70 border border-[#31353a] rounded-lg p-4 shadow-sm">
-                                                                <div className="flex items-center gap-2 mb-3">
-                                                                    <span className="text-sm font-bold text-red-400">{message.author || "신고기관"}</span>
-                                                                    <span className="text-sm text-gray-500">•</span>
-                                                                    <span className="text-sm text-gray-500">{message.timestamp}</span>
-                                                                    {message.status === "unread" && <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold ml-auto">NEW</span>}
-                                                                </div>
-                                                                <pre className="text-sm text-gray-300 whitespace-pre-wrap font-sans">{message.content}</pre>
-                                                                {message.showCompletionButton && (
-                                                                    <div className="mt-4 pt-4 border-t border-[#31353a]">
-                                                                        <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
-                                                                        <button type="button" onClick={() => onBackToInitial?.()} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors" aria-label="확인">
-                                                                            확인
-                                                                        </button>
-                                                                    </div>
-                                                                )}
+                                                        <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm p-4 shadow-sm">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="text-sm font-bold text-red-600">{message.author || "신고기관"}</span>
+                                                                {message.status === "unread" && <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">NEW</span>}
                                                             </div>
-                                                        )}
-
-                                                        {message.role === "system" && (
-                                                            <div className="bg-[#393a42] border border-[#31353a] rounded-lg p-4 shadow-sm">
-                                                                <div className="flex items-center gap-2 mb-3">
-                                                                    <span className="text-sm font-bold text-gray-200">전파 전송</span>
-                                                                    <span className="text-sm text-gray-500">•</span>
-                                                                    <span className="text-sm text-gray-500">{message.timestamp}</span>
+                                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">{message.content}</pre>
+                                                            {message.showCompletionButton && (
+                                                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                                                    <p className="text-sm text-gray-600 mb-4">해당 시뮬레이션을 종료합니다.</p>
+                                                                    <button type="button" onClick={() => onBackToInitial?.()} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors" aria-label="확인">
+                                                                        확인
+                                                                    </button>
                                                                 </div>
-                                                                {message.content ? (
-                                                                    <div className="text-sm text-gray-300 whitespace-pre-wrap font-sans">
-                                                                        <Markdown>{message.content}</Markdown>
-                                                                    </div>
-                                                                ) : (
-                                                                    <p className="text-sm text-red-400">내용이 없습니다</p>
-                                                                )}
-                                                            </div>
-                                                        )}
-
-                                                        {message.role === "user" && (
-                                                            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-lg p-4 shadow-sm">
-                                                                <div className="flex items-center gap-2 mb-3">
-                                                                    <span className="text-sm font-semibold text-blue-300">담당자</span>
-                                                                    <span className="text-sm text-gray-500">•</span>
-                                                                    <span className="text-sm text-gray-500">{message.timestamp}</span>
-                                                                </div>
-                                                                <p className="text-sm text-gray-300whitespace-pre-wrap">{message.content}</p>
-                                                            </div>
-                                                        )}
+                                                            )}
+                                                            <div className="text-xs text-gray-500 mt-2">{message.timestamp}</div>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            )}
+                                            <div className="flex items-end gap-2 w-[80%] min-w-[80%]">
+                                                <div className="flex-1 min-w-0 flex flex-col items-end">
+                                                    {message.role === "system" && (
+                                                        <div className="bg-blue-50 border border-blue-100 rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
+                                                            <div className="flex items-center justify-end gap-2 mb-2">
+                                                                <span className="text-sm font-bold text-gray-800">전파 전송</span>
+                                                            </div>
+                                                            {message.content ? (
+                                                                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans [&_p]:my-1 [&_p:last-child]:mb-0 [&_*:last-child]:mb-0">
+                                                                    <Markdown>{message.content}</Markdown>
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-sm text-red-400">내용이 없습니다</p>
+                                                            )}
+                                                            <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {message.role === "user" && (
+                                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl rounded-tr-sm p-4 shadow-sm">
+                                                        <div className="flex items-center justify-end gap-2 mb-2">
+                                                            <span className="text-sm font-semibold text-blue-600">담당자</span>
+                                                        </div>
+                                                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                                        <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
+                                                    </div>
+                                                )}
+                                                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center border-2 border-white shadow-sm">
+                                                    <Icon icon={message.role === "system" ? "mdi:send" : "mdi:account"} className="w-4 h-4 text-white" />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    ))}
                                     <div ref={bottomRef} />
                                 </div>
                             </div>
 
                             {/* 입력 영역 */}
-                            <div ref={inputContainerRef} className="flex-shrink-0 border-t border-[#31353a] bg-[#0a0a0a]/50">
+                            <div ref={inputContainerRef} className="flex-shrink-0 border-t border-gray-200 bg-white">
                                 <div className="p-3">
-                                    <div className="relative flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 focus-within:border-blue-500 transition-colors">
+                                    <div className="relative flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-colors">
                                         <textarea
                                             ref={textareaRef}
                                             value={messageInput}
@@ -402,7 +380,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                             {showScrollTop && (
                                 <button
                                     onClick={scrollToTop}
-                                    className="absolute right-4 w-10 h-10 rounded-full bg-[#0f0f0f]/90 border border-[#31353a] shadow-lg flex items-center justify-center text-gray-400 hover:text-white hover:border-blue-500/50 transition-all hover:scale-110 z-50"
+                                    className="absolute right-4 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg flex items-center justify-center text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all hover:scale-110 z-50"
                                     style={{
                                         bottom: `${inputContainerHeight + 16}px`,
                                     }}

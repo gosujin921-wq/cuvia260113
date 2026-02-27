@@ -705,7 +705,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                             left: `${20}px`,
                             bottom: `${20}px`,
                         }}
-                        width={420}
+                        width={650}
                         hideControls={hideControls}
                         highlighted={false}
                         onHover={handleHoverCctv}
