@@ -267,6 +267,7 @@ export default function HomeV2() {
 
   // 나머지 필요한 state들
   const [showStartMessage, setShowStartMessage] = useState<boolean>(true); // 시작 메시지창 표시 여부
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true); // 초기 로딩 (3초 후 시작 버튼 활성화)
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
   const [fastSearchRadius, setFastSearchRadius] = useState<number>(200);
@@ -324,6 +325,14 @@ export default function HomeV2() {
     const img = new Image();
     img.src = '/people.jpg';
   }, []);
+
+  // 시작 메시지창: 3초 로딩 후 시작 버튼 활성화
+  useEffect(() => {
+    if (!showStartMessage) return;
+    setIsInitialLoading(true);
+    const timer = setTimeout(() => setIsInitialLoading(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showStartMessage]);
 
   // 모든 이벤트를 한 번만 변환 (종결되지 않은 것만)
   const allConvertedEvents: Event[] = useMemo(() => {
@@ -813,7 +822,7 @@ export default function HomeV2() {
     if (e.key === '0') {
       toggleGuide();
       setShowStartMessage(prev => !prev);
-    } else if (e.key === '1' && missingEvent) {
+    } else if (e.key === '1' && missingEvent && !isInitialLoading) {
       setShowStartMessage(false);
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
@@ -833,7 +842,7 @@ export default function HomeV2() {
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
     }
-  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide]);
+  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -1193,9 +1202,28 @@ export default function HomeV2() {
               실종 시뮬레이션을 해보시려면<br />
               <span className="font-bold text-blue-400">1</span> 또는 <span className="font-bold">시작 버튼</span>을 눌러주세요.
             </p>
+            {/* 로딩바: 3초 동안 0→100% 애니메이션 */}
+            {isInitialLoading && (
+              <>
+                <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
+                <div className="h-1 w-full bg-gray-700 rounded-full overflow-hidden mb-4">
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
+                    style={{ animation: 'loading-fill 3s linear forwards' }}
+                  />
+                </div>
+              </>
+            )}
             <button
               onClick={handleStartSimulation}
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+              disabled={isInitialLoading}
+              className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
+                isInitialLoading
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
+              aria-label="시작"
+              tabIndex={isInitialLoading ? -1 : 0}
             >
               시작
             </button>
