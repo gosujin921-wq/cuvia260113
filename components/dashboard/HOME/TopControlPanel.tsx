@@ -12,7 +12,7 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({ isVisible, onStop, cc
 
     return (
         <div
-            className="absolute top-0 left-0 right-0 z-[1500]"
+            className="absolute top-0 left-5 right-5 z-[1500]"
             style={{
                 animation: isVisible ? "fadeInDown 0.5s ease-out" : "none",
                 opacity: isVisible ? 1 : 0,

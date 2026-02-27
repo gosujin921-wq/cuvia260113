@@ -22,6 +22,7 @@ interface UnityAIAgentPopupProps {
     onChangeShowPropagationModal: (show: boolean) => void;
     onChangePropagationTime: (time: Date) => void;
     onChangeVlmAnalysisResult: (result: VlmAnalysisResult) => void;
+    onChangeCurrentPropagationMenu: (menu: "net-monitoring" | "propagation") => void;
 }
 
 export interface VlmAnalysisResult {
@@ -45,7 +46,7 @@ interface ChatMessage {
 
 const AGENT_GRADIENT = "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)";
 
-const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, eventType, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo, onChangePropagationTime, onChangeShowPropagationModal, onChangeVlmAnalysisResult }) => {
+const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCameraName, eventType, hideControls = false, position: positionOverride, maxHeight: maxHeightProp, eventTime, isReadyToAnalyze = true, isUnityMode = false, vlmRequestInfo, onChangePropagationTime, onChangeShowPropagationModal, onChangeVlmAnalysisResult, onChangeCurrentPropagationMenu }) => {
     const [chatInput, setChatInput] = useState("네, 분석해 주세요.");
     const [inputKey, setInputKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -77,6 +78,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     const handleClickPropagationButton = () => {
         onChangeShowPropagationModal(true);
         onChangePropagationTime(new Date());
+        onChangeCurrentPropagationMenu("propagation");
     };
 
     // VLM 분석 상태 변경 시 메시지 업데이트 (웹소켓 콜백에서 상태 업데이트 - 의도된 패턴)

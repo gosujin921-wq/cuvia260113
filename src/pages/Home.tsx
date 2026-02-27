@@ -17,7 +17,23 @@ import { BridgeSlot } from "@/components/dashboard/HOME/unity/ConfigurePopup";
 import { VlmRequest } from "@/src/apis/vlm/types";
 import UnityAIAgentPopup, { VlmAnalysisResult } from "@/components/dashboard/HOME/unity/UnityAIAgentPopup";
 import Propagation from "@/components/dashboard/HOME/unity/Propagation";
+import PropagationLeftMenu from "@/components/dashboard/HOME/unity/PropagationLeftMenu";
 import { EventType } from "../apis/event/types";
+import PropagationModal from "@/components/dashboard/HOME/unity/PropagationModal";
+
+/** 20260227T100655.707 형태를 yyyy.MM.dd HH:mm:ss 로 포맷 */
+const formatEventTime = (tm: string): string => {
+    const m = tm?.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
+    if (!m) return "";
+    return `${m[1]}.${m[2]}.${m[3]} ${m[4]}:${m[5]}:${m[6]}`;
+};
+
+/** 20260227T100655.707 형태를 Date로 파싱 */
+const parseEventTime = (tm: string): Date => {
+    const m = tm?.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
+    if (!m) return new Date();
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6]));
+};
 
 export default function Home() {
     const navigate = useNavigate();
@@ -44,6 +60,7 @@ export default function Home() {
     const [showPropagationModal, setShowPropagationModal] = useState<boolean>(false);
     const [vlmAnalysisResult, setVlmAnalysisResult] = useState<VlmAnalysisResult | null>();
     const [eventType, setEventType] = useState<EventType>(0);
+    const [currentPropagationMenu, setCurrentPropagationMenu] = useState<"net-monitoring" | "propagation">("net-monitoring");
     const [propagationTime, setPropagationTime] = useState<Date>(new Date());
     // 웹소켓 이벤트 관련 상태
     const { status: socketStatus, lastEvent } = useEventSocket({
@@ -322,6 +339,7 @@ export default function Home() {
         setKey1PressTime(undefined);
         // 웹소켓 이벤트 상태도 초기화
         resetEventState();
+        setCurrentPropagationMenu("net-monitoring");
         const eventToUnity: EventToUnity = {
             methodName: "endEvent",
             payload: {
@@ -337,19 +355,20 @@ export default function Home() {
 
     // 이벤트 트리거 함수 (키보드 1 또는 웹소켓 이벤트에서 호출)
     const triggerEventMode = useCallback(
-        (overrideEventId?: string, mainCctvId?: string, cctvIdList?: string[], eventMessage?: string) => {
+        (overrideEventId?: string, mainCctvId?: string, cctvIdList?: string[], eventMessage?: string, time?: Date) => {
             const missingEvent = allConvertedEvents.find((event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004");
             // 웹소켓 이벤트용 더미 이벤트 생성 (missingEvent가 없을 때)
             const targetEvent = missingEvent || (overrideEventId ? { id: `ws-event-${overrideEventId}`, eventId: `EVT-${overrideEventId}` } : null);
 
             if (targetEvent) {
-                setKey1PressTime(new Date());
+                setKey1PressTime(time || new Date());
                 setCctvIndex(1);
                 setVisibleEventIds((prev) => new Set([...prev, targetEvent.id]));
                 setHighlightedEventId(targetEvent.id);
 
                 setTimeout(() => {
                     setMapZoomLevel(isUnityMode ? 2 : 1);
+                    setCurrentPropagationMenu("net-monitoring");
 
                     setTimeout(() => {
                         setSelectedEventId(targetEvent.id);
@@ -405,8 +424,11 @@ export default function Home() {
 
                 console.log("[Home] 웹소켓 이벤트 수신:", { eventId, mainCctvBridgeId, groupedCctvBridgeIds });
 
+                const eventMessage = `${mainCctvBridgeId || "Bullet-2"}에서 ${lastEvent.evt.type === 12 ? "폭력(싸움) 의심" : lastEvent.evt.type === 10 ? "쓰러짐" : ""} 이벤트가 감지되었습니다.`;
+                const eventTime = parseEventTime(lastEvent.evt.tm);
+
                 // 이벤트 트리거 (딜레이 적용)
-                triggerEventMode(String(eventId), mainCctvBridgeId, groupedCctvBridgeIds, `${mainCctvBridgeId || "Bullet-2"}에서 ${lastEvent.evt.type === 12 ? "폭력(싸움) 의심" : lastEvent.evt.type === 10 ? "쓰러짐" : ""} 이벤트가 감지되었습니다.`);
+                triggerEventMode(String(eventId), mainCctvBridgeId, groupedCctvBridgeIds, eventMessage, eventTime);
             }
         } else if (stat === 4) {
             // 활성 이벤트와 동일한 ID의 종료 이벤트인 경우에만 해제
@@ -476,58 +498,68 @@ export default function Home() {
         return () => window.removeEventListener("keydown", handleKeyPress);
     }, [allConvertedEvents, animateToEvent, missingEventId, isUnityMode]);
 
+    const propagationMenuWidth = 80;
+
     return (
         <div className="relative bg-[#0a0e14] overflow-hidden" style={{ width: "100vw", height: "100vh" }}>
-            {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
-            <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
-
-            {/* 맵 - 전체 화면 */}
-            <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
-                {isUnityMode ? (
-                    <UnityMapView
-                        events={events}
-                        selectedEventId={selectedEventId}
-                        aiDetectionEventId={aiDetectionEventId}
-                        onAiDetectionClose={clearSelection}
-                        externalZoomLevel={mapZoomLevel}
-                        onZoomLevelChange={setMapZoomLevel}
-                        hideControls={hideControls}
-                        leftPanelWidth={leftPanelCollapsed ? 80 : 416}
-                        isAutoMode={isAutoMode}
-                        isEventStreaming={isEventStreaming}
-                        activeEventCameraInfo={activeEventCameraInfo}
-                        onBridgeSlotsChange={setBridgeSlots}
-                    />
-                ) : (
-                    <MapView
-                        events={events}
-                        highlightedEventId={highlightedEventId}
-                        selectedEventId={selectedEventId}
-                        aiDetectionEventId={aiDetectionEventId}
-                        cctvIndex={cctvIndex}
-                        onEventClick={handleEventAction}
-                        onAiDetectionClose={clearSelection}
-                        onMapClick={() => {}}
-                        externalZoomLevel={mapZoomLevel}
-                        onZoomLevelChange={setMapZoomLevel}
-                        hideControls={hideControls}
-                        leftPanelWidth={leftPanelCollapsed ? 80 : 416}
-                        isAutoMode={isAutoMode}
-                    />
-                )}
-            </div>
-
             {/* 좌측: LeftPanel (운영 패널) - 플로팅. 1키: 좌측으로 이동·페이드아웃 */}
             <div className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? "-translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`} style={{ zIndex: 100 }}>
                 <LeftPanel onCollapsedChange={setLeftPanelCollapsed} />
             </div>
 
-            {/* 우측: 이벤트 리스트 패널 - 플로팅. 1키: 우측으로 이동·페이드아웃 */}
-            <div className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${panelsSlidOut ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`} style={{ width: "370px", zIndex: 100, paddingTop: "16px", paddingBottom: "16px" }}>
-                <CCTVStatusPanel />
-                <HeatmapPanel areaLabelPrefix="Hall" minVisibleCount={3} className="flex-shrink-0" />
-                <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
-                    <EventList events={eventsForList} selectedEventId={selectedEventId || undefined} onEventSelect={handleEventAction} onEventHover={handleEventHover} key1PressTime={key1PressTime} />
+            {/* 좌측: 전파용 좌측 메뉴 - 패널 슬라이드 아웃 시 슬라이드 인 */}
+            <div className={`absolute left-0 top-0 bottom-0 transition-all duration-300 ease-out ${panelsSlidOut ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 pointer-events-none"}`} style={{ zIndex: 100 }}>
+                <PropagationLeftMenu currentMenu={currentPropagationMenu} />
+            </div>
+
+            {/* 메인 영역: 상단 바 + 맵 + 우측 패널 (전파 메뉴 노출 시 왼쪽이 메뉴 너비만큼 줄어듦) */}
+            <div className="absolute top-0 right-0 bottom-0 transition-all duration-300 ease-out" style={{ left: panelsSlidOut ? propagationMenuWidth : 0 }}>
+                {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
+                <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
+
+                {/* 맵 - 메인 영역 전체 */}
+                <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
+                    {isUnityMode ? (
+                        <UnityMapView
+                            events={events}
+                            selectedEventId={selectedEventId}
+                            aiDetectionEventId={aiDetectionEventId}
+                            onAiDetectionClose={clearSelection}
+                            externalZoomLevel={mapZoomLevel}
+                            onZoomLevelChange={setMapZoomLevel}
+                            hideControls={hideControls}
+                            leftPanelWidth={leftPanelCollapsed ? 80 : 416}
+                            isAutoMode={isAutoMode}
+                            isEventStreaming={isEventStreaming}
+                            activeEventCameraInfo={activeEventCameraInfo}
+                            onBridgeSlotsChange={setBridgeSlots}
+                        />
+                    ) : (
+                        <MapView
+                            events={events}
+                            highlightedEventId={highlightedEventId}
+                            selectedEventId={selectedEventId}
+                            aiDetectionEventId={aiDetectionEventId}
+                            cctvIndex={cctvIndex}
+                            onEventClick={handleEventAction}
+                            onAiDetectionClose={clearSelection}
+                            onMapClick={() => {}}
+                            externalZoomLevel={mapZoomLevel}
+                            onZoomLevelChange={setMapZoomLevel}
+                            hideControls={hideControls}
+                            leftPanelWidth={leftPanelCollapsed ? 80 : 416}
+                            isAutoMode={isAutoMode}
+                        />
+                    )}
+                </div>
+
+                {/* 우측: 이벤트 리스트 패널 - 플로팅. 1키: 우측으로 이동·페이드아웃 */}
+                <div className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${panelsSlidOut ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`} style={{ width: "370px", zIndex: 100, paddingTop: "16px", paddingBottom: "16px" }}>
+                    <CCTVStatusPanel />
+                    <HeatmapPanel areaLabelPrefix="Hall" minVisibleCount={3} className="flex-shrink-0" />
+                    <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
+                        <EventList events={eventsForList} eventType={eventType} selectedEventId={selectedEventId || undefined} onEventSelect={handleEventAction} onEventHover={handleEventHover} key1PressTime={key1PressTime} />
+                    </div>
                 </div>
             </div>
             {showAIAgentPopup && isUnityMode && (
@@ -544,10 +576,11 @@ export default function Home() {
                     onChangePropagationTime={setPropagationTime}
                     onChangeShowPropagationModal={setShowPropagationModal}
                     onChangeVlmAnalysisResult={handleVlmAnalysisResult}
+                    onChangeCurrentPropagationMenu={setCurrentPropagationMenu}
                 />
             )}
             {showAIAgentPopup && !isUnityMode && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} />}
-            {showPropagationModal && isUnityMode && vlmAnalysisResult && <Propagation eventType={eventType} vlmAnalysisResult={vlmAnalysisResult} propagationTime={propagationTime} onClose={() => setShowPropagationModal(false)} />}
+            {showPropagationModal && isUnityMode && vlmAnalysisResult && <PropagationModal isVisible={true} onClose={() => setShowPropagationModal(false)} eventType={eventType} vlmAnalysisResult={vlmAnalysisResult} propagationTime={propagationTime} />}
         </div>
     );
 }

@@ -2,16 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Event, EventPriority } from "@/types";
 import { formatEventDateTime } from "@/lib/events-data";
+import { EventType } from "@/src/apis/event/types";
 
 interface EventListProps {
     events: Event[];
     selectedEventId?: string;
+    eventType?: EventType;
     onEventSelect?: (eventId: string) => void;
     onEventHover?: (eventId: string | null) => void;
     key1PressTime?: Date; // 1 키를 눌렀을 때의 시간
 }
 
-const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1PressTime }: EventListProps) => {
+const EventList = ({ events, selectedEventId, eventType, onEventSelect, onEventHover, key1PressTime }: EventListProps) => {
     const navigate = useNavigate();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const eventItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -31,7 +33,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
     // CCTV 이름 추출 함수 (이벤트 ID 기반으로 일관된 CCTV 할당)
     const getCCTVName = (event: Event): string => {
         // 1 키로 선택된 이벤트 (A-20260107-004)는 CCTV-V-11
-        if (event.eventId === "A-20260107-004" || event.id === "A-20260107-004") {
+        if (event.eventId === "A-20260107-004" || event.id === "A-20260107-004" || eventType === 12 || eventType === 10) {
             return "Bullet-2";
         }
         // 다른 이벤트들은 이벤트 ID 기반으로 무작위 할당 (CCTV-V-1 ~ CCTV-V-12)
@@ -43,12 +45,12 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
 
     // 동명 선택 함수 (이벤트 ID 기반으로 일관된 동명 할당)
     const getHallName = (event: Event): string => {
+        if (eventType === 12 || eventType === 10) {
+            return "HALL1";
+        }
         // 가상의 동명 목록
-        const dongNames = [
-            '은하동', '별빛동', '달빛동', '해빛동', 
-            '무지개동', '구름동', '바람동', '노을동'
-        ];
-        
+        const dongNames = ["Hall1", "Hall2", "Hall3", "Hall4", "Hall5", "Hall6", "Hall7", "Hall8"];
+
         // 이벤트 ID를 기반으로 일관된 동명 할당 (같은 이벤트는 항상 같은 동명)
         const eventId = event.eventId || event.id;
         const hash = eventId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -97,7 +99,6 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover, key1P
         return count > 99 ? "99+" : count.toString();
     };
 
-    const urgentCount = getPriorityCount("긴급");
     const cautionCount = getPriorityCount("경계");
     const attentionCount = getPriorityCount("주의");
     const generalCount = sortedEvents.filter((event) => event.priority === "일반" || generalEventIds.has(event.id)).length;

@@ -1,6 +1,10 @@
 import { Icon } from "@iconify/react";
 
-const PropagationLeftMenu = () => {
+interface Props {
+    currentMenu: "net-monitoring" | "propagation";
+}
+
+const PropagationLeftMenu = ({ currentMenu }: Props) => {
     const menuItems = [
         {
             id: "net-monitoring" as const,
@@ -50,7 +54,7 @@ const PropagationLeftMenu = () => {
             {/* 메뉴 아이템들 */}
             <div className="flex flex-col items-center gap-3 w-full">
                 {menuItems.map((item) => {
-                    const isActive = item.id === "propagation";
+                    const isActive = item.id === currentMenu;
                     const hasBadge = item.badge !== undefined && item.badge > 0;
                     return (
                         <span key={item.id} id={item.id === "object-tracking" ? "object-tracking-menu" : item.id === "capture-list" ? "capture-list-menu" : undefined} className="flex flex-col items-center justify-center w-full group relative" aria-label={item.label} tabIndex={0}>
