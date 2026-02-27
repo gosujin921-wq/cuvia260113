@@ -287,8 +287,8 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     return (
         <>
             {isExpanded ? (
-                <div className="fixed inset-y-0 right-0 z-[2000]" onClick={(e) => e.stopPropagation()} style={{ zIndex: 2000 }}>
-                    <div className="flex flex-col bg-white border-l border-[#31353a] h-full w-[30rem] overflow-hidden" style={{ borderLeftWidth: "1px" }}>
+                <div className="fixed right-0 z-[2000]" onClick={(e) => e.stopPropagation()} style={{ zIndex: 2000, top: "60px", bottom: 0 }}>
+                    <div className="flex flex-col bg-white border-l border-[#31353a] h-full w-[30rem] overflow-hidden rounded-t-xl" style={{ borderLeftWidth: "1px" }}>
                         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
                             <button type="button" onClick={() => setIsExpanded(false)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none" aria-label="축소">
                                 <Icon icon="mdi:window-restore" className="w-5 h-5" />
@@ -494,7 +494,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                         positionOverride
                             ? { position: "absolute" as const, ...positionOverride }
                             : {
-                                  top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
+                                  bottom: `${padding}px`,
                                   right: `${padding}px`,
                               }
                     }
