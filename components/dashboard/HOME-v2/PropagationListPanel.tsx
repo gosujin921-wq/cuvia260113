@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import ReportDownloadPopup from './ReportDownloadPopup';
 
 interface CaptureItem {
   id: string;
@@ -174,6 +175,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   captureItems = [],
 }) => {
   const hasAddedDiscoveryRef = useRef(false);
+  const [showReportDownloadPopup, setShowReportDownloadPopup] = useState(false);
 
   // 전파 패널 열림 시 0.5초 후 스크롤을 맨 아래로
   useEffect(() => {
@@ -383,14 +385,14 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     <>
       {/* 딤 배경 */}
       <div 
-        className="fixed inset-0 bg-black/70 transition-opacity duration-500"
+        className="fixed inset-0 bg-black/30 transition-opacity duration-500"
         style={{ zIndex: 10001 }}
         onClick={onClose}
       />
 
       {/* 중앙 패널 */}
       <div
-        className="fixed top-1/2 left-1/2 flex flex-col transition-all duration-500 ease-out opacity-100 scale-100"
+        className="fixed top-1/2 left-1/2 flex flex-col transition-all duration-500 ease-out opacity-100 scale-100 bg-gray-100 rounded-xl p-4 shadow-2xl"
         style={{
           transform: 'translate(-50%, -50%)',
           width: '900px',
@@ -398,7 +400,6 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
           height: '90vh',
           maxHeight: '90vh',
           zIndex: 10002,
-          padding: '16px',
         }}
       >
         <div className="flex flex-col gap-3 h-full" style={{ minHeight: 0 }}>
@@ -413,16 +414,16 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
             <div className="flex items-center justify-between gap-2 flex-wrap relative">
               <div className="flex items-center gap-2">
                 {/* 전파 건수 칩 */}
-                <div className="px-4 py-2 rounded-full text-xs font-medium bg-[#0f0f0f]/50 text-gray-300 flex items-center gap-2 border border-[#31353a]" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                <div className="px-4 py-2 rounded-full text-xs font-medium bg-white/90 text-gray-700 flex items-center gap-2 border border-gray-200 shadow-sm" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
                   <span>전파 건수: {threads.length}건</span>
                 </div>
                 
                 {/* 상태 칩 - 완료됨 또는 진행 중일 때만 표시 */}
                 {currentThread && currentThread.status !== 'pending' && (
-                  <div className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-2 border ${
-                    currentThread.status === 'completed' ? 'bg-green-500/10 text-green-300 border-green-500/50' :
-                    'bg-blue-500/10 text-blue-300 border-blue-500/50'
+                  <div className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-2 border shadow-sm ${
+                    currentThread.status === 'completed' ? 'bg-green-50 text-green-700 border-green-200' :
+                    'bg-blue-50 text-blue-700 border-blue-200'
                   }`} style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <span className={`w-2 h-2 rounded-full ${
                       currentThread.status === 'completed' ? 'bg-green-400' : 'bg-blue-400'
@@ -438,7 +439,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-shrink-0 w-8 h-8 rounded-full bg-[#0f0f0f]/50 border border-[#31353a] hover:border-red-500/50 hover:bg-red-500/10 flex items-center justify-center text-gray-400 hover:text-red-400 transition-all"
+                className="flex-shrink-0 w-8 h-8 rounded-full bg-white/90 border border-gray-200 hover:border-red-300 hover:bg-red-50 flex items-center justify-center text-gray-600 hover:text-red-500 transition-all shadow-sm"
                 aria-label="닫기"
               >
                 <Icon icon="mdi:close" className="w-5 h-5" />
@@ -448,22 +449,19 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
           {/* 메인 영역 - 메시지 영역만 표시 */}
           <div
-            className="rounded-lg flex-1 gradient-border-right-bottom border border-[#31353a] relative flex flex-col overflow-hidden"
+            className="rounded-lg flex-1 border border-gray-200 relative flex flex-col overflow-hidden bg-white shadow-lg"
             style={{
               minHeight: 0,
               maxHeight: '100%',
-              background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
-              backdropFilter: 'blur(2px)',
-              WebkitBackdropFilter: 'blur(2px)',
             }}
           >
             {/* 메시지 영역 */}
             <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
               {/* 메시지 헤더 */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-[#31353a] flex-shrink-0 bg-[#0a0a0a]/50">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0 bg-gray-50">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-gray-200 truncate">{currentThread?.title || '전파'}</h3>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <h3 className="text-base font-semibold text-gray-800 truncate">{currentThread?.title || '전파'}</h3>
+                  <p className="text-sm text-gray-600 mt-0.5">
                     {currentThread && new Date(currentThread.createdAt).toLocaleString('ko-KR', {
                       year: 'numeric',
                       month: 'long',
@@ -473,24 +471,24 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                     })}
                   </p>
                 </div>
-                <a
-                  href="https://docs.google.com/document/d/1_--OP0DBT21tfMWvO2NGB9aWc_eVwgBo/edit"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setShowReportDownloadPopup(true)}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors flex items-center gap-1.5"
+                  aria-label="사건 처리 결과 보고서 다운로드"
                 >
                   <Icon icon="mdi:download" className="w-4 h-4" />
                   <span>사건 처리 결과 보고서 다운로드</span>
-                </a>
+                </button>
               </div>
 
               {/* 메시지 영역 - 채팅 스타일 */}
               <div 
                 ref={scrollContainerRef}
-                className="flex-1 overflow-y-auto p-4"
+                className="flex-1 overflow-y-auto p-4 bg-gray-50/50"
                 style={{
                   scrollbarWidth: 'thin',
-                  scrollbarColor: '#31353a #0f0f0f',
+                  scrollbarColor: '#d1d5db #f3f4f6',
                 }}
               >
                 <div className="flex flex-col gap-4 max-w-full">
@@ -502,13 +500,13 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                       {/* 왼쪽 정렬: agency (신고기관) - 수신 메시지 */}
                       {message.role === 'agency' && (
                         <div className="flex items-start gap-3 w-[80%] min-w-[80%]">
-                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center border-2 border-[#0a0a0a] shadow-sm">
+                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center border-2 border-white shadow-sm">
                             <Icon icon="mdi:alert-circle" className="w-4 h-4 text-white" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="bg-[#0f0f0f]/70 border border-[#31353a] rounded-2xl rounded-tl-sm p-4 shadow-sm">
+                            <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm p-4 shadow-sm">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-bold text-red-400">{message.author || '신고기관'}</span>
+                                <span className="text-sm font-bold text-red-600">{message.author || '신고기관'}</span>
                                 {message.status === 'unread' && (
                                   <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">
                                     NEW
@@ -516,16 +514,16 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                 )}
                               </div>
                               <div
-                                className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans"
+                                className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans"
                                 dangerouslySetInnerHTML={{
                                   __html: message.content
-                                    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-                                    .replace(/\*(.+?)\*/g, '<em class="text-gray-200">$1</em>'),
+                                    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-gray-900 font-semibold">$1</strong>')
+                                    .replace(/\*(.+?)\*/g, '<em class="text-gray-800">$1</em>'),
                                 }}
                               />
                               {message.showCompletionButton && (
-                                <div className="mt-4 pt-4 border-t border-[#31353a]">
-                                  <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                  <p className="text-sm text-gray-600 mb-4">해당 시뮬레이션을 종료합니다.</p>
                                   <button
                                     type="button"
                                     onClick={() => onBackToInitial?.()}
@@ -547,18 +545,18 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                         <div className="flex items-end gap-2 w-[80%] min-w-[80%]">
                           <div className="flex-1 min-w-0 flex flex-col items-end">
                             {message.role === 'system' && (
-                              <div className="bg-[#393a42] border border-[#31353a] rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
+                              <div className="bg-blue-50 border border-blue-100 rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
                                 <div className="flex items-center justify-end gap-2 mb-2">
-                                  <span className="text-sm font-bold text-gray-200">전파 전송</span>
+                                  <span className="text-sm font-bold text-gray-800">전파 전송</span>
                                 </div>
                                 {message.content ? (
                                   <>
-                                    <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap font-sans space-y-4">
+                                    <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans space-y-4">
                                       {message.content.split('\n\n').map((paragraph, idx) => {
                                         const isSection = paragraph.startsWith('👤') || paragraph.startsWith('📡') || paragraph.startsWith('🎯') || paragraph.startsWith('🧭') || paragraph.startsWith('🤝') || paragraph.startsWith('📎') || paragraph.startsWith('🚨') || paragraph.startsWith('🚓') || paragraph.startsWith('🔎') || paragraph.startsWith('🔗') || paragraph.startsWith('📍') || paragraph.startsWith('🔒');
                                         const html = paragraph
-                                          .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-                                          .replace(/\*(.+?)\*/g, '<em class="text-gray-200">$1</em>');
+                                          .replace(/\*\*(.+?)\*\*/g, '<strong class="text-gray-900 font-semibold">$1</strong>')
+                                          .replace(/\*(.+?)\*/g, '<em class="text-gray-800">$1</em>');
                                         return (
                                           <div
                                             key={idx}
@@ -570,12 +568,12 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                     </div>
 
                                     {captureItems.length > 0 && (
-                                      <div className="mt-4 pt-4 border-t border-[#31353a]">
-                                        <div className="text-xs font-semibold text-gray-400 mb-3">📎 포착 목록 ({captureItems.length}건)</div>
+                                      <div className="mt-4 pt-4 border-t border-blue-100">
+                                        <div className="text-xs font-semibold text-gray-600 mb-3">📎 포착 목록 ({captureItems.length}건)</div>
                                         <div className="grid grid-cols-2 gap-2">
                                           {captureItems.map((item) => (
                                             <div key={item.id} className="relative group">
-                                              <div className="aspect-video bg-black rounded overflow-hidden border border-[#31353a] group-hover:border-blue-500/50 transition-colors relative">
+                                              <div className="aspect-video bg-gray-100 rounded overflow-hidden border border-gray-200 group-hover:border-blue-300 transition-colors relative">
                                                 <video
                                                   src={item.videoUrl}
                                                   poster={item.thumbnailUrl}
@@ -585,7 +583,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                                   preload="metadata"
                                                 />
                                               </div>
-                                              <div className="text-[10px] text-gray-400 mt-1 text-center truncate">{item.cctvName} - {item.timestamp}</div>
+                                              <div className="text-[10px] text-gray-600 mt-1 text-center truncate">{item.cctvName} - {item.timestamp}</div>
                                             </div>
                                           ))}
                                         </div>
@@ -600,23 +598,23 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                             )}
 
                             {message.role === 'user' && (
-                              <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-2xl rounded-tr-sm p-4 shadow-sm">
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl rounded-tr-sm p-4 shadow-sm">
                                 <div className="flex items-center justify-end gap-2 mb-2">
-                                  <span className="text-sm font-semibold text-blue-300">담당자</span>
+                                  <span className="text-sm font-semibold text-blue-600">담당자</span>
                                 </div>
                                 <div
-                                  className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap"
+                                  className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"
                                   dangerouslySetInnerHTML={{
                                     __html: message.content
-                                      .replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-semibold">$1</strong>')
-                                      .replace(/\*(.+?)\*/g, '<em class="text-gray-200">$1</em>'),
+                                      .replace(/\*\*(.+?)\*\*/g, '<strong class="text-gray-900 font-semibold">$1</strong>')
+                                      .replace(/\*(.+?)\*/g, '<em class="text-gray-800">$1</em>'),
                                   }}
                                 />
                                 <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
                               </div>
                             )}
                           </div>
-                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center border-2 border-[#0a0a0a] shadow-sm">
+                          <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center border-2 border-white shadow-sm">
                             <Icon icon={message.role === 'system' ? 'mdi:send' : 'mdi:account'} className="w-4 h-4 text-white" />
                           </div>
                         </div>
@@ -628,9 +626,9 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               </div>
 
               {/* 입력 영역 */}
-              <div ref={inputContainerRef} className="flex-shrink-0 border-t border-[#31353a] bg-[#0a0a0a]/50">
+              <div ref={inputContainerRef} className="flex-shrink-0 border-t border-gray-200 bg-white">
                 <div className="p-3">
-                  <div className="relative flex items-center gap-2 bg-white border border-gray-300 rounded-md px-3 py-2 focus-within:border-blue-500 transition-colors">
+                  <div className="relative flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-colors">
                     <textarea
                       ref={textareaRef}
                       value={messageInput}
@@ -669,7 +667,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               {showScrollTop && (
                 <button
                   onClick={scrollToTop}
-                  className="absolute right-4 w-10 h-10 rounded-full bg-[#0f0f0f]/90 border border-[#31353a] shadow-lg flex items-center justify-center text-gray-400 hover:text-white hover:border-blue-500/50 transition-all hover:scale-110 z-50"
+                  className="absolute right-4 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg flex items-center justify-center text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all hover:scale-110 z-50"
                   style={{
                     bottom: `${inputContainerHeight + 16}px`,
                   }}
@@ -682,6 +680,12 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 보고서다운로드 팝업 */}
+      <ReportDownloadPopup
+        isOpen={showReportDownloadPopup}
+        onClose={() => setShowReportDownloadPopup(false)}
+      />
     </>
   );
 };
