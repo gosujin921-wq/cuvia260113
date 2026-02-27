@@ -546,7 +546,7 @@ export default function Home() {
                 {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
                 <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
 
-                {/* 플로팅 알림 - 화면 중앙 하단 */}
+                {/* 플로팅 알림 - 화면 중앙 하단 (BottomPanel 펼침 시 패널 위, 접힘 시 조금 아래로) */}
                 {floatingNotificationMessage && (
                     <div
                         className={`absolute left-1/2 z-[200] -translate-x-1/2 transition-all duration-300 ease-out ${
@@ -555,7 +555,7 @@ export default function Home() {
                                 : "translate-y-4 opacity-0"
                         }`}
                         style={{
-                            bottom: "100px",
+                            bottom: hideControls ? "120px" : "240px",
                             padding: "12px 16px",
                             borderRadius: "8px",
                             background: "linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(23, 23, 23, 0.8) 100%)",
