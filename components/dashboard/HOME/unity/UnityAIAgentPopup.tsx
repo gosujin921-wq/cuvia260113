@@ -659,6 +659,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter" && !e.shiftKey) {
                                             e.preventDefault();
+                                            if (!chatInput.trim() || isResponding || !isReadyToAnalyze) return;
                                             handleSendMessage();
                                         }
                                     }}
