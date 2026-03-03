@@ -1,24 +1,25 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import EventList from '@/components/dashboard/HOME/EventList';
-import MapView from '@/components/dashboard/HOME-v2/MapView';
-import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
-import LeftPanel from '@/components/dashboard/HOME-v2/LeftPanel';
-import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
+import MapView from '@/components/dashboard/WithLink/MapView';
+import ObjectTrackingMapView from '@/components/dashboard/WithLink/ObjectTrackingMapView';
+import LeftPanel from '@/components/dashboard/WithLink/LeftPanel';
+import LeftMenuPanel from '@/components/dashboard/WithLink/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
-import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
-import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
-import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/CaptureListPanel';
-import PropagationListPanel from '@/components/dashboard/HOME-v2/PropagationListPanel';
-import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
-import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
-import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
+import FastSearchListPanel from '@/components/dashboard/WithLink/FastSearchListPanel';
+import PredictedCCTVListPanel from '@/components/dashboard/WithLink/PredictedCCTVListPanel';
+import CaptureListPanel, { CaptureItem } from '@/components/dashboard/WithLink/CaptureListPanel';
+import PropagationListPanel from '@/components/dashboard/WithLink/PropagationListPanel';
+import AIAgentPopup from '@/components/dashboard/WithLink/AIAgentPopup';
+import ConfirmDialog from '@/components/dashboard/WithLink/ConfirmDialog';
+import { MouseGuide } from '@/components/dashboard/WithLink/MouseGuide';
 import { useMouseGuide } from '@/src/pages/useMouseGuide';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
+import type { MapStreamData } from '@/types/streamJson.types.ts';
 
 // UI 상태 관리를 위한 reducer
 type UIState = {
@@ -38,7 +39,6 @@ type UIState = {
   selectedMenuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast' | null;
   showFastSearchProgress: boolean;
   showNetMonitoringDialog: boolean;
-  showAIAgentOnly: boolean;
   previousStateBeforePropagation: {
     showFastSearchList: boolean;
     showObjectTracking: boolean;
@@ -71,7 +71,7 @@ type UIAction =
   | { type: 'COMPLETE_FAST_SEARCH_PROGRESS' }
   | { type: 'SHOW_NET_MONITORING_DIALOG' }
   | { type: 'HIDE_NET_MONITORING_DIALOG' }
-  | { type: 'SHOW_AI_AGENT_ONLY' };
+  | { type: 'TOGGLE_AI_AGENT_POPUP' };
 
 const uiReducer = (state: UIState, action: UIAction): UIState => {
   switch (action.type) {
@@ -131,7 +131,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         ...state,
         showFastSearchList: false,
         showAIAgentPopup: false,
-        showAIAgentOnly: false,
         panelsSlidOut: false,
         showCCTV: true,
         hideControls: false,
@@ -175,7 +174,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
       return {
         ...state,
         showCaptureList: false,
-        showAIAgentOnly: false,
         panelsSlidOut: false,
         showCCTV: true,
         hideControls: false,
@@ -212,23 +210,12 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         selectedMenuId: previousState?.selectedMenuId || null,
         previousStateBeforePropagation: null,
       };
-    case 'SHOW_AI_AGENT_ONLY':
-      return {
-        ...state,
-        panelsSlidOut: true,
-        showCCTV: false,
-        hideControls: false,
-        showAIAgentPopup: true,
-        showAIAgentOnly: true,
-        showFastSearchList: false,
-        showObjectTracking: false,
-        showCaptureList: false,
-        showPropagationList: false,
-      };
     case 'SHOW_NET_MONITORING_DIALOG':
       return { ...state, showNetMonitoringDialog: true };
     case 'HIDE_NET_MONITORING_DIALOG':
       return { ...state, showNetMonitoringDialog: false };
+    case 'TOGGLE_AI_AGENT_POPUP':
+      return { ...state, showAIAgentPopup: !state.showAIAgentPopup };
     case 'SET_MENU':
       return { ...state, selectedMenuId: action.payload };
     case 'TOGGLE_LEFT_PANEL':
@@ -242,7 +229,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         panelsSlidOut: false,
         showFastSearchList: false,
         showAIAgentPopup: false,
-        showAIAgentOnly: false,
         showCCTV: true,
         showReSearchProgress: false,
         showObjectTrackingConfirm: false,
@@ -281,12 +267,10 @@ export default function HomeV2() {
     selectedMenuId: null,
     showFastSearchProgress: false,
     showNetMonitoringDialog: false,
-    showAIAgentOnly: false,
   });
 
   // 나머지 필요한 state들
-  const [showStartMessage, setShowStartMessage] = useState<boolean>(true); // 시작 메시지창 표시 여부
-  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true); // 초기 로딩 (3초 후 시작 버튼 활성화)
+  const [showStartMessage, setShowStartMessage] = useState<boolean>(false); // 시작 메시지창 표시 여부
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
   const [fastSearchRadius, setFastSearchRadius] = useState<number>(200);
@@ -296,7 +280,7 @@ export default function HomeV2() {
   const [pinOffset, setPinOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [excludedAttributes, setExcludedAttributes] = useState<string[]>([]);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
-  const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
+  const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(600);
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
@@ -316,6 +300,7 @@ export default function HomeV2() {
   });
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
+  const [streamMapData, setStreamMapData] = useState<MapStreamData | null>(null); // 스트림에서 받은 맵 데이터
   const {
     showMouseGuide,
     setShowMouseGuide,
@@ -344,14 +329,6 @@ export default function HomeV2() {
     const img = new Image();
     img.src = '/people.jpg';
   }, []);
-
-  // 시작 메시지창: 3초 로딩 후 시작 버튼 활성화
-  useEffect(() => {
-    if (!showStartMessage) return;
-    setIsInitialLoading(true);
-    const timer = setTimeout(() => setIsInitialLoading(false), 3000);
-    return () => clearTimeout(timer);
-  }, [showStartMessage]);
 
   // 모든 이벤트를 한 번만 변환 (종결되지 않은 것만)
   const allConvertedEvents: Event[] = useMemo(() => {
@@ -700,6 +677,11 @@ export default function HomeV2() {
     }
   }, [showMouseGuide, jumpToStep]);
 
+  // 스트림 맵 데이터 수신 핸들러
+  const handleMapDataReceived = useCallback((data: MapStreamData) => {
+    setStreamMapData(data);
+  }, []);
+
   // syncToAppState: 타겟 요소가 없을 때 앱 상태에 맞춰 가이드 단계 동기화
   useEffect(() => {
     const inputEl = document.getElementById('agent-chat-input') as HTMLTextAreaElement | null;
@@ -788,7 +770,7 @@ export default function HomeV2() {
       const topPx = reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424; // 1.25rem = 20px
       // 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드 또는 전파 모드일 때는 플로팅 버튼 영역 제외
       const reserveBottom = (uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList) ? 24 : 24 + 56 + 8;
-      setAgentPopupMaxHeight(Math.max(200, window.innerHeight - topPx - reserveBottom));
+      setAgentPopupMaxHeight(Math.max(600, window.innerHeight - topPx - reserveBottom));
     };
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -841,7 +823,7 @@ export default function HomeV2() {
     if (e.key === '0') {
       toggleGuide();
       setShowStartMessage(prev => !prev);
-    } else if (e.key === '1' && missingEvent && !isInitialLoading) {
+    } else if (e.key === '1' && missingEvent) {
       setShowStartMessage(false);
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
@@ -861,9 +843,9 @@ export default function HomeV2() {
       setPinOffset({ x: 0, y: 0 });
       setOpenCandidateId('43');
     } else if (e.key === 'l' || e.key === 'L') {
-      dispatch({ type: 'SHOW_AI_AGENT_ONLY' });
+      dispatch({ type: 'TOGGLE_AI_AGENT_POPUP' });
     }
-  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading]);
+  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -912,7 +894,7 @@ export default function HomeV2() {
             flyToLocation={flyToLocation}
             externalShowCCTV={!uiState.showObjectTracking}
             onMapStateChange={setLastMapState}
-            hideAgentButton={uiState.showAIAgentOnly}
+            streamMapData={streamMapData}
           />
         )}
       </div>
@@ -931,14 +913,14 @@ export default function HomeV2() {
       </div>
 
       <div 
-        className={`absolute top-0 bottom-0 transition-all duration-300 ease-out ${uiState.panelsSlidOut && !uiState.showAIAgentOnly ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+        className={`absolute top-0 bottom-0 transition-all duration-300 ease-out ${uiState.panelsSlidOut ? '-translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ zIndex: 100, left: '0px' }}
       >
         <LeftPanel onCollapsedChange={(collapsed) => dispatch({ type: 'TOGGLE_LEFT_PANEL' })} />
       </div>
 
       <div 
-        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${uiState.panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${(uiState.panelsSlidOut || uiState.showAIAgentPopup) ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
         <HeatmapPanel 
@@ -963,9 +945,9 @@ export default function HomeV2() {
         </div>
       </div>
 
-      {/* BottomPanel (CCTV 화면) - 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드 또는 전파 모드일 때 숨김 */}
+      {/* BottomPanel (CCTV 화면) - 고속검색/객체추적/포착목록/전파 모드 또는 AI 에이전트 팝업 열림 시 숨김 */}
       <BottomPanel
-        showCCTV={uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
+        showCCTV={uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList && !uiState.showAIAgentPopup}
         hideControls={uiState.hideControls}
         leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
         windowWidth={windowWidth}
@@ -1089,64 +1071,49 @@ export default function HomeV2() {
         <div style={{ display: uiState.showPropagationList ? 'none' : 'block' }}>
           <AIAgentPopup
             isOpen={uiState.showAIAgentPopup && !uiState.showPropagationList}
-            onClose={() => dispatch({ type: 'COMPLETE_FAST_SEARCH' })}
+            onClose={() => {
+              dispatch({ type: 'TOGGLE_AI_AGENT_POPUP' });
+              setStreamMapData(null);
+            }}
             hideControls={uiState.hideControls}
             position={{
-              top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424}px`,
+              top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 480}px`,
               right: '20px',
             }}
-            listCardCount={listCardCount}
+            maxHeight={agentPopupMaxHeight}
             onDeleteLikeRequest={({ rawMessage }) => {
               const parsed = parseExcludedAttributesFromMessage(rawMessage);
-              
               if (parsed.length) {
                 previousListCardCountRef.current = listCardCount;
                 currentExcludedAttributesRef.current = parsed;
                 setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
               }
-              
               return parsed;
             }}
-            maxHeight={agentPopupMaxHeight}
-            reSearchResult={reSearchResult}
-            isObjectTracking={uiState.showObjectTracking}
-            captureNotificationMessage={captureNotificationMessage}
             onObjectTrackingStart={() => {
               if (uiState.showFastSearchList) {
-                // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
                 dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
               } else {
-                // 고속검색 리스트가 없으면 바로 시작
                 dispatch({ type: 'START_OBJECT_TRACKING' });
                 handleStartTrackingSequence();
               }
             }}
-            objectTrackingCompleted={objectTrackingCompleted}
-            showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
               setPinOffset({ x: 0, y: 0 });
-              
-              if (showMouseGuide) {
-                jumpToStep('radius-chip');
-              }
+              if (showMouseGuide) jumpToStep('radius-chip');
             }}
             onReSearchStart={() => {
               dispatch({ type: 'START_RE_SEARCH' });
-              
-              // 짧은 스켈레톤 표시 (0.5초)
               setShowReSearchSkeleton(true);
-              setTimeout(() => {
-                setShowReSearchSkeleton(false);
-              }, 500);
+              setTimeout(() => setShowReSearchSkeleton(false), 500);
             }}
             onReSearchComplete={() => {
               dispatch({ type: 'COMPLETE_RE_SEARCH' });
               isReSearchingRef.current = true;
-              if (showMouseGuide) {
-                jumpToStep('fast-search-candidate-10');
-              }
+              if (showMouseGuide) jumpToStep('fast-search-candidate-10');
             }}
+            onMapDataReceived={handleMapDataReceived}
           />
         </div>
       )}
@@ -1224,28 +1191,9 @@ export default function HomeV2() {
               실종 시뮬레이션을 해보시려면<br />
               <span className="font-bold text-blue-400">1</span> 또는 <span className="font-bold">시작 버튼</span>을 눌러주세요.
             </p>
-            {/* 로딩바: 3초 동안 0→100% 애니메이션 */}
-            {isInitialLoading && (
-              <>
-                <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
-                <div className="h-1 w-full bg-gray-700 rounded-full overflow-hidden mb-4">
-                  <div
-                    className="h-full bg-blue-500 rounded-full"
-                    style={{ animation: 'loading-fill 3s linear forwards' }}
-                  />
-                </div>
-              </>
-            )}
             <button
               onClick={handleStartSimulation}
-              disabled={isInitialLoading}
-              className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
-                isInitialLoading
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-              aria-label="시작"
-              tabIndex={isInitialLoading ? -1 : 0}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
             >
               시작
             </button>

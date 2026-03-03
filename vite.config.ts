@@ -11,6 +11,7 @@ export default defineConfig({
     },
     server: {
         port: 3001,
+        host: true, // 0.0.0.0 바인딩 → 내 IP:3001으로 접속 가능
         open: true,
         hmr: {
             overlay: true, // HMR 에러 발생 시 오버레이 표시 (문제 진단용)
@@ -30,7 +31,13 @@ export default defineConfig({
     css: {
         devSourcemap: false, // CSS 소스맵 비활성화로 분석 오류 방지
     },
+    optimizeDeps: {
+        esbuildOptions: {
+            target: "es2022",
+        },
+    },
     build: {
+        target: "es2022",
         outDir: "dist",
     },
 });

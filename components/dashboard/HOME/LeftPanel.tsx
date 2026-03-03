@@ -1253,93 +1253,81 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         </span>
                     </div>
 
-                    {/* 에너지 게이지 */}
-                    <div className="bg-[#2a2d35] rounded-lg px-3 py-2.5 mb-3">
-                        <div className="flex items-center">
-                            {/* 1전시장 */}
-                            <div className="flex-1 flex flex-col items-center">
-                                <div className="relative" style={{ width: "100px", height: "60px" }}>
-                                    <svg width="100" height="60" viewBox="0 0 100 60">
-                                        <defs>
-                                            <linearGradient id="energyGaugeGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" stopColor="#10b981" />
-                                                <stop offset="50%" stopColor="#f59e0b" />
-                                                <stop offset="100%" stopColor="#ef4444" />
-                                            </linearGradient>
-                                        </defs>
-
-                                        {/* 배경 아크 */}
-                                        <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke="#1a1a1a" strokeWidth="8" strokeLinecap="round" />
-
-                                        {/* 컬러 아크 */}
-                                        <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke="url(#energyGaugeGradient1)" strokeWidth="8" strokeLinecap="round" strokeDasharray="119" strokeDashoffset={119 - 119 * 0.25} />
-
-                                        {/* 바늘 */}
-                                        <g style={{ transformOrigin: "50px 48px", transform: `rotate(${-90 + 180 * 0.25}deg)` }}>
-                                            <line x1="50" y1="48" x2="50" y2="16" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                                            <circle cx="50" cy="48" r="4" fill="#fff" />
-                                        </g>
-                                    </svg>
-                                    {/* 플로팅 상태 텍스트 */}
-                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                        <div className="px-1.5 py-0.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                                            <span className="text-green-400 text-[10px] font-medium leading-none">정상</span>
+                    {/* 에너지 게이지 - 총 4개 블록 */}
+                    {[
+                        { idA: 1, idB: 2, labelA: "1전시장", labelB: "2전시장", valueA: 60.5, valueB: 60.8, ratioA: 0.60, ratioB: 0.35 },
+                        { idA: 3, idB: 4, labelA: "3전시장", labelB: "4전시장", valueA: 65.2, valueB: 60.1, ratioA: 0.60, ratioB: 0.20 },
+                    ].map((block) => (
+                        <div key={`energy-gauge-${block.idA}-${block.idB}`} className="bg-[#2a2d35] rounded-lg px-3 py-2.5 mb-3">
+                            <div className="flex items-center">
+                                {/* 전시장 A */}
+                                <div className="flex-1 flex flex-col items-center">
+                                    <div className="relative" style={{ width: "100px", height: "60px" }}>
+                                        <svg width="100" height="60" viewBox="0 0 100 60">
+                                            <defs>
+                                                <linearGradient id={`energyGaugeGradient${block.idA}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#10b981" />
+                                                    <stop offset="50%" stopColor="#f59e0b" />
+                                                    <stop offset="100%" stopColor="#ef4444" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke="#1a1a1a" strokeWidth="8" strokeLinecap="round" />
+                                            <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke={`url(#energyGaugeGradient${block.idA})`} strokeWidth="8" strokeLinecap="round" strokeDasharray="119" strokeDashoffset={119 - 119 * block.ratioA} />
+                                            <g style={{ transformOrigin: "50px 48px", transform: `rotate(${-90 + 180 * block.ratioA}deg)` }}>
+                                                <line x1="50" y1="48" x2="50" y2="16" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                                                <circle cx="50" cy="48" r="4" fill="#fff" />
+                                            </g>
+                                        </svg>
+                                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                            <div className="px-1.5 py-0.5 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 flex items-center justify-center">
+                                                <span className="text-yellow-400 text-[10px] font-medium leading-none">주의</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-center mt-1.5">
+                                        <span className="text-gray-400 text-xs">{block.labelA}</span>
+                                        <div className="text-white text-base font-semibold">
+                                            {block.valueA}
+                                            <span className="text-gray-400 text-xs ml-0.5">MWh</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col items-center mt-1.5">
-                                    <span className="text-gray-400 text-xs">1전시장</span>
-                                    <div className="text-white text-base font-semibold">
-                                        12.5
-                                        <span className="text-gray-400 text-xs ml-0.5">MWh</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 디바이더 */}
-                            <div className="w-px h-24 bg-gray-600 mx-3"></div>
-
-                            {/* 2전시장 */}
-                            <div className="flex-1 flex flex-col items-center">
-                                <div className="relative" style={{ width: "100px", height: "60px" }}>
-                                    <svg width="100" height="60" viewBox="0 0 100 60">
-                                        <defs>
-                                            <linearGradient id="energyGaugeGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" stopColor="#10b981" />
-                                                <stop offset="50%" stopColor="#f59e0b" />
-                                                <stop offset="100%" stopColor="#ef4444" />
-                                            </linearGradient>
-                                        </defs>
-
-                                        {/* 배경 아크 */}
-                                        <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke="#1a1a1a" strokeWidth="8" strokeLinecap="round" />
-
-                                        {/* 컬러 아크 */}
-                                        <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke="url(#energyGaugeGradient2)" strokeWidth="8" strokeLinecap="round" strokeDasharray="119" strokeDashoffset={119 - 119 * 0.35} />
-
-                                        {/* 바늘 */}
-                                        <g style={{ transformOrigin: "50px 48px", transform: `rotate(${-90 + 180 * 0.35}deg)` }}>
-                                            <line x1="50" y1="48" x2="50" y2="16" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                                            <circle cx="50" cy="48" r="4" fill="#fff" />
-                                        </g>
-                                    </svg>
-                                    {/* 플로팅 상태 텍스트 */}
-                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                                        <div className="px-1.5 py-0.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                                            <span className="text-green-400 text-[10px] font-medium leading-none">정상</span>
+                                <div className="w-px h-24 bg-gray-600 mx-3" aria-hidden="true" />
+                                {/* 전시장 B */}
+                                <div className="flex-1 flex flex-col items-center">
+                                    <div className="relative" style={{ width: "100px", height: "60px" }}>
+                                        <svg width="100" height="60" viewBox="0 0 100 60">
+                                            <defs>
+                                                <linearGradient id={`energyGaugeGradient${block.idB}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                                    <stop offset="0%" stopColor="#10b981" />
+                                                    <stop offset="50%" stopColor="#f59e0b" />
+                                                    <stop offset="100%" stopColor="#ef4444" />
+                                                </linearGradient>
+                                            </defs>
+                                            <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke="#1a1a1a" strokeWidth="8" strokeLinecap="round" />
+                                            <path d="M 12 48 A 38 38 0 0 1 88 48" fill="none" stroke={`url(#energyGaugeGradient${block.idB})`} strokeWidth="8" strokeLinecap="round" strokeDasharray="119" strokeDashoffset={119 - 119 * block.ratioB} />
+                                            <g style={{ transformOrigin: "50px 48px", transform: `rotate(${-90 + 180 * block.ratioB}deg)` }}>
+                                                <line x1="50" y1="48" x2="50" y2="16" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+                                                <circle cx="50" cy="48" r="4" fill="#fff" />
+                                            </g>
+                                        </svg>
+                                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                                            <div className="px-1.5 py-0.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
+                                                <span className="text-green-400 text-[10px] font-medium leading-none">정상</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="flex flex-col items-center mt-1.5">
-                                    <span className="text-gray-400 text-xs">2전시장</span>
-                                    <div className="text-white text-base font-semibold">
-                                        15.8
-                                        <span className="text-gray-400 text-xs ml-0.5">MWh</span>
+                                    <div className="flex flex-col items-center mt-1.5">
+                                        <span className="text-gray-400 text-xs">{block.labelB}</span>
+                                        <div className="text-white text-base font-semibold">
+                                            {block.valueB}
+                                            <span className="text-gray-400 text-xs ml-0.5">MWh</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    ))}
 
                     <div className="flex-1 min-h-0 overflow-hidden" style={{ minHeight: "160px" }}>
                         <ResponsiveContainer width="100%" height="100%">

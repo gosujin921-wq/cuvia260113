@@ -469,8 +469,8 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                     <Icon icon="mdi:minus" className="w-5 h-5" />
                 </button>
                 <div className="w-full h-px bg-gray-300 my-1" />
-                {/* 상하좌우 회전 컨트롤 */}
-                <div className="grid grid-cols-2 gap-1">
+                {/* 상하좌우 회전 컨트롤 - 1열: 상 → 하 → 좌 → 우 */}
+                <div className="grid grid-cols-1 gap-1">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -509,7 +509,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                         className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                         aria-label="회전 왼쪽"
                         tabIndex={0}>
-                        <Icon icon="mdi:chevron-left" className="w-5 h-5" />
+                        <Icon icon="mdi:rotate-left" className="w-5 h-5" />
                     </button>
                     <button
                         onClick={(e) => {
@@ -519,7 +519,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                         className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                         aria-label="회전 오른쪽"
                         tabIndex={0}>
-                        <Icon icon="mdi:chevron-right" className="w-5 h-5" />
+                        <Icon icon="mdi:rotate-right" className="w-5 h-5" />
                     </button>
                 </div>
             </div>
@@ -583,7 +583,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
             {/* 메인/그룹핑 CCTV 팝업: aiDetectionEventId가 있을 때만 표시 (Home.tsx의 딜레이 로직 적용됨) */}
             {aiDetectionEventId &&
                 (() => {
-                    const gridPopupWidth = 320;
+                    const gridPopupWidth = 420;
                     const padding = 20;
                     const mainCctv = cctvList.find((cctv) => cctv.isMain) as CCTVInfo;
 
@@ -609,76 +609,61 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
 
                     if (!currentEvent) return null;
 
+                    // 메인 + 열린 서브 CCTV를 하나의 그리드로 렌더 (메인 카메라 사이즈로 통일)
+                    const gridItems: Array<{ cctv: CCTVInfo; isMain: boolean }> = [];
+                    if (mainCctv) {
+                        gridItems.push({ cctv: mainCctv, isMain: true });
+                    }
+                    cctvList.forEach((cctv) => {
+                        if (!cctv.isMain && openedCCTVPopups.has(cctv.bridgeId)) {
+                            gridItems.push({ cctv, isMain: false });
+                        }
+                    });
+
                     return (
-                        <>
-                            <UnityCCTVMeshTracking
-                                iceServerList={iceServerList?.ice_servers ?? []}
-                                mediaAgentUrl={mediaAgentUrl}
-                                event={currentEvent}
-                                onClose={() => {
-                                    onAiDetectionClose?.();
-                                }}
-                                cctvId={mainCctv?.bridgeId || "main"}
-                                position={{
-                                    top: `${padding}px`,
-                                    right: `${padding}px`,
-                                    left: undefined,
-                                    bottom: undefined,
-                                }}
-                                hideControls={hideControls}
-                                cctvName={mainCctv?.bridgeId || "메인 카메라"}
-                                highlighted={hoveredCCTVId === mainCctv?.bridgeId}
-                                isMain={true}
-                                onHover={handleHoverCctv}
-                                cameraInfo={activeEventCameraInfo ? activeEventCameraInfo : undefined}
-                            />
-
-                            <div
-                                style={{
-                                    position: "absolute",
-                                    left: `${padding}px`,
-                                    top: `${padding + (hideControls ? 56 : 0)}px`,
-                                    display: "grid",
-                                    gridTemplateColumns: `repeat(2, ${gridPopupWidth}px)`,
-                                    gridAutoRows: "auto",
-                                    gap: `${padding}px`,
-                                    pointerEvents: "none",
-                                    zIndex: 1000,
-                                }}>
-                                {cctvList.map((cctv, idx) => {
-                                    if (!openedCCTVPopups.has(cctv.bridgeId) || cctv.isMain) {
-                                        return null;
-                                    }
-
-                                    const cctvCameraInfo = { rtsp_url: cctv.rtsp_url };
-                                    return (
-                                        <div
-                                            key={`${cctv.bridgeId}-${idx}`}
-                                            style={{
-                                                width: `${gridPopupWidth}px`,
-                                                height: "fit-content",
-                                                pointerEvents: "auto",
-                                            }}>
-                                            <UnityCCTVMeshTracking
-                                                iceServerList={iceServerList?.ice_servers ?? []}
-                                                mediaAgentUrl={mediaAgentUrl}
-                                                event={currentEvent}
-                                                onClose={() => {}}
-                                                isMain={false}
-                                                cctvId={cctv.bridgeId}
-                                                cctvName={cctv.bridgeId}
-                                                position={undefined}
-                                                width={gridPopupWidth}
-                                                hideControls={hideControls}
-                                                highlighted={hoveredCCTVId === cctv.bridgeId}
-                                                onHover={handleHoverCctv}
-                                                cameraInfo={cctvCameraInfo}
-                                            />
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </>
+                        <div
+                            style={{
+                                position: "absolute",
+                                left: `${padding}px`,
+                                top: `${padding + (hideControls ? 56 : 0)}px`,
+                                display: "grid",
+                                gridTemplateColumns: `repeat(2, ${gridPopupWidth}px)`,
+                                gridAutoRows: "auto",
+                                gap: `${padding}px`,
+                                pointerEvents: "none",
+                                zIndex: 1000,
+                            }}>
+                            {gridItems.map(({ cctv, isMain }, idx) => {
+                                const cctvCameraInfo = isMain
+                                    ? (activeEventCameraInfo ?? { rtsp_url: cctv.rtsp_url })
+                                    : { rtsp_url: cctv.rtsp_url };
+                                return (
+                                    <div
+                                        key={`${cctv.bridgeId}-${idx}`}
+                                        style={{
+                                            width: `${gridPopupWidth}px`,
+                                            height: "fit-content",
+                                            pointerEvents: "auto",
+                                        }}>
+                                        <UnityCCTVMeshTracking
+                                            iceServerList={iceServerList?.ice_servers ?? []}
+                                            mediaAgentUrl={mediaAgentUrl}
+                                            event={currentEvent}
+                                            onClose={isMain ? () => onAiDetectionClose?.() : () => {}}
+                                            cctvId={cctv.bridgeId}
+                                            cctvName={isMain ? cctv.bridgeId || "메인 카메라" : cctv.bridgeId}
+                                            position={undefined}
+                                            width={gridPopupWidth}
+                                            hideControls={hideControls}
+                                            highlighted={hoveredCCTVId === cctv.bridgeId}
+                                            isMain={isMain}
+                                            onHover={handleHoverCctv}
+                                            cameraInfo={cctvCameraInfo}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
                     );
                 })()}
 
@@ -728,47 +713,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                 mediaAgentUrl={mediaAgentUrl}
             />
 
-            {/* CUVIA Link 버튼 - 초기: CCTV 패널 위 30px / 그 외: 우측 하단 */}
-            {(() => {
-                const rightPanelWidth = 370;
-                const panelGap = 16;
-                const { buttonBottom } = getCCTVPanelLayout();
-                const cctvPanelRight = rightPanelWidth + panelGap;
-                const isInitial = !hideControls;
-                return (
-                    <div
-                        className="absolute group"
-                        style={{
-                            bottom: isInitial ? `${buttonBottom}px` : "24px",
-                            right: isInitial ? `${cctvPanelRight + 20}px` : "24px",
-                            zIndex: 200,
-                            transition: "bottom 0.3s ease-in-out, right 0.3s ease-in-out",
-                        }}>
-                        <a
-                            href="http://192.168.102.101:7000"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
-                            style={{
-                                background: "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)",
-                                boxShadow: "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)",
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)";
-                            }}
-                            aria-label="CUVIA Link">
-                            <img src="/simbol.svg" alt="AI" className="w-6 h-6" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
-                        </a>
-                        <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">
-                            CUVIA LINK로 이동
-                            <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-[#1a1a1a]"></div>
-                        </div>
-                    </div>
-                );
-            })()}
+            {/* CUVIA Link 버튼 - 숨김 처리 */}
 
             {toggleCctvSetting && <CameraListPopup onClose={() => setToggleCctvSetting(false)} availableCCTVs={availableCCTVs} bridgeSlots={bridgeSlots} />}
         </div>

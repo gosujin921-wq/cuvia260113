@@ -41,9 +41,11 @@ interface MapViewProps {
   flyToLocation?: [number, number] | null; // 지도를 특정 위치로 이동시키는 좌표
   externalShowCCTV?: boolean; // 외부에서 CCTV 표시 제어
   onMapStateChange?: (state: { center: [number, number]; zoom: number; pitch: number; bearing: number }) => void; // 지도 상태 변경 콜백
+  hideAgentButton?: boolean;
+  isAgentActive?: boolean;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, isAgentActive = false }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -1728,11 +1730,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }}
     >
        {/* 맵 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
-       {(!hideControls || showFastSearchList) && (
+       {(!hideControls || showFastSearchList || isAgentActive) && (
        <div 
          className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
          style={{ 
-           left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
+           left: isAgentActive ? '104px' : showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
            zIndex: 250,
          }}
          onClick={(e) => e.stopPropagation()}
@@ -1844,11 +1846,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
 
       {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
-      {(!hideControls || showFastSearchList) && (
+      {(!hideControls || showFastSearchList || isAgentActive) && (
       <div 
         className="absolute bottom-[calc(50%-140px)] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
         style={{ 
-          left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
+          left: isAgentActive ? '104px' : showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
           zIndex: 250,
         }}
         onClick={(e) => e.stopPropagation()}
@@ -2004,7 +2006,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               bottom: `${bottom}px`,
               right: `${right}px`,
               zIndex: 200,
-              transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out',
+              transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out, opacity 0.4s ease-out, transform 0.4s ease-out',
+              opacity: hideAgentButton ? 0 : 1,
+              transform: hideAgentButton ? 'scale(0.8)' : 'scale(1)',
+              pointerEvents: hideAgentButton ? 'none' : 'auto',
             }}
           >
             <a

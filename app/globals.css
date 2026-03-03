@@ -876,3 +876,85 @@ input[type="range"].slider::-moz-range-thumb {
 .video-frame-red-blink {
   animation: red-stroke-blink 1s ease-in-out infinite;
 }
+
+/* ========== Agent Chat HTML 렌더링 스타일 ========== */
+.agent-html-content {
+  line-height: 1.6;
+}
+
+.agent-html-content .agent-conclusion {
+  font-weight: 700;
+  color: #18181b;
+  padding: 16px 24px;
+  background: linear-gradient(101deg, #eef2ff 0%, #f5ebff 70%, #fff0ea 100%);
+  border-radius: 14px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 2px 8px 0 rgba(80, 80, 200, 0.09), 0 1px 4px 0 rgba(229, 90, 108, 0.08);
+  letter-spacing: -0.01em;
+  white-space: pre-line;
+}
+
+.agent-html-content .agent-evidence {
+  margin: 12px 0;
+}
+
+.agent-html-content .agent-rationale {
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.agent-html-content .agent-criteria {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* 테이블 공통: 일반 table / .agent-table 모두 심플 스타일 */
+.agent-html-content table,
+.agent-html-content .agent-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 14px 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.agent-html-content thead th,
+.agent-html-content .agent-table-header,
+.agent-html-content .agent-table .agent-table-header {
+  background: #f1f5f9;
+  color: #334155;
+  font-weight: 600;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 12px;
+}
+
+.agent-html-content tbody td,
+.agent-html-content .agent-table-cell,
+.agent-html-content .agent-table .agent-table-cell {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+}
+
+.agent-html-content table tbody tr:last-child td,
+.agent-html-content .agent-table tbody tr:last-child .agent-table-cell {
+  border-bottom: none;
+}
+
+.agent-html-content table tbody tr:nth-child(even) td,
+.agent-html-content .agent-table tbody tr:nth-child(even) .agent-table-cell {
+  background: #fafbfc;
+}

@@ -12,7 +12,7 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({ isVisible, onStop, cc
 
     return (
         <div
-            className="absolute top-0 left-5 right-5 z-[1500]"
+            className="absolute top-0 left-0 right-0 w-full z-[1500]"
             style={{
                 animation: isVisible ? "fadeInDown 0.5s ease-out" : "none",
                 opacity: isVisible ? 1 : 0,
@@ -30,12 +30,11 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({ isVisible, onStop, cc
         }
       `}</style>
             <div
-                className="gradient-border-right-bottom"
+                className="rounded-lg"
                 style={{
                     background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
                     backdropFilter: "blur(2px)",
                     WebkitBackdropFilter: "blur(2px)",
-                    borderWidth: "1px",
                 }}>
                 <div className="flex items-center justify-between px-6 py-3">
                     <div className="flex items-center gap-2">

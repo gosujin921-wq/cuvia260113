@@ -1,5 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Icon } from '@iconify/react';
+import { useChatStream } from '@/src/hooks/useChatStream';
+import type { MapStreamData, ChartStreamData } from '@/types/streamJson.types';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  type ChartOptions,
+} from 'chart.js';
+import { Bar, Line, Pie, Doughnut } from 'react-chartjs-2';
 
 interface AIAgentPopupProps {
   isOpen: boolean;
@@ -33,14 +49,12 @@ interface AIAgentPopupProps {
   captureNotificationMessage?: string;
   /** 2키: 추적 갱신 메시지 표시 (차량 재포착, 번호판 후보) */
   showFeaturedLayout?: boolean;
-  /** 2키: 예측 CCTV 포착 시퀀스 중 에이전트 팝업 프로그레스 문구 */
-  captureProgressMessage?: string | null;
   /** "포착된 CCTV 영상 포함해서 전파 초안 생성해줘" 입력 시 호출 - 별빛A-655 캡처 애니메이션 후 포착목록 추가 */
   onPropagationDraftRequest?: () => void;
   /** "사건 영상 바로 보기" 버튼 클릭 시 호출 - 고속검색 팝업 표시 */
   onVideoView?: () => void;
-  /** "전파해줘" 등 타이핑 시 전파 패널 호출 (객체추적 2키 후) */
-  onPropagationPanelRequest?: () => void;
+  /** 스트림에서 map 타입 데이터 수신 시 호출 */
+  onMapDataReceived?: (data: MapStreamData) => void;
 }
 
 interface ChatMessage {
@@ -48,7 +62,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  type?: 'normal' | 'analyzing';
+  type?: 'normal' | 'analyzing' | 'streaming-step';
   progress?: number;
   currentStep?: number;
   totalSteps?: number;
@@ -66,11 +80,90 @@ interface ChatMessage {
     evidence: string[];
     recommendations: string[];
   };
-  isTyping?: boolean; // 타이핑 중인지 여부
-  displayedContent?: string; // 현재 표시된 내용
+  isTyping?: boolean;
+  displayedContent?: string;
+  htmlContent?: string;
+  stepMessage?: string;
+  /** 스트림 type: 'chart' 수신 시 차트 데이터 */
+  chartData?: ChartStreamData | null;
 }
 
 const AGENT_GRADIENT = 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)';
+
+// Chart.js 등록 (한 번만)
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const CHART_COLORS = [
+  'rgba(255, 99, 132, 0.6)',
+  'rgba(54, 162, 235, 0.6)',
+  'rgba(255, 206, 86, 0.6)',
+  'rgba(75, 192, 192, 0.6)',
+  'rgba(153, 102, 255, 0.6)',
+];
+
+const getChartOptions = (title: string): ChartOptions<'bar' | 'line' | 'pie' | 'doughnut'> => ({
+  responsive: true,
+  maintainAspectRatio: true,
+  plugins: {
+    legend: { position: 'top' as const },
+    title: { display: !!title, text: title },
+  },
+});
+
+/** 스트림 chart 타입 데이터를 Chart.js로 렌더링 */
+const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
+  const chartType = (data.type || 'bar').toLowerCase();
+  const labels = data.labels ?? [];
+  const datasets = (data.datasets ?? []).map((ds, i) => ({
+    label: ds.label ?? `데이터 ${i + 1}`,
+    data: ds.data ?? [],
+    backgroundColor: ds.backgroundColor ?? CHART_COLORS[i % CHART_COLORS.length],
+  }));
+
+  const chartData = {
+    labels,
+    datasets,
+  };
+
+  const options = getChartOptions(data.title ?? '');
+
+  if (chartType === 'line') {
+    return (
+      <div className="w-full max-w-md h-64">
+        <Line data={chartData} options={options as ChartOptions<'line'>} />
+      </div>
+    );
+  }
+  if (chartType === 'pie') {
+    return (
+      <div className="w-full max-w-xs h-64 mx-auto">
+        <Pie data={chartData} options={options as ChartOptions<'pie'>} />
+      </div>
+    );
+  }
+  if (chartType === 'doughnut') {
+    return (
+      <div className="w-full max-w-xs h-64 mx-auto">
+        <Doughnut data={chartData} options={options as ChartOptions<'doughnut'>} />
+      </div>
+    );
+  }
+  return (
+    <div className="w-full max-w-md h-64">
+      <Bar data={chartData} options={options as ChartOptions<'bar'>} />
+    </div>
+  );
+};
 
 // 메시지 렌더링 공통 컴포넌트
 interface MessageListProps {
@@ -81,27 +174,11 @@ interface MessageListProps {
   isExpanded: boolean;
   onObjectTrackingStart?: () => void;
   onVideoView?: () => void;
-  welcomeMsgContent?: ReturnType<typeof getWelcomeMsgContent>;
   trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
 }
 
-const getWelcomeMsgContent = () => {
-  const timeStr = new Date().toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-  return {
-    title: '[긴급 알림] 납치(의심) 이벤트 감지',
-    camera: '카메라: 별빛A-444 | 은빛 부동산',
-    detectedAt: `감지 시각: ${timeStr} | 사건 위치: 은하로363번길 48`,
-    body: '성인 남성이 성인 여성과 함께 차량 방향으로 이동하며, 여성의 움직임이 비자발적으로 보입니다.\n\n주변을 살피는 동작과 동선 변경이 반복되어 후속 확인이 필요합니다.\n\n차량 이동 중으로 판단되어 **객체추적 전환**을 권장합니다',
-    footer: '※ 자동 분석 결과이며 추가 확인이 필요합니다.',
-    btnVideo: '▶ 사건 영상 바로 보기',
-    btnTracking: '▶ 객체 추적하기',
-  };
-};
+/** 초기 환영 문구 (채팅 시작 시 한 번만 표시) */
+const WELCOME_TEXT = '안녕하세요. Agent Chat에 오신 것을 환영합니다. 어떤 도움이 필요하신가요?';
 
 const getTrackingUpdateMsgContent = () => {
   const timeStr = new Date().toLocaleTimeString('ko-KR', {
@@ -115,7 +192,7 @@ const getTrackingUpdateMsgContent = () => {
     camera: `카메라: 별빛A-655 | 시각: ${timeStr}`,
     match: '"차종/색상/외형 특징 일치(추정)."',
     plate: '"부분 번호판 후보: *12 324* **(가시성: 높음)**"',
-    direction: '이동 방향: 달빛동 방향 진행',
+    direction: '이동 방향: 동 방향 진행',
     body: '이동 중인 차량으로 추정되어 골든타임 확보를 위해 112 우선 전파를 권고합니다.',
     btnPropagate: '▶ 관할 경찰서에 전파하기',
   };
@@ -129,10 +206,8 @@ const MessageList: React.FC<MessageListProps> = ({
   isExpanded,
   onObjectTrackingStart,
   onVideoView,
-  welcomeMsgContent,
   trackingUpdateMsgContent,
 }) => {
-  const welcomeContent = welcomeMsgContent ?? getWelcomeMsgContent();
   const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
   return (
     <>
@@ -164,31 +239,10 @@ const MessageList: React.FC<MessageListProps> = ({
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     {message.id !== 'object-tracking-progress' && (
                       <div className="mb-3">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-2">{message.id === 'capture-progress' ? '포착 분석 중' : 'AI 분석 중'}</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
                         <p className="text-sm text-gray-700 leading-relaxed">
                           {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
                         </p>
-                      </div>
-                    )}
-                    {/* 포착분석 단계별 표시 (다른 프로그레스와 동일 스타일) */}
-                    {message.id === 'capture-progress' && message.totalSteps === 4 && (
-                      <div className="space-y-2 mb-3 text-xs">
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
-                          <span>1. 예측 CCTV 분석 중 {(message.currentStep || 0) === 1 && '⏳'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. 포착 가능 구역 산정 중 {(message.currentStep || 0) === 2 && '⏳'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 포착대상 감지 중 {(message.currentStep || 0) === 3 && '⏳'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
-                          <span>4. 별빛A-655에서 포착 확인 {(message.currentStep || 0) === 4 && '⏳'}</span>
-                        </div>
                       </div>
                     )}
                     
@@ -272,25 +326,20 @@ const MessageList: React.FC<MessageListProps> = ({
                       </div>
                     )}
                     
-                    {/* 프로그레스바 (포착분석 포함 모든 프로그레스 동일 스타일) */}
-                    {message.totalSteps != null ? (
-                      <>
-                        <div className="mb-2">
-                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-300"
-                              style={{
-                                width: `${(message.progress || 0) * 100}%`,
-                                background: AGENT_GRADIENT,
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-500 mt-2">
-                          {message.currentStep}/{message.totalSteps}
-                        </div>
-                      </>
-                    ) : null}
+                    <div className="mb-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${(message.progress || 0) * 100}%`,
+                            background: AGENT_GRADIENT,
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      {message.currentStep}/{message.totalSteps}
+                    </div>
 
                     {/* 분석 결과 표시 (프로그래스 완료 시) */}
                     {message.progress && message.progress >= 1 && message.analysisResult && (
@@ -372,10 +421,49 @@ const MessageList: React.FC<MessageListProps> = ({
                       </div>
                     )}
                   </div>
+                ) : message.type === 'streaming-step' ? (
+                  <>
+                    {!isExpanded && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
+                          style={{ background: AGENT_GRADIENT }}
+                        >
+                          <img
+                            src="/simbol.svg"
+                            alt=""
+                            className="w-4 h-4 object-contain"
+                            style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+                            aria-hidden="true"
+                          />
+                        </div>
+                        <span className="text-gray-900 font-semibold text-sm">CUVIA Agent</span>
+                      </div>
+                    )}
+                    <div className={`${isExpanded ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200' : 'rounded-xl border border-gray-200 bg-gray-50 p-4'}`} style={isExpanded ? { borderWidth: '1px' } : {}}>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Icon icon="mdi:loading" className="w-4 h-4 animate-spin text-blue-500" />
+                        <span>{message.stepMessage || '처리 중...'}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-2">{message.timestamp}</div>
+                    </div>
+                  </>
                 ) : (
                   <>
                     {!isExpanded && (
                       <div className="flex items-center gap-2 mb-1">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
+                          style={{ background: AGENT_GRADIENT }}
+                        >
+                          <img
+                            src="/simbol.svg"
+                            alt=""
+                            className="w-4 h-4 object-contain"
+                            style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+                            aria-hidden="true"
+                          />
+                        </div>
                         <span className="text-gray-900 font-semibold text-sm">CUVIA Agent</span>
                       </div>
                     )}
@@ -410,44 +498,37 @@ const MessageList: React.FC<MessageListProps> = ({
                           )}
                         </div>
                       ) : message.id === 'welcome-msg' ? (
-                        <div className="space-y-3">
-                          {message.isTyping ? (
-                            <>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
-                                {message.displayedContent ?? ''}
-                                <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse align-middle" />
-                              </p>
-                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-sm font-semibold text-red-500">{welcomeContent.title}</p>
-                              <p className="text-xs text-gray-600">{welcomeContent.camera}</p>
-                              <p className="text-xs text-gray-600">{welcomeContent.detectedAt}</p>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700" dangerouslySetInnerHTML={{ __html: welcomeContent.body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
-                              <p className="text-xs text-gray-500">{welcomeContent.footer}</p>
-                              <div className="flex flex-col gap-2 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => onVideoView?.()}
-                                  className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
-                                  aria-label="사건 영상 바로 보기"
-                                >
-                                  {welcomeContent.btnVideo}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => onObjectTrackingStart?.()}
-                                  className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
-                                  aria-label="객체 추적하기"
-                                >
-                                  {welcomeContent.btnTracking}
-                                </button>
-                              </div>
-                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
-                            </>
+                        <>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                            {message.displayedContent ?? message.content ?? ''}
+                          </p>
+                          <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                        </>
+                      ) : message.chartData ? (
+                        <>
+                          {message.htmlContent && (
+                            <div
+                              className="text-sm leading-relaxed text-gray-700 agent-html-content mb-3"
+                              dangerouslySetInnerHTML={{ __html: message.htmlContent }}
+                            />
                           )}
-                        </div>
+                          <div className="rounded-lg border border-gray-200 bg-white p-3 overflow-hidden">
+                            <StreamChart data={message.chartData} />
+                          </div>
+                          <div className={`text-xs text-gray-500 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
+                            {message.timestamp}
+                          </div>
+                        </>
+                      ) : message.htmlContent ? (
+                        <>
+                          <div
+                            className="text-sm leading-relaxed text-gray-700 agent-html-content"
+                            dangerouslySetInnerHTML={{ __html: message.htmlContent }}
+                          />
+                          <div className={`text-xs text-gray-500 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
+                            {message.timestamp}
+                          </div>
+                        </>
                       ) : (
                         <>
                           <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
@@ -633,14 +714,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onReSearchComplete,
   captureNotificationMessage = '',
   showFeaturedLayout = false,
-  captureProgressMessage = null,
   onPropagationDraftRequest,
   onVideoView,
-  onPropagationPanelRequest,
+  onMapDataReceived,
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
-  const [welcomeMsgContent, setWelcomeMsgContent] = useState<ReturnType<typeof getWelcomeMsgContent> | null>(null);
   const [trackingUpdateMsgContent, setTrackingUpdateMsgContent] = useState<ReturnType<typeof getTrackingUpdateMsgContent> | null>(null);
 
   useEffect(() => {
@@ -655,43 +734,20 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     }
   }, [isOpen]);
 
-  // 초기 메시지 타이핑 애니메이션
+  // 팝업 열릴 때 welcome 메시지가 없으면 초기 문구로 설정
   useEffect(() => {
     if (!isOpen) return;
-    const content = getWelcomeMsgContent();
-    setWelcomeMsgContent(content);
-    const fullText = [
-      content.title,
-      content.camera,
-      content.detectedAt,
-      '',
-      content.body,
-      '',
-      content.footer,
-    ].join('\n');
-    let currentIndex = 0;
-    const typingInterval = setInterval(() => {
-      currentIndex++;
-      if (currentIndex <= fullText.length) {
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === 'welcome-msg'
-              ? { ...msg, displayedContent: fullText.substring(0, currentIndex) }
-              : msg
-          )
-        );
-      } else {
-        clearInterval(typingInterval);
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === 'welcome-msg'
-              ? { ...msg, isTyping: false, displayedContent: fullText }
-              : msg
-          )
+    setMessages((prev) => {
+      const hasWelcome = prev.some((msg) => msg.id === 'welcome-msg');
+      if (hasWelcome) {
+        return prev.map((msg) =>
+          msg.id === 'welcome-msg'
+            ? { ...msg, content: WELCOME_TEXT, displayedContent: WELCOME_TEXT }
+            : msg
         );
       }
-    }, 30);
-    return () => clearInterval(typingInterval);
+      return [{ id: 'welcome-msg', role: 'assistant' as const, content: WELCOME_TEXT, timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }), displayedContent: WELCOME_TEXT }, ...prev];
+    });
   }, [isOpen]);
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -764,14 +820,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     {
       id: 'welcome-msg',
       role: 'assistant',
-      content: '',
+      content: WELCOME_TEXT,
       timestamp: new Date().toLocaleTimeString('ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
       }),
-      isTyping: true,
-      displayedContent: '',
+      displayedContent: WELCOME_TEXT,
     },
   ]);
   const [isResponding, setIsResponding] = useState(false);
@@ -795,6 +850,102 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   
   // 재검색 프로그래스 상태
   const [isReSearching, setIsReSearching] = useState<boolean>(false);
+
+  // 스트림 메시지 ID ref (스트림 중 업데이트용)
+  const streamMessageIdRef = useRef<string | null>(null);
+
+  // 차트 패널: type 'chart' 수신 시 좌측 확장 패널에 표시
+  const [chartPanelCollapsed, setChartPanelCollapsed] = useState(false);
+  const latestChartData = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].chartData) return messages[i].chartData ?? null;
+    }
+    return null;
+  })();
+  const showChartPanel = !!latestChartData && !chartPanelCollapsed;
+
+  // onMapDataReceived ref (의존성 배열에서 제외하기 위함)
+  const onMapDataReceivedRef = useRef(onMapDataReceived);
+  onMapDataReceivedRef.current = onMapDataReceived;
+
+  // Chat Stream 훅
+  const chatStream = useChatStream({
+    onChartDataReceived: useCallback((data: ChartStreamData) => {
+      const msgId = streamMessageIdRef.current;
+      if (!msgId) return;
+      setChartPanelCollapsed(false);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === msgId ? { ...msg, type: 'normal' as const, chartData: data } : msg
+        )
+      );
+    }, []),
+    onStepChange: useCallback((step: number, message: string) => {
+      const msgId = streamMessageIdRef.current;
+      if (!msgId) return;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === msgId
+            ? { ...msg, stepMessage: message, currentStep: step }
+            : msg
+        )
+      );
+    }, []),
+    onMessageReceived: useCallback((content: string) => {
+      const msgId = streamMessageIdRef.current;
+      if (!msgId) return;
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === msgId
+            ? { ...msg, type: 'normal', htmlContent: content, stepMessage: undefined }
+            : msg
+        )
+      );
+    }, []),
+    onMapDataReceived: useCallback((data: MapStreamData) => {
+      onMapDataReceivedRef.current?.(data);
+    }, []),
+    onComplete: useCallback((success: boolean, message: string, data?: { chart_data?: ChartStreamData | null }) => {
+      const msgId = streamMessageIdRef.current;
+      if (!msgId) return;
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id !== msgId) return msg;
+          const next: ChatMessage = {
+            ...msg,
+            type: 'normal',
+            htmlContent: message,
+            stepMessage: undefined,
+          };
+          if (data?.chart_data) next.chartData = data.chart_data;
+          return next;
+        })
+      );
+      setIsResponding(false);
+      streamMessageIdRef.current = null;
+    }, []),
+    onError: useCallback((error: string) => {
+      const msgId = streamMessageIdRef.current;
+      if (msgId) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === msgId
+              ? { ...msg, type: 'normal', content: `오류가 발생했습니다: ${error}`, stepMessage: undefined }
+              : msg
+          )
+        );
+      }
+      setIsResponding(false);
+      streamMessageIdRef.current = null;
+    }, []),
+  });
+
+  // 팝업 열릴 때 세션 초기화
+  useEffect(() => {
+    if (isOpen) {
+      chatStream.initSession();
+    }
+  }, [isOpen, chatStream.initSession]);
 
   // 답변 스킵 핸들러 (답변 취소)
   const handleSkipResponse = () => {
@@ -1014,18 +1165,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   // 프로그래스 메시지 제거
                   const withoutProgress = prev.filter((msg) => msg.id !== 'fast-search-progress');
                   
-                  // welcome 메시지 추가 (고속검색 결과 안내)
                   const welcomeMessage: ChatMessage = {
                     id: 'welcome-msg',
                     role: 'assistant',
-                    content: '',
+                    content: WELCOME_TEXT,
+                    displayedContent: WELCOME_TEXT,
                     timestamp: new Date().toLocaleTimeString('ko-KR', {
                       hour: '2-digit',
                       minute: '2-digit',
                       second: '2-digit',
                     }),
                   };
-                  
                   return [...withoutProgress, welcomeMessage];
                 });
                 
@@ -1052,44 +1202,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     };
   }, [showFastSearchProgress]);
 
-  // 2키: 프로그레스 메시지 노출 (예측 CCTV 포착 시퀀스) - 다른 프로그레스와 동일 totalSteps/currentStep/progress
-  const captureStepMap: Record<string, number> = {
-    '예측 CCTV 분석 중...': 1,
-    '포착 가능 구역 산정 중...': 2,
-    '포착대상 감지 중...': 3,
-    '별빛A-655에서 포착 확인': 4,
-  };
-  useEffect(() => {
-    if (captureProgressMessage) {
-      const currentStep = captureStepMap[captureProgressMessage] ?? 1;
-      const totalSteps = 4;
-      const progress = currentStep / totalSteps;
-      setMessages((prev) => {
-        const without = prev.filter((msg) => msg.id !== 'capture-progress');
-        const progressMsg: ChatMessage = {
-          id: 'capture-progress',
-          role: 'assistant',
-          content: captureProgressMessage,
-          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          type: 'analyzing',
-          totalSteps,
-          currentStep,
-          progress,
-        };
-        return [...without, progressMsg];
-      });
-    } else {
-      setMessages((prev) => prev.filter((msg) => msg.id !== 'capture-progress'));
-    }
-  }, [captureProgressMessage]);
-
   // 2키: 추적 갱신 메시지 추가 (차량 재포착, 번호판 후보) + 타이핑 애니메이션
   const lastShowFeaturedLayoutRef = useRef<boolean>(false);
   const trackingUpdateTypingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (showFeaturedLayout && !lastShowFeaturedLayoutRef.current) {
       lastShowFeaturedLayoutRef.current = true;
-      setMessages((prev) => prev.filter((msg) => msg.id !== 'capture-progress'));
       const content = getTrackingUpdateMsgContent();
       setTrackingUpdateMsgContent(content);
       const fullText = [
@@ -1352,14 +1470,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       return;
     }
 
-    const isPropagationPanelMessage = (t: string) =>
-      (t.includes('전파해줘') || (t.includes('전파') && t.includes('해줘'))) && showFeaturedLayout;
-
-    if (isPropagationPanelMessage(text) && onPropagationPanelRequest) {
-      onPropagationPanelRequest();
-      return;
-    }
-
     if (isDeleteLikeMessage(text) && onDeleteLikeRequest) {
       const parsedAttributes = onDeleteLikeRequest({ rawMessage: text });
       
@@ -1484,156 +1594,27 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       return;
     }
 
-    // 로딩 표시 (프로그래스바가 없는 일반 답변에만 적용)
+    // 스트림 API 호출
     setIsResponding(true);
 
-    setTimeout(() => {
-      const assistantMessage = generateAssistantReply(text);
-      
-      // 프로그래스바가 있는 경우 (analyzing 타입)
-      if (assistantMessage.type === 'analyzing') {
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsResponding(false);
+    const streamMsgId = `stream-${Date.now()}`;
+    streamMessageIdRef.current = streamMsgId;
 
-        const isObjectTracking = assistantMessage.totalSteps === 5;
-        const stepDuration = isObjectTracking ? 1000 : 1000; // 각 단계당 1초
-        const totalDuration = isObjectTracking ? 5000 : 5000;
-        
-        const progressInterval = setInterval(() => {
-          setMessages((prev) => {
-            const updated = prev.map((msg) => {
-              if (msg.id === assistantMessage.id && msg.type === 'analyzing') {
-                const newProgress = Math.min((msg.progress || 0) + 0.02, 1);
-                let newStep = msg.currentStep || 1;
-                
-                // 객체 추적일 경우 단계별 진행
-                if (isObjectTracking && msg.totalSteps === 5) {
-                  const progressPercent = newProgress * 100;
-                  if (progressPercent >= 20 && newStep < 2) newStep = 2;
-                  if (progressPercent >= 40 && newStep < 3) newStep = 3;
-                  if (progressPercent >= 60 && newStep < 4) newStep = 4;
-                  if (progressPercent >= 80 && newStep < 5) newStep = 5;
-                }
-                
-                return { ...msg, progress: newProgress, currentStep: newStep };
-              }
-              return msg;
-            });
-            return updated;
-          });
-        }, 100);
-        progressIntervalRef.current = progressInterval;
+    const streamMessage: ChatMessage = {
+      id: streamMsgId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+      type: 'streaming-step',
+      stepMessage: '응답 준비 중...',
+    };
 
-        const progressTimeout = setTimeout(() => {
-          clearInterval(progressInterval);
-          progressIntervalRef.current = null;
-          
-          // 객체 추적 완료 시 프로그래스바 제거하고 완료 메시지 추가 (타이핑 애니메이션)
-          if (isObjectTracking) {
-            setTimeout(() => {
-              setMessages((prev) => {
-                // 프로그래스바 메시지 제거
-                const withoutProgress = prev.filter(msg => msg.id !== assistantMessage.id);
-                
-                // 완료 메시지 추가 (타이핑 시작)
-                const completionMessage: ChatMessage = {
-                  id: `assistant-complete-${Date.now()}`,
-                  role: 'assistant',
-                  content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV 예측을 완료 했습니다.',
-                  timestamp: new Date().toLocaleTimeString('ko-KR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  }),
-                  type: 'normal',
-                  isTyping: true,
-                  displayedContent: '',
-                };
-                
-                return [...withoutProgress, completionMessage];
-              });
-              
-              // 타이핑 애니메이션
-              const fullContent = '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV 예측을 완료 했습니다.';
-              let currentIndex = 0;
-              
-              const typingInterval = setInterval(() => {
-                currentIndex++;
-                
-                if (currentIndex <= fullContent.length) {
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id.startsWith('assistant-complete-')
-                        ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
-                        : msg
-                    )
-                  );
-                } else {
-                  // 타이핑 완료
-                  clearInterval(typingInterval);
-                  typingIntervalRef.current = null;
-                  setIsResponding(false);
-                  setMessages((prev) =>
-                    prev.map((msg) =>
-                      msg.id.startsWith('assistant-complete-')
-                        ? { ...msg, isTyping: false, displayedContent: fullContent }
-                        : msg
-                    )
-                  );
-                }
-              }, 30);
-              typingIntervalRef.current = typingInterval;
-            }, 500);
-          }
-        }, totalDuration);
-        progressTimeoutRef.current = progressTimeout;
-      } else {
-        // 프로그래스바가 없는 일반 답변: 로딩 후 타이핑 애니메이션
-        setTimeout(() => {
-          setIsResponding(false);
-          
-          // 타이핑 애니메이션 시작
-          const typingMessage: ChatMessage = {
-            ...assistantMessage,
-            isTyping: true,
-            displayedContent: '',
-          };
-          
-          setMessages((prev) => [...prev, typingMessage]);
-          
-          // 타이핑 애니메이션 (한 글자씩)
-          const fullContent = assistantMessage.content;
-          let currentIndex = 0;
-          
-          const typingInterval = setInterval(() => {
-            currentIndex++;
-            
-            if (currentIndex <= fullContent.length) {
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessage.id
-                    ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
-                    : msg
-                )
-              );
-            } else {
-              // 타이핑 완료
-              clearInterval(typingInterval);
-              typingIntervalRef.current = null;
-              setIsResponding(false);
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessage.id
-                    ? { ...msg, isTyping: false, displayedContent: fullContent }
-                    : msg
-                )
-              );
-            }
-          }, 30); // 30ms마다 한 글자씩
-          typingIntervalRef.current = typingInterval;
-        }, 800); // 800ms 로딩 시간
-      }
-    }, 300); // 초기 딜레이 300ms
+    setMessages((prev) => [...prev, streamMessage]);
+    chatStream.startStream(text);
   };
 
   if (!isOpen) return null;
@@ -1650,28 +1631,82 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     <>
       {isExpanded ? (
         <div
-          className="fixed inset-y-0 right-0 transition-all duration-300 ease-out"
+          className="fixed inset-y-0 transition-all duration-300 ease-out"
           onClick={(e) => e.stopPropagation()}
           style={{
-            zIndex: 310,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 480,
+            zIndex: 90,
             transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
             opacity: slideEntered ? 1 : 0,
           }}
         >
-          <div
-            className="flex flex-col bg-white border-l border-[#31353a] h-full w-[30rem] overflow-hidden"
-            style={{ borderLeftWidth: '1px' }}
-          >
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+          <div className="relative h-full w-full" style={{ overflow: 'visible', width: 480 }}>
+            {/* 차트 패널 - 채팅창과 별도, 좌측에 붙어 토글 */}
+            {latestChartData && (
+              <div
+                className="absolute top-0 bottom-0 flex flex-col bg-white rounded-2xl overflow-hidden"
+                style={{
+                  right: 'calc(100% + 12px)',
+                  width: showChartPanel ? 400 : 0,
+                  border: showChartPanel ? undefined : 'none',
+                  boxShadow: showChartPanel ? undefined : 'none',
+                  transition: 'width 0.3s ease-out',
+                }}
+              >
+                <div className="min-w-[400px] h-full flex flex-col border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
+                  <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+                    <span className="text-sm font-semibold text-gray-900 truncate">{latestChartData.title || '차트'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setChartPanelCollapsed(true)}
+                      className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none shrink-0"
+                      aria-label="차트 패널 닫기"
+                    >
+                      <Icon icon="mdi:chevron-left" className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-auto min-h-0 p-3">
+                    <div className="rounded-lg border border-gray-200 bg-white p-3 overflow-hidden">
+                      <StreamChart data={latestChartData} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 채팅창 - 너비 고정, 차트와 무관 */}
+            <div
+              className="flex flex-col bg-white border-l border-[#31353a] h-full overflow-hidden"
+              style={{ borderLeftWidth: '1px', width: 480 }}
+            >
+            <header className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-[#31353a] bg-white">
+              <div className="flex items-center gap-2 min-w-0">
+                <img src="/logo.svg" alt="CUVIA" className="h-6 w-auto shrink-0 object-contain" />
+                <h2 className="text-base font-semibold text-gray-900 truncate" id="chat-expanded-title"></h2>
+                {latestChartData && chartPanelCollapsed && (
+                  <button
+                    type="button"
+                    onClick={() => setChartPanelCollapsed(false)}
+                    className="shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-white/10 rounded-lg transition-colors"
+                    aria-label="차트 패널 열기"
+                  >
+                    <Icon icon="mdi:chart-box-outline" className="w-4 h-4" />
+                    차트
+                  </button>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setIsExpanded(false)}
-                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
+                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none shrink-0"
                 aria-label="축소"
               >
                 <Icon icon="mdi:window-restore" className="w-5 h-5" />
               </button>
-            </div>
+            </header>
 
             <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 pl-10 pr-9">
               <div className="space-y-3">
@@ -1683,7 +1718,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   isExpanded={true}
                   onObjectTrackingStart={onObjectTrackingStart}
                   onVideoView={onVideoView}
-                  welcomeMsgContent={welcomeMsgContent ?? undefined}
                   trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                 />
               </div>
@@ -1703,6 +1737,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               isExpanded={true}
               placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
             />
+            </div>
           </div>
         </div>
       ) : (
@@ -1716,7 +1751,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   zIndex: 90,
                   transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
                   opacity: slideEntered ? 1 : 0,
-                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out, bottom 0.3s ease-out',
+                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
                 }
               : {
                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
@@ -1730,21 +1765,73 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px] transition-[height] duration-300 ease-out"
-            style={{ height: maxHeightProp ?? 600 }}
+            className="relative"
+            style={{ height: maxHeightProp ?? 760, width: 540, overflow: 'visible' }}
           >
-            <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+            {/* 차트 패널 - 채팅창과 별도, 좌측에 붙어 토글 */}
+            {latestChartData && (
+              <div
+                className="absolute top-0 bottom-0 flex flex-col bg-white rounded-2xl overflow-hidden"
+                style={{
+                  right: 'calc(100% + 12px)',
+                  width: showChartPanel ? 400 : 0,
+                  border: showChartPanel ? undefined : 'none',
+                  boxShadow: showChartPanel ? undefined : 'none',
+                  transition: 'width 0.3s ease-out',
+                }}
+              >
+                <div className="min-w-[400px] h-full flex flex-col border border-gray-200 rounded-2xl shadow-lg overflow-hidden">
+                  <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50 rounded-t-2xl">
+                    <span className="text-sm font-semibold text-gray-900 truncate">{latestChartData.title || '차트'}</span>
+                    <button
+                      type="button"
+                      onClick={() => setChartPanelCollapsed(true)}
+                      className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none shrink-0"
+                      aria-label="차트 패널 닫기"
+                    >
+                      <Icon icon="mdi:chevron-left" className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-auto min-h-0 p-3">
+                    <div className="rounded-lg border border-gray-200 bg-white p-3 overflow-hidden">
+                      <StreamChart data={latestChartData} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 채팅창 - 너비 고정 540px, 차트와 무관 */}
+            <div
+              className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg overflow-hidden h-full w-[540px]"
+            >
+            <header className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-200 bg-white rounded-t-2xl">
+              <div className="flex items-center gap-2 min-w-0">
+                <img src="/logo.svg" alt="CUVIA" className="h-6 w-auto shrink-0 object-contain" />
+                <h2 className="text-base font-semibold text-gray-900 truncate" id="chat-popup-title"></h2>
+                {latestChartData && chartPanelCollapsed && (
+                  <button
+                    type="button"
+                    onClick={() => setChartPanelCollapsed(false)}
+                    className="shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                    aria-label="차트 패널 열기"
+                  >
+                    <Icon icon="mdi:chart-box-outline" className="w-4 h-4" />
+                    차트
+                  </button>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
+                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none shrink-0"
                 aria-label={isExpanded ? '축소' : '확장'}
               >
                 <Icon icon={isExpanded ? 'mdi:window-restore' : 'mdi:window-maximize'} className="w-5 h-5" />
               </button>
-            </div>
+            </header>
 
-            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 pt-6">
+            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4">
               <div className="space-y-3">
                 <MessageList
                   messages={messages}
@@ -1754,7 +1841,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   isExpanded={false}
                   onObjectTrackingStart={onObjectTrackingStart}
                   onVideoView={onVideoView}
-                  welcomeMsgContent={welcomeMsgContent ?? undefined}
                   trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                 />
               </div>
@@ -1774,6 +1860,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               isExpanded={false}
               placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
             />
+            </div>
           </div>
         </div>
       )}

@@ -9,10 +9,10 @@ interface UnityCanvasProps {
 
 const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
     const { unityProvider, isLoaded, loadingProgression, sendMessage, unload } = useUnityContext({
-        loaderUrl: "/Build/public.loader.js",
-        dataUrl: "/Build/public.data",
-        frameworkUrl: "/Build/public.framework.js",
-        codeUrl: "/Build/public.wasm",
+        loaderUrl: "/Build_test/Build/Build_test.loader.js",
+        dataUrl: "/Build_test/Build/Build_test.data",
+        frameworkUrl: "/Build_test/Build/Build_test.framework.js",
+        codeUrl: "/Build_test/Build/Build_test.wasm",
     });
 
     useEffect(() => {
