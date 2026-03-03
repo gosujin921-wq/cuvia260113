@@ -69,7 +69,7 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
 
     const createPeerConnection = useCallback(() => {
         const currentRtspUrl = rtspUrlRef.current;
-        const currentIceServers = iceServerList;
+        const currentIceServers = iceServerListRef.current;
 
         if (!currentRtspUrl) {
             console.log("[WebRTC] RTSP URL 없음");
@@ -240,7 +240,7 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
 
     // 연결 시작/정지 - ICE 서버 목록이 준비되면 연결 시작
     useEffect(() => {
-        if (!autoConnect || !mediaAgentUrl || !rtspUrl || !iceServerList) {
+        if (!autoConnect || !mediaAgentUrl || !rtspUrl || !iceServerList || iceServerList.length === 0) {
             return;
         }
 
@@ -254,11 +254,10 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
             stopStreaming();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [autoConnect, mediaAgentUrl, rtspUrl, iceServerList]);
+    }, [autoConnect, mediaAgentUrl, rtspUrl, iceServerList?.length]);
 
     // ICE 서버 로딩 중 또는 준비 안됨 상태 표시
-    const isWaitingForIceServer = !iceServerList && mediaAgentUrl && rtspUrl;
-
+    const isWaitingForIceServer = !!mediaAgentUrl && !!rtspUrl && (!iceServerList || iceServerList.length === 0);
     return (
         <div className={`relative ${className}`}>
             <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover bg-black" />
