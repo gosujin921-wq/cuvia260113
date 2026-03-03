@@ -202,9 +202,6 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
 ### CCTV 연계
 인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.
 
-### 이전 경로
-특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.
-
 ### 유사 사례
 해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.`;
   };
@@ -502,7 +499,6 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                               { category: '이동 속도', analysis: '정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.' },
                               { category: '보행로 구조', analysis: '하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.' },
                               { category: 'CCTV 연계', analysis: '인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.' },
-                              { category: '이전 경로', analysis: '특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.' },
                               { category: '유사 사례', analysis: '해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.' },
                             ];
                           }
@@ -511,7 +507,6 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                             { category: '이동 속도', analysis: detail.detailedAnalysis.movementSpeed },
                             { category: '보행로 구조', analysis: detail.detailedAnalysis.pathStructure },
                             { category: 'CCTV 연계', analysis: detail.detailedAnalysis.cctvLinkage },
-                            { category: '이전 경로', analysis: detail.detailedAnalysis.previousPath },
                             { category: '유사 사례', analysis: detail.detailedAnalysis.similarCases },
                           ];
                         })().map((item, idx) => (
