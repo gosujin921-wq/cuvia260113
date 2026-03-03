@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import { useChatStream } from "@/src/hooks/useChatStream";
 import type { MapStreamData, ChartStreamData, CompleteStreamTableData } from "@/types/streamJson.types";
+import { AgentCard } from "@/components/dashboard/WithLink/AgentCard";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
 import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
 
@@ -81,21 +82,46 @@ interface ChatMessage {
 }
 
 /** AI 응답으로 누적 노출할 차트/테이블 카드 타입 */
-type VisualizationCard = { id: string; type: "chart"; title: string; chartData: ChartStreamData } | { id: string; type: "table"; title: string; tableData: CompleteStreamTableData };
-
 const AGENT_GRADIENT = "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)";
 
 // Chart.js 등록 (한 번만)
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
 
-const CHART_COLORS = ["rgba(255, 99, 132, 0.6)", "rgba(54, 162, 235, 0.6)", "rgba(255, 206, 86, 0.6)", "rgba(75, 192, 192, 0.6)", "rgba(153, 102, 255, 0.6)"];
+const CHART_COLORS = ["rgba(255, 99, 132, 0.85)", "rgba(54, 162, 235, 0.85)", "rgba(255, 206, 86, 0.85)", "rgba(75, 192, 192, 0.85)", "rgba(153, 102, 255, 0.85)"];
+const LINE_CHART_COLORS = ["#0066FF", "#8A2BE2", "#ff8566"];
+
+const CHART_LEGEND_TITLE_COLOR = "rgba(229, 231, 235, 0.95)";
 
 const getChartOptions = (title: string): ChartOptions<"bar" | "line" | "pie" | "doughnut"> => ({
     responsive: true,
     maintainAspectRatio: true,
     plugins: {
-        legend: { position: "top" as const },
-        title: { display: !!title, text: title },
+        legend: {
+            position: "top" as const,
+            labels: {
+                color: CHART_LEGEND_TITLE_COLOR,
+                font: { size: 12 },
+                usePointStyle: true,
+                pointStyle: "circle",
+                padding: 16,
+            },
+        },
+        title: {
+            display: !!title,
+            text: title,
+            color: CHART_LEGEND_TITLE_COLOR,
+            font: { size: 14 },
+        },
+    },
+    scales: {
+        x: {
+            ticks: { color: CHART_LEGEND_TITLE_COLOR, maxRotation: 45 },
+            grid: { color: "rgba(229, 231, 235, 0.2)" },
+        },
+        y: {
+            ticks: { color: CHART_LEGEND_TITLE_COLOR },
+            grid: { color: "rgba(229, 231, 235, 0.2)" },
+        },
     },
 });
 
@@ -103,11 +129,25 @@ const getChartOptions = (title: string): ChartOptions<"bar" | "line" | "pie" | "
 const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     const chartType = (data.type || "bar").toLowerCase();
     const labels = data.labels ?? [];
-    const datasets = (data.datasets ?? []).map((ds, i) => ({
-        label: ds.label ?? `데이터 ${i + 1}`,
-        data: ds.data ?? [],
-        backgroundColor: ds.backgroundColor ?? CHART_COLORS[i % CHART_COLORS.length],
-    }));
+    const datasets = (data.datasets ?? []).map((ds, i) => {
+        const isLine = chartType === "line";
+        const color = isLine ? LINE_CHART_COLORS[i % LINE_CHART_COLORS.length] : CHART_COLORS[i % CHART_COLORS.length];
+        return {
+            label: ds.label ?? `데이터 ${i + 1}`,
+            data: ds.data ?? [],
+            backgroundColor: (ds as { backgroundColor?: string }).backgroundColor ?? color,
+            ...(isLine && {
+                borderColor: (ds as { borderColor?: string }).borderColor ?? color,
+                borderWidth: 2,
+                pointBackgroundColor: (ds as { pointBackgroundColor?: string }).pointBackgroundColor ?? color,
+                pointBorderColor: "rgba(229, 231, 235, 0.9)",
+                pointBorderWidth: 1,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                tension: 0.2,
+            }),
+        };
+    });
 
     const chartData = {
         labels,
@@ -140,41 +180,6 @@ const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     return (
         <div className="w-full max-w-md h-64">
             <Bar data={chartData} options={options as ChartOptions<"bar">} />
-        </div>
-    );
-};
-
-/** 테이블 데이터 렌더링 (다크 컨셉) */
-const StreamTable: React.FC<{ data: CompleteStreamTableData }> = ({ data }) => {
-    const columns = data.columns ?? [];
-    const rows = data.rows ?? [];
-    if (data.html) {
-        return <div className="text-sm text-gray-200 overflow-auto max-h-64 [&_table]:w-full [&_th]:text-left [&_th]:font-semibold [&_th]:py-2 [&_th]:pr-3 [&_th]:border-b [&_th]:border-[#31353a] [&_td]:py-2 [&_td]:pr-3 [&_td]:border-b [&_td]:border-[#31353a]/60" dangerouslySetInnerHTML={{ __html: data.html }} />;
-    }
-    return (
-        <div className="overflow-auto max-h-64">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr>
-                        {columns.map((col, i) => (
-                            <th key={i} className="text-left font-semibold text-white py-2 pr-3 border-b border-[#31353a]">
-                                {col}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map((row, ri) => (
-                        <tr key={ri}>
-                            {row.map((cell, ci) => (
-                                <td key={ci} className="text-gray-300 py-2 pr-3 border-b border-[#31353a]/60">
-                                    {String(cell)}
-                                </td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
         </div>
     );
 };
@@ -669,7 +674,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         });
     }, [isOpen]);
     const [inputKey, setInputKey] = useState(0);
-    const [isExpanded, setIsExpanded] = useState(false);
 
     // 객체 추적 상태일 때 프로그래스 메시지 추가
     useEffect(() => {
@@ -771,14 +775,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     // 스트림 메시지 ID ref (스트림 중 업데이트용)
     const streamMessageIdRef = useRef<string | null>(null);
 
-    // 시각화 카드(차트/테이블) 누적 배열, 각 카드별 X로 제거
-    const [visualizationCards, setVisualizationCards] = useState<VisualizationCard[]>([]);
-    const [chartPanelCollapsed, setChartPanelCollapsed] = useState(false);
-    const showChartPanel = visualizationCards.length > 0 && !chartPanelCollapsed;
-
-    const removeVisualizationCard = useCallback((id: string) => {
-        setVisualizationCards((prev) => prev.filter((c) => c.id !== id));
-    }, []);
+    // 마지막 스트림 응답의 차트/테이블만 노출 (최대 차트 1개, 테이블 1개)
+    const [lastChartData, setLastChartData] = useState<ChartStreamData | null>(null);
+    const [lastTableData, setLastTableData] = useState<CompleteStreamTableData | null>(null);
 
     // onMapDataReceived ref (의존성 배열에서 제외하기 위함)
     const onMapDataReceivedRef = useRef(onMapDataReceived);
@@ -789,9 +788,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         onChartDataReceived: useCallback((data: ChartStreamData) => {
             const msgId = streamMessageIdRef.current;
             if (!msgId) return;
-            setChartPanelCollapsed(false);
             setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal" as const, chartData: data } : msg)));
-            setVisualizationCards((prev) => [...prev, { id: `card-${Date.now()}-${Math.random().toString(36).slice(2)}`, type: "chart", title: data.title ?? "차트", chartData: data }]);
+            setLastChartData(data);
         }, []),
         onStepChange: useCallback((step: number, message: string) => {
             const msgId = streamMessageIdRef.current;
@@ -822,24 +820,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     return next;
                 })
             );
-            setVisualizationCards((prev) => {
-                const ts = Date.now();
-                const id = () => `${ts}-${Math.random().toString(36).slice(2)}`;
-                let next = prev;
-                if (data?.chart_data) {
-                    next = [...next, { id: `card-${id()}`, type: "chart" as const, title: data.chart_data.title ?? "차트", chartData: data.chart_data }];
-                }
-                if (data?.tables?.length) {
-                    data.tables.forEach((t) => {
-                        next = [...next, { id: `card-${id()}`, type: "table" as const, title: t.title ?? "테이블", tableData: t }];
-                    });
-                }
-                if (data?.table) {
-                    next = [...next, { id: `card-${id()}`, type: "table" as const, title: data.table.title ?? "테이블", tableData: data.table }];
-                }
-                return next;
-            });
-            if (data?.chart_data || data?.tables?.length || data?.table) setChartPanelCollapsed(false);
+            console.log(data);
+            // 응답에 차트/테이블이 없으면 각각 null로 초기화
+            setLastChartData(data?.chart_data ?? data?.chart ?? null);
+            const table = data?.tables?.length ? data.tables[data.tables.length - 1] : data?.table;
+            setLastTableData(table ?? null);
             setIsResponding(false);
             streamMessageIdRef.current = null;
         }, []),
@@ -907,6 +892,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             if (e.key === "Escape") {
                 e.preventDefault();
                 setMessages([]);
+                setLastChartData(null);
+                setLastTableData(null);
                 onClose();
             }
         };
@@ -1574,113 +1561,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         </button>
                     </div>
                 </div>
-            ) : isExpanded ? (
-                <div
-                    className="fixed inset-y-0 transition-all duration-300 ease-out"
-                    onClick={(e) => e.stopPropagation()}
-                    style={{
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: 480,
-                        zIndex: 90,
-                        transform: slideEntered ? "translateX(0)" : "translateX(100%)",
-                        opacity: slideEntered ? 1 : 0,
-                    }}>
-                    <div className="relative h-full w-full" style={{ overflow: "visible", width: 480 }}>
-                        {/* 시각화 카드 패널 - 차트/테이블 누적, 카드별 X로 제거 */}
-                        {visualizationCards.length > 0 && (
-                            <div
-                                className="absolute top-0 bottom-0 flex flex-col rounded-2xl overflow-hidden"
-                                style={{
-                                    right: "calc(100% + 12px)",
-                                    width: showChartPanel ? 400 : 0,
-                                    border: showChartPanel ? "1px solid #31353a" : "none",
-                                    boxShadow: showChartPanel ? "0 8px 32px rgba(0,0,0,0.3)" : "none",
-                                    transition: "width 0.3s ease-out",
-                                    ...CARD_PANEL_STYLE,
-                                }}>
-                                <div className="min-w-[400px] h-full flex flex-col overflow-hidden">
-                                    <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b border-[#31353a] rounded-t-2xl">
-                                        <span className="text-sm font-semibold text-white truncate">차트·테이블</span>
-                                        <button type="button" onClick={() => setChartPanelCollapsed(true)} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0" aria-label="시각화 패널 닫기">
-                                            <Icon icon="mdi:chevron-left" className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-3">
-                                        {visualizationCards.map((card) => (
-                                            <div key={card.id} className="rounded-lg p-4 flex flex-col border border-[#31353a] overflow-hidden" style={CARD_PANEL_STYLE}>
-                                                <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
-                                                    <span className="text-sm font-semibold text-white truncate">{card.type === "chart" ? card.title : card.title}</span>
-                                                    <button type="button" onClick={() => removeVisualizationCard(card.id)} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0" aria-label="카드 제거">
-                                                        <Icon icon="mdi:close" className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                                <div className="rounded-lg border border-[#31353a] bg-black/20 p-3 overflow-hidden min-h-0">{card.type === "chart" ? <StreamChart data={card.chartData} /> : <StreamTable data={card.tableData} />}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 채팅창 - 너비 고정, 차트와 무관 */}
-                        <div
-                            className="flex flex-col border-l border-[#31353a] h-full overflow-hidden gradient-border-left-top"
-                            style={{
-                                borderLeftWidth: "1px",
-                                width: 480,
-                                background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
-                                backdropFilter: "blur(4px)",
-                                WebkitBackdropFilter: "blur(4px)",
-                            }}>
-                            <header className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-[#31353a] text-white">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <img src="/logo.svg" alt="CUVIA" className="h-6 w-auto shrink-0 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
-                                    <h2 className="text-base font-semibold text-white truncate" id="chat-expanded-title"></h2>
-                                    {visualizationCards.length > 0 && chartPanelCollapsed && (
-                                        <button type="button" onClick={() => setChartPanelCollapsed(false)} className="shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-400 hover:text-blue-300 hover:bg-white/10 rounded-lg transition-colors" aria-label="시각화 패널 열기">
-                                            <Icon icon="mdi:chart-box-outline" className="w-4 h-4" />
-                                            차트·테이블
-                                        </button>
-                                    )}
-                                </div>
-                                <button type="button" onClick={() => setIsExpanded(false)} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0" aria-label="축소">
-                                    <Icon icon="mdi:window-restore" className="w-5 h-5" />
-                                </button>
-                            </header>
-
-                            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 pl-10 pr-9 bg-black/20">
-                                <div className="space-y-3">
-                                    <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={true} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} />
-                                </div>
-
-                                <div ref={bottomRef} className="h-[75px]" />
-                            </div>
-
-                            <ChatInputForm
-                                chatInput={chatInput}
-                                setChatInput={setChatInput}
-                                handleSendMessage={handleSendMessage}
-                                isResponding={isResponding}
-                                onSkipResponse={handleSkipResponse}
-                                textareaRef={textareaRef}
-                                inputKey={inputKey}
-                                ignoreNextChangeRef={ignoreNextChangeRef}
-                                isExpanded={true}
-                                placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
-                            />
-                        </div>
-                    </div>
-                </div>
             ) : (
                 <div
-                    className="absolute"
+                    className={`absolute h-[calc(100%-${padding})]`}
                     style={
                         positionOverride
                             ? {
                                   position: "absolute" as const,
                                   ...positionOverride,
+                                  top: `${padding}px`,
+                                  right: `${padding}px`,
+                                  bottom: `${padding}px`,
                                   zIndex: 90,
                                   transform: slideEntered ? "translateX(0)" : "translateX(100%)",
                                   opacity: slideEntered ? 1 : 0,
@@ -1689,6 +1580,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                             : {
                                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
                                   right: `${padding}px`,
+                                  bottom: `${padding}px`,
                                   zIndex: 90,
                                   transform: slideEntered ? "translateX(0)" : "translateX(100%)",
                                   opacity: slideEntered ? 1 : 0,
@@ -1696,88 +1588,71 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                               }
                     }
                     onClick={(e) => e.stopPropagation()}>
-                    <div className="relative" style={{ height: maxHeightProp ?? 760, width: 540, overflow: "visible" }}>
-                        {/* 시각화 카드 패널 - 차트/테이블 누적, 카드별 X로 제거 */}
-                        {visualizationCards.length > 0 && (
-                            <div
-                                className="absolute top-0 bottom-0 flex flex-col rounded-2xl overflow-hidden"
-                                style={{
-                                    right: "calc(100% + 12px)",
-                                    width: showChartPanel ? 400 : 0,
-                                    border: showChartPanel ? "1px solid #31353a" : "none",
-                                    boxShadow: showChartPanel ? "0 8px 32px rgba(0,0,0,0.3)" : "none",
-                                    transition: "width 0.3s ease-out",
-                                    ...CARD_PANEL_STYLE,
-                                }}>
-                                <div className="min-w-[400px] h-full flex flex-col overflow-hidden">
-                                    <div className="shrink-0 flex items-center justify-between gap-2 px-3 py-2 border-b border-[#31353a] rounded-t-2xl">
-                                        <span className="text-sm font-semibold text-white truncate">차트·테이블</span>
-                                        <button type="button" onClick={() => setChartPanelCollapsed(true)} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0" aria-label="시각화 패널 닫기">
-                                            <Icon icon="mdi:chevron-left" className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto min-h-0 p-3 space-y-3">
-                                        {visualizationCards.map((card) => (
-                                            <div key={card.id} className="rounded-lg p-4 flex flex-col border border-[#31353a] overflow-hidden" style={CARD_PANEL_STYLE}>
-                                                <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
-                                                    <span className="text-sm font-semibold text-white truncate">{card.type === "chart" ? card.title : card.title}</span>
-                                                    <button type="button" onClick={() => removeVisualizationCard(card.id)} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0" aria-label="카드 제거">
-                                                        <Icon icon="mdi:close" className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                                <div className="rounded-lg border border-[#31353a] bg-black/20 p-3 overflow-hidden min-h-0">{card.type === "chart" ? <StreamChart data={card.chartData} /> : <StreamTable data={card.tableData} />}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                    {/* 시각화 카드 패널 - 차트/테이블 누적, 카드별 X로 제거 */}
+
+                    {/* 채팅창 - 너비 고정 540px, 차트와 무관 / isExpanded면 전체 높이 */}
+                    <div
+                        className="flex flex-col rounded-2xl border border-[#31353a] shadow-lg overflow-hidden h-full w-[540px] gradient-border-left-top min-h-0"
+                        style={{
+                            background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
+                            backdropFilter: "blur(4px)",
+                            WebkitBackdropFilter: "blur(4px)",
+                        }}>
+                        <header className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-[#31353a] text-white rounded-t-2xl">
+                            <div className="flex items-center gap-2 min-w-0">
+                                <img src="/logo.svg" alt="CUVIA" className="h-6 w-auto shrink-0 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+                                <h2 className="text-base font-semibold text-white truncate" id="chat-popup-title"></h2>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMessages([]);
+                                    setLastChartData(null);
+                                    setLastTableData(null);
+                                    onClose();
+                                }}
+                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none"
+                                aria-label="카드 제거">
+                                <Icon icon="mdi:close" className="w-5 h-5" />
+                            </button>
+                        </header>
+
+                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 bg-black/20">
+                            <div className="space-y-3">
+                                <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} />
+                            </div>
+
+                            <div ref={bottomRef} className="h-2" />
+                        </div>
+
+                        <ChatInputForm
+                            chatInput={chatInput}
+                            setChatInput={setChatInput}
+                            handleSendMessage={handleSendMessage}
+                            isResponding={isResponding}
+                            onSkipResponse={handleSkipResponse}
+                            textareaRef={textareaRef}
+                            inputKey={inputKey}
+                            ignoreNextChangeRef={ignoreNextChangeRef}
+                            isExpanded={false}
+                            placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
+                        />
+                    </div>
+                </div>
+            )}
+            {(lastChartData || lastTableData) && (
+                <div className="absolute top-[20px] bottom-[20px] px-[20px] right-[572px] overflow-hidden min-h-0 w-[700px]">
+                    <div className="flex flex-col gap-3 h-full">
+                        {lastTableData && (
+                            <div className="flex-shrink-0 min-h-0 overflow-hidden" style={{ height: "calc((100% - 12px) / 2)" }}>
+                                <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} />
                             </div>
                         )}
-
-                        {/* 채팅창 - 너비 고정 540px, 차트와 무관 */}
-                        <div
-                            className="flex flex-col rounded-2xl border border-[#31353a] shadow-lg overflow-hidden h-full w-[540px] gradient-border-left-top"
-                            style={{
-                                background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
-                                backdropFilter: "blur(4px)",
-                                WebkitBackdropFilter: "blur(4px)",
-                            }}>
-                            <header className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-[#31353a] text-white rounded-t-2xl">
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <img src="/logo.svg" alt="CUVIA" className="h-6 w-auto shrink-0 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
-                                    <h2 className="text-base font-semibold text-white truncate" id="chat-popup-title"></h2>
-                                    {visualizationCards.length > 0 && chartPanelCollapsed && (
-                                        <button type="button" onClick={() => setChartPanelCollapsed(false)} className="shrink-0 flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-300 hover:text-blue-200 hover:bg-white/10 rounded-lg transition-colors" aria-label="시각화 패널 열기">
-                                            <Icon icon="mdi:chart-box-outline" className="w-4 h-4" />
-                                            차트·테이블
-                                        </button>
-                                    )}
-                                </div>
-                                <button type="button" onClick={() => setIsExpanded(!isExpanded)} className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors focus:outline-none shrink-0" aria-label={isExpanded ? "축소" : "확장"}>
-                                    <Icon icon={isExpanded ? "mdi:window-restore" : "mdi:window-maximize"} className="w-5 h-5" />
-                                </button>
-                            </header>
-
-                            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 bg-black/20">
-                                <div className="space-y-3">
-                                    <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} />
-                                </div>
-
-                                <div ref={bottomRef} className="h-2" />
+                        {lastChartData && (
+                            <div className="flex-shrink-0 min-h-0 overflow-hidden" style={{ height: "calc((100% - 12px) / 2)" }}>
+                                <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} />
                             </div>
-
-                            <ChatInputForm
-                                chatInput={chatInput}
-                                setChatInput={setChatInput}
-                                handleSendMessage={handleSendMessage}
-                                isResponding={isResponding}
-                                onSkipResponse={handleSkipResponse}
-                                textareaRef={textareaRef}
-                                inputKey={inputKey}
-                                ignoreNextChangeRef={ignoreNextChangeRef}
-                                isExpanded={false}
-                                placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
-                            />
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
