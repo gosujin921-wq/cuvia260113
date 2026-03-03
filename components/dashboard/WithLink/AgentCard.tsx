@@ -230,7 +230,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className 
                 )}
             </div>
             <div className="flex flex-1 min-h-0 p-4 flex items-center justify-center overflow-auto">
-                <div className="h-full rounded-lg border border-[#31353a] bg-black/20 p-3 w-full overflow-hidden">{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} />}</div>
+                <div className={`h-full rounded-lg border border-[#31353a] bg-black/20 p-3 w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} />}</div>
             </div>
         </div>
     );
