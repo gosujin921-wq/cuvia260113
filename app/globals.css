@@ -496,6 +496,13 @@ input[type="range"].slider::-moz-range-thumb {
   z-index: 1;
 }
 
+/* Home-agent 페이지용 다크 모드 채팅 입력 */
+.cuvia-link-chat-input-dark {
+  background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
 .gradient-border-left-top {
   position: relative;
   border-radius: 0.5rem; /* rounded-lg */

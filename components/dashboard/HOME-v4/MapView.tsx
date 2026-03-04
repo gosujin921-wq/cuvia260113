@@ -43,9 +43,11 @@ interface MapViewProps {
   onMapStateChange?: (state: { center: [number, number]; zoom: number; pitch: number; bearing: number }) => void; // 지도 상태 변경 콜백
   hideAgentButton?: boolean;
   isAgentActive?: boolean;
+  /** true: 맵/CCTV 컨트롤 버튼 위치 고정 (슬라이드/이동 없음) */
+  keepControlPosition?: boolean;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, isAgentActive = false }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, isAgentActive = false, keepControlPosition = false }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -1732,9 +1734,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
        {/* 맵 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
        {(!hideControls || showFastSearchList || isAgentActive) && (
        <div 
-         className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+         className="absolute top-4 flex flex-col gap-2" 
          style={{ 
-           left: isAgentActive ? '104px' : showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
+           left: keepControlPosition ? `${leftPanelWidth + 24}px` : (isAgentActive ? '104px' : showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`),
            zIndex: 250,
          }}
          onClick={(e) => e.stopPropagation()}
@@ -1848,9 +1850,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
       {(!hideControls || showFastSearchList || isAgentActive) && (
       <div 
-        className="absolute bottom-[calc(50%-140px)] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+        className="absolute bottom-[calc(50%-140px)] flex flex-col gap-2" 
         style={{ 
-          left: isAgentActive ? '104px' : showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
+          left: keepControlPosition ? `${leftPanelWidth + 24}px` : (isAgentActive ? '104px' : showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`),
           zIndex: 250,
         }}
         onClick={(e) => e.stopPropagation()}
@@ -1997,8 +1999,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const cctvPanelRight = rightPanelWidth + panelGap;
         const isInitial = showCCTV && !hideControls;
         const isFastSearch = showFastSearch || showFastSearchList;
-        const bottom = isInitial ? buttonBottom : 24;
-        const right = isInitial ? cctvPanelRight : isFastSearch ? 24 : cctvPanelRight;
+        const bottom = keepControlPosition ? buttonBottom : (isInitial ? buttonBottom : 24);
+        const right = keepControlPosition ? cctvPanelRight : (isInitial ? cctvPanelRight : isFastSearch ? 24 : cctvPanelRight);
         return (
           <div
             className="absolute group"
@@ -2006,7 +2008,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               bottom: `${bottom}px`,
               right: `${right}px`,
               zIndex: 200,
-              transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out, opacity 0.4s ease-out, transform 0.4s ease-out',
+              transition: keepControlPosition ? 'opacity 0.4s ease-out, transform 0.4s ease-out' : 'bottom 0.3s ease-in-out, right 0.3s ease-in-out, opacity 0.4s ease-out, transform 0.4s ease-out',
               opacity: hideAgentButton ? 0 : 1,
               transform: hideAgentButton ? 'scale(0.8)' : 'scale(1)',
               pointerEvents: hideAgentButton ? 'none' : 'auto',

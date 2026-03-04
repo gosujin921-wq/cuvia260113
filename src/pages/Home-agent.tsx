@@ -4,7 +4,6 @@ import EventList from '@/components/dashboard/HOME/EventList';
 import MapView from '@/components/dashboard/HOME-v4/MapView';
 import ObjectTrackingMapView from '@/components/dashboard/HOME-v4/ObjectTrackingMapView';
 import LeftPanel from '@/components/dashboard/HOME-v4/LeftPanel';
-import LeftMenuPanel from '@/components/dashboard/HOME-v4/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME-v4/ReportPopup';
@@ -15,7 +14,7 @@ import { getCctvNameForCaptureItem, getLocationForCaptureItem, getConfidenceForC
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v4/PredictedCCTVListPanel';
 import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v4/CaptureListPanel';
 import PropagationListPanel from '@/components/dashboard/HOME-v4/PropagationListPanel';
-import AgentPopup from '@/components/dashboard/HOME-v4/AgentPopup';
+import AIAgentPopup2 from '@/components/dashboard/HOME-v4/AIAgentPopup-2';
 import ConfirmDialog from '@/components/dashboard/HOME-v4/ConfirmDialog';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
@@ -82,9 +81,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
     case 'START_FAST_SEARCH':
       return {
         ...state,
-        panelsSlidOut: true,
-        showCCTV: false,
-        hideControls: true,
         showFastSearchList: true,
         selectedMenuId: 'fast-search',
         showAIAgentPopup: true,
@@ -95,9 +91,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
     case 'START_FAST_SEARCH_WITH_PROGRESS':
       return {
         ...state,
-        panelsSlidOut: true,
-        showCCTV: false,
-        hideControls: true,
         showFastSearchList: true,
         selectedMenuId: 'fast-search',
         showAIAgentPopup: true,
@@ -120,9 +113,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
     case 'SHOW_FAST_SEARCH_LIST':
       return {
         ...state,
-        panelsSlidOut: true,
-        showCCTV: false,
-        hideControls: true,
         showFastSearchList: true,
         selectedMenuId: 'fast-search',
       };
@@ -152,11 +142,8 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showFastSearchList: false,
         showCaptureList: false,
         showAIAgentPopup: true,
-        hideControls: true,
         selectedMenuId: 'object-tracking',
-        selectedEventId: 'A-20260107-004', // 신고 팝업을 위한 이벤트 선택
-        panelsSlidOut: true, // 좌우 패널 숨김
-        showCCTV: false, // CCTV 패널 숨김
+        selectedEventId: 'A-20260107-004',
       };
     case 'SHOW_CAPTURE_LIST':
       return {
@@ -165,9 +152,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showFastSearchList: false,
         showObjectTracking: false,
         showPropagationList: false,
-        panelsSlidOut: true,
-        showCCTV: false,
-        hideControls: true,
         selectedMenuId: 'capture-list',
       };
     case 'HIDE_CAPTURE_LIST':
@@ -186,9 +170,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showFastSearchList: false,
         showObjectTracking: false,
         showCaptureList: false,
-        panelsSlidOut: true,
-        showCCTV: false,
-        hideControls: true,
         selectedMenuId: 'propagation',
         previousStateBeforePropagation: {
           showFastSearchList: state.showFastSearchList,
@@ -307,6 +288,7 @@ export default function HomeAgent() {
   const [captureProgressMessage, setCaptureProgressMessage] = useState<string | null>(null);
   const [agentMessage, setAgentMessage] = useState<string>('');
   const [agentMessages, setAgentMessages] = useState<Array<{ id: number; text: string; role: 'agent' | 'user' }>>([]);
+  const [pendingPopupMessage, setPendingPopupMessage] = useState<string | null>(null);
   const [isAgentInputExpanded, setIsAgentInputExpanded] = useState(false);
   const [isAgentActive, setIsAgentActive] = useState(false);
   const agentMessagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -480,8 +462,7 @@ export default function HomeAgent() {
     return visibleEvents;
   }, [visibleEvents, uiState.showFastSearchList, uiState.selectedEventId, allConvertedEvents, uiState.showObjectTracking, visibleTrackingPins]);
 
-  // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
-  const fastSearchFocusXPercent = uiState.showFastSearchList ? 52 : 50;
+  const fastSearchFocusXPercent = 50;
 
   // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
   const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
@@ -665,7 +646,7 @@ export default function HomeAgent() {
         setAgentPopupMaxHeight(Math.max(200, height));
         return;
       }
-      const bottomPanelVisible = uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList;
+      const bottomPanelVisible = uiState.showCCTV;
       const topPx = reportPopupVisible ? 20 + (reportPopupHeight > 0 ? reportPopupHeight : 180) + REPORT_POPUP_GAP : AGENT_TOP_GAP;
       const reserveBottom = (uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList || isObjectTrackingTransitioning) ? 24 : 24 + 56 + 8;
       const height = bottomPanelVisible
@@ -713,10 +694,13 @@ export default function HomeAgent() {
     setAgentMessage('');
     if (agentTextareaRef.current) agentTextareaRef.current.value = '';
     if (!isAgentActive) {
+      setPendingPopupMessage(trimmed);
       setIsAgentActive(true);
       dispatch({ type: 'SHOW_AGENT_POPUP' });
     }
   }, [agentMessage]);
+
+  const clearPendingPopupMessage = useCallback(() => setPendingPopupMessage(null), []);
 
   // 재검색 완료 후 카드 개수 변경 감지
   useEffect(() => {
@@ -753,7 +737,7 @@ export default function HomeAgent() {
           pointerEvents: isAgentActive ? 'none' : 'auto',
         }}
       >
-        {/* 추천 프롬프트 */}
+        {/* 추천 프롬프트 - 다크글라스모피즘 (패널 스타일) */}
         <div className="mb-2 flex flex-wrap gap-1.5 w-full">
           {['지난달 사건사고 요약해줘', '폭력 많은 지역 알려줘', '어제 밤 폭력사건 보여줘'].map((prompt) => (
             <button
@@ -764,9 +748,9 @@ export default function HomeAgent() {
               }}
               className="px-3 py-1 rounded-full text-[12px] text-gray-300 hover:text-white transition-all hover:scale-[1.03] active:scale-95 cursor-pointer"
               style={{
-                background: 'rgba(20, 20, 28, 0.7)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
+                background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
                 border: '1px solid rgba(255,255,255,0.1)',
               }}
               tabIndex={0}
@@ -777,9 +761,9 @@ export default function HomeAgent() {
           ))}
         </div>
 
-        {/* 채팅 입력 바 */}
+        {/* 채팅 입력 바 - 다크 모드 */}
         <div
-          className="relative flex items-center gap-2 px-4 py-2 cuvia-link-chat-input w-full"
+          className="relative flex items-center gap-2 px-4 py-2 cuvia-link-chat-input cuvia-link-chat-input-dark w-full"
           style={{
             isolation: 'isolate',
             borderRadius: isAgentInputExpanded ? '0.75rem' : '9999px',
@@ -823,7 +807,7 @@ export default function HomeAgent() {
               }
             }}
             placeholder="에이전트에게 명령을 입력하세요..."
-            className="flex-1 bg-transparent border-none text-gray-900 placeholder-gray-500 focus:outline-none resize-none overflow-hidden relative z-10"
+            className="flex-1 bg-transparent border-none text-white placeholder-gray-400 focus:outline-none resize-none overflow-hidden relative z-10"
             style={{ minHeight: '22px', maxHeight: '88px', lineHeight: '22px', fontSize: '14px' }}
             rows={1}
             aria-label="에이전트 메시지 입력"
@@ -892,48 +876,28 @@ export default function HomeAgent() {
             onMapStateChange={setLastMapState}
             hideAgentButton={isAgentActive}
             isAgentActive={isAgentActive}
+            keepControlPosition
           />
         )}
       </div>
 
-      {/* 좌측 메뉴 패널 - 고속검색/객체추적/포착/전파 시 표시 OR 에이전트 활성 시 좌→우 페이드 인 */}
+      {/* 좌측 패널 - 항상 표시 (페이드 아웃 없음) */}
       <div 
-        className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${
-          isAgentActive || uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList
-            ? 'translate-x-0 opacity-100'
-            : '-translate-x-full opacity-0'
-        }`}
-        style={{ zIndex: 101 }}
-      >
-        <LeftMenuPanel 
-          onMenuSelect={handleMenuSelect} 
-          selectedMenuId={uiState.selectedMenuId}
-          captureCount={captureItems.length}
-          showNotification={showCaptureNotification}
-        />
-      </div>
-
-      {/* 좌측 패널 - 에이전트 활성 시 우→좌 페이드 아웃 */}
-      <div 
-        className={`absolute top-0 bottom-0 transition-all duration-500 ease-out ${
-          (uiState.panelsSlidOut || isAgentActive) ? 'pointer-events-none' : ''
-        }`}
+        className="absolute top-0 bottom-0 transition-all duration-500 ease-out"
         style={{
           zIndex: 100,
           left: '0px',
-          opacity: (uiState.panelsSlidOut || isAgentActive) ? 0 : 1,
-          transform: uiState.panelsSlidOut
-            ? 'translateX(-100%)'
-            : isAgentActive
-              ? 'translateX(-40px)'
-              : 'translateX(0)',
+          opacity: 1,
+          transform: 'translateX(0)',
         }}
       >
         <LeftPanel onCollapsedChange={(collapsed) => dispatch({ type: 'TOGGLE_LEFT_PANEL' })} />
       </div>
 
       <div 
-        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${uiState.panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
+        className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${
+          uiState.panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'
+        } ${isAgentActive ? 'pointer-events-none' : ''}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
         {/* 히트맵 패널 - 에이전트 활성 시 좌→우 페이드 아웃 */}
@@ -982,9 +946,9 @@ export default function HomeAgent() {
         </div>
       </div>
 
-      {/* BottomPanel (CCTV 화면) - 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드 또는 전파 모드일 때 숨김 */}
+      {/* BottomPanel (CCTV 화면) - 레이아웃 유지로 항상 표시 */}
       <BottomPanel
-        showCCTV={uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
+        showCCTV={uiState.showCCTV}
         hideControls={uiState.hideControls || isAgentActive}
         leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
         windowWidth={windowWidth}
@@ -1173,12 +1137,14 @@ export default function HomeAgent() {
 
       {/* 에이전트 팝업: 채팅바 전송 시 우측 하단에 표시 */}
       {uiState.showAIAgentPopup && (
-        <AgentPopup
+        <AIAgentPopup2
           isOpen={uiState.showAIAgentPopup}
           onClose={() => dispatch({ type: 'COMPLETE_FAST_SEARCH' })}
           hideControls={uiState.hideControls}
           position={{ bottom: '24px', right: '24px' }}
           maxHeight={agentPopupMaxHeight}
+          initialMessage={pendingPopupMessage}
+          onInitialMessageProcessed={clearPendingPopupMessage}
         />
       )}
 
