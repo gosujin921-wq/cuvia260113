@@ -1466,6 +1466,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     const padding = 20;
     const gap = 10;
 
+
     return (
         <>
             {!hasUserSentMessage ? (
@@ -1569,11 +1570,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 </div>
             ) : (
                 <div
-                    className={`absolute h-[calc(100%-${padding})]`}
+                    className="absolute flex items-stretch gap-2 transition-all duration-300 ease-out"
                     style={
                         positionOverride
                             ? {
-                                  position: "absolute" as const,
                                   ...positionOverride,
                                   top: `${padding}px`,
                                   right: `${padding}px`,
@@ -1581,7 +1581,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                   zIndex: 90,
                                   transform: slideEntered ? "translateX(0)" : "translateX(100%)",
                                   opacity: slideEntered ? 1 : 0,
-                                  transition: "transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out",
+                                  transition: "transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out, bottom 0.3s ease-out",
                               }
                             : {
                                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
@@ -1594,20 +1594,31 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                               }
                     }
                     onClick={(e) => e.stopPropagation()}>
-                    {/* 시각화 카드 패널 - 차트/테이블 누적, 카드별 X로 제거 */}
-
-                    {/* 채팅창 - 너비 고정 540px, 차트와 무관 / isExpanded면 전체 높이 */}
+                    {/* 시각화 카드 패널 */}
+                    {(lastChartData || lastTableData) && (
+                        <div className="flex flex-col flex-shrink-0 gap-2 w-[680px]" style={{ height: maxHeightProp ?? 600 }}>
+                            {lastTableData && (
+                                <div className="flex flex-col max-h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
+                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} />
+                                </div>
+                            )}
+                            {lastChartData && (
+                                <div className="flex flex-col max-h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
+                                    <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {/* 채팅창 */}
                     <div
-                        className="flex flex-col rounded-2xl border border-[#40424a] shadow-lg overflow-hidden h-full w-[540px] gradient-border-left-top min-h-0"
+                        className="flex flex-col flex-shrink-0 overflow-hidden relative border border-[#40424a] transition-[width] duration-300 ease-out w-[480px] rounded-2xl"
                         style={{
+                            height: maxHeightProp ?? 600,
                             background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
                             backdropFilter: "blur(4px)",
                             WebkitBackdropFilter: "blur(4px)",
                         }}>
                         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-                            {/* <button type="button" onClick={() => setIsExpanded(!isExpanded)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors focus:outline-none" aria-label={isExpanded ? "축소" : "확장"}>
-                                <Icon icon={isExpanded ? "mdi:window-restore" : "mdi:window-maximize"} className="w-5 h-5" />
-                            </button> */}
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1616,19 +1627,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                     setLastTableData(null);
                                     onClose();
                                 }}
-                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none"
+                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0 focus:outline-none"
                                 aria-label="카드 제거">
                                 <Icon icon="mdi:close" className="w-5 h-5" />
                             </button>
                         </div>
-                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 bg-black/20">
+                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-6">
                             <div className="space-y-3">
                                 <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} />
                             </div>
-
                             <div ref={bottomRef} className="h-2" />
                         </div>
-
                         <ChatInputForm
                             chatInput={chatInput}
                             setChatInput={setChatInput}
@@ -1641,22 +1650,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                             isExpanded={false}
                             placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
                         />
-                    </div>
-                </div>
-            )}
-            {(lastChartData || lastTableData) && (
-                <div className="absolute top-[20px] bottom-[20px] px-[20px] right-[572px] overflow-hidden min-h-0 w-[700px]">
-                    <div className="flex flex-col gap-3 h-full">
-                        {lastTableData && (
-                            <div className="flex-shrink-0 min-h-0 overflow-hidden" style={{ height: "calc((100% - 12px) / 2)" }}>
-                                <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} />
-                            </div>
-                        )}
-                        {lastChartData && (
-                            <div className="flex-shrink-0 min-h-0 overflow-hidden" style={{ height: "calc((100% - 12px) / 2)" }}>
-                                <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} />
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
