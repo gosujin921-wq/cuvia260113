@@ -3,6 +3,15 @@
  * public/cctv_img 디렉토리의 비디오 파일을 랜덤으로 섞어서 제공
  */
 
+/** 특정 위치별 전용 영상 (우선 사용) */
+const LOCATION_SPECIFIC_VIDEOS: Record<string, string> = {
+  서초역사거리: '/cctv_img/seocho_station.mov',
+  서울성모병원: '/cctv_img/cmcseoul.mov',
+  동작대교: '/cctv_img/dongjak.mov',
+  사당역: '/cctv_img/sadang.mov',
+  남태령고개: '/cctv_img/namtae.mov',
+};
+
 // CCTV 비디오 파일 목록
 export const CCTV_VIDEO_FILES = [
   '/cctv_img/cctv1.mov',
@@ -58,6 +67,9 @@ const hashString = (str: string): number => {
  * 같은 CCTV ID는 항상 같은 비디오를 반환 (시드 기반)
  */
 export const getRandomCCTVVideo = (cctvId?: string): string => {
+  if (cctvId && LOCATION_SPECIFIC_VIDEOS[cctvId]) {
+    return LOCATION_SPECIFIC_VIDEOS[cctvId];
+  }
   if (cctvId) {
     // CCTV ID가 있으면 시드 기반으로 일관된 선택
     // CCTV ID를 시드로 사용하여 배열을 섞고, 그 결과에서 선택

@@ -33,6 +33,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
     const [showCCTV, setShowCCTV] = useState(true);
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
+    const [showRoad, setShowRoad] = useState(false);
     const [showCCTVName, setShowCCTVName] = useState(true);
     const [is3DMode, setIs3DMode] = useState(true);
     const [mapBearing, setMapBearing] = useState(-17.6);
@@ -294,6 +295,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
             layers.forEach((layer: any) => {
                 const layerId = layer.id.toLowerCase();
+
                 const isBuildingLayer = layerId.includes("building") || layerId.includes("건물") || layerId.includes("extrusion") || layer.type === "fill-extrusion";
 
                 if (isBuildingLayer) {
@@ -618,7 +620,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 }
             }}>
             <div
-                className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out"
+                className="absolute top-4 flex flex-col transition-all duration-500 ease-in-out"
                 style={{
                     left: `${leftPanelWidth + 24}px`,
                     zIndex: 250,
@@ -626,6 +628,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     opacity: hideControls ? 0 : 1,
                 }}
                 onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-col gap-2">
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
@@ -688,30 +691,24 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                         </button>
                     </>
                 )}
-            </div>
-
-            <div
-                className="absolute top-1/2 flex flex-col gap-2 transition-all duration-500 ease-in-out"
-                style={{
-                    left: `${leftPanelWidth + 24}px`,
-                    zIndex: 250,
-                    transform: hideControls ? "translateX(-200px) translateY(-50%)" : "translateX(0) translateY(-50%)",
-                    opacity: hideControls ? 0 : 1,
-                }}
-                onClick={(e) => e.stopPropagation()}>
-                {showCCTV && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowCCTVName((prev) => !prev);
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showCCTVName ? "bg-orange-600 hover:bg-orange-700 text-white shadow-[0_0_15px_rgba(251,146,60,0.5)]" : "bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]"}`}
-                        style={{ borderWidth: "1px", borderColor: "rgba(59, 130, 246, 0.3)" }}
-                        aria-label="CCTV 명 켜기">
-                        <Icon icon="mdi:label" className="w-5 h-5" />
-                    </button>
-                )}
-
+                </div>
+                <div style={{ height: 30 }} />
+                <div className="flex flex-col gap-2">
+                {/* 도로 버튼 */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowRoad((prev) => !prev);
+                    }}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                        showRoad
+                            ? "bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm"
+                            : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                    }`}
+                    aria-label="도로">
+                    <Icon icon="mdi:highway" className="w-5 h-5" />
+                </button>
+                {/* CCTV 아이콘 토글 */}
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
@@ -727,29 +724,45 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                     }}
                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
                         showCCTV
-                            ? "bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-[0_0_20px_rgba(59,130,246,0.6),0_0_40px_rgba(59,130,246,0.3)] ring-2 ring-[rgba(59,130,246,0.3)]"
-                            : "bg-gradient-to-br from-[#2a2a2a] via-[#1a1a1a] to-[#0f0f0f] hover:from-[#3a3a3a] hover:via-[#2a2a2a] hover:to-[#1a1a1a] text-gray-300 border-2 hover:shadow-[0_0_20px_rgba(59,130,246,0.5),0_0_40px_rgba(59,130,246,0.2)]"
+                            ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                            : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                     }`}
-                    style={{
-                        borderWidth: showCCTV ? "0px" : "2px",
-                        borderColor: "rgba(59, 130, 246, 0.3)",
-                    }}
                     aria-label="CCTV">
-                    <CCTVIcon className={`w-5 h-5 text-white ${showCCTV ? "drop-shadow-lg" : ""}`} />
+                    <CCTVIcon className="w-5 h-5" />
                 </button>
 
-                {showCCTV && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowCCTVViewAngle((prev) => !prev);
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showCCTVViewAngle ? "bg-green-600 hover:bg-green-700 text-white shadow-[0_0_15px_rgba(34,197,94,0.5)]" : "bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 border hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]"}`}
-                        style={{ borderWidth: "1px", borderColor: "rgba(59, 130, 246, 0.3)" }}
-                        aria-label="시야각 켜기">
-                        <Icon icon="mdi:angle-acute" className="w-5 h-5" />
-                    </button>
-                )}
+                {/* CCTV 라벨 토글 */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCCTVName((prev) => !prev);
+                    }}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                        showCCTVName
+                            ? "bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600"
+                            : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                    }`}
+                    style={{ visibility: showCCTV ? "visible" : "hidden" }}
+                    aria-label="CCTV 라벨">
+                    <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? "text-blue-600" : "text-gray-800"}`} />
+                </button>
+
+                {/* 시야각 토글 */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setShowCCTVViewAngle((prev) => !prev);
+                    }}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                        showCCTVViewAngle
+                            ? "bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600"
+                            : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                    }`}
+                    style={{ visibility: showCCTV ? "visible" : "hidden" }}
+                    aria-label="CCTV 시야각">
+                    <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? "text-blue-600" : "text-gray-800"}`} />
+                </button>
+                </div>
             </div>
 
             <div

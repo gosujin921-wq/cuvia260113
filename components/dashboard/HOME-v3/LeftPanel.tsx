@@ -1383,6 +1383,65 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               </div>
             </div>
 
+          {/* 시설물 운영 상태 */}
+          <div className="grid grid-cols-3 gap-3">
+            {/* 도로 조명 */}
+            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' }}>
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-white text-xs font-semibold">도로 조명</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                  <span className="text-white text-xs whitespace-nowrap">정상</span>
+                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.normalCount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                  <span className="text-white text-xs whitespace-nowrap">장애</span>
+                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.errorCount}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 교통신호 */}
+            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' }}>
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-white text-xs font-semibold">교통신호</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                  <span className="text-white text-xs whitespace-nowrap">정상</span>
+                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.normalCount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                  <span className="text-white text-xs whitespace-nowrap">장애</span>
+                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.errorCount}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 안전 비상벨 */}
+            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' }}>
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-white text-xs font-semibold">안전 비상벨</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                  <span className="text-white text-xs whitespace-nowrap">정상</span>
+                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.normalCount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                  <span className="text-white text-xs whitespace-nowrap">장애</span>
+                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.errorCount}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 돌발 정보 */}

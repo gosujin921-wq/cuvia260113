@@ -296,7 +296,9 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                     onEventSelect?.(main.id);
                     return;
                   }
-                  if (main.eventId) {
+                  // A-20260107-004는 상세 페이지 링크 없이 onEventSelect만 (해당 좌표로 지도 이동)
+                  const isEvent1 = main.eventId === 'A-20260107-004' || main.id === 'A-20260107-004';
+                  if (main.eventId && !isEvent1) {
                     navigate(`/event/${main.eventId}`);
                     return;
                   }

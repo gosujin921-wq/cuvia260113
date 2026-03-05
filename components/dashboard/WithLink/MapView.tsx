@@ -104,6 +104,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
   const [showCCTV, setShowCCTV] = useState(true);
+  const [showRoad, setShowRoad] = useState(false);
   
   // 외부에서 CCTV 표시 제어
   useEffect(() => {
@@ -382,7 +383,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
         // 도로명, POI 등만 숨기고 지역 레이어는 유지
         if (layer.type === 'symbol') {
-          if (REGION_LABEL_IDS.has(layer.id)) return; // 지역 레이어는 스킵
+          if (REGION_LABEL_IDS.has(layer.id)) return;
           try {
             if (map.getLayer(layer.id)) {
               map.setLayoutProperty(layer.id, 'visibility', 'none');
@@ -2131,16 +2132,18 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       }}
     >
-       {/* 맵 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
+       {/* 맵 컨트롤 + CCTV 컨트롤 - 초기 화면 + 고속검색 리스트 표시 시 */}
        {(!hideControls || showFastSearchList) && (
        <div 
-         className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+         className="absolute top-4 flex flex-col transition-all duration-500 ease-in-out" 
          style={{ 
            left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
            zIndex: 250,
          }}
          onClick={(e) => e.stopPropagation()}
        >
+         {/* 맵 컨트롤 */}
+         <div className="flex flex-col gap-2">
          <button
            onClick={(e) => {
              e.stopPropagation();
@@ -2243,80 +2246,26 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          >
            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
          </button>
-       </div>
-       )}
-
-      {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
-      {(!hideControls || showFastSearchList) && streamMapData?.markers && streamMapData.markers.length > 0 && (
-      <div 
-        className="absolute top-[340px] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
-        style={{ 
-          left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
-          zIndex: 250,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+         </div>
+         {/* 맵-CCTV 간격 30px */}
+         <div style={{ height: 30 }} />
+         {/* CCTV 컨트롤 */}
+         <div className="flex flex-col gap-2">
+        {/* 도로 버튼 */}
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setStreamMarkerViewType('individual');
+            setShowRoad((prev) => !prev);
           }}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            streamMarkerViewType === 'individual'
-              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+            showRoad
+              ? 'bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm'
               : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
           }`}
-          aria-label="개별 마커"
-          aria-pressed={streamMarkerViewType === 'individual'}
-          tabIndex={0}
+          aria-label="도로"
         >
-          <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
+          <Icon icon="mdi:highway" className="w-5 h-5" />
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setStreamMarkerViewType('cluster');
-          }}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            streamMarkerViewType === 'cluster'
-              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
-              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-          }`}
-          aria-label="클러스터"
-          aria-pressed={streamMarkerViewType === 'cluster'}
-          tabIndex={0}
-        >
-          <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setStreamMarkerViewType('heatmap');
-          }}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            streamMarkerViewType === 'heatmap'
-              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
-              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-          }`}
-          aria-label="히트맵"
-          aria-pressed={streamMarkerViewType === 'heatmap'}
-          tabIndex={0}
-        >
-          <Icon icon="mdi:fire-circle" className="w-5 h-5" />
-        </button>
-      </div>
-      )}
-
-      {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
-      {(!hideControls || showFastSearchList) && (
-      <div 
-        className="absolute bottom-[calc(50%-140px)] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
-        style={{ 
-          left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
-          zIndex: 250,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
         {/* CCTV 아이콘 토글 */}
         <button
           onClick={(e) => {
@@ -2390,6 +2339,68 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           aria-label="CCTV 시야각"
         >
           <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
+        </button>
+         </div>
+       </div>
+       )}
+
+      {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
+      {(!hideControls || showFastSearchList) && streamMapData?.markers && streamMapData.markers.length > 0 && (
+      <div 
+        className="absolute top-[340px] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+        style={{ 
+          left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
+          zIndex: 250,
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setStreamMarkerViewType('individual');
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            streamMarkerViewType === 'individual'
+              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          aria-label="개별 마커"
+          aria-pressed={streamMarkerViewType === 'individual'}
+          tabIndex={0}
+        >
+          <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setStreamMarkerViewType('cluster');
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            streamMarkerViewType === 'cluster'
+              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          aria-label="클러스터"
+          aria-pressed={streamMarkerViewType === 'cluster'}
+          tabIndex={0}
+        >
+          <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setStreamMarkerViewType('heatmap');
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            streamMarkerViewType === 'heatmap'
+              ? 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          aria-label="히트맵"
+          aria-pressed={streamMarkerViewType === 'heatmap'}
+          tabIndex={0}
+        >
+          <Icon icon="mdi:fire-circle" className="w-5 h-5" />
         </button>
       </div>
       )}

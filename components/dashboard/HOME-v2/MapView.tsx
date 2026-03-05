@@ -49,6 +49,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
   const [showCCTV, setShowCCTV] = useState(true);
+  const [showRoad, setShowRoad] = useState(false);
   
   // 외부에서 CCTV 표시 제어
   useEffect(() => {
@@ -554,7 +555,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       centerWrapper.appendChild(markerEl);
       markerContainer.appendChild(centerWrapper);
       
-      // 주소 라벨
+      // 주소 라벨: 1번키 이벤트는 은하로363번길 48 고정, 그 외는 이벤트 주소
+      const isEvent1 = selectedEventId === 'A-20260107-004';
+      const selectedEvent = events.find(e => e.id === selectedEventId || e.eventId === selectedEventId);
+      const labelAddress = isEvent1 ? '은하로363번길 48' : (selectedEvent?.location?.name ?? '사건 발생 지점');
       const labelEl = document.createElement('div');
       labelEl.style.cssText = `
         margin-top: 8px;
@@ -567,7 +571,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       `;
       labelEl.innerHTML = `
         <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
-        <div style="font-size: 12px; font-weight: 600; color: white;">은하로363번길 48</div>
+        <div style="font-size: 12px; font-weight: 600; color: white;">${labelAddress}</div>
       `;
       markerContainer.appendChild(labelEl);
       
@@ -606,7 +610,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         });
       }
     }
-  }, [flyToLocation, showFastSearchList]);
+  }, [flyToLocation, showFastSearchList, selectedEventId, events]);
 
   // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
   useEffect(() => {
@@ -1665,16 +1669,18 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       }}
     >
-       {/* 맵 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
+       {/* 맵 컨트롤 + CCTV 컨트롤 - 초기 화면 + 고속검색 리스트 표시 시 */}
        {(!hideControls || showFastSearchList) && (
        <div 
-         className="absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-in-out" 
+         className="absolute top-4 flex flex-col transition-all duration-500 ease-in-out" 
          style={{ 
            left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
            zIndex: 250,
          }}
          onClick={(e) => e.stopPropagation()}
        >
+         {/* 맵 컨트롤 */}
+         <div className="flex flex-col gap-2">
          <button
            onClick={(e) => {
              e.stopPropagation();
@@ -1777,20 +1783,26 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          >
            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
          </button>
-       </div>
-       )}
-
-
-      {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
-      {(!hideControls || showFastSearchList) && (
-      <div 
-        className="absolute bottom-[calc(50%-140px)] flex flex-col gap-2 transition-all duration-500 ease-in-out" 
-        style={{ 
-          left: showFastSearchList ? '800px' : `${leftPanelWidth + 24}px`,
-          zIndex: 250,
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+         </div>
+         {/* 맵-CCTV 간격 30px */}
+         <div style={{ height: 30 }} />
+         {/* CCTV 컨트롤 */}
+         <div className="flex flex-col gap-2">
+        {/* 도로 버튼 */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowRoad((prev) => !prev);
+          }}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+            showRoad
+              ? 'bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm'
+              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+          }`}
+          aria-label="도로"
+        >
+          <Icon icon="mdi:highway" className="w-5 h-5" />
+        </button>
         {/* CCTV 아이콘 토글 */}
         <button
           onClick={(e) => {
@@ -1865,8 +1877,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         >
           <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
         </button>
-      </div>
-      )}
+         </div>
+       </div>
+       )}
 
       {/* 지도 - 박스 밖으로 */}
       <div

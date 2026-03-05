@@ -639,7 +639,8 @@ export default function HomeV2() {
   const handleEventAction = useCallback((eventId: string) => {
     const event = visibleEvents.find((e) => e.id === eventId);
     if (!event) return;
-    if (event.eventId) {
+    const isEvent1 = event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004';
+    if (event.eventId && !isEvent1) {
       navigate(`/event/${event.eventId}`);
       return;
     }

@@ -2,6 +2,13 @@
  * 예측 CCTV 상세 정보
  */
 
+/** AI 유사사유 판독 (별빛A-655 등 차량 추적 시나리오용) */
+export interface AiSimilarityAnalysis {
+  vehicleIdentity: string;
+  behaviorMechanism: string;
+  geographicSpecificity: string;
+}
+
 export interface PredictedCCTVDetail {
   objectAttributes: string;
   expectedDistance: string;
@@ -16,7 +23,11 @@ export interface PredictedCCTVDetail {
     pathStructure: string;
     cctvLinkage: string;
     similarCases: string;
+    /** 이전 경로 (선택, 별빛A-655 등) */
+    previousPath?: string;
   };
+  /** AI 유사사유 판독 (선택, 별빛A-655 등) */
+  aiSimilarityAnalysis?: AiSimilarityAnalysis;
 }
 
 export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
@@ -147,18 +158,24 @@ export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
     },
   },
   'cnc_04_1': {
-    objectAttributes: '종류: 차량(승용/SUV 계열로 보임)\n색상: 흰색\n특징: 후면이 보이는 상태로 카메라에서 멀어지는 방향으로 이동(도로 중앙 차로 이용)',
-    expectedDistance: '약 1.5km (인근 중동대로 합류 지점까지의 직선거리)',
-    movementTrend: '[위험] 객체 전원 차량 탑승 완료 후 화면 상단(북서 방향)으로 급가속 이탈 준비',
+    objectAttributes: '종류: 차량 (SUV 계열)\n색상: 흰색\n특징: 후면 번호판(014저 4515) 식별 상태로 카메라에서 멀어지는 방향(북서향)으로 정차 중. 이전 수배 차량 데이터베이스의 모델 및 외관 특징과 98% 일치함.',
+    expectedDistance: '약 1.5km (이면도로 탈출 후 인근 구름대로 합류 지점까지의 직선거리)',
+    movementTrend: '[위험] 인물 B(피해자) 강제 승차 완료 및 인물 A(가해자) 탑승 후 급가속 이탈 징후 포착',
     expectedArrivalTime: '16:55:20 (현 시각 기준 약 3분 내 주요 관제 구역 이탈 및 대로 진입 예상)',
     routeFitScore: 96,
     routeFitScoreText: '96점 (강제 연행 및 이동 자유 억압 범죄 시나리오와 매우 높은 일치율)',
     detailedAnalysis: {
-      movementDirection: '차량 우측 뒷좌석 진입 후 화면 상단 방향(북서 방향)으로 도주로 확보',
-      movementSpeed: '인물 승차 시까지 정지 상태였으나, 문 폐쇄 직후 급격한 가속 예상',
-      pathStructure: '보차 구분이 없는 협소한 주택가 이면도로 구조로 인해 타인의 시선을 피하기 용이함',
-      cctvLinkage: '별빛A-444 영역 이탈 시, 예상 경로상에 위치한 은하로 일대 12개소 CCTV 자동 연계 및 핸드오버 실시',
-      similarCases: '',
+      movementDirection: '인물 B를 우측 뒷좌석으로 밀어 넣은 후, 차량은 화면 상단(북서 방향)의 소실점을 향해 주행 준비 중.',
+      movementSpeed: '정차 중이었으나 문 폐쇄와 동시에 엔진 회전수(RPM) 상승 감지, 즉각적인 급가속 및 과속 이탈이 예상됨.',
+      pathStructure: '달빛로301번길 28 일대는 보차 구분이 없는 협소한 주택가로, 대형 차량 진입이 적어 범죄 발생 시 타인의 시선을 피하기 용이한 구조임.',
+      cctvLinkage: '별빛A-444 영역 이탈 즉시, 도주 예상 경로상에 위치한 은하로 및 달빛로 일대 12개소 CCTV 자동 연계 및 핸드오버 실시.',
+      similarCases: '[차량 일치] 부분 번호판:12* 324*는 24시간 내 인근 지역에서 보고된 \'강제 승차 미수\' 사건의 용의 차량과 동일함.[행동 일치] 좁은 골목길 급정차 후 성인 남성이 노약자를 뒷좌석에 밀어 넣는 행위는 전형적인 납치/감금 행동 패턴과 일치함.',
+      previousPath: '은하로 방면에서 진입하여 타겟(인물 B) 발견 즉시 도로 중앙에 급정차한 것으로 분석됨.',
+    },
+    aiSimilarityAnalysis: {
+      vehicleIdentity: '차량 정체성(Identity): 해당 차량(부분 번호판: 12* 3***)은 과거 강력범죄 의심 기록에 등록된 \'화이트 SUV\'와 번호판 및 후면 램프 형상이 시각적으로 동일함.',
+      behaviorMechanism: '행동 메커니즘: 단순 부축의 경우 보행자가 자발적으로 차에 오르지만, 본 영상에서는 인물 A가 인물 B의 상체를 결착하여 밀어 넣는 물리력을 행사하고 있음.',
+      geographicSpecificity: '지리적 특이성: 범죄 발생 위험도가 높은 사각지대(이면도로)를 정차 지점으로 선택한 점이 전문 범죄 패턴과 매우 흡사함.',
     },
   },
   'qs_img_59_y': {

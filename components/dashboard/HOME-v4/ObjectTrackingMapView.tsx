@@ -189,13 +189,13 @@ const ObjectTrackingMapView = ({
       return;
     }
     
-    // 모든 추적 핀 정의
+    // 모든 추적 핀 정의 (v2 좌표 동일, 5번 핀은 v2 A-583 위치)
     const allTrackingPins = [
-      { location: [126.783853180335, 37.5049838114765] as [number, number], address: '은하로363번길 48', name: '별빛A-230', color: 'gray' as const },
-      { location: [126.7843434, 37.5042779] as [number, number], address: '은하로363번길 52', name: '별빛A-444', color: 'gray' as const },
-      { location: [126.7828196, 37.50501939999999] as [number, number], address: '달빛로301번길 24', name: '별빛A-481', color: 'gray' as const },
-      { location: [126.7828168, 37.504067] as [number, number], address: '달빛로301번길 28', name: '별빛A-498', color: 'blue' as const },
-      { location: [126.7823, 37.5035] as [number, number], address: '달빛로301번길 28', name: '별빛A-655', color: 'blue' as const }, // 5번: 2키 시 표시 (4번 핀 기준 좌하단)
+      { location: [126.99656, 37.43527] as [number, number], address: '은하로363번길 48', name: '별빛A-230', color: 'gray' as const },
+      { location: [126.997050219665, 37.434564088524] as [number, number], address: '은하로363번길 46', name: '별빛A-444', color: 'gray' as const },
+      { location: [126.995526419665, 37.435305588524] as [number, number], address: '은하로361번길 48', name: '별빛A-481', color: 'gray' as const },
+      { location: [126.995523619665, 37.434353188524] as [number, number], address: '달빛로301번길 28', name: '별빛A-498', color: 'blue' as const },
+      { location: [126.9952, 37.4338] as [number, number], address: '달빛로301번길 28', name: '별빛A-655', color: 'blue' as const }, // 5번: 4번 핀 기준 남서쪽
     ];
     
     const initPins = () => {
@@ -460,8 +460,8 @@ const ObjectTrackingMapView = ({
     if (zoomOutTriggeredRef.current && visibleTrackingPins === 5) {
       const pulseMarker = (map as any)._pin4PulseMarker as maplibregl.Marker | undefined;
       if (pulseMarker) {
-        pulseMarker.setLngLat([126.7823, 37.5035]);
-        const pin5Center: [number, number] = [126.7823, 37.5035];
+        pulseMarker.setLngLat([126.9952, 37.4338]);
+        const pin5Center: [number, number] = [126.9952, 37.4338];
         map.flyTo({
           center: pin5Center,
           zoom: 17.5,
@@ -477,7 +477,7 @@ const ObjectTrackingMapView = ({
     
     zoomOutTriggeredRef.current = true;
     
-    const pulseLocation: [number, number] = visibleTrackingPins >= 5 ? [126.7823, 37.5035] : [126.7828168, 37.504067]; // 5번: 4번 기준 좌하단 / 4번: 달빛로301번길 28
+    const pulseLocation: [number, number] = visibleTrackingPins >= 5 ? [126.9952, 37.4338] : [126.995523619665, 37.434353188524]; // 5번: 4번 기준 남서쪽 / 4번: 달빛로301번길 28
     
     // 지도 로드 대기 후 펄스 추가
     const waitForMapAndAddPulse = () => {
@@ -634,17 +634,17 @@ const ObjectTrackingMapView = ({
         const currentBearing = map.getBearing();
         // 1~5번 핀 좌표 (5번은 visibleTrackingPins>=5일 때만 포함)
         const allPinLocations: [number, number][] = [
-          [126.783853180335, 37.5049838114765], // 1번
-          [126.7843434, 37.5042779],            // 2번
-          [126.7828196, 37.50501939999999],     // 3번
-          [126.7828168, 37.504067],             // 4번
-          [126.7823, 37.5035],                  // 5번 (4번 기준 좌하단)
+          [126.99656, 37.43527],                // 1번
+          [126.997050219665, 37.434564088524],  // 2번
+          [126.995526419665, 37.435305588524],  // 3번
+          [126.995523619665, 37.434353188524],  // 4번
+          [126.9952, 37.4338],                  // 5번 (4번 기준 남서쪽)
         ];
         
         // 5번 핀 표시 시: 화면을 5번 핀 중심으로 이동
         if (visibleTrackingPins >= 5) {
           map.flyTo({
-            center: [126.7823, 37.5035],
+            center: [126.9952, 37.4338],
             zoom: 17.5,
             pitch: 0,
             bearing: currentBearing,
@@ -672,39 +672,39 @@ const ObjectTrackingMapView = ({
           // 4번 근처 gray+blue CCTV는 처음에만 추가
           if (!(map as any)._nearbyCCTVMarkers) {
           
-          // 1번 핀(은하로363번길 48) 근처 CCTV 좌표 - 초기 목격 지점
+          // 1번 핀(과천역) 근처 CCTV 좌표 - 초기 목격 지점
           const nearbyCCTV1 = [
-            [126.7840, 37.5050], // 동쪽 약 15m
-            [126.7837, 37.5049], // 서쪽 약 15m
-            [126.7839, 37.5048], // 남동쪽 약 20m
+            [126.9967, 37.4353], // 동쪽 약 15m
+            [126.9964, 37.4352], // 서쪽 약 15m
+            [126.9966, 37.4351], // 남동쪽 약 20m
           ];
           
-          // 2번 핀(은하로363번길 48) 근처 CCTV 좌표 - 목격 지점
+          // 2번 핀 근처 CCTV 좌표 - 목격 지점
           const nearbyCCTV2 = [
-            [126.7845, 37.5043], // 동쪽 약 15m
-            [126.7842, 37.5042], // 서쪽 약 15m
-            [126.7844, 37.5041], // 남동쪽 약 20m
+            [126.9972, 37.4346], // 동쪽 약 15m
+            [126.9969, 37.4345], // 서쪽 약 15m
+            [126.9971, 37.4344], // 남동쪽 약 20m
           ];
           
-          // 3번 핀(은하로363번길 48) 근처 CCTV 좌표 - 목격 지점
+          // 3번 핀 근처 CCTV 좌표 - 목격 지점
           const nearbyCCTV3 = [
-            [126.7830, 37.5051], // 북동쪽 약 20m
-            [126.7826, 37.5050], // 서쪽 약 15m
-            [126.7829, 37.5049], // 남동쪽 약 15m
+            [126.9957, 37.4354], // 북동쪽 약 20m
+            [126.9953, 37.4353], // 서쪽 약 15m
+            [126.9956, 37.4352], // 남동쪽 약 15m
           ];
           
-          // 4번 핀(달빛로301번길 28) 근처 CCTV 좌표 - 목격 지점 (붉은 원 60m 반경 안)
+          // 4번 핀 근처 CCTV 좌표 - 목격 지점 (붉은 원 60m 반경 안)
           const predictedCCTV4 = [
-            [126.7829, 37.5042],   // 북동쪽 약 15m
-            [126.7826, 37.5041],   // 북서쪽 약 20m
-            [126.7830, 37.5040],   // 동쪽 약 18m
-            [126.7827, 37.5039],   // 남서쪽 약 22m
-            [126.7829, 37.5038],   // 남동쪽 약 25m
-            [126.7825, 37.5040],   // 서쪽 약 25m
-            [126.7831, 37.5041],   // 동쪽 약 28m
-            [126.7828, 37.5043],   // 북쪽 약 30m
-            [126.7826, 37.5038],   // 남서쪽 약 32m
-            [126.7830, 37.5039],   // 남동쪽 약 30m
+            [126.9956, 37.4345],   // 북동쪽 약 15m
+            [126.9953, 37.4344],   // 북서쪽 약 20m
+            [126.9957, 37.4343],   // 동쪽 약 18m
+            [126.9954, 37.4342],   // 남서쪽 약 22m
+            [126.9956, 37.4341],   // 남동쪽 약 25m
+            [126.9952, 37.4343],   // 서쪽 약 25m
+            [126.9958, 37.4344],   // 동쪽 약 28m
+            [126.9955, 37.4346],   // 북쪽 약 30m
+            [126.9953, 37.4341],   // 남서쪽 약 32m
+            [126.9957, 37.4342],   // 남동쪽 약 30m
           ];
           
           // 1,2,3번은 그레이, 4번은 블루로 구분
@@ -889,9 +889,9 @@ const ObjectTrackingMapView = ({
           (map as any)._nearbyCCTVMarkers = markers;
           // 경찰서 위치 핀 추가
           const policeStations = [
-            { location: [126.7833, 37.5044] as [number, number], name: '별빛파출소' },
-            { location: [126.7810, 37.5035] as [number, number], name: '은하지구대' },
-            { location: [126.7865, 37.5038] as [number, number], name: '별빛경찰서' },
+            { location: [126.996, 37.4347] as [number, number], name: '별빛파출소' },
+            { location: [126.9937, 37.4338] as [number, number], name: '은하지구대' },
+            { location: [126.9992, 37.4341] as [number, number], name: '별빛경찰서' },
           ];
           
           const policeMarkers: maplibregl.Marker[] = [];
@@ -960,9 +960,9 @@ const ObjectTrackingMapView = ({
           // 5번 핀 주위 CCTV 9개 (visibleTrackingPins >= 5일 때 moveend에서 추가)
           if (visibleTrackingPins >= 5 && !(map as any)._pin5CCTVMarkers) {
             const predictedCCTV5: [number, number][] = [
-              [126.7825, 37.5036], [126.7821, 37.5036], [126.7824, 37.5038],
-              [126.7826, 37.5034], [126.7820, 37.5034], [126.7822, 37.5032],
-              [126.7827, 37.5035], [126.7819, 37.5035], [126.7824, 37.5031],
+              [126.9954, 37.4339], [126.9951, 37.4339], [126.9953, 37.4340],
+              [126.9955, 37.4337], [126.9950, 37.4337], [126.9952, 37.4336],
+              [126.9953, 37.4338], [126.9949, 37.4338], [126.9951, 37.4335],
             ];
             const pin5Markers: maplibregl.Marker[] = [];
             predictedCCTV5.forEach((location) => {
@@ -1047,7 +1047,7 @@ const ObjectTrackingMapView = ({
     const map = mapRef.current;
     if (!map || !map.loaded() || visibleTrackingPins < 4) return;
     
-    const pulseCenter: [number, number] = visibleTrackingPins >= 5 ? [126.7823, 37.5035] : [126.7828168, 37.504067];
+    const pulseCenter: [number, number] = visibleTrackingPins >= 5 ? [126.9952, 37.4338] : [126.995523619665, 37.434353188524];
     const radiusWrapper = (map as any)._pin4PulseWrapper;
     const svg = (map as any)._pin4PulseSvg;
     const circle = (map as any)._pin4PulseCircle;

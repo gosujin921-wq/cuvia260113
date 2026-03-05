@@ -1,4 +1,5 @@
 import { Icon } from "@iconify/react";
+import { TrafficIncidentSection } from "@/components/dashboard/TrafficIncidentSection";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getRandomCCTVVideo } from "@/lib/cctv-video-utils";
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -510,45 +511,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         { label: "지연", value: cctvStatus.delayCount, dot: "bg-yellow-400", color: "text-yellow-400" },
     ];
 
-    // 돌발 정보 데이터 (카테고리별)
-    const allIncidentData = useMemo(() => {
-        const data = [
-            // 🚗 교통·차량
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 원미구 상동로 상동역 인근 차량 추돌 사고로 2개 차로 정체 발생" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 소사구 송내로 송내역 사거리 승용차 고장으로 부분 통제" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 오정구 산업로 내동 교차로 화물차 정차로 교통 흐름 저하" },
-
-            // 🚧 도로·시설
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 원미구 중동 중앙공원 인근 도로 포트홀 발생, 차량 서행 필요" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 소사구 괴안동 이면도로 맨홀 파손으로 임시 통제" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 오정구 삼정동 공사 차량 진출입으로 일시적 교통 혼잡" },
-
-            // 🐾 생활·안전
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 원미구 약대동 횡단보도 인근 소형 동물 로드킬 발생" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 소사구 심곡본동 골목길 쓰러진 가로수로 보행 불편" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 중동역 인근 노상 적치물로 보행자 통행 주의" },
-
-            // 🌧 기상·환경 연계형
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 원미구 중동 지하차도 인근 강우로 노면 미끄럼 주의" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 소사구 역곡동 일대 강풍으로 간판 흔들림 신고 접수" },
-            { icon: "mdi:alert-circle", color: "text-red-400", text: "부천시 오정구 내동 비산먼지 발생 민원 접수" },
-        ];
-
-        // 랜덤 섞기 (Fisher-Yates shuffle)
-        const shuffled = [...data];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-    }, []);
-
-    const incidentData = allIncidentData;
-
-    const [incidentOffset, setIncidentOffset] = useState(0);
-    const [incidentContainerHeight, setIncidentContainerHeight] = useState(0);
-    const incidentContainerRef = useRef<HTMLDivElement>(null);
-
     /**
      * 📡 API 연동 필요: 도시 안전·시설 관리 현황
      * 현재: 더미 데이터
@@ -1036,41 +998,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         };
     }, []);
 
-    // 돌발 정보 표시 개수 (브라우저 높이에 따라 동적 조정)
-    const [visibleIncidentCount, setVisibleIncidentCount] = useState(1);
-
-    useEffect(() => {
-        const updateVisibleCount = () => {
-            const windowHeight = window.innerHeight;
-            // 브라우저 높이에 따라 표시 개수 결정
-            if (windowHeight < 900) {
-                setVisibleIncidentCount(1);
-            } else if (windowHeight < 1000) {
-                setVisibleIncidentCount(2);
-            } else if (windowHeight < 1100) {
-                setVisibleIncidentCount(3);
-            } else if (windowHeight < 1200) {
-                setVisibleIncidentCount(4);
-            } else {
-                setVisibleIncidentCount(5);
-            }
-        };
-
-        updateVisibleCount();
-        window.addEventListener("resize", updateVisibleCount);
-
-        return () => {
-            window.removeEventListener("resize", updateVisibleCount);
-        };
-    }, []);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setIncidentOffset((prev) => (prev + 1) % incidentData.length);
-        }, 3000);
-        return () => clearInterval(interval);
-    }, [incidentData.length]);
-
     return (
         <div
             className="flex flex-col overflow-hidden relative"
@@ -1222,22 +1149,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                     </div>
                 </div>
 
-                {/* 돌발 정보 - 임시로 숨김 */}
-                {/* <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
-          <h3 className="text-white text-sm font-semibold mb-3">도시 교통 돌발 정보</h3>
-          <div ref={incidentContainerRef} className="flex flex-col gap-2">
-            {Array.from({ length: visibleIncidentCount }).map((_, index) => {
-              const dataIndex = (incidentOffset + index) % incidentData.length;
-              const incident = incidentData[dataIndex];
-              return (
-                <div key={`incident-${incidentOffset}-${index}`} className="flex items-start gap-2 bg-[#393a42] px-3 py-2 rounded-lg min-w-0 transition-opacity duration-300">
-                  <Icon icon={incident.icon} className={`w-4 h-4 ${incident.color} flex-shrink-0 mt-0.5`} />
-                  <span className="text-gray-300 text-xs leading-relaxed truncate">{incident.text}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div> */}
+                <TrafficIncidentSection />
 
                 {/* 시간별 에너지 사용량 (X축: 시간, Y축: 에너지 사용량 MWh) */}
                 <div className="rounded-lg px-4 pt-4 pb-4 gradient-border-left-top flex flex-col relative overflow-hidden" style={{ flex: 1, minHeight: "180px", background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
@@ -1253,10 +1165,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         </span>
                     </div>
 
-                    {/* 에너지 게이지 - 총 4개 블록 */}
+                    {/* 에너지 게이지 - 1,2 전시장만 */}
                     {[
                         { idA: 1, idB: 2, labelA: "1전시장", labelB: "2전시장", valueA: 60.5, valueB: 60.8, ratioA: 0.60, ratioB: 0.35 },
-                        { idA: 3, idB: 4, labelA: "3전시장", labelB: "4전시장", valueA: 65.2, valueB: 60.1, ratioA: 0.60, ratioB: 0.20 },
                     ].map((block) => (
                         <div key={`energy-gauge-${block.idA}-${block.idB}`} className="bg-[#2a2d35] rounded-lg px-3 py-2.5 mb-3">
                             <div className="flex items-center">

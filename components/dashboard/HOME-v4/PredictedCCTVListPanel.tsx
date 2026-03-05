@@ -555,6 +555,12 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                             }`}
                           >
                             <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
+                              <div className="absolute top-2 left-2 z-10">
+                                <span className="px-2 py-0.5 bg-blue-500/90 text-white text-xs font-semibold rounded flex items-center gap-1">
+                                  <Icon icon="mdi:paperclip" className="w-3 h-3" />
+                                  Clip
+                                </span>
+                              </div>
                               <ListVideo src={featuredItem.featuredThumbnailUrl ?? featuredItem.thumbnailUrl} posterUrl={featuredItem.featuredPosterUrl ?? featuredItem.posterUrl} isPaused={!shouldPlayFeaturedVideo} />
                               {isCapturingCctvId === featuredItem.id && (
                                 <div className="absolute inset-0 pointer-events-none z-20">

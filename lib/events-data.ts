@@ -86,6 +86,10 @@ const eventSpecificData: Record<string, {
   };
   /** 이벤트별 실제 좌표 [lng, lat] (없으면 generateCoordinates 사용) */
   coordinates?: [number, number];
+  /** EventList용 제목 (신고팝업 내용 축약) */
+  listTitle?: string;
+  /** EventList용 장소 (신고팝업 실종 장소/시간) */
+  listLocation?: string;
 }> = {
   'A-20241124-001': {
     type: '112-치안',
@@ -110,8 +114,11 @@ const eventSpecificData: Record<string, {
       category: '112',
       code: 'CCTV 확인 완료',
     },
-    // 1키 시나리오용 실제 사건 위치 (은하로363번길 48) [lng, lat]
-    coordinates: [126.783853180335, 37.5049838114765] as [number, number],
+    // 1키 시나리오용 실제 사건 위치 (과천역 근처) [lng, lat]
+    coordinates: [126.99656, 37.43527] as [number, number],
+    /** EventList용: 신고팝업 내용 축약 (이름/나이, 인상착의, 장애·긴급) */
+    listTitle: '김도연(22세, 남) 실종 - 회색 후드·청바지, 장애 있음. 긴급 수색 요망',
+    listLocation: '은하로363번길 48, 09:30경',
   },
 };
 
@@ -166,10 +173,10 @@ export const getEventCategory = (event: BaseEvent): string => {
   return domainLabels[event.domain];
 };
 
-// 좌표 생성 (하늘시 기준) - GeoJSON/MapLibre 형식 [lng, lat]
+// 좌표 생성 (과천 기준) - GeoJSON/MapLibre 형식 [lng, lat]
 const generateCoordinates = (index: number): [number, number] => {
-  const baseLat = 37.5034; // 하늘시 위도
-  const baseLng = 126.7660; // 하늘시 경도
+  const baseLat = 37.433686188524; // 과천 위도
+  const baseLng = 126.978706819665; // 과천 경도
   const offset = index * 0.001;
   return [baseLng + offset, baseLat + offset];
 };
@@ -215,17 +222,19 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
   );
 
   const coordinates = eventData.coordinates ?? generateCoordinates(index);
+  const listTitle = eventData.listTitle ?? event.title;
+  const listLocation = eventData.listLocation ?? event.location;
 
   return {
     id: event.id,
     eventId: event.eventId,
     type: eventData.type,
-    title: event.title,
+    title: listTitle,
     priority: event.risk,
     status: statusMap[event.status] || 'NEW',
     timestamp: event.time,
     location: {
-      name: event.location,
+      name: listLocation,
       coordinates,
     },
     description: event.description || event.title,

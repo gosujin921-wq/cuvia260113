@@ -687,6 +687,7 @@ const AIAgentPopup2: React.FC<AIAgentPopupProps> = ({
   const [showAdditionalPopup1, setShowAdditionalPopup1] = useState(true);
   const [showAdditionalPopup2, setShowAdditionalPopup2] = useState(true);
   const [chatInput, setChatInput] = useState('');
+  const isExpanded = false;
 
   useEffect(() => {
     if (isOpen) {
@@ -760,7 +761,6 @@ const AIAgentPopup2: React.FC<AIAgentPopupProps> = ({
   }, [isOpen, initialMessage]);
 
   const [inputKey, setInputKey] = useState(0);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -931,11 +931,11 @@ const AIAgentPopup2: React.FC<AIAgentPopupProps> = ({
         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={onClose}
             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors focus:outline-none"
-            aria-label={isExpanded ? '축소' : '확장'}
+            aria-label="닫기"
           >
-            <Icon icon={isExpanded ? 'mdi:window-restore' : 'mdi:window-maximize'} className="w-5 h-5" />
+            <Icon icon="mdi:close" className="w-5 h-5" />
           </button>
         </div>
         <div
