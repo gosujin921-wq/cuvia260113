@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
-import type { ChartStreamData, CompleteStreamTableData } from "@/types/streamJson.types";
+import type { ChartStreamData, TableStreamData } from "@/types/streamJson.types";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
 import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
 
@@ -15,6 +15,7 @@ const CARD_STYLE: React.CSSProperties = {
     background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
     backdropFilter: "blur(4px)",
     WebkitBackdropFilter: "blur(4px)",
+    height: "calc((100% - 12px) / 2)",
 };
 
 const LEGEND_AND_TITLE_COLOR = "rgba(229, 231, 235, 0.95)";
@@ -172,40 +173,51 @@ const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     );
 };
 
-const TableContent: React.FC<{ data: CompleteStreamTableData }> = ({ data }) => {
+const TableContent: React.FC<{ data: TableStreamData }> = ({ data }) => {
     const columns = data.columns ?? [];
-    const rows = data.rows ?? [];
-    if (data.html) {
-        return <div className="text-sm text-gray-200 overflow-auto [&_table]:w-full [&_th]:text-left [&_th]:font-semibold [&_th]:py-2 [&_th]:pr-3 [&_th]:border-b [&_th]:border-[#31353a] [&_td]:py-2 [&_td]:pr-3 [&_td]:border-b [&_td]:border-[#31353a]/60" dangerouslySetInnerHTML={{ __html: data.html }} />;
-    }
-
+    const rows = data.data ?? [];
     return (
-        <div className="overflow-auto h-full">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr>
-                        {columns.map((col, i) => (
-                            <th key={i} className="text-left font-semibold text-white py-2 pr-3 border-b border-[#31353a]">
-                                {col}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map((row, ri) => (
-                        <tr key={ri}>
-                            {row.map((cell, ci) => (
-                                <td key={ci} className="text-gray-300 py-2 pr-3 border-b border-[#31353a]/60" dangerouslySetInnerHTML={{ __html: String(cell) }} />
+        <div className="flex flex-col h-full min-h-0 gap-3">
+            <div className="flex-1 min-h-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                        <thead className="sticky top-0 z-10">
+                            <tr style={{ background: "rgb(40,40,48)" }}>
+                                {columns.map((col, i) => (
+                                    <th key={i} className="px-3 py-2.5 text-left text-white font-semibold">
+                                        {col}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((row, ri) => (
+                                <tr key={ri} style={{ background: ri % 2 === 0 ? "rgb(35,35,42)" : "rgb(40,40,48)" }}>
+                                    {row.map((cell, ci) => (
+                                        <td key={ci} className="px-3 py-2 text-gray-200" dangerouslySetInnerHTML={{ __html: String(cell) }} />
+                                    ))}
+                                </tr>
                             ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {data.meta && (
+                <div
+                    className="flex-shrink-0 rounded-lg px-3 py-2.5"
+                    style={{
+                        background: "rgba(40,40,48,0.6)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                    <p className="text-sm text-white font-medium">{data.meta.criteria}</p>
+                    <p className="text-sm text-gray-300 mt-1">{data.meta.guide}</p>
+                </div>
+            )}
         </div>
     );
 };
 
-export type AgentCardData = { type: "chart"; title: string; chartData: ChartStreamData } | { type: "table"; title: string; tableData: CompleteStreamTableData };
+export type AgentCardData = { type: "chart"; title: string; chartData: ChartStreamData } | { type: "table"; title: string; tableData: TableStreamData };
 
 interface AgentCardProps {
     /** 차트 또는 테이블 데이터 */
@@ -220,17 +232,16 @@ interface AgentCardProps {
 
 export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style }) => {
     return (
-        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden gradient-border-left-top min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
-            <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-[#31353a]">
-                <span className="text-sm font-semibold text-white truncate">{data.title}</span>
-                {onRemove && (
+        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
+            {onRemove && (
+                <div className="absolute top-3 right-3 z-10">
                     <button type="button" onClick={onRemove} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none" aria-label="카드 제거">
                         <Icon icon="mdi:close" className="w-5 h-5" />
                     </button>
-                )}
-            </div>
-            <div className="flex flex-1 min-h-0 p-4 flex items-center justify-center overflow-auto">
-                <div className={`h-full rounded-lg border border-[#31353a] bg-black/20 p-3 w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} />}</div>
+                </div>
+            )}
+            <div className="flex-1 min-h-0 p-4 pt-12 overflow-auto">
+                <div className={`h-full rounded-lg w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} />}</div>
             </div>
         </div>
     );

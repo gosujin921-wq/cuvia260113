@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import { useChatStream } from "@/src/hooks/useChatStream";
-import type { MapStreamData, ChartStreamData, CompleteStreamTableData } from "@/types/streamJson.types";
+import type { MapStreamData, ChartStreamData, CompleteStreamTableData, CompleteStreamPayload, TableStreamData } from "@/types/streamJson.types";
 import { AgentCard } from "@/components/dashboard/WithLink/AgentCard";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
 import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
+import { ChartMessage } from "./ChartMessage";
+import { TableMessage } from "./TableMessage";
+import { NormalMessage } from "./NormalMessage";
 
 interface AIAgentPopupProps {
     isOpen: boolean;
@@ -50,7 +53,7 @@ interface AIAgentPopupProps {
     floatingBarStyle?: React.CSSProperties;
 }
 
-interface ChatMessage {
+export interface ChatMessage {
     id: string;
     role: "user" | "assistant";
     content: string;
@@ -61,6 +64,8 @@ interface ChatMessage {
     totalSteps?: number;
     processingTime?: number;
     transmissionTime?: number;
+    title?: string;
+    rationale?: string;
     analysisResult?: {
         conclusion: string;
         summary: {
@@ -79,6 +84,9 @@ interface ChatMessage {
     stepMessage?: string;
     /** 스트림 type: 'chart' 수신 시 차트 데이터 */
     chartData?: ChartStreamData | null;
+    tableData?: TableStreamData | null;
+    disclaimer?: string | null;
+    isBlackBg?: boolean;
 }
 
 /** AI 응답으로 누적 노출할 차트/테이블 카드 타입 */
@@ -247,7 +255,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                         <div className={isExpanded ? "space-y-2" : "flex items-start gap-3"}>
                             <div className={isExpanded ? "" : "min-w-0 flex-1"}>
                                 {message.type === "analyzing" ? (
-                                    <div className="rounded-xl border border-[#31353a] bg-white/10 p-4">
+                                    <div className="rounded-xl border border-[#40424a] bg-[#393a42] p-4">
                                         {message.id !== "object-tracking-progress" && (
                                             <div className="mb-3">
                                                 <h3 className="text-sm font-semibold text-white mb-2">AI 분석 중</h3>
@@ -351,9 +359,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
 
                                         {/* 분석 결과 표시 (프로그래스 완료 시) */}
                                         {message.progress && message.progress >= 1 && message.analysisResult && (
-                                            <div className="mt-4 space-y-4 pt-4 border-t border-[#31353a]">
+                                            <div className="mt-4 space-y-4 pt-4 border-t border-[#40424a]">
                                                 {/* 한 줄 결론 */}
-                                                <div className="bg-white/10 border border-[#31353a] rounded-lg p-4">
+                                                <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-400" />
                                                         <h4 className="text-white font-semibold text-sm">1. 한 줄 결론</h4>
@@ -362,7 +370,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 </div>
 
                                                 {/* 사건 요약 */}
-                                                <div className="bg-white/10 border border-[#31353a] rounded-lg p-4">
+                                                <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-400" />
                                                         <h4 className="text-white font-semibold text-sm">2. 사건 요약</h4>
@@ -387,7 +395,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 </div>
 
                                                 {/* 근거 */}
-                                                <div className="bg-white/10 border border-[#31353a] rounded-lg p-4">
+                                                <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                     <div className="flex items-center gap-2 mb-2">
                                                         <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-400" />
                                                         <h4 className="text-white font-semibold text-sm">3. 근거</h4>
@@ -403,7 +411,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 </div>
 
                                                 {/* 대응 추천 (퀵 버튼) */}
-                                                <div className="bg-white/10 border border-[#31353a] rounded-lg p-4">
+                                                <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                     <div className="flex items-center gap-2 mb-3">
                                                         <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-400" />
                                                         <h4 className="text-white font-semibold text-sm">4. 대응 추천</h4>
@@ -417,7 +425,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                                     onClick={() => {
                                                                         // 퀵 버튼 기능 (나중에 구현)
                                                                     }}
-                                                                    className="px-3 py-1.5 bg-white/10 border border-[#31353a] rounded-lg text-gray-200 text-sm hover:border-blue-400 hover:bg-white/20 transition-colors"
+                                                                    className="px-3 py-1.5 bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg text-gray-200 text-sm hover:border-blue-400 hover:bg-gray-700/50 transition-colors"
                                                                     style={{ borderWidth: "1px" }}>
                                                                     {buttonText}
                                                                 </button>
@@ -432,31 +440,40 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                     <>
                                         {!isExpanded && (
                                             <div className="flex items-center gap-2 mb-1">
-                                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: AGENT_GRADIENT }}>
-                                                    <img src="/simbol.svg" alt="" className="w-4 h-4 object-contain" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} aria-hidden="true" />
-                                                </div>
                                                 <span className="text-white font-semibold text-sm">CUVIA Agent</span>
                                             </div>
                                         )}
-                                        <div className={`${isExpanded ? "max-w-[70%] px-4 py-2 rounded-2xl border border-[#31353a] bg-white/15 text-gray-100" : "rounded-xl border border-[#31353a] bg-white/10 p-4 text-gray-200"}`} style={isExpanded ? { borderWidth: "1px" } : {}}>
+                                        <div className={`${isExpanded ? "max-w-[70%] px-4 py-2 rounded-2xl border border-[#40424a] bg-[#393a42] text-white" : "rounded-xl border border-[#40424a] bg-[#393a42] p-4 text-gray-200"}`} style={isExpanded ? { borderWidth: "1px" } : {}}>
                                             <div className="flex items-center gap-2 text-sm text-gray-300">
                                                 <Icon icon="mdi:loading" className="w-4 h-4 animate-spin text-blue-400" />
                                                 <span>{message.stepMessage || "처리 중..."}</span>
                                             </div>
-                                            <div className="text-xs text-gray-400 mt-2">{message.timestamp}</div>
+                                            {/* <div className="text-xs text-gray-300 mt-2">{message.timestamp}</div> */}
                                         </div>
                                     </>
                                 ) : (
                                     <>
                                         {!isExpanded && (
                                             <div className="flex items-center gap-2 mb-1">
-                                                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0" style={{ background: AGENT_GRADIENT }}>
-                                                    <img src="/simbol.svg" alt="" className="w-4 h-4 object-contain" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} aria-hidden="true" />
-                                                </div>
                                                 <span className="text-white font-semibold text-sm">CUVIA Agent</span>
                                             </div>
                                         )}
-                                        <div className={`${isExpanded ? "max-w-[70%] px-4 py-2 rounded-2xl border border-[#31353a] bg-white/15 text-gray-100" : "rounded-xl border border-[#31353a] bg-white/10 p-4 text-gray-200"}`} style={isExpanded ? { borderWidth: "1px" } : {}}>
+                                        <div
+                                            className={`rounded-xl border border-[#40424a] bg-[#393a42] p-4 text-gray-200`}
+                                            style={
+                                                message.isBlackBg
+                                                    ? {
+                                                          background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
+                                                          backdropFilter: "blur(4px)",
+                                                          WebkitBackdropFilter: "blur(4px)",
+                                                          border: "1px solid rgba(255,255,255,0.1)",
+                                                      }
+                                                    : {
+                                                          background: "#393a42",
+                                                          border: "1px solid #40424a",
+                                                          color: "text-gray-200",
+                                                      }
+                                            }>
                                             {message.id === "tracking-update-msg" ? (
                                                 <div className="space-y-3">
                                                     {message.isTyping ? (
@@ -465,7 +482,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                                 {message.displayedContent ?? ""}
                                                                 <span className="inline-block w-1 h-4 bg-gray-400 ml-0.5 animate-pulse align-middle" aria-hidden="true" />
                                                             </p>
-                                                            <div className="text-xs text-gray-400 pt-1">{message.timestamp}</div>
+                                                            {/* <div className="text-xs text-gray-400 pt-1">{message.timestamp}</div> */}
                                                         </>
                                                     ) : (
                                                         <>
@@ -475,38 +492,31 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                             <p className="text-xs text-gray-300" dangerouslySetInnerHTML={{ __html: trackingContent.plate.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*([^*]+)\*/g, "<strong>$1</strong>") }} />
                                                             <p className="text-xs text-gray-300">{trackingContent.direction}</p>
                                                             <p className="text-sm leading-relaxed text-gray-200">{trackingContent.body}</p>
-                                                            <button type="button" className="px-3 py-2 text-left text-sm font-medium text-blue-300 hover:bg-white/20 border border-[#31353a] rounded-lg transition-colors w-full" aria-label="관할 경찰서에 전파하기">
+                                                            <button type="button" className="px-3 py-2 text-left text-sm font-medium text-blue-300 hover:bg-gray-700/50 border border-[#40424a] rounded-lg transition-colors w-full" aria-label="관할 경찰서에 전파하기">
                                                                 {trackingContent.btnPropagate}
                                                             </button>
-                                                            <div className="text-xs text-gray-400 pt-1">{message.timestamp}</div>
+                                                            {/* <div className="text-xs text-gray-400 pt-1">{message.timestamp}</div> */}
                                                         </>
                                                     )}
                                                 </div>
                                             ) : message.id === "welcome-msg" ? (
                                                 <>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">{message.displayedContent ?? message.content ?? ""}</p>
-                                                    <div className="text-xs text-gray-400 pt-1">{message.timestamp}</div>
+                                                    {/* <div className="text-xs text-gray-200 pt-1">{message.timestamp}</div> */}
                                                 </>
                                             ) : message.chartData ? (
-                                                <>
-                                                    {message.htmlContent && <div className="text-sm leading-relaxed text-gray-200 agent-html-content mb-3" dangerouslySetInnerHTML={{ __html: message.htmlContent }} />}
-                                                    <div className="rounded-lg border border-[#31353a] bg-white/10 p-3 overflow-hidden">
-                                                        <StreamChart data={message.chartData} />
-                                                    </div>
-                                                    <div className={`text-xs text-gray-400 ${isExpanded ? "mt-1" : "mt-2"}`}>{message.timestamp}</div>
-                                                </>
+                                                <ChartMessage message={message} />
+                                            ) : message.tableData ? (
+                                                <TableMessage message={message} />
                                             ) : message.htmlContent ? (
-                                                <>
-                                                    <div className="text-sm leading-relaxed text-gray-200 agent-html-content" dangerouslySetInnerHTML={{ __html: message.htmlContent }} />
-                                                    <div className={`text-xs text-gray-400 ${isExpanded ? "mt-1" : "mt-2"}`}>{message.timestamp}</div>
-                                                </>
+                                                <NormalMessage message={message} />
                                             ) : (
                                                 <>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">
                                                         {message.isTyping ? message.displayedContent : message.content}
                                                         {message.isTyping && <span className="inline-block w-1 h-4 bg-gray-400 ml-0.5 animate-pulse" />}
                                                     </p>
-                                                    <div className={`text-xs text-gray-400 ${isExpanded ? "mt-1" : "mt-2"}`}>{message.timestamp}</div>
+                                                    {/* <div className={`text-xs text-gray-400 ${isExpanded ? "mt-1" : "mt-2"}`}>{message.timestamp}</div> */}
                                                 </>
                                             )}
                                         </div>
@@ -517,9 +527,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                     )}
                     {message.role === "user" && (
                         <div className="flex justify-end">
-                            <div className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${isExpanded ? "bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent" : "bg-orange-500/30 border border-orange-500/40 text-gray-100"}`}>
+                            <div className="max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap bg-[#4b5563] text-gray-100">
                                 <p>{message.content}</p>
-                                <div className={`text-xs ${isExpanded ? "text-orange-100" : "text-gray-400"} mt-1`}>{message.timestamp}</div>
+                                {/* <div className="text-xs text-gray-300 mt-1">{message.timestamp}</div> */}
                             </div>
                         </div>
                     )}
@@ -554,9 +564,9 @@ interface ChatInputFormProps {
 
 const ChatInputForm: React.FC<ChatInputFormProps> = ({ chatInput, setChatInput, handleSendMessage, isResponding, onSkipResponse, textareaRef, inputKey, ignoreNextChangeRef, isExpanded, placeholder = "검색 조건을 자연어로 입력해 주세요." }) => {
     return (
-        <div className={isExpanded ? "flex-shrink-0 bg-black/20 border-t border-[#31353a]" : "p-4 border-t border-[#31353a] flex-shrink-0 bg-black/20"}>
+        <div className={isExpanded ? "flex-shrink-0 border-t border-[#40424a]" : "p-4 border-t border-[#40424a] flex-shrink-0"} style={{ background: "transparent" }}>
             <div className={isExpanded ? "p-4" : ""}>
-                <div className="relative flex items-center gap-3 bg-white/10 border border-[#31353a] rounded-2xl px-4 py-3 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400/50 transition-colors">
+                <div className="relative flex items-center gap-3 bg-[#393a42] border border-[#40424a] rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
                     {isExpanded && (
                         <button
                             onClick={() => {
@@ -777,7 +787,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
     // 마지막 스트림 응답의 차트/테이블만 노출 (최대 차트 1개, 테이블 1개)
     const [lastChartData, setLastChartData] = useState<ChartStreamData | null>(null);
-    const [lastTableData, setLastTableData] = useState<CompleteStreamTableData | null>(null);
+    const [lastTableData, setLastTableData] = useState<TableStreamData | null>(null);
 
     // onMapDataReceived ref (의존성 배열에서 제외하기 위함)
     const onMapDataReceivedRef = useRef(onMapDataReceived);
@@ -790,6 +800,20 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             if (!msgId) return;
             setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal" as const, chartData: data } : msg)));
             setLastChartData(data);
+        }, []),
+        onTableDataReceived: useCallback((data: TableStreamData) => {
+            const msgId = streamMessageIdRef.current;
+            if (!msgId) return;
+            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", tableData: data } : msg)));
+            if (data.total_count && data.total_count > 5) {
+                setLastTableData(data as TableStreamData);
+            }
+        }, []),
+        onDisclaimerReceived: useCallback((data: string) => {
+            const msgId = streamMessageIdRef.current;
+            if (!msgId) return;
+            console.log(data);
+            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", disclaimer: data } : msg)));
         }, []),
         onStepChange: useCallback((step: number, message: string) => {
             const msgId = streamMessageIdRef.current;
@@ -804,27 +828,29 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         onMapDataReceived: useCallback((data: MapStreamData) => {
             onMapDataReceivedRef.current?.(data);
         }, []),
-        onComplete: useCallback((success: boolean, message: string, data?: { chart_data?: ChartStreamData | null; tables?: CompleteStreamTableData[]; table?: CompleteStreamTableData }) => {
+        onComplete: useCallback((success: boolean, message: string, payload?: CompleteStreamPayload) => {
             const msgId = streamMessageIdRef.current;
             if (!msgId) return;
             setMessages((prev) =>
                 prev.map((msg) => {
                     if (msg.id !== msgId) return msg;
+                    const hasChart = !!(payload?.data?.chart ?? payload?.data?.chart_data);
+                    const hasTable = !!(payload?.data?.table ?? (payload?.data?.tables && payload.data.tables.length > 0));
+                    const isBlack = hasChart || hasTable;
                     const next: ChatMessage = {
                         ...msg,
                         type: "normal",
                         htmlContent: message,
                         stepMessage: undefined,
+                        isBlackBg: isBlack,
                     };
-                    if (data?.chart_data) next.chartData = data.chart_data;
+                    if (payload?.title) next.title = payload.title;
+                    if (payload?.rationale) next.rationale = payload.rationale;
                     return next;
                 })
             );
-            console.log(data);
-            // 응답에 차트/테이블이 없으면 각각 null로 초기화
-            setLastChartData(data?.chart_data ?? data?.chart ?? null);
-            const table = data?.tables?.length ? data.tables[data.tables.length - 1] : data?.table;
-            setLastTableData(table ?? null);
+            if (!payload?.data?.chart_data && !payload?.data?.chart) setLastChartData(null);
+            if (!payload?.data?.tables && !payload?.data?.table) setLastTableData(null);
             setIsResponding(false);
             streamMessageIdRef.current = null;
         }, []),
@@ -1474,9 +1500,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                 }}
                                 className="px-3 py-1 rounded-full text-[12px] text-gray-300 hover:text-white transition-all hover:scale-[1.03] active:scale-95 cursor-pointer"
                                 style={{
-                                    background: "rgba(20, 20, 28, 0.7)",
-                                    backdropFilter: "blur(8px)",
-                                    WebkitBackdropFilter: "blur(8px)",
+                                    background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
+                                    backdropFilter: "blur(4px)",
+                                    WebkitBackdropFilter: "blur(4px)",
                                     border: "1px solid rgba(255,255,255,0.1)",
                                 }}
                                 tabIndex={0}
@@ -1487,7 +1513,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     </div>
 
                     <div
-                        className="relative flex items-center gap-2 px-4 py-2 w-full"
+                        className="relative flex items-center gap-2 px-4 py-2 cuvia-link-chat-input cuvia-link-chat-input-dark w-full"
                         style={{
                             isolation: "isolate",
                             borderRadius: "9999px",
@@ -1563,11 +1589,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 </div>
             ) : (
                 <div
-                    className={`absolute h-[calc(100%-${padding})]`}
+                    className="absolute flex items-stretch gap-2 transition-all duration-300 ease-out"
                     style={
                         positionOverride
                             ? {
-                                  position: "absolute" as const,
                                   ...positionOverride,
                                   top: `${padding}px`,
                                   right: `${padding}px`,
@@ -1575,7 +1600,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                   zIndex: 90,
                                   transform: slideEntered ? "translateX(0)" : "translateX(100%)",
                                   opacity: slideEntered ? 1 : 0,
-                                  transition: "transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out",
+                                  transition: "transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out, bottom 0.3s ease-out",
                               }
                             : {
                                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
@@ -1588,21 +1613,31 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                               }
                     }
                     onClick={(e) => e.stopPropagation()}>
-                    {/* 시각화 카드 패널 - 차트/테이블 누적, 카드별 X로 제거 */}
-
-                    {/* 채팅창 - 너비 고정 540px, 차트와 무관 / isExpanded면 전체 높이 */}
+                    {/* 시각화 카드 패널 */}
+                    {(lastChartData || lastTableData) && (
+                        <div className="flex flex-col flex-shrink-0 gap-2 w-[680px]" style={{ height: maxHeightProp ?? 600 }}>
+                            {lastTableData && (
+                                <div className="flex flex-col max-h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
+                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} />
+                                </div>
+                            )}
+                            {lastChartData && (
+                                <div className="flex flex-col max-h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
+                                    <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} />
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    {/* 채팅창 */}
                     <div
-                        className="flex flex-col rounded-2xl border border-[#31353a] shadow-lg overflow-hidden h-full w-[540px] gradient-border-left-top min-h-0"
+                        className="flex flex-col flex-shrink-0 overflow-hidden relative border border-[#40424a] transition-[width] duration-300 ease-out w-[480px] rounded-2xl"
                         style={{
+                            height: maxHeightProp ?? 600,
                             background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
                             backdropFilter: "blur(4px)",
                             WebkitBackdropFilter: "blur(4px)",
                         }}>
-                        <header className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-[#31353a] text-white rounded-t-2xl">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <img src="/logo.svg" alt="CUVIA" className="h-6 w-auto shrink-0 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
-                                <h2 className="text-base font-semibold text-white truncate" id="chat-popup-title"></h2>
-                            </div>
+                        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
                             <button
                                 type="button"
                                 onClick={() => {
@@ -1611,20 +1646,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                     setLastTableData(null);
                                     onClose();
                                 }}
-                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none"
+                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0 focus:outline-none"
                                 aria-label="카드 제거">
                                 <Icon icon="mdi:close" className="w-5 h-5" />
                             </button>
-                        </header>
-
-                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 bg-black/20">
+                        </div>
+                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-6">
                             <div className="space-y-3">
                                 <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} />
                             </div>
-
                             <div ref={bottomRef} className="h-2" />
                         </div>
-
                         <ChatInputForm
                             chatInput={chatInput}
                             setChatInput={setChatInput}
@@ -1637,22 +1669,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                             isExpanded={false}
                             placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
                         />
-                    </div>
-                </div>
-            )}
-            {(lastChartData || lastTableData) && (
-                <div className="absolute top-[20px] bottom-[20px] px-[20px] right-[572px] overflow-hidden min-h-0 w-[700px]">
-                    <div className="flex flex-col gap-3 h-full">
-                        {lastTableData && (
-                            <div className="flex-shrink-0 min-h-0 overflow-hidden" style={{ height: "calc((100% - 12px) / 2)" }}>
-                                <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} />
-                            </div>
-                        )}
-                        {lastChartData && (
-                            <div className="flex-shrink-0 min-h-0 overflow-hidden" style={{ height: "calc((100% - 12px) / 2)" }}>
-                                <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} />
-                            </div>
-                        )}
                     </div>
                 </div>
             )}

@@ -95,9 +95,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         case "START_FAST_SEARCH_WITH_PROGRESS":
             return {
                 ...state,
-                panelsSlidOut: true,
-                showCCTV: false,
-                hideControls: true,
                 showFastSearchList: true,
                 selectedMenuId: "fast-search",
                 showAIAgentPopup: true,
@@ -120,9 +117,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         case "SHOW_FAST_SEARCH_LIST":
             return {
                 ...state,
-                panelsSlidOut: true,
-                showCCTV: false,
-                hideControls: true,
                 showFastSearchList: true,
                 selectedMenuId: "fast-search",
             };
@@ -152,11 +146,8 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
                 showFastSearchList: false,
                 showCaptureList: false,
                 showAIAgentPopup: true,
-                hideControls: true,
                 selectedMenuId: "object-tracking",
                 selectedEventId: "A-20260107-004", // 신고 팝업을 위한 이벤트 선택
-                panelsSlidOut: true, // 좌우 패널 숨김
-                showCCTV: false, // CCTV 패널 숨김
             };
         case "SHOW_CAPTURE_LIST":
             return {
@@ -165,9 +156,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
                 showFastSearchList: false,
                 showObjectTracking: false,
                 showPropagationList: false,
-                panelsSlidOut: true,
-                showCCTV: false,
-                hideControls: true,
                 selectedMenuId: "capture-list",
             };
         case "HIDE_CAPTURE_LIST":
@@ -186,9 +174,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
                 showFastSearchList: false,
                 showObjectTracking: false,
                 showCaptureList: false,
-                panelsSlidOut: true,
-                showCCTV: false,
-                hideControls: true,
                 selectedMenuId: "propagation",
                 previousStateBeforePropagation: {
                     showFastSearchList: state.showFastSearchList,
@@ -304,6 +289,7 @@ export default function HomeV2() {
     const { showMouseGuide, setShowMouseGuide, mousePosition, guideTarget, guideMessage, guideType, jumpToStep, resetGuide, toggleGuide, syncToAppState } = useMouseGuide();
     const [captureDetailCloseCount, setCaptureDetailCloseCount] = useState<number>(0); // 포착 디테일 팝업 닫기 횟수
     const [agentMessage, setAgentMessage] = useState<string>("");
+    const [pendingPopupMessage, setPendingPopupMessage] = useState<string | null>(null);
     const [agentMessages, setAgentMessages] = useState<Array<{ id: number; text: string; role: "agent" | "user" }>>([]);
     const [isAgentInputExpanded, setIsAgentInputExpanded] = useState(false);
     const [isAgentActive, setIsAgentActive] = useState(false);
@@ -481,7 +467,7 @@ export default function HomeV2() {
     }, [visibleEvents, uiState.showFastSearchList, uiState.selectedEventId, allConvertedEvents, uiState.showObjectTracking, visibleTrackingPins]);
 
     // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
-    const fastSearchFocusXPercent = uiState.showFastSearchList ? 52 : 50;
+    const fastSearchFocusXPercent = 50;
 
     // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
     const handleMenuSelect = useCallback(
@@ -677,12 +663,15 @@ export default function HomeV2() {
             setAgentMessage("");
             if (agentTextareaRef.current) agentTextareaRef.current.value = "";
             if (!isAgentActive) {
+                setPendingPopupMessage(trimmed);
                 setIsAgentActive(true);
                 dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
             }
         },
         [agentMessage, agentTextareaRef, isAgentActive]
     );
+
+    const clearPendingPopupMessage = useCallback(() => setPendingPopupMessage(null), []);
 
     // syncToAppState: 타겟 요소가 없을 때 앱 상태에 맞춰 가이드 단계 동기화
     useEffect(() => {
@@ -754,19 +743,29 @@ export default function HomeV2() {
         }, 6100);
     }, []);
 
+    const REPORT_POPUP_GAP = 24;
+    const AGENT_TOP_GAP = 16;
+    const AGENT_FLOATING_BUTTON_RESERVE = 198 + 30 + 56 + 8;
+    const reportPopupVisible = !!(uiState.selectedEventId && !uiState.showPropagationList && uiState.showObjectTracking);
     /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
     useEffect(() => {
         const handleResize = () => {
             setWindowWidth(window.innerWidth);
-            const topPx = reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424; // 1.25rem = 20px
-            // 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드 또는 전파 모드일 때는 플로팅 버튼 영역 제외
+            if (isAgentActive) {
+                const height = window.innerHeight - 24 - 24;
+                setAgentPopupMaxHeight(Math.max(200, height));
+                return;
+            }
+            const bottomPanelVisible = uiState.showCCTV;
+            const topPx = reportPopupVisible ? 20 + (reportPopupHeight > 0 ? reportPopupHeight : 180) + REPORT_POPUP_GAP : AGENT_TOP_GAP;
             const reserveBottom = uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList ? 24 : 24 + 56 + 8;
-            setAgentPopupMaxHeight(Math.max(600, window.innerHeight - topPx - reserveBottom));
+            const height = bottomPanelVisible ? window.innerHeight - AGENT_FLOATING_BUTTON_RESERVE - topPx : window.innerHeight - topPx - reserveBottom;
+            setAgentPopupMaxHeight(Math.max(200, height));
         };
         handleResize();
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
-    }, [reportPopupHeight, uiState.showFastSearchList, uiState.showObjectTracking, uiState.showCaptureList, uiState.showPropagationList]);
+    }, [reportPopupHeight, uiState.showFastSearchList, uiState.showObjectTracking, uiState.showCaptureList, uiState.showPropagationList, isAgentActive]);
 
     // 재검색 완료 후 카드 개수 변경 감지
     useEffect(() => {
@@ -894,48 +893,62 @@ export default function HomeV2() {
                         externalShowCCTV={!uiState.showObjectTracking}
                         onMapStateChange={setLastMapState}
                         streamMapData={streamMapData}
+                        keepControlPosition
                     />
                 )}
             </div>
 
-            {/* 좌측 메뉴 패널 - 고속검색 또는 객체 추적 또는 포착 목록 또는 전파 시 표시 */}
-            <div className={`absolute left-0 top-0 bottom-0 transition-all duration-500 ease-out ${uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0"}`} style={{ zIndex: 101 }}>
-                <LeftMenuPanel onMenuSelect={handleMenuSelect} selectedMenuId={uiState.selectedMenuId} captureCount={captureItems.length} showNotification={showCaptureNotification} />
-            </div>
-
-            <div className={`absolute top-0 bottom-0 transition-all duration-300 ease-out ${uiState.panelsSlidOut ? "-translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`} style={{ zIndex: 100, left: "0px" }}>
+            <div
+                className="absolute top-0 bottom-0 transition-all duration-500 ease-out"
+                style={{
+                    opacity: 1,
+                    transform: "translateX(0)",
+                }}>
                 <LeftPanel onCollapsedChange={(collapsed) => dispatch({ type: "TOGGLE_LEFT_PANEL" })} />
             </div>
 
-            <div className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${uiState.panelsSlidOut || uiState.showAIAgentPopup ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`} style={{ width: "370px", zIndex: 100, paddingTop: "16px", paddingBottom: "16px" }}>
-                <HeatmapPanel
-                    areaLabels={{
-                        zone1: "달빛동",
-                        zone2: "해빛동",
-                        zone3: "바람동",
-                        zone4: "무지개동",
-                        zone5: "성운동",
-                        zone6: "구름동",
-                        zone7: "햇살동",
-                        zone8: "여명동",
-                    }}
-                />
-                <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
+            <div className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${uiState.panelsSlidOut ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"} ${isAgentActive ? "pointer-events-none" : ""}`} style={{ width: "370px", zIndex: 100, paddingTop: "16px", paddingBottom: "16px" }}>
+                {/* 히트맵 패널 - 에이전트 활성 시 좌→우 페이드 아웃 */}
+                <div
+                    className="transition-all duration-500 ease-out"
+                    style={{
+                        opacity: isAgentActive ? 0 : 1,
+                        transform: isAgentActive ? "translateX(40px)" : "translateX(0)",
+                        pointerEvents: isAgentActive ? "none" : "auto",
+                    }}>
+                    <HeatmapPanel
+                        areaLabels={{
+                            zone1: "달빛로",
+                            zone2: "해빛로",
+                            zone3: "바람로",
+                            zone4: "무지개로",
+                            zone5: "성운로",
+                            zone6: "구름대로",
+                            zone7: "햇살로",
+                            zone8: "여명로",
+                        }}
+                    />
+                </div>
+                {/* 이벤트 패널 - 에이전트 활성 시 좌→우 페이드 아웃 (약간 딜레이) */}
+                <div
+                    className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom transition-all ease-out"
+                    style={{
+                        minHeight: 0,
+                        background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
+                        backdropFilter: "blur(4px)",
+                        WebkitBackdropFilter: "blur(4px)",
+                        opacity: isAgentActive ? 0 : 1,
+                        transform: isAgentActive ? "translateX(40px)" : "translateX(0)",
+                        pointerEvents: isAgentActive ? "none" : "auto",
+                        transitionDuration: "500ms",
+                        transitionDelay: isAgentActive ? "80ms" : "0ms",
+                    }}>
                     <EventList events={visibleEvents} selectedEventId={uiState.selectedEventId || undefined} onEventSelect={handleEventAction} onEventHover={handleEventHover} />
                 </div>
             </div>
 
             {/* BottomPanel (CCTV 화면) - 고속검색/객체추적/포착목록/전파 모드 또는 AI 에이전트 팝업 열림 시 숨김 */}
-            <BottomPanel
-                showCCTV={uiState.showCCTV && !uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList && !uiState.showAIAgentPopup}
-                hideControls={uiState.hideControls}
-                leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416}
-                windowWidth={windowWidth}
-                cctvScrollContainerRef={cctvScrollContainerRef}
-                isUserScrollingRef={isUserScrollingRef}
-                userScrollTimeoutRef={userScrollTimeoutRef}
-                autoScrollIntervalRef={autoScrollIntervalRef}
-            />
+            <BottomPanel showCCTV={uiState.showCCTV} hideControls={uiState.hideControls || isAgentActive} leftPanelWidth={uiState.leftPanelCollapsed ? 80 : 416} windowWidth={windowWidth} cctvScrollContainerRef={cctvScrollContainerRef} isUserScrollingRef={isUserScrollingRef} userScrollTimeoutRef={userScrollTimeoutRef} autoScrollIntervalRef={autoScrollIntervalRef} />
 
             {/* ReportPopup - 고속검색, 객체추적, 포착목록 모드일 때 우측 상단에 표시 (전파 모드일 때는 숨김) */}
             {uiState.selectedEventId && !uiState.showPropagationList && (
@@ -1034,58 +1047,55 @@ export default function HomeV2() {
             />
 
             {/* 에이전트: 첫 검색은 하단 바, 이후는 우측 채팅 패널. 전파 모드일 때는 숨김 */}
-            <div style={{ display: uiState.showPropagationList ? "none" : "block" }}>
-                <AIAgentPopup
-                    isOpen={uiState.showAIAgentPopup && !uiState.showPropagationList}
-                    onClose={() => {
-                        dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
-                        setStreamMapData(null);
-                    }}
-                    onOpenRequest={() => {
-                        if (!uiState.showAIAgentPopup) dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
-                    }}
-                    floatingBarStyle={floatingBarStyle}
-                    hideControls={uiState.hideControls}
-                    position={{
-                        top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 480}px`,
-                        right: "20px",
-                    }}
-                    maxHeight={agentPopupMaxHeight}
-                    onDeleteLikeRequest={({ rawMessage }) => {
-                        const parsed = parseExcludedAttributesFromMessage(rawMessage);
-                        if (parsed.length) {
-                            previousListCardCountRef.current = listCardCount;
-                            currentExcludedAttributesRef.current = parsed;
-                            setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
-                        }
-                        return parsed;
-                    }}
-                    onObjectTrackingStart={() => {
-                        if (uiState.showFastSearchList) {
-                            dispatch({ type: "SHOW_OBJECT_TRACKING_CONFIRM" });
-                        } else {
-                            dispatch({ type: "START_OBJECT_TRACKING" });
-                            handleStartTrackingSequence();
-                        }
-                    }}
-                    onFastSearchComplete={() => {
-                        dispatch({ type: "COMPLETE_FAST_SEARCH_PROGRESS" });
-                        setPinOffset({ x: 0, y: 0 });
-                        if (showMouseGuide) jumpToStep("radius-chip");
-                    }}
-                    onReSearchStart={() => {
-                        dispatch({ type: "START_RE_SEARCH" });
-                        setShowReSearchSkeleton(true);
-                        setTimeout(() => setShowReSearchSkeleton(false), 500);
-                    }}
-                    onReSearchComplete={() => {
-                        dispatch({ type: "COMPLETE_RE_SEARCH" });
-                        isReSearchingRef.current = true;
-                        if (showMouseGuide) jumpToStep("fast-search-candidate-10");
-                    }}
-                    onMapDataReceived={handleMapDataReceived}
-                />
-            </div>
+            <AIAgentPopup
+                isOpen={uiState.showAIAgentPopup}
+                onClose={() => {
+                    dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
+                    setStreamMapData(null);
+                    setIsAgentActive(false);
+                }}
+                onOpenRequest={() => {
+                    if (!uiState.showAIAgentPopup) dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
+                    setIsAgentActive(true);
+                }}
+                floatingBarStyle={floatingBarStyle}
+                hideControls={uiState.hideControls}
+                position={{ bottom: "24px", right: "24px" }}
+                maxHeight={agentPopupMaxHeight}
+                onDeleteLikeRequest={({ rawMessage }) => {
+                    const parsed = parseExcludedAttributesFromMessage(rawMessage);
+                    if (parsed.length) {
+                        previousListCardCountRef.current = listCardCount;
+                        currentExcludedAttributesRef.current = parsed;
+                        setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
+                    }
+                    return parsed;
+                }}
+                onObjectTrackingStart={() => {
+                    if (uiState.showFastSearchList) {
+                        dispatch({ type: "SHOW_OBJECT_TRACKING_CONFIRM" });
+                    } else {
+                        dispatch({ type: "START_OBJECT_TRACKING" });
+                        handleStartTrackingSequence();
+                    }
+                }}
+                onFastSearchComplete={() => {
+                    dispatch({ type: "COMPLETE_FAST_SEARCH_PROGRESS" });
+                    setPinOffset({ x: 0, y: 0 });
+                    if (showMouseGuide) jumpToStep("radius-chip");
+                }}
+                onReSearchStart={() => {
+                    dispatch({ type: "START_RE_SEARCH" });
+                    setShowReSearchSkeleton(true);
+                    setTimeout(() => setShowReSearchSkeleton(false), 500);
+                }}
+                onReSearchComplete={() => {
+                    dispatch({ type: "COMPLETE_RE_SEARCH" });
+                    isReSearchingRef.current = true;
+                    if (showMouseGuide) jumpToStep("fast-search-candidate-10");
+                }}
+                onMapDataReceived={handleMapDataReceived}
+            />
 
             {/* 포착 목록 아이콘 오버레이 */}
             {showCaptureNotification && !uiState.showPropagationList && (
