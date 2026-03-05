@@ -14,6 +14,12 @@ import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
 const PIXEL_RATIO = 2;
 const MARKER_SIZE = 28 * PIXEL_RATIO;
 
+const escapeHtml = (text: string): string => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+};
+
 const createStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
     const canvas = document.createElement("canvas");
     canvas.width = MARKER_SIZE;
@@ -884,23 +890,91 @@ const MapView = ({
             }
         };
 
+        // 개별 스트림 마커 클릭 핸들러 (individual / cluster 뷰에서만)
+        const handleStreamMarkerClick = (e: maplibregl.MapMouseEvent) => {
+            const features = map.queryRenderedFeatures(e.point, {
+                layers: [streamLayerId],
+            });
+            if (!features.length) return;
+
+            const feature = features[0];
+            const geometry = feature.geometry;
+            if (geometry.type !== "Point") return;
+
+            const coords = geometry.coordinates as [number, number];
+            const props = feature.properties as Record<string, string | null> | undefined;
+            const title = props?.title ?? "";
+            const description = props?.description ?? "";
+
+            // 기존 팝업 제거
+            const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+
+            const popupContent = [
+                "<div class=\"stream-marker-popup__inner\">",
+                title ? `<div class=\"stream-marker-popup__title\">${escapeHtml(title)}</div>` : "",
+                description ? `<div class=\"stream-marker-popup__desc\">${escapeHtml(description)}</div>` : "",
+                "</div>",
+            ]
+                .filter(Boolean)
+                .join("");
+
+            if (!title && !description) return;
+
+            const popup = new maplibregl.Popup({
+                closeButton: true,
+                closeOnClick: true,
+                className: "stream-marker-popup",
+            })
+                .setLngLat(coords)
+                .setHTML(popupContent)
+                .addTo(map);
+
+            (map as any)._streamMarkerPopup = popup;
+        };
+
+        // 스트림 마커 레이어 호버 시 커서 포인터
+        const handleStreamMarkerMouseEnter = () => {
+            map.getCanvas().style.cursor = "pointer";
+        };
+        const handleStreamMarkerMouseLeave = () => {
+            map.getCanvas().style.cursor = "";
+        };
+
         // 맵이 로드된 후 실행
-        if (map.loaded()) {
-            updateStreamData();
+        const registerStreamMarkerListeners = () => {
             if (streamMarkerViewType === "cluster") {
                 map.on("click", streamClusterLayerId, handleClusterClick);
             }
+            if (streamMarkerViewType !== "heatmap" && map.getLayer(streamLayerId)) {
+                map.on("click", streamLayerId, handleStreamMarkerClick);
+                map.on("mouseenter", streamLayerId, handleStreamMarkerMouseEnter);
+                map.on("mouseleave", streamLayerId, handleStreamMarkerMouseLeave);
+            }
+        };
+
+        if (map.loaded()) {
+            updateStreamData();
+            registerStreamMarkerListeners();
         } else {
             map.once("load", () => {
                 updateStreamData();
-                if (streamMarkerViewType === "cluster") {
-                    map.on("click", streamClusterLayerId, handleClusterClick);
-                }
+                registerStreamMarkerListeners();
             });
         }
 
         return () => {
             map.off("click", streamClusterLayerId, handleClusterClick);
+            map.off("click", streamLayerId, handleStreamMarkerClick);
+            map.off("mouseenter", streamLayerId, handleStreamMarkerMouseEnter);
+            map.off("mouseleave", streamLayerId, handleStreamMarkerMouseLeave);
+            const popup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+            if (popup) {
+                popup.remove();
+                (map as any)._streamMarkerPopup = undefined;
+            }
         };
     }, [streamMapData, streamMarkerViewType]);
 
@@ -2099,9 +2173,50 @@ const MapView = ({
     }, [selectedEventId, events, fireStations, policeStations, positionsById]);
 
     return (
-        <div
-            ref={containerRef}
-            className="relative bg-[#0f0f0f] overflow-hidden"
+        <>
+            <style>{`
+                .stream-marker-popup .maplibregl-popup-content {
+                    padding: 0;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.1);
+                    border: 1px solid #e5e7eb;
+                    background: #fff;
+                    min-width: 140px;
+                    max-width: 280px;
+                }
+                .stream-marker-popup .stream-marker-popup__inner {
+                    padding: 12px 36px 12px 14px;
+                }
+                .stream-marker-popup .stream-marker-popup__title {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #111827;
+                    line-height: 1.35;
+                }
+                .stream-marker-popup .stream-marker-popup__desc {
+                    font-size: 13px;
+                    color: #4b5563;
+                    line-height: 1.45;
+                    margin-top: 6px;
+                }
+                .stream-marker-popup .maplibregl-popup-close-button {
+                    font-size: 20px;
+                    padding: 6px 10px;
+                    color: #6b7280;
+                    right: 2px;
+                    top: 2px;
+                    border-radius: 8px;
+                    background: transparent;
+                    transition: background-color 0.15s, color 0.15s;
+                }
+                .stream-marker-popup .maplibregl-popup-close-button:hover {
+                    background: #f3f4f6;
+                    color: #111827;
+                }
+            `}</style>
+            <div
+                ref={containerRef}
+                className="relative bg-[#0f0f0f] overflow-hidden"
             style={{
                 width: "100%",
                 height: "100%",
@@ -2380,6 +2495,7 @@ const MapView = ({
 
             {/* Agent Hub 버튼 - 초기: CCTV 위 30px / 1번: 아래로만 / 고속검색: 우측 하단 */}
         </div>
+        </>
     );
 };
 
