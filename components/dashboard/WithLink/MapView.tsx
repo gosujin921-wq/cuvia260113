@@ -619,13 +619,7 @@ const MapView = ({
             }
 
             // markerType에 따라 아이콘 선택: 'cctv'면 CCTV 마커, 그 외는 기본 마커
-            const iconImageExpression = ["match", ["get", "markerType"], "cctv", streamCctvMarkerIconId, streamMarkerIconId] as [
-                "match",
-                ["get", string],
-                string,
-                string,
-                string,
-            ];
+            const iconImageExpression = ["match", ["get", "markerType"], "cctv", streamCctvMarkerIconId, streamMarkerIconId] as ["match", ["get", string], string, string, string];
 
             // 뷰 타입별 레이어 추가
             if (viewType === "individual") {
@@ -737,9 +731,7 @@ const MapView = ({
                             maxLng = b.maxLng;
                             maxLat = b.maxLat;
                         } else if (srs.includes("4326")) {
-                            const isLikelyLatLonOrder =
-                                version.startsWith("1.3") ||
-                                (parts[0] >= -90 && parts[0] <= 90 && Math.abs(parts[1]) <= 180 && parts[0] !== parts[1]);
+                            const isLikelyLatLonOrder = version.startsWith("1.3") || (parts[0] >= -90 && parts[0] <= 90 && Math.abs(parts[1]) <= 180 && parts[0] !== parts[1]);
                             if (isLikelyLatLonOrder) {
                                 // WMS 1.3.0 또는 위도·경도 범위로 추정: bbox = minLat, minLon, maxLat, maxLon
                                 minLat = parts[0];
@@ -912,14 +904,7 @@ const MapView = ({
                 existingPopup.remove();
             }
 
-            const popupContent = [
-                "<div class=\"stream-marker-popup__inner\">",
-                title ? `<div class=\"stream-marker-popup__title\">${escapeHtml(title)}</div>` : "",
-                description ? `<div class=\"stream-marker-popup__desc\">${escapeHtml(description)}</div>` : "",
-                "</div>",
-            ]
-                .filter(Boolean)
-                .join("");
+            const popupContent = ['<div class="stream-marker-popup__inner">', title ? `<div class=\"stream-marker-popup__title\">${escapeHtml(title)}</div>` : "", description ? `<div class=\"stream-marker-popup__desc\">${escapeHtml(description)}</div>` : "", "</div>"].filter(Boolean).join("");
 
             if (!title && !description) return;
 
@@ -2217,264 +2202,193 @@ const MapView = ({
             <div
                 ref={containerRef}
                 className="relative bg-[#0f0f0f] overflow-hidden"
-            style={{
-                width: "100%",
-                height: "100%",
-                position: "relative",
-            }}
-            onClick={(e) => {
-                // 핀이나 툴팁, 버튼이 아닌 곳을 클릭했을 때만 지도 클릭 처리
-                const target = e.target as HTMLElement;
-                const isPin = target.closest("[data-event-pin]");
-                const isTooltip = target.closest("[data-tooltip]");
-                const isButton = target.closest("button") || target.tagName === "BUTTON";
-                const isClickable = target.closest("[data-no-drag]") || target.closest("[data-drag-handle]");
-
-                if (!isPin && !isTooltip && !isButton && !isClickable) {
-                    onMapClick?.();
-                }
-            }}
-            onMouseDown={(e) => {
-                // 팝업이나 핀을 클릭한 경우 지도 클릭 이벤트 방지
-                const target = e.target as HTMLElement;
-                if (target.closest("[data-tooltip]") || target.closest("[data-event-pin]")) {
-                    e.stopPropagation();
-                }
-            }}>
-            {/* 맵 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
-            {(!hideControls || showFastSearchList) && (
-                <div
-                    className="absolute top-4 flex flex-col gap-2"
-                    style={{
-                        left: keepControlPosition ? `${leftPanelWidth + 24}px` : isAgentActive ? "104px" : showFastSearchList ? "800px" : `${leftPanelWidth + 24}px`,
-                        zIndex: 250,
-                    }}
-                    onClick={(e) => e.stopPropagation()}>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (mapRef.current) {
-                                mapRef.current.zoomIn({ duration: 300 });
-                            }
-                            setZoomLevel((prev) => Math.min(prev + 1, 1));
-                        }}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                        aria-label="확대">
-                        <Icon icon="mdi:plus" className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (mapRef.current) {
-                                mapRef.current.zoomOut({ duration: 300 });
-                            }
-                            setZoomLevel((prev) => Math.max(prev - 1, 0));
-                        }}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                        aria-label="축소">
-                        <Icon icon="mdi:minus" className="w-5 h-5" />
-                    </button>
-                    <div className="w-full h-px bg-gray-300 my-1" />
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIs3DMode(false);
-                            if (mapRef.current) {
-                                mapRef.current.easeTo({
-                                    pitch: 0,
-                                    duration: 500,
-                                });
-                            }
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${!is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        aria-label="2D">
-                        <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setIs3DMode(true);
-                            if (mapRef.current) {
-                                mapRef.current.easeTo({
-                                    pitch: 60,
-                                    duration: 500,
-                                });
-                            }
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        aria-label="3D">
-                        <Icon icon="mdi:cube" className="w-5 h-5" />
-                    </button>
-                    <div className="w-full h-px bg-gray-300 my-1" />
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const newBearing = mapBearing - 15;
-                            setMapBearing(newBearing);
-                            if (mapRef.current) {
-                                mapRef.current.easeTo({
-                                    bearing: newBearing,
-                                    duration: 300,
-                                });
-                            }
-                        }}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                        aria-label="회전 왼쪽">
-                        <Icon icon="mdi:rotate-left" className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const newBearing = mapBearing + 15;
-                            setMapBearing(newBearing);
-                            if (mapRef.current) {
-                                mapRef.current.easeTo({
-                                    bearing: newBearing,
-                                    duration: 300,
-                                });
-                            }
-                        }}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                        aria-label="회전 오른쪽">
-                        <Icon icon="mdi:rotate-right" className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
-
-            {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
-            {(!hideControls || showFastSearchList) && streamMapData?.markers && streamMapData.markers.length > 0 && (
-                <div
-                    className="absolute top-[340px] flex flex-col gap-2 transition-all duration-500 ease-in-out"
-                    style={{
-                        left: showFastSearchList ? "800px" : `${leftPanelWidth + 24}px`,
-                        zIndex: 250,
-                    }}
-                    onClick={(e) => e.stopPropagation()}>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setStreamMarkerViewType("individual");
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "individual" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        aria-label="개별 마커"
-                        aria-pressed={streamMarkerViewType === "individual"}
-                        tabIndex={0}>
-                        <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setStreamMarkerViewType("cluster");
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "cluster" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        aria-label="클러스터"
-                        aria-pressed={streamMarkerViewType === "cluster"}
-                        tabIndex={0}>
-                        <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setStreamMarkerViewType("heatmap");
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "heatmap" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        aria-label="히트맵"
-                        aria-pressed={streamMarkerViewType === "heatmap"}
-                        tabIndex={0}>
-                        <Icon icon="mdi:fire-circle" className="w-5 h-5" />
-                    </button>
-                </div>
-            )}
-
-            {/* CCTV 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
-            {(!hideControls || showFastSearchList) && (
-                <div
-                    className="absolute bottom-[calc(50%-140px)] flex flex-col gap-2"
-                    style={{
-                        left: keepControlPosition ? `${leftPanelWidth + 24}px` : isAgentActive ? "104px" : showFastSearchList ? "800px" : `${leftPanelWidth + 24}px`,
-                        zIndex: 250,
-                    }}
-                    onClick={(e) => e.stopPropagation()}>
-                    {/* CCTV 아이콘 토글 */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const newValue = !showCCTV;
-                            setShowCCTV(newValue);
-                            if (newValue) {
-                                setShowCCTVViewAngle(true);
-                                setShowCCTVName(true);
-                            } else {
-                                setShowCCTVViewAngle(false);
-                                setShowCCTVName(false);
-                            }
-                            if (typeof window !== "undefined") {
-                                localStorage.setItem("cctv-show-cctv", newValue.toString());
-                                localStorage.setItem("cctv-show-view-angle", newValue.toString());
-                                localStorage.setItem("cctv-show-name", newValue.toString());
-                            }
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showCCTV ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        aria-label="CCTV">
-                        <CCTVIcon className="w-5 h-5" />
-                    </button>
-
-                    {/* CCTV 라벨 토글 */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const newValue = !showCCTVName;
-                            setShowCCTVName(newValue);
-                            if (typeof window !== "undefined") {
-                                localStorage.setItem("cctv-show-name", newValue.toString());
-                            }
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showCCTVName ? "bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        style={{
-                            visibility: showCCTV ? "visible" : "hidden",
-                        }}
-                        aria-label="CCTV 라벨">
-                        <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? "text-blue-600" : "text-gray-800"}`} />
-                    </button>
-
-                    {/* 시야각 토글 */}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const newValue = !showCCTVViewAngle;
-                            setShowCCTVViewAngle(newValue);
-                            if (typeof window !== "undefined") {
-                                localStorage.setItem("cctv-show-view-angle", newValue.toString());
-                            }
-                        }}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showCCTVViewAngle ? "bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                        style={{
-                            visibility: showCCTV ? "visible" : "hidden",
-                        }}
-                        aria-label="CCTV 시야각">
-                        <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? "text-blue-600" : "text-gray-800"}`} />
-                    </button>
-                </div>
-            )}
-
-            {/* 지도 - 박스 밖으로 */}
-            <div
-                className="relative border border-[#31353a] transition-transform duration-700 ease-out"
                 style={{
-                    borderWidth: "1px",
+                    width: "100%",
                     height: "100%",
-                    width: (zoomLevel > 0 || focusDeltaPercent > 0) && !flyToLocation ? `calc(100% + ${overscanPx * 2}px)` : "100%",
-                    left: (zoomLevel > 0 || focusDeltaPercent > 0) && !flyToLocation ? `-${overscanPx}px` : "0",
-                    transform: flyToLocation ? "none" : `scale(${mapScale}) translate(calc(${mapTranslate.x}% + ${mapTranslate.offsetX}%), ${mapTranslate.y}%) translateZ(0)`,
-                    transformOrigin: mapTransformOrigin,
-                    willChange: "transform",
-                    transition: "transform 0.5s ease-out, width 0.5s ease-out, left 0.5s ease-out",
-                }}>
-                <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }} />
-                <div className="absolute inset-0 bg-black/5 pointer-events-none" style={{ zIndex: 2 }}></div>
+                    position: "relative",
+                }}
+                onClick={(e) => {
+                    // 핀이나 툴팁, 버튼이 아닌 곳을 클릭했을 때만 지도 클릭 처리
+                    const target = e.target as HTMLElement;
+                    const isPin = target.closest("[data-event-pin]");
+                    const isTooltip = target.closest("[data-tooltip]");
+                    const isButton = target.closest("button") || target.tagName === "BUTTON";
+                    const isClickable = target.closest("[data-no-drag]") || target.closest("[data-drag-handle]");
 
-                {/* 화각 펼쳐지는 애니메이션 스타일 */}
-                <style>{`
+                    if (!isPin && !isTooltip && !isButton && !isClickable) {
+                        onMapClick?.();
+                    }
+                }}
+                onMouseDown={(e) => {
+                    // 팝업이나 핀을 클릭한 경우 지도 클릭 이벤트 방지
+                    const target = e.target as HTMLElement;
+                    if (target.closest("[data-tooltip]") || target.closest("[data-event-pin]")) {
+                        e.stopPropagation();
+                    }
+                }}>
+                {/* 맵 컨트롤 버튼 - 초기 화면 + 고속검색 리스트 표시 시 */}
+                {(!hideControls || showFastSearchList) && (
+                    <div
+                        className="absolute top-4 flex flex-col gap-2"
+                        style={{
+                            left: keepControlPosition ? `${leftPanelWidth + 24}px` : isAgentActive ? "104px" : showFastSearchList ? "800px" : `${leftPanelWidth + 24}px`,
+                            zIndex: 250,
+                        }}
+                        onClick={(e) => e.stopPropagation()}>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (mapRef.current) {
+                                    mapRef.current.zoomIn({ duration: 300 });
+                                }
+                                setZoomLevel((prev) => Math.min(prev + 1, 1));
+                            }}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                            aria-label="확대">
+                            <Icon icon="mdi:plus" className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (mapRef.current) {
+                                    mapRef.current.zoomOut({ duration: 300 });
+                                }
+                                setZoomLevel((prev) => Math.max(prev - 1, 0));
+                            }}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                            aria-label="축소">
+                            <Icon icon="mdi:minus" className="w-5 h-5" />
+                        </button>
+                        <div className="w-full h-px bg-gray-300 my-1" />
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIs3DMode(false);
+                                if (mapRef.current) {
+                                    mapRef.current.easeTo({
+                                        pitch: 0,
+                                        duration: 500,
+                                    });
+                                }
+                            }}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${!is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            aria-label="2D">
+                            <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setIs3DMode(true);
+                                if (mapRef.current) {
+                                    mapRef.current.easeTo({
+                                        pitch: 60,
+                                        duration: 500,
+                                    });
+                                }
+                            }}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            aria-label="3D">
+                            <Icon icon="mdi:cube" className="w-5 h-5" />
+                        </button>
+                        <div className="w-full h-px bg-gray-300 my-1" />
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const newBearing = mapBearing - 15;
+                                setMapBearing(newBearing);
+                                if (mapRef.current) {
+                                    mapRef.current.easeTo({
+                                        bearing: newBearing,
+                                        duration: 300,
+                                    });
+                                }
+                            }}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                            aria-label="회전 왼쪽">
+                            <Icon icon="mdi:rotate-left" className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const newBearing = mapBearing + 15;
+                                setMapBearing(newBearing);
+                                if (mapRef.current) {
+                                    mapRef.current.easeTo({
+                                        bearing: newBearing,
+                                        duration: 300,
+                                    });
+                                }
+                            }}
+                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                            aria-label="회전 오른쪽">
+                            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+
+                {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
+                {(!hideControls || showFastSearchList) && streamMapData?.markers && streamMapData.markers.length > 0 && (
+                    <div
+                        className="absolute top-[340px] flex flex-col gap-2 transition-all duration-500 ease-in-out"
+                        style={{
+                            left: showFastSearchList ? "800px" : `${leftPanelWidth + 24}px`,
+                            zIndex: 250,
+                        }}
+                        onClick={(e) => e.stopPropagation()}>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setStreamMarkerViewType("individual");
+                            }}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "individual" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            aria-label="개별 마커"
+                            aria-pressed={streamMarkerViewType === "individual"}
+                            tabIndex={0}>
+                            <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setStreamMarkerViewType("cluster");
+                            }}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "cluster" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            aria-label="클러스터"
+                            aria-pressed={streamMarkerViewType === "cluster"}
+                            tabIndex={0}>
+                            <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setStreamMarkerViewType("heatmap");
+                            }}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "heatmap" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            aria-label="히트맵"
+                            aria-pressed={streamMarkerViewType === "heatmap"}
+                            tabIndex={0}>
+                            <Icon icon="mdi:fire-circle" className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+
+                {/* 지도 - 박스 밖으로 */}
+                <div
+                    className="relative border border-[#31353a] transition-transform duration-700 ease-out"
+                    style={{
+                        borderWidth: "1px",
+                        height: "100%",
+                        width: (zoomLevel > 0 || focusDeltaPercent > 0) && !flyToLocation ? `calc(100% + ${overscanPx * 2}px)` : "100%",
+                        left: (zoomLevel > 0 || focusDeltaPercent > 0) && !flyToLocation ? `-${overscanPx}px` : "0",
+                        transform: flyToLocation ? "none" : `scale(${mapScale}) translate(calc(${mapTranslate.x}% + ${mapTranslate.offsetX}%), ${mapTranslate.y}%) translateZ(0)`,
+                        transformOrigin: mapTransformOrigin,
+                        willChange: "transform",
+                        transition: "transform 0.5s ease-out, width 0.5s ease-out, left 0.5s ease-out",
+                    }}>
+                    <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }} />
+                    <div className="absolute inset-0 bg-black/5 pointer-events-none" style={{ zIndex: 2 }}></div>
+
+                    {/* 화각 펼쳐지는 애니메이션 스타일 */}
+                    <style>{`
           @keyframes viewAngleExpand {
             0% {
               opacity: 0;
@@ -2491,10 +2405,10 @@ const MapView = ({
             animation-delay: var(--animation-delay, 0ms);
           }
         `}</style>
-            </div>
+                </div>
 
-            {/* Agent Hub 버튼 - 초기: CCTV 위 30px / 1번: 아래로만 / 고속검색: 우측 하단 */}
-        </div>
+                {/* Agent Hub 버튼 - 초기: CCTV 위 30px / 1번: 아래로만 / 고속검색: 우측 하단 */}
+            </div>
         </>
     );
 };

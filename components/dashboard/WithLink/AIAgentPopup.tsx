@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react";
 import { useChatStream } from "@/src/hooks/useChatStream";
 import type { MapStreamData, ChartStreamData, CompleteStreamPayload, TableStreamData } from "@/types/streamJson.types";
 import { AgentCard } from "@/components/dashboard/WithLink/AgentCard";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from "chart.js";
 import { ChartMessage } from "./ChartMessage";
 import { TableMessage } from "./TableMessage";
 import { NormalMessage } from "./NormalMessage";
@@ -89,6 +89,7 @@ export interface ChatMessage {
     disclaimer?: string | null;
     hasExpanded?: boolean;
     isBlackBg?: boolean;
+    actions?: unknown[];
 }
 
 /** AI 응답으로 누적 노출할 차트/테이블 카드 타입 */
@@ -96,44 +97,6 @@ const AGENT_GRADIENT = "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566
 
 // Chart.js 등록 (한 번만)
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
-
-const CHART_COLORS = ["rgba(255, 99, 132, 0.85)", "rgba(54, 162, 235, 0.85)", "rgba(255, 206, 86, 0.85)", "rgba(75, 192, 192, 0.85)", "rgba(153, 102, 255, 0.85)"];
-const LINE_CHART_COLORS = ["#0066FF", "#8A2BE2", "#ff8566"];
-
-const CHART_LEGEND_TITLE_COLOR = "rgba(229, 231, 235, 0.95)";
-
-const getChartOptions = (title: string): ChartOptions<"bar" | "line" | "pie" | "doughnut"> => ({
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-        legend: {
-            position: "top" as const,
-            labels: {
-                color: CHART_LEGEND_TITLE_COLOR,
-                font: { size: 12 },
-                usePointStyle: true,
-                pointStyle: "circle",
-                padding: 16,
-            },
-        },
-        title: {
-            display: !!title,
-            text: title,
-            color: CHART_LEGEND_TITLE_COLOR,
-            font: { size: 14 },
-        },
-    },
-    scales: {
-        x: {
-            ticks: { color: CHART_LEGEND_TITLE_COLOR, maxRotation: 45 },
-            grid: { color: "rgba(229, 231, 235, 0.2)" },
-        },
-        y: {
-            ticks: { color: CHART_LEGEND_TITLE_COLOR },
-            grid: { color: "rgba(229, 231, 235, 0.2)" },
-        },
-    },
-});
 
 // 메시지 렌더링 공통 컴포넌트
 interface MessageListProps {
@@ -147,6 +110,7 @@ interface MessageListProps {
     trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
     onClickExpandTableOrChart?: (messageId: string) => void;
     onMapLocationRequest?: (lat: number, lng: number) => void;
+    onActionClick: (prompt: string) => void;
 }
 
 /** 초기 환영 문구 (채팅 시작 시 한 번만 표시) */
@@ -170,7 +134,7 @@ const getTrackingUpdateMsgContent = () => {
     };
 };
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest, onActionClick }) => {
     const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
     return (
         <>
@@ -447,7 +411,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                             ) : message.tableData ? (
                                                 <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} />
                                             ) : message.htmlContent ? (
-                                                <NormalMessage message={message} />
+                                                <NormalMessage message={message} onActionClick={onActionClick} />
                                             ) : (
                                                 <>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">
@@ -782,6 +746,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     const hasTable = !!(payload?.data?.table ?? (payload?.data?.tables && payload.data.tables.length > 0));
                     const hasExpanded = hasChart || tableCount > 5;
                     const isBlack = hasChart || hasTable;
+                    const actions = payload?.actions ?? [];
+
                     const next: ChatMessage = {
                         ...msg,
                         type: "normal",
@@ -792,6 +758,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     };
                     if (payload?.title) next.title = payload.title;
                     if (payload?.rationale) next.rationale = payload.rationale;
+                    if (actions.length > 0) next.actions = actions;
                     return next;
                 })
             );
@@ -1642,6 +1609,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                     trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                                     onClickExpandTableOrChart={handleExpandTableOrChart}
                                     onMapLocationRequest={onMapLocationRequest}
+                                    onActionClick={handleSendMessage}
                                 />
                             </div>
                             <div ref={bottomRef} className="h-2" />
