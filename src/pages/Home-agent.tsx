@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
-import EventList from '@/components/dashboard/HOME/EventList';
+import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/HOME-v4/MapView';
 import ObjectTrackingMapView from '@/components/dashboard/HOME-v4/ObjectTrackingMapView';
-import LeftPanel from '@/components/dashboard/HOME-v4/LeftPanel';
+import LeftPanel from '@/components/dashboard/LeftPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
 import ReportPopup from '@/components/dashboard/HOME-v4/ReportPopup';

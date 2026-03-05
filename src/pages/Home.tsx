@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import EventList from "@/components/dashboard/HOME/EventList";
 import MapView from "@/components/dashboard/HOME/MapView";
 import UnityMapView from "@/components/dashboard/HOME/unity/UnityMapView";
-import LeftPanel from "@/components/dashboard/HOME/LeftPanel";
+import LeftPanel from "@/components/dashboard/LeftPanel";
 import HeatmapPanel from "@/components/dashboard/HeatmapPanel";
 import CCTVStatusPanel from "@/components/dashboard/HOME/CCTVStatusPanel";
 import AIAgentPopup from "@/components/dashboard/HOME/AIAgentPopup";

@@ -973,6 +973,8 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
         <TrafficIncidentSection />
 
+        <TrafficRouteStatusSection />
+
         {/* 도시 안전·시설 관리 현황 */}
         <div className="rounded-lg px-4 pt-4 pb-4 flex flex-col gap-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <h3 className="text-white font-semibold text-sm">도시 안전·시설 관리 현황</h3>
@@ -1147,13 +1149,69 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               </div>
             </div>
 
-        </div>
+          {/* 시설물 운영 상태 */}
+          <div className="grid grid-cols-3 gap-3">
+            {/* 도로 조명 */}
+            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-gray-400 text-xs font-semibold">도로 조명</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
+                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.normalCount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
+                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.errorCount}</span>
+                </div>
+              </div>
+            </div>
 
-        <TrafficRouteStatusSection />
+            {/* 교통신호 */}
+            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-gray-400 text-xs font-semibold">교통신호</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
+                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.normalCount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
+                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.errorCount}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 안전 비상벨 */}
+            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <span className="text-gray-400 text-xs font-semibold">안전 비상벨</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
+                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
+                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.normalCount.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
+                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
+                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.errorCount}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
 export default LeftPanel;
-

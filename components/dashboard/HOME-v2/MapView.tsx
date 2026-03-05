@@ -285,7 +285,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
-      center: [126.8136, 37.4865], // 성운동 좌표
+      center: [126.989127259713, 37.425989842666], // 정부과천청사역
       zoom: 15,
       pitch: 45,
       bearing: 0,
@@ -597,7 +597,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       // 초기 위치로 복귀
       if (map.loaded()) {
         map.flyTo({
-          center: [126.8136, 37.4865], // 성운동 좌표
+          center: [126.989127259713, 37.425989842666], // 정부과천청사역
           zoom: 15,
           pitch: 45,
           bearing: 0,
@@ -697,42 +697,42 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       {
         id: 'A-230',
         name: '별빛A-230',
-        location: [126.784245, 37.5056784],
+        location: [126.996951819665, 37.435964588524],
         cameras: ['고정1', '고정2', '고정3', '고정4'],
         directions: [0, 90, 180, 270]
       },
       {
         id: 'A-444',
         name: '별빛A-444',
-        location: [126.7828196, 37.50501939999999],
+        location: [126.995526419665, 37.435305588524],
         cameras: ['검지1', '검지2', '검지3'],
         directions: [45, 135, 225]
       },
       {
         id: 'A-481',
         name: '별빛A-481',
-        location: [126.7828168, 37.504067],
+        location: [126.995523619665, 37.434353188524],
         cameras: ['검지1', '검지2', '검지3', '검지4'],
         directions: [0, 90, 180, 270]
       },
       {
         id: 'A-498',
         name: '별빛A-498',
-        location: [126.7843434, 37.5042779],
+        location: [126.997050219665, 37.434564088524],
         cameras: ['검지1', '검지2', '검지3', '검지4'],
         directions: [45, 135, 225, 315]
       },
       {
         id: 'A-583',
         name: '별빛A-583',
-        location: [126.7839366, 37.5057328],
+        location: [126.996643419665, 37.436018988524],
         cameras: ['검지1 별빛', '검지2 별빛', '검지3 별빛'],
         directions: [60, 150, 240]
       },
       {
         id: 'A-604',
         name: '별빛A-604',
-        location: [126.7858121, 37.5047548],
+        location: [126.998518919665, 37.435040988524],
         cameras: ['검지1', '검지2'],
         directions: [90, 270]
       }
@@ -977,9 +977,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
     
     const policeStationLocations = [
-      { location: [126.7852, 37.5062] as [number, number], name: '별빛파출소' },
-      { location: [126.7815, 37.5040] as [number, number], name: '은하지구대' },
-      { location: [126.7860, 37.5043] as [number, number], name: '별빛경찰서' },
+      { location: [126.997906819665, 37.436486188524] as [number, number], name: '별빛파출소' },
+      { location: [126.994206819665, 37.434286188524] as [number, number], name: '은하지구대' },
+      { location: [126.998706819665, 37.434586188524] as [number, number], name: '별빛경찰서' },
     ];
     
     const policeMarkerList: maplibregl.Marker[] = [];
@@ -1085,7 +1085,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     if (!mapRef.current) return;
     
     const map = mapRef.current;
-    const radiusCenter: [number, number] = [126.783853180335, 37.5049838114765];
+    const radiusCenter: [number, number] = [126.99656, 37.43527];
     
     // showFastSearchList가 false면 기존 마커 제거
     if (!showFastSearchList) {
@@ -1931,7 +1931,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const panelGap = 16;
         const { buttonBottom } = getCCTVPanelLayout();
         const cctvPanelRight = rightPanelWidth + panelGap;
-        const isInitial = showCCTV && !hideControls;
+        const isInitial = !hideControls;
         const isFastSearch = showFastSearch || showFastSearchList;
         const bottom = isInitial ? buttonBottom : 24;
         const right = isInitial ? cctvPanelRight : isFastSearch ? 24 : cctvPanelRight;

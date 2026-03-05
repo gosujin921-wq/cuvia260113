@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
-import EventList from '@/components/dashboard/HOME/EventList';
+import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/HOME-v2/MapView';
 import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
-import LeftPanel from '@/components/dashboard/HOME-v2/LeftPanel';
+import LeftPanel from '@/components/dashboard/LeftPanel';
 import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
@@ -309,7 +309,7 @@ export default function HomeV2() {
   const [showCaptureNotification, setShowCaptureNotification] = useState<boolean>(false); // 포착 알림 애니메이션
   const [captureNotificationMessage, setCaptureNotificationMessage] = useState<string>(''); // 포착 알림 메시지
   const [lastMapState, setLastMapState] = useState<{ center: [number, number]; zoom: number; pitch: number; bearing: number }>({
-    center: [126.8136, 37.4865],
+    center: [126.989127259713, 37.425989842666], // 정부과천청사역
     zoom: 15,
     pitch: 60,
     bearing: -17.6
@@ -360,7 +360,7 @@ export default function HomeV2() {
       .filter((event) => event.processingStage !== '종결');
   }, []);
 
-  // 가상 이벤트 데이터 (레이아웃 확인용)
+  // 가상 이벤트 데이터 (레이아웃 확인용) - 가상 지역(하늘시 별빛구), 과천 내부 좌표
   const mockEvents: Event[] = useMemo(() => {
     const now = new Date();
     const formatTime = (hours: number, minutes: number) => {
@@ -376,7 +376,7 @@ export default function HomeV2() {
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
-        location: { name: '하늘시 별빛구 달빛동 지하주차장', coordinates: [126.98, 37.42] as [number, number] },
+        location: { name: '하늘시 별빛구 달빛동 지하주차장', coordinates: [127.192706819665, 37.350286188524] as [number, number] },
         processingStage: '생성',
         resolution: { category: '112', code: '001', description: '' },
       },
@@ -387,7 +387,7 @@ export default function HomeV2() {
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
-        location: { name: '하늘시 별빛구 중앙공원 산책로', coordinates: [126.99, 37.43] as [number, number] },
+        location: { name: '하늘시 별빛구 별양동 중앙공원 북문 인근', coordinates: [127.202706819665, 37.360286188524] as [number, number] },
         processingStage: '선별',
         resolution: { category: '약자', code: '002', description: '' },
       },
@@ -398,7 +398,7 @@ export default function HomeV2() {
         priority: '일반' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
-        location: { name: '하늘시 별빛구 달빛동 사거리', coordinates: [126.97, 37.41] as [number, number] },
+        location: { name: '하늘시 별빛구 막계동 관문사거리', coordinates: [127.182706819665, 37.340286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '112', code: '003', description: '' },
       },
@@ -409,7 +409,7 @@ export default function HomeV2() {
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 45)),
-        location: { name: '하늘시 별빛구 하늘역 앞 광장', coordinates: [126.96, 37.4] as [number, number] },
+        location: { name: '하늘시 별빛구 문원동 하늘역 2번 출구', coordinates: [127.172706819665, 37.330286188524] as [number, number] },
         processingStage: '생성',
         resolution: { category: 'AI', code: '004', description: '' },
       },
@@ -420,7 +420,7 @@ export default function HomeV2() {
         priority: '일반' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
-        location: { name: '하늘시 별빛구 구름대로', coordinates: [126.95, 37.39] as [number, number] },
+        location: { name: '하늘시 별빛구 중앙동 구름대로 사당역 방향', coordinates: [127.162706819665, 37.320286188524] as [number, number] },
         processingStage: '선별',
         resolution: { category: '112', code: '005', description: '' },
       },
@@ -432,7 +432,7 @@ export default function HomeV2() {
         priority: '주의' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
-        location: { name: '하늘시 별빛구 달빛초등학교 정문 앞', coordinates: [126.98, 37.42] as [number, number] },
+        location: { name: '하늘시 별빛구 별양동 달빛초등학교 정문 앞', coordinates: [127.192706819665, 37.350286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '112', code: '006', description: '' },
       },
@@ -443,7 +443,7 @@ export default function HomeV2() {
         priority: '주의' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
-        location: { name: '하늘시 별빛구 하늘시청 앞 교차로', coordinates: [126.99, 37.43] as [number, number] },
+        location: { name: '하늘시 별빛구 중앙동 하늘시청 앞 교차로', coordinates: [127.202706819665, 37.360286188524] as [number, number] },
         processingStage: '생성',
         resolution: { category: '119', code: '007', description: '' },
       },
@@ -454,7 +454,7 @@ export default function HomeV2() {
         priority: '주의' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 30)),
-        location: { name: '하늘시 별빛구 구름역 인근 상가 앞', coordinates: [126.97, 37.41] as [number, number] },
+        location: { name: '하늘시 별빛구 중앙동 구름역 인근 상가 앞', coordinates: [127.182706819665, 37.340286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '112', code: '008', description: '' },
       },
@@ -466,7 +466,7 @@ export default function HomeV2() {
         priority: '경계' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
-        location: { name: '하늘시 별빛구 달빛동 아파트 단지 내 쓰레기 수거함', coordinates: [126.96, 37.4] as [number, number] },
+        location: { name: '하늘시 별빛구 막계동 달빛동 아파트 단지 쓰레기 수거함', coordinates: [127.172706819665, 37.330286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '119', code: '009', description: '' },
       },
@@ -477,7 +477,7 @@ export default function HomeV2() {
         priority: '경계' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
-        location: { name: '하늘시 별빛구 달빛동 상가 앞', coordinates: [126.95, 37.39] as [number, number] },
+        location: { name: '하늘시 별빛구 달빛동 상가 앞', coordinates: [127.162706819665, 37.320286188524] as [number, number] },
         processingStage: '선별',
         resolution: { category: '112', code: '010', description: '' },
       },
@@ -543,7 +543,7 @@ export default function HomeV2() {
         // 이벤트 핀을 지도에 표시하기 위해 visibleEventIds에 추가
         setVisibleEventIds(new Set([missingEvent.id]));
         // 이벤트 위치로 지도 이동
-        setFlyToLocation([126.783853180335, 37.5049838114765]);
+        setFlyToLocation([126.99656, 37.43527]);
       }
       dispatch({ type: 'START_FAST_SEARCH' });
     } else if (menuId === 'object-tracking') {
@@ -637,14 +637,25 @@ export default function HomeV2() {
 
   // 이벤트 액션 핸들러 (useCallback으로 메모이제이션)
   const handleEventAction = useCallback((eventId: string) => {
-    const event = events.find((e) => e.id === eventId);
-    if (event?.eventId) {
+    const event = visibleEvents.find((e) => e.id === eventId);
+    if (!event) return;
+    if (event.eventId) {
       navigate(`/event/${event.eventId}`);
       return;
     }
     dispatch({ type: 'SET_SELECTED_EVENT', payload: eventId });
     dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: eventId });
-  }, [events, navigate]);
+    // 선택한 이벤트 위치로 지도 이동
+    const coords = event.location?.coordinates;
+    if (coords && Array.isArray(coords) && coords.length >= 2) {
+      setFlyToLocation([coords[0], coords[1]]);
+    }
+    // 실제 이벤트(allConvertedEvents)인 경우 핀 노출을 위해 visibleEventIds에 추가
+    const isRealEvent = allConvertedEvents.some((e) => e.id === eventId);
+    if (isRealEvent) {
+      setVisibleEventIds((prev) => new Set([...prev, eventId]));
+    }
+  }, [visibleEvents, allConvertedEvents, navigate]);
 
   // 이벤트 호버 핸들러 (useCallback으로 메모이제이션)
   const handleEventHover = useCallback((eventId: string | null) => {
@@ -748,12 +759,12 @@ export default function HomeV2() {
     // 객체 추적 완료 플래그 리셋
     setObjectTrackingCompleted(false);
     
-    // 추적 경로 좌표
+    // 추적 경로 좌표 (과천역 근처)
     const trackingSequence = [
-      [126.783853180335, 37.5049838114765], // 1번: 초기 목격 지점
-      [126.7843434, 37.5042779],            // 2번: 목격 지점 (은하동 126-18)
-      [126.7828196, 37.50501939999999],     // 3번: 목격 지점 (은하동 125-46)
-      [126.7828168, 37.504067],             // 4번: 목격 지점 (은하동 125-32)
+      [126.99656, 37.43527],                // 1번: 초기 목격 지점
+      [126.997050219665, 37.434564088524],  // 2번: 목격 지점
+      [126.995526419665, 37.435305588524],  // 3번: 목격 지점
+      [126.995523619665, 37.434353188524],  // 4번: 목격 지점
     ];
     
     // 1단계: 1번 핀 표시 및 줌인 (초기화 후 약간의 딜레이)
@@ -820,7 +831,7 @@ export default function HomeV2() {
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-      setFlyToLocation([126.783853180335, 37.5049838114765]);
+      setFlyToLocation([126.99656, 37.43527]);
       
       if (showMouseGuide) {
         jumpToStep('fast-search-start', 500);
@@ -846,7 +857,7 @@ export default function HomeV2() {
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
-      setFlyToLocation([126.783853180335, 37.5049838114765]);
+      setFlyToLocation([126.99656, 37.43527]);
       
       if (showMouseGuide) {
         jumpToStep('fast-search-start', 500);
