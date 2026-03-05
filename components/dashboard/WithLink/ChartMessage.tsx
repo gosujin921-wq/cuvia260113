@@ -56,7 +56,11 @@ interface ChartMessageProps {
 export function ChartMessage({ message }: ChartMessageProps) {
     const displayTables = useMemo(() => {
         if (!message.tableData) return null;
-        return { ...message.tableData, visibleRows: message.tableData.data?.slice(0, ROW_LIMIT), needsTruncation: (message.tableData.data?.length ?? 0) > ROW_LIMIT, totalRows: message.tableData.data?.length ?? 0, idx: 0 };
+        const totalRows = message.tableData.total_count ?? 0;
+        const visibleRows = message.tableData.data?.slice(0, ROW_LIMIT) ?? [];
+        const needsTruncation = totalRows > ROW_LIMIT;
+        const remainingCount = needsTruncation ? totalRows - ROW_LIMIT : 0;
+        return { ...message.tableData, visibleRows, needsTruncation, totalRows, remainingCount, idx: 0 };
     }, [message]);
 
     if (!message.chartData) return null;
@@ -108,12 +112,10 @@ export function ChartMessage({ message }: ChartMessageProps) {
                             </tbody>
                         </table>
                     </div>
-                    {displayTables.needsTruncation && (
-                        <div className="flex flex-col items-center py-2 text-gray-400 select-none text-lg leading-tight">
-                            <span>⦁</span>
-                            <span>⦁</span>
-                            <span>⦁</span>
-                        </div>
+                    {displayTables.remainingCount > 0 && (
+                        <p className="text-sm text-gray-400 py-2">
+                            ... {displayTables.remainingCount}건 더 있음
+                        </p>
                     )}
                 </>
             )}
