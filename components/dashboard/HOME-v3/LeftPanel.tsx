@@ -1383,70 +1383,11 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               </div>
             </div>
 
-          {/* 시설물 운영 상태 */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* 도로 조명 */}
-            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' }}>
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-white text-xs font-semibold">도로 조명</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.errorCount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 교통신호 */}
-            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' }}>
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-white text-xs font-semibold">교통신호</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.errorCount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 안전 비상벨 */}
-            <div className="px-3 py-3 rounded-lg" style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', border: '1px solid rgba(255, 255, 255, 0.3)', boxShadow: '0 4px 16px 0 rgba(31, 38, 135, 0.1)' }}>
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-white text-xs font-semibold">안전 비상벨</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-white text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.errorCount}</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* 돌발 정보 */}
         <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flexShrink: 0, backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', boxShadow: 'inset -2px -2px 4px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.4)' }}>
-          <h3 className="text-white text-sm font-bold mb-3 drop-shadow-md">도시 교통 돌발 정보</h3>
+          <h3 className="text-white text-sm font-bold mb-3 drop-shadow-md">주변 도시 교통 돌발 정보</h3>
           <div ref={incidentContainerRef} className="flex flex-col gap-2">
             {Array.from({ length: visibleIncidentCount }).map((_, index) => {
               const dataIndex = (incidentOffset + index) % incidentData.length;

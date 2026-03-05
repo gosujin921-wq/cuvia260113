@@ -1,7 +1,9 @@
 import { Icon } from '@iconify/react';
+import { TrafficIncidentSection } from '@/components/dashboard/TrafficIncidentSection';
+import { TrafficRouteStatusSection } from '@/components/dashboard/TrafficRouteStatusSection';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis } from 'recharts';
 
 interface MonitoringSpot {
   spotId: string;
@@ -111,8 +113,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [previousHeatmapData, setPreviousHeatmapData] = useState<Record<string, Record<string, number>>>({});
   const previousHeatmapDataRef = useRef<Record<string, Record<string, number>>>({});
   const [visibleHeatmapCount, setVisibleHeatmapCount] = useState(4);
-  const [trendAnimationProgress, setTrendAnimationProgress] = useState(0);
-  const [activeFloatingLabelIndex, setActiveFloatingLabelIndex] = useState(0);
   const [sensorValues, setSensorValues] = useState({
     pm25: 38,
     pm10: 72,
@@ -128,6 +128,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
   const [powerSupplyTime, setPowerSupplyTime] = useState<string>('');
   const [isMounted, setIsMounted] = useState(false);
   const [sensorLocationIndex, setSensorLocationIndex] = useState<number>(0);
+  const [airQualitySlideIndex, setAirQualitySlideIndex] = useState<number>(0);
   const [floodRiskZoneIndex, setFloodRiskZoneIndex] = useState<number>(0);
   const [facilityRiskZoneIndex, setFacilityRiskZoneIndex] = useState<number>(0);
   
@@ -214,6 +215,14 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     }, 2000);
     return () => clearInterval(interval);
   }, [sensorLocations]);
+
+  useEffect(() => {
+    const totalSlides = sensorLocations.length * 2;
+    const interval = setInterval(() => {
+      setAirQualitySlideIndex((prev) => (prev + 1) % totalSlides);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [sensorLocations.length]);
 
   const cctvStatus: CctvStatus = {
     totalRate: 96.1,
@@ -459,45 +468,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     { label: '지연', value: cctvStatus.delayCount, dot: 'bg-yellow-400', color: 'text-yellow-400' },
   ];
 
-  // 돌발 정보 데이터 (카테고리별)
-  const allIncidentData = useMemo(() => {
-    const data = [
-      // 🚗 교통·차량
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 해빛로 해빛역 인근 차량 추돌 사고로 2개 차로 정체 발생' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 구름로 구름역 사거리 승용차 고장으로 부분 통제' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 산업로 물결동 교차로 화물차 정차로 교통 흐름 저하' },
-      
-      // 🚧 도로·시설
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 달빛로 중앙공원 인근 도로 포트홀 발생, 차량 서행 필요' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 노을동 이면도로 맨홀 파손으로 임시 통제' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 이슬동 공사 차량 진출입으로 일시적 교통 혼잡' },
-      
-      // 🐾 생활·안전
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 하늘로 횡단보도 인근 소형 동물 로드킬 발생' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 바람본동 골목길 쓰러진 가로수로 보행 불편' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 달빛역 인근 노상 적치물로 보행자 통행 주의' },
-      
-      // 🌧 기상·환경 연계형
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 별빛구 달빛로 지하차도 인근 강우로 노면 미끄럼 주의' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 무지개구 성운동 일대 강풍으로 간판 흔들림 신고 접수' },
-      { icon: 'mdi:alert-circle', color: 'text-red-400', text: '하늘시 햇살구 물결동 비산먼지 발생 민원 접수' },
-    ];
-    
-    // 랜덤 섞기 (Fisher-Yates shuffle)
-    const shuffled = [...data];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  }, []);
-
-  const incidentData = allIncidentData;
-
-  const [incidentOffset, setIncidentOffset] = useState(0);
-  const [incidentContainerHeight, setIncidentContainerHeight] = useState(0);
-  const incidentContainerRef = useRef<HTMLDivElement>(null);
-
   /**
    * 📡 API 연동 필요: 도시 안전·시설 관리 현황
    * 현재: 더미 데이터
@@ -641,172 +611,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
       hash |= 0;
     }
     return Math.abs(hash) % (maxInclusive + 1);
-  };
-
-  // 시간대별 에너지 사용량 데이터 생성 (0~24시, 30분 간격, 총 49개 포인트)
-  const trendData = useMemo(() => {
-    const seedBase = typeof window !== 'undefined' ? new Date().toISOString().slice(0, 10) : 'static';
-    const hours = Array.from({ length: 49 }, (_, index) => index * 0.5);
-    const maxValue = 260000; // 26만 MWh
-    const minValue = 120000; // 12만 MWh
-    const range = maxValue - minValue;
-
-    return hours.map((hour) => {
-      const t = hour / 24;
-      // 부드러운 곡선을 위한 파형 생성
-      const wave1 = Math.sin(t * Math.PI * 2) * 1.0;
-      const wave2 = Math.sin(t * Math.PI * 4) * 0.5;
-      const baseWave = (wave1 + wave2) / 1.4;
-      // 시드 기반 노이즈로 자연스러운 변동 추가
-      const noiseSeed = getSeededInt(`${seedBase}-${Math.floor(hour)}`, 100);
-      const noise = (noiseSeed / 100 - 0.5) * 0.04;
-      const shaped = baseWave + noise;
-      const value = minValue + (range / 2) + shaped * (range / 2);
-
-      return {
-        hour: hour % 1 === 0 ? (hour === 24 ? '24' : hour.toString().padStart(2, '0')) : '',
-        xValue: hour, // X축 위치 (0~24)
-        value: Math.round(value),
-        originalHour: hour,
-      };
-    });
-  }, []);
-
-  const X_AXIS_TICKS = [0, 3, 6, 9, 12, 15, 18, 21, 24];
-
-  const labeledTrendData = useMemo(() => {
-    return trendData
-      .map((item, index) => ({ ...item, originalIndex: index }))
-      .filter(item => {
-        if (!item.hour || item.hour === '') return false;
-        const hour = Number.parseInt(item.hour, 10);
-        return !Number.isNaN(hour) && X_AXIS_TICKS.includes(hour);
-      });
-  }, [trendData]);
-
-  // 애니메이션을 위한 데이터 (순차적으로 나타나는 효과)
-  const animatedTrendData = useMemo(() => {
-    return trendData.map((item, index) => {
-      const hasLabel = item.hour !== '';
-      if (!hasLabel) {
-        return { ...item, _opacity: 0 };
-      }
-      
-      const labelIndex = labeledTrendData.findIndex(labeled => labeled.originalIndex === index);
-      
-      if (labelIndex === -1) {
-        return { ...item, _opacity: 0 };
-      }
-      
-      // 순차적으로 나타나도록 opacity 계산
-      const totalLabels = labeledTrendData.length;
-      const pointProgress = (trendAnimationProgress * totalLabels) - labelIndex;
-      const opacity = Math.max(0, Math.min(1, pointProgress));
-      
-      return {
-        ...item,
-        _opacity: opacity,
-      };
-    });
-  }, [trendData, labeledTrendData, trendAnimationProgress]);
-
-  // X축 마지막 틱(24)의 Y 위치를 다른 틱과 맞추기 위한 ref
-  const xAxisBaselineYRef = useRef<number | null>(null);
-  // X축 각 틱의 SVG 내부 X 좌표를 저장 (플로팅 라벨 위치 계산용)
-  const xAxisTickXMapRef = useRef<Map<number, number>>(new Map());
-  // 차트 컨테이너 ref (크기 측정용)
-  const trendChartContainerRef = useRef<HTMLDivElement>(null);
-  // 차트 컨테이너의 크기 정보 (플로팅 라벨 위치 계산용)
-  const [trendChartRect, setTrendChartRect] = useState<{ left: number; width: number; top: number; height: number }>({ left: 0, width: 0, top: 0, height: 0 });
-
-  // 차트 높이에 따라 Y축 틱 동적 계산
-  const yAxisTicks = useMemo(() => {
-    const height = trendChartRect.height;
-    if (height < 250) {
-      // 작은 높이: 3개 틱
-      return [120000, 190000, 260000];
-    } else if (height < 350) {
-      // 중간 높이: 6개 틱
-      return [120000, 150000, 180000, 210000, 240000, 260000];
-    } else {
-      // 큰 높이: 8개 틱
-      return [120000, 140000, 160000, 180000, 200000, 220000, 240000, 260000];
-    }
-  }, [trendChartRect.height]);
-
-  // 차트 컨테이너 크기 측정 (ResizeObserver + window resize)
-  useEffect(() => {
-    const chartEl = trendChartContainerRef.current;
-    if (!chartEl) return;
-    const update = () => {
-      const cr = chartEl.getBoundingClientRect();
-      setTrendChartRect({
-        left: 0, // wrapper 내부 기준이므로 0
-        width: cr.width,
-        top: 0, // wrapper 내부 기준이므로 0
-        height: cr.height,
-      });
-    };
-    const ro = new ResizeObserver(() => requestAnimationFrame(update));
-    ro.observe(chartEl);
-    update();
-    const onResize = () => requestAnimationFrame(update);
-    window.addEventListener('resize', onResize);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', onResize);
-    };
-  }, []);
-
-  const renderTrendXAxisTick = (props: any) => {
-    const { x, y, payload } = props ?? {};
-    const raw = payload?.value;
-    if (raw === undefined || raw === null) return null;
-
-    const hour = Number(raw);
-    xAxisTickXMapRef.current.set(hour, x);
-    const label = String(hour).padStart(2, '0');
-    const isLast = hour === 24;
-
-    if (!isLast) {
-      xAxisBaselineYRef.current = y;
-    }
-    const yToUse = isLast && xAxisBaselineYRef.current != null ? xAxisBaselineYRef.current : y;
-
-    return (
-      <g transform={`translate(${x},${yToUse})`}>
-        <text x={0} y={0} dy={12} textAnchor="middle" fill="#9ca3af" fontSize={12}>
-          {label}
-        </text>
-        {isLast ? (
-          <text x={0} y={0} dy={28} textAnchor="middle" fill="#9ca3af" fontSize={12}>
-            (시)
-          </text>
-        ) : null}
-      </g>
-    );
-  };
-
-  const renderTrendYAxisTick = (props: any) => {
-    const { x, y, payload } = props ?? {};
-    const value = Number(payload?.value);
-    if (Number.isNaN(value)) return null;
-
-    const isTop = value === 260000;
-    const displayValue = value >= 10000 ? `${(value / 10000).toFixed(0)}만` : value;
-
-    return (
-      <g transform={`translate(${x},${y})`}>
-        {isTop ? (
-          <text x={0} y={0} dy={-8} textAnchor="end" fill="#9ca3af" fontSize={12}>
-            (MWh)
-          </text>
-        ) : null}
-        <text x={0} y={0} dy={4} textAnchor="end" fill="#9ca3af" fontSize={12}>
-          {displayValue}
-        </text>
-      </g>
-    );
   };
 
   const heatmapTimeSlots = useMemo(() => {
@@ -1027,50 +831,6 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     return () => clearInterval(interval);
   }, [totalAreaPages, allHeatmapAreas.length, visibleHeatmapCount, heatmapData]);
 
-  // 플로팅 라벨 순차적 애니메이션 (각 라벨이 1초씩 표시)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveFloatingLabelIndex((prev) => (prev + 1) % X_AXIS_TICKS.length);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // 돌발 정보 표시 개수 (브라우저 높이에 따라 동적 조정)
-  const [visibleIncidentCount, setVisibleIncidentCount] = useState(1);
-
-  useEffect(() => {
-    const updateVisibleCount = () => {
-      const windowHeight = window.innerHeight;
-      // 브라우저 높이에 따라 표시 개수 결정
-      if (windowHeight < 900) {
-        setVisibleIncidentCount(1);
-      } else if (windowHeight < 1000) {
-        setVisibleIncidentCount(2);
-      } else if (windowHeight < 1100) {
-        setVisibleIncidentCount(3);
-      } else if (windowHeight < 1200) {
-        setVisibleIncidentCount(4);
-      } else {
-        setVisibleIncidentCount(5);
-      }
-    };
-    
-    updateVisibleCount();
-    window.addEventListener('resize', updateVisibleCount);
-    
-    return () => {
-      window.removeEventListener('resize', updateVisibleCount);
-    };
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIncidentOffset((prev) => (prev + 1) % incidentData.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [incidentData.length]);
-
-
   return (
     <div
       className="flex flex-col overflow-hidden relative"
@@ -1113,101 +873,105 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
           </div>
         </div>
 
-        {/* 실시간 대기질 모니터링 */}
+        {/* 실시간 대기질 모니터링 - 3x1 롤링 */}
         <div className="rounded-lg px-4 pt-4 pb-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-white font-semibold text-sm">실시간 대기질 모니터링</h3>
             <span className="text-gray-400 text-xs flex items-center gap-1.5">
-              마지막 업데이트: <span>{sensorLocations[sensorLocationIndex]} 기준</span>
+              마지막 업데이트: <span>{sensorLocations[Math.floor(airQualitySlideIndex / 2)]} 기준</span>
               <span className="text-gray-400">·</span>
               <span>{lastUpdateTime || '--:--'}</span>
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2 min-w-0">
-            {/* PM2.5 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">PM2.5</span>
+            {airQualitySlideIndex % 2 === 0 ? (
+              <>
+                {/* PM2.5 */}
+                <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+                  <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <Icon icon="mdi:air-filter" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                      <span className="text-gray-400 text-xs truncate">PM2.5</span>
+                    </div>
+                    <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                      {getLevelText(sensorData.pm25.level)}
+                    </span>
+                  </div>
+                  <div className="text-white text-base font-semibold transition-all duration-300">
+                    {sensorData.pm25.value.toFixed(1)}
+                    <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
+                  </div>
                 </div>
-                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm25.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.pm25.level)}
-                </span>
-              </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
-                {sensorData.pm25.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
-              </div>
-            </div>
-
-            {/* PM10 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <div className="flex items-center gap-1 min-w-0">
-                  <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                  <span className="text-gray-400 text-xs truncate">PM10</span>
+                {/* PM10 */}
+                <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+                  <div className="flex items-center justify-between gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <Icon icon="mdi:weather-dust" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                      <span className="text-gray-400 text-xs truncate">PM10</span>
+                    </div>
+                    <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm10.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
+                      {getLevelText(sensorData.pm10.level)}
+                    </span>
+                  </div>
+                  <div className="text-white text-base font-semibold transition-all duration-300">
+                    {sensorData.pm10.value.toFixed(1)}
+                    <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
+                  </div>
                 </div>
-                <span className={`px-1.5 py-0.5 border ${getLevelColor(sensorData.pm10.level)} text-[9px] whitespace-nowrap flex-shrink-0`} style={{ borderRadius: '9999px' }}>
-                  {getLevelText(sensorData.pm10.level)}
-                </span>
-              </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
-                {sensorData.pm10.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">㎍/m³</span>
-              </div>
-            </div>
-
-            {/* 온도 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-400 text-xs truncate">온도</span>
-              </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
-                {sensorData.temperature.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">°C</span>
-              </div>
-            </div>
-
-            {/* 습도 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-400 text-xs truncate">습도</span>
-              </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
-                {sensorData.humidity.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">%</span>
-              </div>
-            </div>
-
-            {/* 강수량 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-400 text-xs truncate">강수량</span>
-              </div>
-              <div className="text-white text-sm font-semibold transition-all duration-300">
-                {sensorData.rainfall.value.toFixed(1)}
-                <span className="text-gray-400 text-[10px] ml-0.5">mm</span>
-                <span className="text-gray-400 text-[10px] ml-1">(누적량)</span>
-              </div>
-            </div>
-
-            {/* 풍속 */}
-            <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
-              <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
-                <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-400 text-xs truncate">풍속</span>
-              </div>
-              <div className="text-white text-base font-semibold transition-all duration-300">
-                {sensorData.windSpeed.value.toFixed(1)}
-                <span className="text-gray-400 text-xs ml-0.5">m/s</span>
-              </div>
-            </div>
+                {/* 온도 */}
+                <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+                  <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                    <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-400 text-xs truncate">온도</span>
+                  </div>
+                  <div className="text-white text-base font-semibold transition-all duration-300">
+                    {sensorData.temperature.value.toFixed(1)}
+                    <span className="text-gray-400 text-xs ml-0.5">°C</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* 습도 */}
+                <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+                  <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                    <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-400 text-xs truncate">습도</span>
+                  </div>
+                  <div className="text-white text-base font-semibold transition-all duration-300">
+                    {sensorData.humidity.value.toFixed(1)}
+                    <span className="text-gray-400 text-xs ml-0.5">%</span>
+                  </div>
+                </div>
+                {/* 강수량 */}
+                <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+                  <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                    <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-400 text-xs truncate">강수량</span>
+                  </div>
+                  <div className="text-white text-sm font-semibold transition-all duration-300">
+                    {sensorData.rainfall.value.toFixed(1)}
+                    <span className="text-gray-400 text-[10px] ml-0.5">mm</span>
+                    <span className="text-gray-400 text-[10px] ml-1">(누적량)</span>
+                  </div>
+                </div>
+                {/* 풍속 */}
+                <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
+                  <div className="flex items-center gap-1 min-w-0" style={{ height: '20px', marginBottom: '6px' }}>
+                    <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                    <span className="text-gray-400 text-xs truncate">풍속</span>
+                  </div>
+                  <div className="text-white text-base font-semibold transition-all duration-300">
+                    {sensorData.windSpeed.value.toFixed(1)}
+                    <span className="text-gray-400 text-xs ml-0.5">m/s</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
+
+        <TrafficIncidentSection />
 
         {/* 도시 안전·시설 관리 현황 */}
         <div className="rounded-lg px-4 pt-4 pb-4 flex flex-col gap-3 gradient-border-left-top" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
@@ -1383,235 +1147,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
               </div>
             </div>
 
-          {/* 시설물 운영 상태 */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* 도로 조명 */}
-            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-gray-400 text-xs font-semibold">도로 조명</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.errorCount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 교통신호 */}
-            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-gray-400 text-xs font-semibold">교통신호</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.errorCount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 안전 비상벨 */}
-            <div className="bg-[#393a42] px-3 py-3 rounded-lg">
-              <div className="flex items-center justify-between gap-4 mb-2">
-                <span className="text-gray-400 text-xs font-semibold">안전 비상벨</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">정상</span>
-                  <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.normalCount.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                  <span className="text-gray-400 text-xs whitespace-nowrap">장애</span>
-                  <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.errorCount}</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* 돌발 정보 */}
-        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col" style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
-          <h3 className="text-white text-sm font-semibold mb-3">도시 교통 돌발 정보</h3>
-          <div ref={incidentContainerRef} className="flex flex-col gap-2">
-            {Array.from({ length: visibleIncidentCount }).map((_, index) => {
-              const dataIndex = (incidentOffset + index) % incidentData.length;
-              const incident = incidentData[dataIndex];
-              return (
-                <div key={`incident-${incidentOffset}-${index}`} className="flex items-start gap-2 bg-[#393a42] px-3 py-2 rounded-lg min-w-0 transition-opacity duration-300">
-                  <Icon icon={incident.icon} className={`w-4 h-4 ${incident.color} flex-shrink-0 mt-0.5`} />
-                  <span className="text-gray-300 text-xs leading-relaxed truncate">{incident.text}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 시간별 에너지 사용량 (X축: 시간, Y축: 에너지 사용량 MWh) */}
-        <div className="rounded-lg p-4 gradient-border-left-top flex flex-col relative" style={{ flex: 1, minHeight: '180px', background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-white text-sm font-semibold">도시 에너지 사용량</h3>
-            <span className="text-gray-400 text-xs">지난 24시간</span>
-          </div>
-          <div className="overflow-hidden flex-1 min-h-[120px]">
-            <div className="h-full min-h-[120px]">
-              <div ref={trendChartContainerRef} className="relative w-full h-full min-h-[120px] rounded-xl overflow-visible">
-                <ResponsiveContainer width="100%" height="100%" minHeight={120}>
-                  <AreaChart
-                    data={animatedTrendData}
-                    margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
-                  >
-                    <defs>
-                      <linearGradient id="eventWaveFill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(0,102,255,0.5)" />
-                        <stop offset="100%" stopColor="rgba(15,23,42,0.15)" />
-                      </linearGradient>
-                      <linearGradient id="eventWaveStroke" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#0066FF" />
-                        <stop offset="50%" stopColor="#8A2BE2" />
-                        <stop offset="100%" stopColor="#ff8566" />
-                      </linearGradient>
-                      <filter id="neonGlow">
-                        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-                        <feMerge>
-                          <feMergeNode in="coloredBlur"/>
-                          <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                      </filter>
-                      {/* 빛 반사 효과를 위한 그라디언트 */}
-                      <linearGradient id="lightReflectionStroke" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="30%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="50%" stopColor="rgba(255,255,255,0.9)" />
-                        <stop offset="70%" stopColor="rgba(255,255,255,0)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                        <animateTransform
-                          attributeName="gradientTransform"
-                          type="translate"
-                          values="-200 0;400 0"
-                          dur="5s"
-                          repeatCount="indefinite"
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="1.5 2" stroke="rgba(107, 114, 128, 0.3)" opacity={1} />
-                    <XAxis
-                      dataKey="xValue"
-                      type="number"
-                      domain={[0, 24]}
-                      ticks={[0, 3, 6, 9, 12, 15, 18, 21, 24]}
-                      tick={renderTrendXAxisTick}
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
-                      tickMargin={8}
-                    />
-                    <YAxis
-                      domain={[120000, 260000]}
-                      tick={renderTrendYAxisTick}
-                      tickLine={false}
-                      axisLine={{ stroke: 'rgba(107, 114, 128, 0.3)', strokeWidth: 1 }}
-                      ticks={yAxisTicks}
-                      width={35}
-                      allowDecimals={false}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="url(#eventWaveStroke)"
-                      strokeWidth={3}
-                      fill="url(#eventWaveFill)"
-                      fillOpacity={0.9}
-                      isAnimationActive={false}
-                      dot={false}
-                      activeDot={false}
-                    />
-                    {/* 빛 반사 효과 - 선에만 적용 */}
-                    <Area
-                      type="monotone"
-                      dataKey="value"
-                      stroke="url(#lightReflectionStroke)"
-                      strokeWidth={4}
-                      fill="none"
-                      opacity={0.7}
-                      isAnimationActive={false}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-                {/* X축 틱에 해당하는 데이터 포인트 위에 플로팅 라벨 표시 */}
-                {trendChartRect.width > 0 &&
-                  X_AXIS_TICKS.map((hourNum, index) => {
-                    // 현재 활성화된 인덱스만 표시
-                    if (index !== activeFloatingLabelIndex) return null;
-                    
-                    // 해당 시간의 데이터 찾기 - animatedTrendData에서 가져오기 (실제 차트와 동일)
-                    const dataIndex = hourNum * 2; // 0.5시간 간격이므로 시간 * 2
-                    const dataPoint = animatedTrendData[dataIndex];
-                    if (!dataPoint) return null;
-                    
-                    // X축 틱의 실제 SVG 좌표 사용
-                    const tickX = xAxisTickXMapRef.current.get(hourNum);
-                    if (tickX === undefined) return null;
-                    
-                    // 차트 설정
-                    const marginTop = 30;
-                    const marginBottom = 20;
-                    
-                    // plot area 크기
-                    const plotHeight = trendChartRect.height - marginTop - marginBottom;
-                    
-                    // X 위치: SVG 좌표 그대로 사용
-                    const left = tickX;
-                    
-                    // Y 위치: value를 Y축 domain [120000, 260000]에 맞춰 정확히 계산
-                    const value = dataPoint.value ?? 120000;
-                    const minDomain = 120000;
-                    const maxDomain = 260000;
-                    const valueRatio = (value - minDomain) / (maxDomain - minDomain); // 0 = 하단, 1 = 상단
-                    
-                    // 데이터 포인트의 정확한 Y 좌표 계산
-                    const dataPointY = marginTop + (plotHeight * (1 - valueRatio));
-                    
-                    // 라벨을 데이터 포인트 위에 배치
-                    const top = dataPointY - 30;
-                    
-                    // 값 포맷팅
-                    const displayValue = `${(value / 10000).toFixed(1)}`;
-                    
-                    return (
-                      <div
-                        key={`floating-${hourNum}`}
-                        className="absolute pointer-events-none -translate-x-1/2"
-                        style={{
-                          left: `${left}px`,
-                          top: `${top}px`,
-                          zIndex: 10,
-                          opacity: 1,
-                        }}
-                      >
-                        <div className="px-2 py-1 rounded-full bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 flex items-center justify-center whitespace-nowrap">
-                          <span className="text-blue-400 text-xs font-medium leading-none">{displayValue}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </div>
-          </div>
-        </div>
+        <TrafficRouteStatusSection />
       </div>
     </div>
   );
