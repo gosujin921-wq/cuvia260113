@@ -14,6 +14,12 @@ import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
 const PIXEL_RATIO = 2;
 const MARKER_SIZE = 28 * PIXEL_RATIO;
 
+const escapeHtml = (text: string): string => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+};
+
 const createStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
     const canvas = document.createElement("canvas");
     canvas.width = MARKER_SIZE;
@@ -58,6 +64,58 @@ const createStreamMarkerImage = (): { width: number; height: number; data: Uint8
     ctx.scale(pinScale, pinScale);
     ctx.fillStyle = "#f87171";
     ctx.fill(pinPath);
+    ctx.restore();
+
+    const imageData = ctx.getImageData(0, 0, MARKER_SIZE, MARKER_SIZE);
+    return { width: MARKER_SIZE, height: MARKER_SIZE, data: imageData.data };
+};
+
+/** Material Design 비디오/CCTV 카메라 아이콘 path (viewBox 24x24) - DOM 24px 버튼과 동일 */
+const CCTV_ICON_PATH = "M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z";
+
+/** 지도 위 24px CCTV 버튼과 동일한 스타일: 원형 + 검은 영역 유지, 테두리·아이콘·글로우만 푸른색 */
+const createCCTVStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
+    const canvas = document.createElement("canvas");
+    canvas.width = MARKER_SIZE;
+    canvas.height = MARKER_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { width: MARKER_SIZE, height: MARKER_SIZE, data: new Uint8ClampedArray(MARKER_SIZE * MARKER_SIZE * 4) };
+
+    const cx = MARKER_SIZE / 2;
+    const cy = MARKER_SIZE / 2;
+    const radius = MARKER_SIZE / 2 - 2 * PIXEL_RATIO;
+    const borderWidth = 2 * PIXEL_RATIO;
+
+    ctx.clearRect(0, 0, MARKER_SIZE, MARKER_SIZE);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    const gradient = ctx.createLinearGradient(0, 0, MARKER_SIZE, MARKER_SIZE);
+    gradient.addColorStop(0, "rgba(74, 74, 74, 1)");
+    gradient.addColorStop(0.5, "rgba(58, 58, 58, 1)");
+    gradient.addColorStop(1, "rgba(42, 42, 42, 1)");
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.shadowColor = "rgba(59, 130, 246, 0.5)";
+    ctx.shadowBlur = 12 * PIXEL_RATIO;
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.9)";
+    ctx.lineWidth = borderWidth;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    const iconSize = 16 * PIXEL_RATIO;
+    const iconScale = iconSize / 24;
+    const iconX = cx - iconSize / 2;
+    const iconY = cy - iconSize / 2;
+    ctx.save();
+    ctx.translate(iconX, iconY);
+    ctx.scale(iconScale, iconScale);
+    const cameraPath = new Path2D(CCTV_ICON_PATH);
+    ctx.fillStyle = "#93c5fd";
+    ctx.fill(cameraPath);
     ctx.restore();
 
     const imageData = ctx.getImageData(0, 0, MARKER_SIZE, MARKER_SIZE);
@@ -493,6 +551,7 @@ const MapView = ({
         const streamClusterCountLayerId = "stream-marker-cluster-count";
         const streamHeatmapLayerId = "stream-marker-heatmap";
         const streamMarkerIconId = "stream-marker-icon";
+        const streamCctvMarkerIconId = "stream-cctv-marker-icon";
 
         const clearStreamLayers = () => {
             // WMS 레이어 제거 (최대 10개까지)
@@ -549,11 +608,24 @@ const MapView = ({
             // 새 소스 추가
             map.addSource(streamSourceId, sourceOptions);
 
-            // 마커 아이콘 이미지 추가
+            // 마커 아이콘 이미지 추가 (일반 + CCTV)
             if (!map.hasImage(streamMarkerIconId)) {
                 const img = createStreamMarkerImage();
                 map.addImage(streamMarkerIconId, img, { pixelRatio: PIXEL_RATIO });
             }
+            if (!map.hasImage(streamCctvMarkerIconId)) {
+                const cctvImg = createCCTVStreamMarkerImage();
+                map.addImage(streamCctvMarkerIconId, cctvImg, { pixelRatio: PIXEL_RATIO });
+            }
+
+            // markerType에 따라 아이콘 선택: 'cctv'면 CCTV 마커, 그 외는 기본 마커
+            const iconImageExpression = ["match", ["get", "markerType"], "cctv", streamCctvMarkerIconId, streamMarkerIconId] as [
+                "match",
+                ["get", string],
+                string,
+                string,
+                string,
+            ];
 
             // 뷰 타입별 레이어 추가
             if (viewType === "individual") {
@@ -562,7 +634,7 @@ const MapView = ({
                     type: "symbol",
                     source: streamSourceId,
                     layout: {
-                        "icon-image": streamMarkerIconId,
+                        "icon-image": iconImageExpression,
                         "icon-size": 1,
                         "icon-allow-overlap": true,
                         "icon-ignore-placement": true,
@@ -607,7 +679,7 @@ const MapView = ({
                     source: streamSourceId,
                     filter: ["!", ["has", "point_count"]],
                     layout: {
-                        "icon-image": streamMarkerIconId,
+                        "icon-image": iconImageExpression,
                         "icon-size": 1,
                         "icon-allow-overlap": true,
                         "icon-ignore-placement": true,
@@ -656,6 +728,7 @@ const MapView = ({
                     const parts = bboxParam.split(",").map(Number);
                     if (parts.length >= 4) {
                         const srs = urlObj.searchParams.get("srs")?.toUpperCase() ?? urlObj.searchParams.get("crs")?.toUpperCase() ?? "EPSG:3857";
+                        const version = (urlObj.searchParams.get("version") ?? urlObj.searchParams.get("VERSION") ?? "1.1.1").toUpperCase();
                         let minLng: number, minLat: number, maxLng: number, maxLat: number;
                         if (srs.includes("3857")) {
                             const b = bbox3857To4326(parts[0], parts[1], parts[2], parts[3]);
@@ -663,17 +736,35 @@ const MapView = ({
                             minLat = b.minLat;
                             maxLng = b.maxLng;
                             maxLat = b.maxLat;
+                        } else if (srs.includes("4326")) {
+                            const isLikelyLatLonOrder =
+                                version.startsWith("1.3") ||
+                                (parts[0] >= -90 && parts[0] <= 90 && Math.abs(parts[1]) <= 180 && parts[0] !== parts[1]);
+                            if (isLikelyLatLonOrder) {
+                                // WMS 1.3.0 또는 위도·경도 범위로 추정: bbox = minLat, minLon, maxLat, maxLon
+                                minLat = parts[0];
+                                minLng = parts[1];
+                                maxLat = parts[2];
+                                maxLng = parts[3];
+                            } else {
+                                // WMS 1.1.x: bbox = minLon, minLat, maxLon, maxLat
+                                minLng = parts[0];
+                                minLat = parts[1];
+                                maxLng = parts[2];
+                                maxLat = parts[3];
+                            }
                         } else {
                             minLng = parts[0];
                             minLat = parts[1];
                             maxLng = parts[2];
                             maxLat = parts[3];
                         }
+                        // y축(상하) 뒤집기: 위·아래 위도 교환 [하좌, 하우, 상우, 상좌]
                         const coordinates: [[number, number], [number, number], [number, number], [number, number]] = [
-                            [minLng, minLat],
-                            [maxLng, minLat],
-                            [maxLng, maxLat],
                             [minLng, maxLat],
+                            [maxLng, maxLat],
+                            [maxLng, minLat],
+                            [minLng, minLat],
                         ];
                         map.addSource(sourceId, {
                             type: "image",
@@ -799,23 +890,91 @@ const MapView = ({
             }
         };
 
+        // 개별 스트림 마커 클릭 핸들러 (individual / cluster 뷰에서만)
+        const handleStreamMarkerClick = (e: maplibregl.MapMouseEvent) => {
+            const features = map.queryRenderedFeatures(e.point, {
+                layers: [streamLayerId],
+            });
+            if (!features.length) return;
+
+            const feature = features[0];
+            const geometry = feature.geometry;
+            if (geometry.type !== "Point") return;
+
+            const coords = geometry.coordinates as [number, number];
+            const props = feature.properties as Record<string, string | null> | undefined;
+            const title = props?.title ?? "";
+            const description = props?.description ?? "";
+
+            // 기존 팝업 제거
+            const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+
+            const popupContent = [
+                "<div class=\"stream-marker-popup__inner\">",
+                title ? `<div class=\"stream-marker-popup__title\">${escapeHtml(title)}</div>` : "",
+                description ? `<div class=\"stream-marker-popup__desc\">${escapeHtml(description)}</div>` : "",
+                "</div>",
+            ]
+                .filter(Boolean)
+                .join("");
+
+            if (!title && !description) return;
+
+            const popup = new maplibregl.Popup({
+                closeButton: true,
+                closeOnClick: true,
+                className: "stream-marker-popup",
+            })
+                .setLngLat(coords)
+                .setHTML(popupContent)
+                .addTo(map);
+
+            (map as any)._streamMarkerPopup = popup;
+        };
+
+        // 스트림 마커 레이어 호버 시 커서 포인터
+        const handleStreamMarkerMouseEnter = () => {
+            map.getCanvas().style.cursor = "pointer";
+        };
+        const handleStreamMarkerMouseLeave = () => {
+            map.getCanvas().style.cursor = "";
+        };
+
         // 맵이 로드된 후 실행
-        if (map.loaded()) {
-            updateStreamData();
+        const registerStreamMarkerListeners = () => {
             if (streamMarkerViewType === "cluster") {
                 map.on("click", streamClusterLayerId, handleClusterClick);
             }
+            if (streamMarkerViewType !== "heatmap" && map.getLayer(streamLayerId)) {
+                map.on("click", streamLayerId, handleStreamMarkerClick);
+                map.on("mouseenter", streamLayerId, handleStreamMarkerMouseEnter);
+                map.on("mouseleave", streamLayerId, handleStreamMarkerMouseLeave);
+            }
+        };
+
+        if (map.loaded()) {
+            updateStreamData();
+            registerStreamMarkerListeners();
         } else {
             map.once("load", () => {
                 updateStreamData();
-                if (streamMarkerViewType === "cluster") {
-                    map.on("click", streamClusterLayerId, handleClusterClick);
-                }
+                registerStreamMarkerListeners();
             });
         }
 
         return () => {
             map.off("click", streamClusterLayerId, handleClusterClick);
+            map.off("click", streamLayerId, handleStreamMarkerClick);
+            map.off("mouseenter", streamLayerId, handleStreamMarkerMouseEnter);
+            map.off("mouseleave", streamLayerId, handleStreamMarkerMouseLeave);
+            const popup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+            if (popup) {
+                popup.remove();
+                (map as any)._streamMarkerPopup = undefined;
+            }
         };
     }, [streamMapData, streamMarkerViewType]);
 
@@ -2014,9 +2173,50 @@ const MapView = ({
     }, [selectedEventId, events, fireStations, policeStations, positionsById]);
 
     return (
-        <div
-            ref={containerRef}
-            className="relative bg-[#0f0f0f] overflow-hidden"
+        <>
+            <style>{`
+                .stream-marker-popup .maplibregl-popup-content {
+                    padding: 0;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.1);
+                    border: 1px solid #e5e7eb;
+                    background: #fff;
+                    min-width: 140px;
+                    max-width: 280px;
+                }
+                .stream-marker-popup .stream-marker-popup__inner {
+                    padding: 12px 36px 12px 14px;
+                }
+                .stream-marker-popup .stream-marker-popup__title {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #111827;
+                    line-height: 1.35;
+                }
+                .stream-marker-popup .stream-marker-popup__desc {
+                    font-size: 13px;
+                    color: #4b5563;
+                    line-height: 1.45;
+                    margin-top: 6px;
+                }
+                .stream-marker-popup .maplibregl-popup-close-button {
+                    font-size: 20px;
+                    padding: 6px 10px;
+                    color: #6b7280;
+                    right: 2px;
+                    top: 2px;
+                    border-radius: 8px;
+                    background: transparent;
+                    transition: background-color 0.15s, color 0.15s;
+                }
+                .stream-marker-popup .maplibregl-popup-close-button:hover {
+                    background: #f3f4f6;
+                    color: #111827;
+                }
+            `}</style>
+            <div
+                ref={containerRef}
+                className="relative bg-[#0f0f0f] overflow-hidden"
             style={{
                 width: "100%",
                 height: "100%",
@@ -2295,6 +2495,7 @@ const MapView = ({
 
             {/* Agent Hub 버튼 - 초기: CCTV 위 30px / 1번: 아래로만 / 고속검색: 우측 하단 */}
         </div>
+        </>
     );
 };
 
