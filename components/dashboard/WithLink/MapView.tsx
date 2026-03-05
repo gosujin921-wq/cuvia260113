@@ -64,6 +64,58 @@ const createStreamMarkerImage = (): { width: number; height: number; data: Uint8
     return { width: MARKER_SIZE, height: MARKER_SIZE, data: imageData.data };
 };
 
+/** Material Design 비디오/CCTV 카메라 아이콘 path (viewBox 24x24) - DOM 24px 버튼과 동일 */
+const CCTV_ICON_PATH = "M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z";
+
+/** 지도 위 24px CCTV 버튼과 동일한 스타일: 원형 + 검은 영역 유지, 테두리·아이콘·글로우만 푸른색 */
+const createCCTVStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
+    const canvas = document.createElement("canvas");
+    canvas.width = MARKER_SIZE;
+    canvas.height = MARKER_SIZE;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return { width: MARKER_SIZE, height: MARKER_SIZE, data: new Uint8ClampedArray(MARKER_SIZE * MARKER_SIZE * 4) };
+
+    const cx = MARKER_SIZE / 2;
+    const cy = MARKER_SIZE / 2;
+    const radius = MARKER_SIZE / 2 - 2 * PIXEL_RATIO;
+    const borderWidth = 2 * PIXEL_RATIO;
+
+    ctx.clearRect(0, 0, MARKER_SIZE, MARKER_SIZE);
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    const gradient = ctx.createLinearGradient(0, 0, MARKER_SIZE, MARKER_SIZE);
+    gradient.addColorStop(0, "rgba(74, 74, 74, 1)");
+    gradient.addColorStop(0.5, "rgba(58, 58, 58, 1)");
+    gradient.addColorStop(1, "rgba(42, 42, 42, 1)");
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.shadowColor = "rgba(59, 130, 246, 0.5)";
+    ctx.shadowBlur = 12 * PIXEL_RATIO;
+    ctx.strokeStyle = "rgba(59, 130, 246, 0.9)";
+    ctx.lineWidth = borderWidth;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    const iconSize = 16 * PIXEL_RATIO;
+    const iconScale = iconSize / 24;
+    const iconX = cx - iconSize / 2;
+    const iconY = cy - iconSize / 2;
+    ctx.save();
+    ctx.translate(iconX, iconY);
+    ctx.scale(iconScale, iconScale);
+    const cameraPath = new Path2D(CCTV_ICON_PATH);
+    ctx.fillStyle = "#93c5fd";
+    ctx.fill(cameraPath);
+    ctx.restore();
+
+    const imageData = ctx.getImageData(0, 0, MARKER_SIZE, MARKER_SIZE);
+    return { width: MARKER_SIZE, height: MARKER_SIZE, data: imageData.data };
+};
+
 interface MapViewProps {
     events: Event[];
     highlightedEventId?: string | null;
@@ -493,6 +545,7 @@ const MapView = ({
         const streamClusterCountLayerId = "stream-marker-cluster-count";
         const streamHeatmapLayerId = "stream-marker-heatmap";
         const streamMarkerIconId = "stream-marker-icon";
+        const streamCctvMarkerIconId = "stream-cctv-marker-icon";
 
         const clearStreamLayers = () => {
             // WMS 레이어 제거 (최대 10개까지)
@@ -549,11 +602,24 @@ const MapView = ({
             // 새 소스 추가
             map.addSource(streamSourceId, sourceOptions);
 
-            // 마커 아이콘 이미지 추가
+            // 마커 아이콘 이미지 추가 (일반 + CCTV)
             if (!map.hasImage(streamMarkerIconId)) {
                 const img = createStreamMarkerImage();
                 map.addImage(streamMarkerIconId, img, { pixelRatio: PIXEL_RATIO });
             }
+            if (!map.hasImage(streamCctvMarkerIconId)) {
+                const cctvImg = createCCTVStreamMarkerImage();
+                map.addImage(streamCctvMarkerIconId, cctvImg, { pixelRatio: PIXEL_RATIO });
+            }
+
+            // markerType에 따라 아이콘 선택: 'cctv'면 CCTV 마커, 그 외는 기본 마커
+            const iconImageExpression = ["match", ["get", "markerType"], "cctv", streamCctvMarkerIconId, streamMarkerIconId] as [
+                "match",
+                ["get", string],
+                string,
+                string,
+                string,
+            ];
 
             // 뷰 타입별 레이어 추가
             if (viewType === "individual") {
@@ -562,7 +628,7 @@ const MapView = ({
                     type: "symbol",
                     source: streamSourceId,
                     layout: {
-                        "icon-image": streamMarkerIconId,
+                        "icon-image": iconImageExpression,
                         "icon-size": 1,
                         "icon-allow-overlap": true,
                         "icon-ignore-placement": true,
@@ -607,7 +673,7 @@ const MapView = ({
                     source: streamSourceId,
                     filter: ["!", ["has", "point_count"]],
                     layout: {
-                        "icon-image": streamMarkerIconId,
+                        "icon-image": iconImageExpression,
                         "icon-size": 1,
                         "icon-allow-overlap": true,
                         "icon-ignore-placement": true,

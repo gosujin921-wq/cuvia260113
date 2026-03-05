@@ -121,7 +121,7 @@ export interface MapStreamWmsLayer {
 export interface MapStreamData {
     total_count: number;
     filters: MapStreamFilters;
-    type: string; // e.g. "list", "pin"
+    type: string; // e.g. "list", "pin", "cctv"
     markers: MapStreamMarker[];
     available_types: string[]; // e.g. ["marker", "heatmap", "cluster"]
     wms_layers: MapStreamWmsLayer[];
