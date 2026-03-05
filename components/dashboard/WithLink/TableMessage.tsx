@@ -45,11 +45,22 @@ export function TableMessage({ message, onLocationClick }: TableMessageProps) {
     return (
         <>
             <div className="text-sm leading-relaxed text-gray-200">
-                {message.title && <h2 className="text-lg font-bold">{message.title}</h2>}
+                {message.title && (
+                    <div
+                        className="rounded-lg px-4 py-2.5 text-center text-white text-sm font-medium"
+                        style={{
+                            background: "rgba(30,30,35,0.8)",
+                            backdropFilter: "blur(4px)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                        }}>
+                        {message.title}
+                    </div>
+                )}
                 {message.title && message.rationale && <br />}
-                {message.rationale && <p className="text-md">{message.rationale}</p>}
+                {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3">{message.rationale}</p>}
                 {displayTables && (
                     <>
+                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">표 데이터</h3>
                         <div className="rounded-lg overflow-hidden mt-4" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
                             <table className="w-full text-sm">
                                 <thead>
@@ -112,7 +123,6 @@ export function TableMessage({ message, onLocationClick }: TableMessageProps) {
                     <p className="text-xs text-gray-400 text-center">{message.disclaimer}</p>
                 </>
             )}
-            {/* {message.timestamp && <div className="text-xs text-gray-200 mt-2">{message.timestamp}</div>} */}
         </>
     );
 }

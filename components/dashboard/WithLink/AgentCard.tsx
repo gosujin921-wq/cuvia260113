@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import type { ChartStreamData, TableStreamData } from "@/types/streamJson.types";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
-import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from "chart.js";
+import { ChartLine } from "@/components/chart/ChartLine";
+import { ChartBar } from "@/components/chart/ChartBar";
+import { ChartPie } from "@/components/chart/ChartPie";
+import { ChartDoughnut } from "@/components/chart/ChartDoughnut";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
-
-const CHART_COLORS = ["rgba(255, 99, 132, 0.85)", "rgba(54, 162, 235, 0.85)", "rgba(255, 206, 86, 0.85)", "rgba(75, 192, 192, 0.85)", "rgba(153, 102, 255, 0.85)"];
-
-/** 선형 그래프용 색상 (선·포인트가 잘 보이도록 채도·명도 높음) */
-const LINE_CHART_COLORS = ["rgba(255, 107, 107, 1)", "rgba(78, 205, 255, 1)", "rgba(255, 230, 109, 1)", "rgba(82, 255, 213, 1)", "rgba(197, 148, 255, 1)"];
 
 const CARD_STYLE: React.CSSProperties = {
     background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
@@ -18,156 +16,53 @@ const CARD_STYLE: React.CSSProperties = {
     height: "calc((100% - 12px) / 2)",
 };
 
-const LEGEND_AND_TITLE_COLOR = "rgba(229, 231, 235, 0.95)";
-
-const getChartOptions = (title: string, type: ChartViewType): ChartOptions<"bar" | "line" | "pie" | "doughnut"> => ({
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-        legend: {
-            position: "top" as const,
-            labels: {
-                color: LEGEND_AND_TITLE_COLOR,
-                font: { size: 12 },
-                usePointStyle: true,
-                pointStyle: "circle",
-                padding: 16,
-            },
-        },
-        title: {
-            display: !!title,
-            text: title,
-            color: LEGEND_AND_TITLE_COLOR,
-            font: { size: 14 },
-        },
-    },
-    ...(type === "line" || type === "bar"
-        ? {
-              scales: {
-                  x: {
-                      ticks: { color: LEGEND_AND_TITLE_COLOR, maxRotation: 45 },
-                      grid: { color: "rgba(229, 231, 235, 0.2)" },
-                  },
-                  y: {
-                      ticks: { color: LEGEND_AND_TITLE_COLOR },
-                      grid: { color: "rgba(229, 231, 235, 0.2)" },
-                  },
-              },
-          }
-        : {}),
-});
-
 type ChartViewType = "line" | "pie" | "bar" | "doughnut";
 
-const CHART_VIEW_BUTTONS: { type: ChartViewType; label: string; icon: string }[] = [
-    { type: "line", label: "선", icon: "mdi:chart-line" },
-    { type: "pie", label: "파이", icon: "mdi:chart-pie" },
-    { type: "bar", label: "막대", icon: "mdi:chart-bar" },
-    { type: "doughnut", label: "도넛", icon: "mdi:chart-doughnut" },
+const CHART_VIEW_BUTTONS: { type: ChartViewType; label: string }[] = [
+    { type: "line", label: "선" },
+    { type: "pie", label: "파이" },
+    { type: "bar", label: "막대" },
+    { type: "doughnut", label: "도넛" },
 ];
-
-type TransitionPhase = "idle" | "out" | "in";
 
 const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     const initialType = (data.type || "bar").toLowerCase();
     const normalizedInitial: ChartViewType = initialType === "line" || initialType === "pie" || initialType === "bar" || initialType === "doughnut" ? initialType : "bar";
     const [viewType, setViewType] = useState<ChartViewType>(normalizedInitial);
-    const [displayType, setDisplayType] = useState<ChartViewType>(normalizedInitial);
-    const [phase, setPhase] = useState<TransitionPhase>("idle");
-    const [hasAnimatedIn, setHasAnimatedIn] = useState(true);
 
-    const chartType = displayType;
-    const labels = data.labels ?? [];
-    const baseColor = (i: number) => CHART_COLORS[i % CHART_COLORS.length];
-    const lineColor = (i: number) => LINE_CHART_COLORS[i % LINE_CHART_COLORS.length];
-    const datasets = (data.datasets ?? []).map((ds, i) => {
-        const isLine = chartType === "line";
-        const color = isLine ? lineColor(i) : baseColor(i);
-        return {
-            label: ds.label ?? `데이터 ${i + 1}`,
-            data: ds.data ?? [],
-            backgroundColor: ds.backgroundColor ?? color,
-            ...(isLine && {
-                borderColor: (ds as { borderColor?: string }).borderColor ?? color,
-                borderWidth: 2,
-                pointBackgroundColor: (ds as { pointBackgroundColor?: string }).pointBackgroundColor ?? color,
-                pointBorderColor: "rgba(229, 231, 235, 0.9)",
-                pointBorderWidth: 1,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                tension: 0.2,
-            }),
-        };
-    });
-    const chartData = { labels, datasets };
-    const options = getChartOptions(data.title ?? "", displayType);
+    const chartType = viewType;
 
     const handleViewTypeClick = (type: ChartViewType) => {
-        if (type === displayType) return;
+        if (type === viewType) return;
         setViewType(type);
-        setPhase("out");
     };
-
-    // fade-out 완료 후 차트 전환 → fade-in
-    useEffect(() => {
-        if (phase !== "out") return;
-        const t = setTimeout(() => {
-            setDisplayType(viewType);
-            setPhase("in");
-            setHasAnimatedIn(false);
-        }, 500);
-        return () => clearTimeout(t);
-    }, [phase, viewType]);
-
-    // fade-in 시작 (opacity 0 → 1 트리거)
-    useEffect(() => {
-        if (phase !== "in") return;
-        const id = requestAnimationFrame(() => setHasAnimatedIn(true));
-        return () => cancelAnimationFrame(id);
-    }, [phase]);
-
-    // fade-in 완료 후 idle
-    useEffect(() => {
-        if (phase !== "in" || !hasAnimatedIn) return;
-        const t = setTimeout(() => setPhase("idle"), 150);
-        return () => clearTimeout(t);
-    }, [phase, hasAnimatedIn]);
-
-    const chartOpacity = phase === "out" ? 0 : phase === "in" ? (hasAnimatedIn ? 1 : 0) : 1;
 
     const renderChart = () => {
         if (chartType === "line") {
-            return <Line data={chartData} options={options as ChartOptions<"line">} />;
+            return <ChartLine data={data} fill />;
         }
         if (chartType === "pie") {
-            return <Pie data={chartData} options={options as ChartOptions<"pie">} />;
+            return <ChartPie data={data} fill />;
         }
         if (chartType === "doughnut") {
-            return <Doughnut data={chartData} options={options as ChartOptions<"doughnut">} />;
+            return <ChartDoughnut data={data} fill />;
         }
-        return <Bar data={chartData} options={options as ChartOptions<"bar">} />;
+        return <ChartBar data={data} fill />;
     };
 
     return (
-        <div className="w-full h-full flex flex-col gap-2">
-            <div className="flex items-center gap-1 shrink-0">
-                {CHART_VIEW_BUTTONS.map(({ type, label, icon }) => (
-                    <button
-                        key={type}
-                        type="button"
-                        onClick={() => handleViewTypeClick(type)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-1 focus:ring-white/30 ${viewType === type ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-                        aria-label={`${label} 차트로 보기`}
-                        aria-pressed={viewType === type}>
-                        <Icon icon={icon} className="w-4 h-4" />
-                        {label}
-                    </button>
-                ))}
+        <div className="h-full flex flex-col min-h-0 gap-2">
+            <div className="flex items-center justify-start gap-2 flex-shrink-0">
+                <div className="flex rounded-lg overflow-hidden border border-[#40424a] bg-[#393a42] p-0.5">
+                    {CHART_VIEW_BUTTONS.map(({ type, label }) => (
+                        <button key={type} type="button" onClick={() => handleViewTypeClick(type)} className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-md ${viewType === type ? "bg-[#4b5563] text-white" : "text-gray-400 hover:text-gray-200"}`} aria-label={`${label} 차트로 보기`} aria-pressed={viewType === type}>
+                            {label}
+                        </button>
+                    ))}
+                </div>
             </div>
             <div className="min-h-0 flex-1 flex items-center justify-center">
-                <div className="w-full h-full flex items-center justify-center transition-opacity duration-150 ease-out" style={{ opacity: chartOpacity }}>
-                    {renderChart()}
-                </div>
+                <div className="w-full h-full flex items-center justify-center">{renderChart()}</div>
             </div>
         </div>
     );

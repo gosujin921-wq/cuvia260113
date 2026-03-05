@@ -1,16 +1,14 @@
 import { ChartStreamData } from "@/types/streamJson.types";
 import { ChatMessage } from "./AIAgentPopup";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
-import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from "chart.js";
+import { ChartDoughnut } from "@/components/chart/ChartDoughnut";
 import { ROW_LIMIT } from "./TableMessage";
 import { useMemo } from "react";
+import { ChartLine } from "@/components/chart/ChartLine";
+import { ChartPie } from "@/components/chart/ChartPie";
+import { ChartBar } from "@/components/chart/ChartBar";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
-
-const CHART_COLORS = ["rgba(255, 99, 132, 0.85)", "rgba(54, 162, 235, 0.85)", "rgba(255, 206, 86, 0.85)", "rgba(75, 192, 192, 0.85)", "rgba(153, 102, 255, 0.85)"];
-const LINE_CHART_COLORS = ["#0066FF", "#8A2BE2", "#ff8566"];
-
-const CHART_LEGEND_TITLE_COLOR = "rgba(229, 231, 235, 0.95)";
 
 const isClickable = (html: string): boolean => html.includes("clickable");
 
@@ -20,93 +18,33 @@ const stripHtmlTags = (html: string): string => {
     return tmp.textContent || tmp.innerText || "";
 };
 
-const getChartOptions = (title: string): ChartOptions<"bar" | "line" | "pie" | "doughnut"> => ({
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-        legend: {
-            position: "top" as const,
-            labels: {
-                color: CHART_LEGEND_TITLE_COLOR,
-                font: { size: 12 },
-                usePointStyle: true,
-                pointStyle: "circle",
-                padding: 16,
-            },
-        },
-        title: {
-            display: !!title,
-            text: title,
-            color: CHART_LEGEND_TITLE_COLOR,
-            font: { size: 14 },
-        },
-    },
-    scales: {
-        x: {
-            ticks: { color: CHART_LEGEND_TITLE_COLOR, maxRotation: 45 },
-            grid: { color: "rgba(229, 231, 235, 0.2)" },
-        },
-        y: {
-            ticks: { color: CHART_LEGEND_TITLE_COLOR },
-            grid: { color: "rgba(229, 231, 235, 0.2)" },
-        },
-    },
-});
-
 const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     const chartType = (data.type || "bar").toLowerCase();
-    const labels = data.labels ?? [];
-    const datasets = (data.datasets ?? []).map((ds, i) => {
-        const isLine = chartType === "line";
-        const color = isLine ? LINE_CHART_COLORS[i % LINE_CHART_COLORS.length] : CHART_COLORS[i % CHART_COLORS.length];
-        return {
-            label: ds.label ?? `데이터 ${i + 1}`,
-            data: ds.data ?? [],
-            backgroundColor: (ds as { backgroundColor?: string }).backgroundColor ?? color,
-            ...(isLine && {
-                borderColor: (ds as { borderColor?: string }).borderColor ?? color,
-                borderWidth: 2,
-                pointBackgroundColor: (ds as { pointBackgroundColor?: string }).pointBackgroundColor ?? color,
-                pointBorderColor: "rgba(229, 231, 235, 0.9)",
-                pointBorderWidth: 1,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                tension: 0.2,
-            }),
-        };
-    });
-
-    const chartData = {
-        labels,
-        datasets,
-    };
-
-    const options = getChartOptions(data.title ?? "");
 
     if (chartType === "line") {
         return (
-            <div className="w-full max-w-md h-64">
-                <Line data={chartData} options={options as ChartOptions<"line">} />
+            <div className="h-[220px] w-full mt-6">
+                <ChartLine data={data} />
             </div>
         );
     }
     if (chartType === "pie") {
         return (
-            <div className="w-full max-w-xs h-64 mx-auto">
-                <Pie data={chartData} options={options as ChartOptions<"pie">} />
+            <div className="h-[220px] w-full mt-6">
+                <ChartPie data={data} />
             </div>
         );
     }
     if (chartType === "doughnut") {
         return (
-            <div className="w-full max-w-xs h-64 mx-auto">
-                <Doughnut data={chartData} options={options as ChartOptions<"doughnut">} />
+            <div className="h-[240px] w-full mt-6">
+                <ChartDoughnut data={data} />
             </div>
         );
     }
     return (
-        <div className="w-full max-w-md h-64">
-            <Bar data={chartData} options={options as ChartOptions<"bar">} />
+        <div className="h-[240px] w-full mt-6">
+            <ChartBar data={data} />
         </div>
     );
 };
@@ -124,46 +62,52 @@ export function ChartMessage({ message }: ChartMessageProps) {
     if (!message.chartData) return null;
 
     return (
-        <div className="text-sm leading-relaxed text-gray-200 agent-html-content">
-            {message.title && <h2 className="text-lg font-bold">{message.title}</h2>}
+        <div className="text-sm leading-relaxed text-gray-200">
+            {message.title && (
+                <div
+                    className="rounded-lg px-4 py-2.5 text-center text-white text-sm font-medium"
+                    style={{
+                        background: "rgba(30,30,35,0.8)",
+                        backdropFilter: "blur(4px)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                    {message.title}
+                </div>
+            )}
             {message.title && message.rationale && <br />}
-            {message.rationale && <p className="text-md">{message.rationale}</p>}
+            {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3">{message.rationale}</p>}
             {displayTables && (
-                <div className="mb-4">
-                    <table className="agent-table">
-                        <thead>
-                            <tr>
-                                {displayTables.columns?.map((column, colIdx) => (
-                                    <th className="agent-table-header" key={colIdx}>
-                                        {column}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {displayTables.visibleRows?.map((row, rowIdx) => (
-                                <tr key={rowIdx}>
-                                    {row.map((cell, cellIdx) => {
-                                        const cellStr = String(cell);
-                                        const clickable = isClickable(cellStr);
-                                        const text = stripHtmlTags(cellStr);
-                                        return (
-                                            <td
-                                                key={cellIdx}
-                                                className={`agent-table-cell ${clickable ? "cursor-pointer hover:text-blue-400 transition-colors font-bold" : ""}`}
-                                                onClick={clickable ? () => handleCellClick(cell) : undefined}
-                                                role={clickable ? "button" : undefined}
-                                                tabIndex={clickable ? 0 : undefined}
-                                                onKeyDown={clickable ? (e) => e.key === "Enter" && handleCellClick(cell) : undefined}
-                                                aria-label={clickable ? `위치 보기: ${text}` : undefined}>
-                                                {text}
-                                            </td>
-                                        );
-                                    })}
+                <>
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">표 데이터</h3>
+                    <div className="rounded-lg overflow-hidden mt-4" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr style={{ background: "rgba(40,40,48,0.9)" }}>
+                                    {displayTables.columns?.map((column, colIdx) => (
+                                        <th className="px-3 py-2.5 text-left text-white font-semibold" key={colIdx}>
+                                            {column}
+                                        </th>
+                                    ))}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {displayTables.visibleRows?.map((row, rowIdx) => (
+                                    <tr key={rowIdx} style={{ background: rowIdx % 2 === 0 ? "rgba(35,35,42,0.6)" : "rgba(40,40,48,0.6)" }}>
+                                        {row.map((cell, cellIdx) => {
+                                            const cellStr = String(cell);
+                                            const clickable = isClickable(cellStr);
+                                            const text = stripHtmlTags(cellStr);
+                                            return (
+                                                <td key={cellIdx} className={`px-3 py-2 text-gray-300 font-medium`} onClick={clickable ? () => handleCellClick(cell) : undefined} role={clickable ? "button" : undefined} tabIndex={clickable ? 0 : undefined} onKeyDown={clickable ? (e) => e.key === "Enter" && handleCellClick(cell) : undefined} aria-label={clickable ? `위치 보기: ${text}` : undefined}>
+                                                    {text}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                     {displayTables.needsTruncation && (
                         <div className="flex flex-col items-center py-2 text-gray-400 select-none text-lg leading-tight">
                             <span>⦁</span>
@@ -171,15 +115,30 @@ export function ChartMessage({ message }: ChartMessageProps) {
                             <span>⦁</span>
                         </div>
                     )}
-                </div>
+                </>
             )}
-            <div className="rounded-lg border border-[#31353a] bg-white/10 p-3 overflow-hidden">
+            <div className="rounded-lg overflow-hidden mt-4">
+                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">차트 데이터</h3>
                 <StreamChart data={message.chartData} />
             </div>
-            <div className="text-md text-gray-200 mt-2">{message.tableData?.meta?.criteria}</div>
-            <div className="text-md text-gray-200 mt-2">{message.tableData?.meta?.guide}</div>
-            <div className="text-xs text-gray-200 mt-2">{message.disclaimer ?? ""}</div>
-            <div className="text-md text-gray-200 mt-2">{message.timestamp}</div>
+            <br />
+            {message.tableData && message.tableData.meta && (
+                <div
+                    className="mt-0 rounded-lg px-3 py-2.5"
+                    style={{
+                        background: "rgba(50,50,58,0.6)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                    }}>
+                    <p className="text-sm text-white font-medium">{message.tableData?.meta?.criteria}</p>
+                    <p className="text-sm text-gray-300 mt-1">{message.tableData?.meta?.guide}</p>
+                </div>
+            )}
+            {message.disclaimer && (
+                <>
+                    <hr className="border-t border-[#40424a] my-6" role="separator" />
+                    <p className="text-xs text-gray-400 text-center">{message.disclaimer}</p>
+                </>
+            )}
         </div>
     );
 }

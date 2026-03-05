@@ -6,7 +6,6 @@ interface NormalMessageProps {
 }
 
 export function NormalMessage({ message }: NormalMessageProps) {
-    console.log(message);
     return (
         <>
             {message.htmlContent && (
@@ -14,7 +13,7 @@ export function NormalMessage({ message }: NormalMessageProps) {
                     <Markdown>{message.htmlContent}</Markdown>
                 </div>
             )}
-            <div className="text-xs text-gray-400 mt-2">{message.timestamp}</div>
+            {/* <div className="text-xs text-gray-400 mt-2">{message.timestamp}</div> */}
         </>
     );
 }

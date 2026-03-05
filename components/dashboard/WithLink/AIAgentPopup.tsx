@@ -1622,7 +1622,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                 </div>
                             )}
                             {lastChartData && (
-                                <div className="flex flex-col max-h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
+                                <div className="flex flex-col h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
                                     <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} />
                                 </div>
                             )}
