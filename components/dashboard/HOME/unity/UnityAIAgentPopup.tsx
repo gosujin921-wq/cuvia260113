@@ -52,12 +52,13 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     const [inputKey, setInputKey] = useState(0);
     const [isExpanded, setIsExpanded] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const safeEventTime = eventTime instanceof Date ? eventTime : new Date();
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: "welcome-msg",
             role: "assistant",
             content: `${mainCameraName || "Bullet-2"}에서 ${eventType === 12 ? "폭력(싸움) 의심" : eventType === 10 ? "쓰러짐" : ""} 이벤트가 감지되었습니다. 사건을 분석해드릴까요?`,
-            timestamp: eventTime.toLocaleTimeString("ko-KR", {
+            timestamp: safeEventTime.toLocaleTimeString("ko-KR", {
                 hour: "2-digit",
                 minute: "2-digit",
                 second: "2-digit",

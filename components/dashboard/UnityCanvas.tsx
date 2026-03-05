@@ -1,5 +1,5 @@
 import { subscribeUnityToReact } from "@/lib/unity/unityBridge";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { Unity, useUnityContext } from "react-unity-webgl";
 
 interface UnityCanvasProps {
@@ -7,28 +7,46 @@ interface UnityCanvasProps {
     style?: React.CSSProperties;
 }
 
+/** 캐시 제어: .data/.wasm은 재검증 후 캐시, .bundle은 변경 없이 캐시, 나머지는 캐시 안 함 */
+const handleCacheControl = (url: string) => {
+    if (url.match(/\.data/) || url.match(/\.wasm/)) {
+        return "must-revalidate";
+    }
+    if (url.match(/\.bundle/)) {
+        return "immutable";
+    }
+    return "no-store";
+};
+
 const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
     const { unityProvider, isLoaded, loadingProgression, sendMessage, unload } = useUnityContext({
         loaderUrl: "/Build/public.loader.js",
         dataUrl: "/Build/public.data",
         frameworkUrl: "/Build/public.framework.js",
         codeUrl: "/Build/public.wasm",
+        cacheControl: handleCacheControl,
+        webglContextAttributes: {
+            powerPreference: "high-performance",
+            preserveDrawingBuffer: false,
+            alpha: false,
+        },
     });
 
     useEffect(() => {
         if (isLoaded) {
-            // sendMessage를 window.unityInstance.SendMessage로 래핑
             window.unityInstance = {
                 SendMessage: (obj: string, method: string, value: string) => {
                     try {
                         sendMessage(obj, method, value);
-                    } catch (error) {}
+                    } catch (error) {
+                        console.error("[UnityCanvas] SendMessage 에러:", error);
+                    }
                 },
             };
+            console.log("[UnityCanvas] window.unityInstance 설정 완료");
         }
 
         return () => {
-            // Cleanup: window.unityInstance 제거
             if (window.unityInstance) {
                 delete window.unityInstance;
             }
@@ -36,7 +54,6 @@ const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
     }, [isLoaded, sendMessage]);
 
     useEffect(() => {
-        // Cleanup function
         return () => {
             try {
                 if (isLoaded) {
@@ -49,49 +66,21 @@ const UnityCanvas = ({ className, style }: UnityCanvasProps) => {
     }, [unload, isLoaded]);
 
     useEffect(() => {
-        // ✅ Unity → React 이벤트 수신 설정
         const unsubscribe = subscribeUnityToReact((eventName, eventData) => {
-            if (eventName === "tvClicked") {
+            if (eventName === "tvClicked" || eventName === "cctvClicked") {
                 try {
                     const data = JSON.parse(eventData);
-                    console.log("[UnityCanvas] 파싱된 데이터:", data);
-                    // TODO: 데이터 처리
-                } catch (e) {
-                    console.error("[UnityCanvas] JSON 파싱 에러:", e);
-                }
-            } else if (eventName === "cctvClicked") {
-                try {
-                    const data = JSON.parse(eventData);
-                    console.log("[UnityCanvas] 파싱된 데이터:", data);
-                    // TODO: 데이터 처리
+                    console.log(`[UnityCanvas] ${eventName} 파싱된 데이터:`, data);
                 } catch (e) {
                     console.error("[UnityCanvas] JSON 파싱 에러:", e);
                 }
             }
         });
 
-        // cleanup: 컴포넌트 언마운트 시 구독 해제
         return () => {
             unsubscribe();
         };
     }, []);
-
-    useEffect(() => {
-        if (isLoaded) {
-            window.unityInstance = {
-                SendMessage: (obj, method, value) => {
-                    sendMessage(obj, method, value);
-                },
-            };
-            console.log("[UnityCanvas] window.unityInstance 설정 완료");
-        }
-
-        return () => {
-            if (window.unityInstance) {
-                delete window.unityInstance;
-            }
-        };
-    }, [isLoaded, sendMessage]);
 
     return (
         <div
