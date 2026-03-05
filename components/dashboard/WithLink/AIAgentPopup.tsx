@@ -86,6 +86,7 @@ export interface ChatMessage {
     chartData?: ChartStreamData | null;
     tableData?: TableStreamData | null;
     disclaimer?: string | null;
+    isBlackBg?: boolean;
 }
 
 /** AI 응답으로 누적 노출할 차트/테이블 카드 타입 */
@@ -457,7 +458,22 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 <span className="text-white font-semibold text-sm">CUVIA Agent</span>
                                             </div>
                                         )}
-                                        <div className={`${isExpanded ? "max-w-[70%] px-4 py-2 rounded-2xl border border-[#40424a] bg-[#393a42] text-white" : "rounded-xl border border-[#40424a] bg-[#393a42] p-4 text-gray-200"}`} style={isExpanded ? { borderWidth: "1px" } : {}}>
+                                        <div
+                                            className={`rounded-xl border border-[#40424a] bg-[#393a42] p-4 text-gray-200`}
+                                            style={
+                                                message.isBlackBg
+                                                    ? {
+                                                          background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
+                                                          backdropFilter: "blur(4px)",
+                                                          WebkitBackdropFilter: "blur(4px)",
+                                                          border: "1px solid rgba(255,255,255,0.1)",
+                                                      }
+                                                    : {
+                                                          background: "#393a42",
+                                                          border: "1px solid #40424a",
+                                                          color: "text-gray-200",
+                                                      }
+                                            }>
                                             {message.id === "tracking-update-msg" ? (
                                                 <div className="space-y-3">
                                                     {message.isTyping ? (
@@ -818,11 +834,15 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             setMessages((prev) =>
                 prev.map((msg) => {
                     if (msg.id !== msgId) return msg;
+                    const hasChart = !!(payload?.data?.chart ?? payload?.data?.chart_data);
+                    const hasTable = !!(payload?.data?.table ?? (payload?.data?.tables && payload.data.tables.length > 0));
+                    const isBlack = hasChart || hasTable;
                     const next: ChatMessage = {
                         ...msg,
                         type: "normal",
                         htmlContent: message,
                         stepMessage: undefined,
+                        isBlackBg: isBlack,
                     };
                     if (payload?.title) next.title = payload.title;
                     if (payload?.rationale) next.rationale = payload.rationale;
@@ -1465,7 +1485,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     const mainPopupHeight = mainPopupVideoHeight + mainPopupTitleHeight + mainPopupPadding;
     const padding = 20;
     const gap = 10;
-
 
     return (
         <>

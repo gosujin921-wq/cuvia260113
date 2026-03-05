@@ -743,19 +743,29 @@ export default function HomeV2() {
         }, 6100);
     }, []);
 
+    const REPORT_POPUP_GAP = 24;
+    const AGENT_TOP_GAP = 16;
+    const AGENT_FLOATING_BUTTON_RESERVE = 198 + 30 + 56 + 8;
+    const reportPopupVisible = !!(uiState.selectedEventId && !uiState.showPropagationList && uiState.showObjectTracking);
     /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
     useEffect(() => {
         const handleResize = () => {
             setWindowWidth(window.innerWidth);
-            const topPx = reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 424; // 1.25rem = 20px
-            // 고속검색 모드 또는 객체추적 모드 또는 포착목록 모드 또는 전파 모드일 때는 플로팅 버튼 영역 제외
+            if (isAgentActive) {
+                const height = window.innerHeight - 24 - 24;
+                setAgentPopupMaxHeight(Math.max(200, height));
+                return;
+            }
+            const bottomPanelVisible = uiState.showCCTV;
+            const topPx = reportPopupVisible ? 20 + (reportPopupHeight > 0 ? reportPopupHeight : 180) + REPORT_POPUP_GAP : AGENT_TOP_GAP;
             const reserveBottom = uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList ? 24 : 24 + 56 + 8;
-            setAgentPopupMaxHeight(Math.max(600, window.innerHeight - topPx - reserveBottom));
+            const height = bottomPanelVisible ? window.innerHeight - AGENT_FLOATING_BUTTON_RESERVE - topPx : window.innerHeight - topPx - reserveBottom;
+            setAgentPopupMaxHeight(Math.max(200, height));
         };
         handleResize();
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
-    }, [reportPopupHeight, uiState.showFastSearchList, uiState.showObjectTracking, uiState.showCaptureList, uiState.showPropagationList]);
+    }, [reportPopupHeight, uiState.showFastSearchList, uiState.showObjectTracking, uiState.showCaptureList, uiState.showPropagationList, isAgentActive]);
 
     // 재검색 완료 후 카드 개수 변경 감지
     useEffect(() => {
@@ -1037,60 +1047,55 @@ export default function HomeV2() {
             />
 
             {/* 에이전트: 첫 검색은 하단 바, 이후는 우측 채팅 패널. 전파 모드일 때는 숨김 */}
-            <div style={{ display: uiState.showPropagationList ? "none" : "block" }}>
-                <AIAgentPopup
-                    isOpen={uiState.showAIAgentPopup && !uiState.showPropagationList}
-                    onClose={() => {
-                        dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
-                        setStreamMapData(null);
-                        setIsAgentActive(false);
-                    }}
-                    onOpenRequest={() => {
-                        if (!uiState.showAIAgentPopup) dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
-                        setIsAgentActive(true);
-                    }}
-                    floatingBarStyle={floatingBarStyle}
-                    hideControls={uiState.hideControls}
-                    position={{
-                        top: `${reportPopupHeight > 0 ? 20 + reportPopupHeight + 24 : 480}px`,
-                        right: "20px",
-                    }}
-                    maxHeight={agentPopupMaxHeight}
-                    onDeleteLikeRequest={({ rawMessage }) => {
-                        const parsed = parseExcludedAttributesFromMessage(rawMessage);
-                        if (parsed.length) {
-                            previousListCardCountRef.current = listCardCount;
-                            currentExcludedAttributesRef.current = parsed;
-                            setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
-                        }
-                        return parsed;
-                    }}
-                    onObjectTrackingStart={() => {
-                        if (uiState.showFastSearchList) {
-                            dispatch({ type: "SHOW_OBJECT_TRACKING_CONFIRM" });
-                        } else {
-                            dispatch({ type: "START_OBJECT_TRACKING" });
-                            handleStartTrackingSequence();
-                        }
-                    }}
-                    onFastSearchComplete={() => {
-                        dispatch({ type: "COMPLETE_FAST_SEARCH_PROGRESS" });
-                        setPinOffset({ x: 0, y: 0 });
-                        if (showMouseGuide) jumpToStep("radius-chip");
-                    }}
-                    onReSearchStart={() => {
-                        dispatch({ type: "START_RE_SEARCH" });
-                        setShowReSearchSkeleton(true);
-                        setTimeout(() => setShowReSearchSkeleton(false), 500);
-                    }}
-                    onReSearchComplete={() => {
-                        dispatch({ type: "COMPLETE_RE_SEARCH" });
-                        isReSearchingRef.current = true;
-                        if (showMouseGuide) jumpToStep("fast-search-candidate-10");
-                    }}
-                    onMapDataReceived={handleMapDataReceived}
-                />
-            </div>
+            <AIAgentPopup
+                isOpen={uiState.showAIAgentPopup}
+                onClose={() => {
+                    dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
+                    setStreamMapData(null);
+                    setIsAgentActive(false);
+                }}
+                onOpenRequest={() => {
+                    if (!uiState.showAIAgentPopup) dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
+                    setIsAgentActive(true);
+                }}
+                floatingBarStyle={floatingBarStyle}
+                hideControls={uiState.hideControls}
+                position={{ bottom: "24px", right: "24px" }}
+                maxHeight={agentPopupMaxHeight}
+                onDeleteLikeRequest={({ rawMessage }) => {
+                    const parsed = parseExcludedAttributesFromMessage(rawMessage);
+                    if (parsed.length) {
+                        previousListCardCountRef.current = listCardCount;
+                        currentExcludedAttributesRef.current = parsed;
+                        setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
+                    }
+                    return parsed;
+                }}
+                onObjectTrackingStart={() => {
+                    if (uiState.showFastSearchList) {
+                        dispatch({ type: "SHOW_OBJECT_TRACKING_CONFIRM" });
+                    } else {
+                        dispatch({ type: "START_OBJECT_TRACKING" });
+                        handleStartTrackingSequence();
+                    }
+                }}
+                onFastSearchComplete={() => {
+                    dispatch({ type: "COMPLETE_FAST_SEARCH_PROGRESS" });
+                    setPinOffset({ x: 0, y: 0 });
+                    if (showMouseGuide) jumpToStep("radius-chip");
+                }}
+                onReSearchStart={() => {
+                    dispatch({ type: "START_RE_SEARCH" });
+                    setShowReSearchSkeleton(true);
+                    setTimeout(() => setShowReSearchSkeleton(false), 500);
+                }}
+                onReSearchComplete={() => {
+                    dispatch({ type: "COMPLETE_RE_SEARCH" });
+                    isReSearchingRef.current = true;
+                    if (showMouseGuide) jumpToStep("fast-search-candidate-10");
+                }}
+                onMapDataReceived={handleMapDataReceived}
+            />
 
             {/* 포착 목록 아이콘 오버레이 */}
             {showCaptureNotification && !uiState.showPropagationList && (

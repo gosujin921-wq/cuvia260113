@@ -44,46 +44,48 @@ export function TableMessage({ message, onLocationClick }: TableMessageProps) {
 
     return (
         <>
-            <div className="text-sm leading-relaxed text-gray-200 agent-html-content">
+            <div className="text-sm leading-relaxed text-gray-200">
                 {message.title && <h2 className="text-lg font-bold">{message.title}</h2>}
                 {message.title && message.rationale && <br />}
                 {message.rationale && <p className="text-md">{message.rationale}</p>}
                 {displayTables && (
-                    <div className="mb-4">
-                        <table className="agent-table">
-                            <thead>
-                                <tr>
-                                    {displayTables.columns?.map((column, colIdx) => (
-                                        <th className="agent-table-header" key={colIdx}>
-                                            {column}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {displayTables.visibleRows?.map((row, rowIdx) => (
-                                    <tr key={rowIdx}>
-                                        {row.map((cell, cellIdx) => {
-                                            const cellStr = String(cell);
-                                            const clickable = isClickable(cellStr);
-                                            const text = stripHtmlTags(cellStr);
-                                            return (
-                                                <td
-                                                    key={cellIdx}
-                                                    className={`agent-table-cell ${clickable ? "cursor-pointer hover:text-blue-400 transition-colors font-bold" : ""}`}
-                                                    onClick={clickable ? () => handleCellClick(cell) : undefined}
-                                                    role={clickable ? "button" : undefined}
-                                                    tabIndex={clickable ? 0 : undefined}
-                                                    onKeyDown={clickable ? (e) => e.key === "Enter" && handleCellClick(cell) : undefined}
-                                                    aria-label={clickable ? `위치 보기: ${text}` : undefined}>
-                                                    {text}
-                                                </td>
-                                            );
-                                        })}
+                    <>
+                        <div className="rounded-lg overflow-hidden mt-4" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr style={{ background: "rgba(40,40,48,0.9)" }}>
+                                        {displayTables.columns?.map((column, colIdx) => (
+                                            <th className="px-3 py-2.5 text-left text-white font-semibold" key={colIdx}>
+                                                {column}
+                                            </th>
+                                        ))}
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {displayTables.visibleRows?.map((row, rowIdx) => (
+                                        <tr key={rowIdx} style={{ background: rowIdx % 2 === 0 ? "rgba(35,35,42,0.6)" : "rgba(40,40,48,0.6)" }}>
+                                            {row.map((cell, cellIdx) => {
+                                                const cellStr = String(cell);
+                                                const clickable = isClickable(cellStr);
+                                                const text = stripHtmlTags(cellStr);
+                                                return (
+                                                    <td
+                                                        key={cellIdx}
+                                                        className={`px-3 py-2 text-gray-300 font-medium`}
+                                                        onClick={clickable ? () => handleCellClick(cell) : undefined}
+                                                        role={clickable ? "button" : undefined}
+                                                        tabIndex={clickable ? 0 : undefined}
+                                                        onKeyDown={clickable ? (e) => e.key === "Enter" && handleCellClick(cell) : undefined}
+                                                        aria-label={clickable ? `위치 보기: ${text}` : undefined}>
+                                                        {text}
+                                                    </td>
+                                                );
+                                            })}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                         {displayTables.needsTruncation && (
                             <div className="flex flex-col items-center py-2 text-gray-400 select-none text-lg leading-tight">
                                 <span>⦁</span>
@@ -91,14 +93,26 @@ export function TableMessage({ message, onLocationClick }: TableMessageProps) {
                                 <span>⦁</span>
                             </div>
                         )}
-                    </div>
+                    </>
                 )}
             </div>
             <br />
-            <div className="text-xs text-gray-200 mt-2">{message.tableData?.meta?.criteria}</div>
-            <div className="text-xs text-gray-200 mt-2">{message.tableData?.meta?.guide}</div>
-            <div className="text-xs text-gray-200 mt-2">{message.disclaimer ?? ""}</div>
-            <div className="text-xs text-gray-200 mt-2">{message.timestamp}</div>
+            <div
+                className="mt-0 rounded-lg px-3 py-2.5"
+                style={{
+                    background: "rgba(50,50,58,0.6)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                }}>
+                <p className="text-sm text-white font-medium">{message.tableData?.meta?.criteria}</p>
+                <p className="text-sm text-gray-300 mt-1">{message.tableData?.meta?.guide}</p>
+            </div>
+            {message.disclaimer && (
+                <>
+                    <hr className="border-t border-[#40424a] my-6" role="separator" />
+                    <p className="text-xs text-gray-400 text-center">{message.disclaimer}</p>
+                </>
+            )}
+            {/* {message.timestamp && <div className="text-xs text-gray-200 mt-2">{message.timestamp}</div>} */}
         </>
     );
 }

@@ -15,6 +15,7 @@ const CARD_STYLE: React.CSSProperties = {
     background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
     backdropFilter: "blur(4px)",
     WebkitBackdropFilter: "blur(4px)",
+    height: "calc((100% - 12px) / 2)",
 };
 
 const LEGEND_AND_TITLE_COLOR = "rgba(229, 231, 235, 0.95)";
@@ -231,7 +232,7 @@ interface AgentCardProps {
 
 export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style }) => {
     return (
-        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden gradient-border-left-top min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
+        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
             {onRemove && (
                 <div className="absolute top-3 right-3 z-10">
                     <button type="button" onClick={onRemove} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none" aria-label="카드 제거">
