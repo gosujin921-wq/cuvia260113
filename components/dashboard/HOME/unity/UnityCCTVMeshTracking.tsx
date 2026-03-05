@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Event } from "@/types";
 import CCTVIcon from "@/components/common/CCTVIcon";
 import WebRTCVideo from "@/components/common/WebRTCVideo";
@@ -24,26 +24,26 @@ interface UnityCCTVMeshTrackingProps {
     iceServerList: IceServerInfo[];
 }
 
-const UnityCCTVMeshTracking: React.FC<UnityCCTVMeshTrackingProps> = ({ event, cctvName, position, isMain, width = 420, hideControls = false, highlighted = false, onHover, cctvId, mediaAgentUrl, cameraInfo, iceServerList }) => {
+const UnityCCTVMeshTrackingComponent: React.FC<UnityCCTVMeshTrackingProps> = ({ event, cctvName, position, isMain, width = 420, hideControls = false, highlighted = false, onHover, cctvId, mediaAgentUrl, cameraInfo, iceServerList }) => {
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const [retryKey, setRetryKey] = useState(0);
 
-    const handleConnectionChange = (connected: boolean) => {
+    const handleConnectionChange = useCallback((connected: boolean) => {
         setIsConnected(connected);
         if (connected) {
             setConnectionError(null);
         }
-    };
+    }, []);
 
-    const handleError = (error: string) => {
+    const handleError = useCallback((error: string) => {
         setConnectionError(error);
-    };
+    }, []);
 
-    const handleRetry = () => {
+    const handleRetry = useCallback(() => {
         setConnectionError(null);
         setRetryKey((prev) => prev + 1);
-    };
+    }, []);
 
     if (!event) return null;
 
@@ -152,4 +152,5 @@ const UnityCCTVMeshTracking: React.FC<UnityCCTVMeshTrackingProps> = ({ event, cc
     );
 };
 
+const UnityCCTVMeshTracking = React.memo(UnityCCTVMeshTrackingComponent);
 export default UnityCCTVMeshTracking;
