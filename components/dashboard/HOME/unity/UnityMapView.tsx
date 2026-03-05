@@ -358,13 +358,13 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
     const handleHoverCctv = (cctvId: string | null) => {
         if (!cctvId) {
             if (hoveredCCTVId) {
-                const eventToUnity: EventToUnity = {
-                    methodName: "exitHover",
-                    payload: {
-                        value: hoveredCCTVId,
-                    },
-                };
-                sendToUnity(JSON.stringify(eventToUnity));
+                // const eventToUnity: EventToUnity = {
+                //     methodName: "exitHover",
+                //     payload: {
+                //         value: hoveredCCTVId,
+                //     },
+                // };
+                // sendToUnity(JSON.stringify(eventToUnity));
             }
             setHoveredCCTVId(null);
             return;
@@ -373,13 +373,13 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
         // hover 시작 시
         setHoveredCCTVId(cctvId);
 
-        const eventToUnity: EventToUnity = {
-            methodName: "enterHover",
-            payload: {
-                value: cctvId,
-            },
-        };
-        sendToUnity(JSON.stringify(eventToUnity));
+        // const eventToUnity: EventToUnity = {
+        //     methodName: "enterHover",
+        //     payload: {
+        //         value: cctvId,
+        //     },
+        // };
+        //sendToUnity(JSON.stringify(eventToUnity));
     };
 
     useEffect(() => {
