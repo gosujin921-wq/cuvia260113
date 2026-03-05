@@ -632,7 +632,7 @@ export default function Home() {
                     isOpen={showAIAgentPopup}
                     onClose={() => setShowAIAgentPopup(false)}
                     hideControls={hideControls}
-                    eventTime={key1PressTime as Date}
+                    eventTime={key1PressTime ?? new Date()}
                     isReadyToAnalyze={isReadyToAnalyze}
                     onChangePropagationTime={setPropagationTime}
                     onChangeShowPropagationModal={setShowPropagationModal}
@@ -640,7 +640,7 @@ export default function Home() {
                     onChangeCurrentPropagationMenu={setCurrentPropagationMenu}
                 />
             )}
-            {showAIAgentPopup && !isUnityMode && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} />}
+            {showAIAgentPopup && !isUnityMode && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime ?? new Date()} />}
             {showPropagationModal && isUnityMode && vlmAnalysisResult && <PropagationModal isVisible={true} onClose={() => setShowPropagationModal(false)} eventType={eventType} vlmAnalysisResult={vlmAnalysisResult} propagationTime={propagationTime} />}
         </div>
     );
