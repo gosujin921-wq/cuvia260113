@@ -1,211 +1,155 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
-import type { ChartStreamData, CompleteStreamTableData } from "@/types/streamJson.types";
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
-import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
+import type { ChartStreamData, TableStreamData } from "@/types/streamJson.types";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from "chart.js";
+import { ChartLine } from "@/components/chart/ChartLine";
+import { ChartBar } from "@/components/chart/ChartBar";
+import { ChartPie } from "@/components/chart/ChartPie";
+import { ChartDoughnut } from "@/components/chart/ChartDoughnut";
+import { stripHtmlTags } from "./TableMessage";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
-
-const CHART_COLORS = ["rgba(255, 99, 132, 0.85)", "rgba(54, 162, 235, 0.85)", "rgba(255, 206, 86, 0.85)", "rgba(75, 192, 192, 0.85)", "rgba(153, 102, 255, 0.85)"];
-
-/** 선형 그래프용 색상 (선·포인트가 잘 보이도록 채도·명도 높음) */
-const LINE_CHART_COLORS = ["rgba(255, 107, 107, 1)", "rgba(78, 205, 255, 1)", "rgba(255, 230, 109, 1)", "rgba(82, 255, 213, 1)", "rgba(197, 148, 255, 1)"];
 
 const CARD_STYLE: React.CSSProperties = {
     background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
     backdropFilter: "blur(4px)",
     WebkitBackdropFilter: "blur(4px)",
+    height: "calc((100% - 12px) / 2)",
 };
-
-const LEGEND_AND_TITLE_COLOR = "rgba(229, 231, 235, 0.95)";
-
-const getChartOptions = (title: string, type: ChartViewType): ChartOptions<"bar" | "line" | "pie" | "doughnut"> => ({
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-        legend: {
-            position: "top" as const,
-            labels: {
-                color: LEGEND_AND_TITLE_COLOR,
-                font: { size: 12 },
-                usePointStyle: true,
-                pointStyle: "circle",
-                padding: 16,
-            },
-        },
-        title: {
-            display: !!title,
-            text: title,
-            color: LEGEND_AND_TITLE_COLOR,
-            font: { size: 14 },
-        },
-    },
-    ...(type === "line" || type === "bar"
-        ? {
-              scales: {
-                  x: {
-                      ticks: { color: LEGEND_AND_TITLE_COLOR, maxRotation: 45 },
-                      grid: { color: "rgba(229, 231, 235, 0.2)" },
-                  },
-                  y: {
-                      ticks: { color: LEGEND_AND_TITLE_COLOR },
-                      grid: { color: "rgba(229, 231, 235, 0.2)" },
-                  },
-              },
-          }
-        : {}),
-});
 
 type ChartViewType = "line" | "pie" | "bar" | "doughnut";
 
-const CHART_VIEW_BUTTONS: { type: ChartViewType; label: string; icon: string }[] = [
-    { type: "line", label: "선", icon: "mdi:chart-line" },
-    { type: "pie", label: "파이", icon: "mdi:chart-pie" },
-    { type: "bar", label: "막대", icon: "mdi:chart-bar" },
-    { type: "doughnut", label: "도넛", icon: "mdi:chart-doughnut" },
+const CHART_VIEW_BUTTONS: { type: ChartViewType; label: string }[] = [
+    { type: "line", label: "선" },
+    { type: "pie", label: "파이" },
+    { type: "bar", label: "막대" },
+    { type: "doughnut", label: "도넛" },
 ];
 
-type TransitionPhase = "idle" | "out" | "in";
+const getNormalizedChartType = (type: string | undefined): ChartViewType => {
+    const initial = (type || "bar").toLowerCase();
+    return initial === "line" || initial === "pie" || initial === "bar" || initial === "doughnut" ? initial : "bar";
+};
 
 const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
-    const initialType = (data.type || "bar").toLowerCase();
-    const normalizedInitial: ChartViewType = initialType === "line" || initialType === "pie" || initialType === "bar" || initialType === "doughnut" ? initialType : "bar";
-    const [viewType, setViewType] = useState<ChartViewType>(normalizedInitial);
-    const [displayType, setDisplayType] = useState<ChartViewType>(normalizedInitial);
-    const [phase, setPhase] = useState<TransitionPhase>("idle");
-    const [hasAnimatedIn, setHasAnimatedIn] = useState(true);
+    const [viewType, setViewType] = useState<ChartViewType>(() => getNormalizedChartType(data.type));
 
-    const chartType = displayType;
-    const labels = data.labels ?? [];
-    const baseColor = (i: number) => CHART_COLORS[i % CHART_COLORS.length];
-    const lineColor = (i: number) => LINE_CHART_COLORS[i % LINE_CHART_COLORS.length];
-    const datasets = (data.datasets ?? []).map((ds, i) => {
-        const isLine = chartType === "line";
-        const color = isLine ? lineColor(i) : baseColor(i);
-        return {
-            label: ds.label ?? `데이터 ${i + 1}`,
-            data: ds.data ?? [],
-            backgroundColor: ds.backgroundColor ?? color,
-            ...(isLine && {
-                borderColor: (ds as { borderColor?: string }).borderColor ?? color,
-                borderWidth: 2,
-                pointBackgroundColor: (ds as { pointBackgroundColor?: string }).pointBackgroundColor ?? color,
-                pointBorderColor: "rgba(229, 231, 235, 0.9)",
-                pointBorderWidth: 1,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                tension: 0.2,
-            }),
-        };
-    });
-    const chartData = { labels, datasets };
-    const options = getChartOptions(data.title ?? "", displayType);
+    useEffect(() => {
+        const nextType = getNormalizedChartType(data.type);
+        const id = requestAnimationFrame(() => setViewType(nextType));
+        return () => cancelAnimationFrame(id);
+    }, [data.type]);
 
     const handleViewTypeClick = (type: ChartViewType) => {
-        if (type === displayType) return;
+        if (type === viewType) return;
         setViewType(type);
-        setPhase("out");
     };
 
-    // fade-out 완료 후 차트 전환 → fade-in
-    useEffect(() => {
-        if (phase !== "out") return;
-        const t = setTimeout(() => {
-            setDisplayType(viewType);
-            setPhase("in");
-            setHasAnimatedIn(false);
-        }, 500);
-        return () => clearTimeout(t);
-    }, [phase, viewType]);
-
-    // fade-in 시작 (opacity 0 → 1 트리거)
-    useEffect(() => {
-        if (phase !== "in") return;
-        const id = requestAnimationFrame(() => setHasAnimatedIn(true));
-        return () => cancelAnimationFrame(id);
-    }, [phase]);
-
-    // fade-in 완료 후 idle
-    useEffect(() => {
-        if (phase !== "in" || !hasAnimatedIn) return;
-        const t = setTimeout(() => setPhase("idle"), 150);
-        return () => clearTimeout(t);
-    }, [phase, hasAnimatedIn]);
-
-    const chartOpacity = phase === "out" ? 0 : phase === "in" ? (hasAnimatedIn ? 1 : 0) : 1;
-
-    const renderChart = () => {
-        if (chartType === "line") {
-            return <Line data={chartData} options={options as ChartOptions<"line">} />;
+    const renderChart = useCallback(() => {
+        if (viewType === "line") {
+            return <ChartLine data={data} fill />;
         }
-        if (chartType === "pie") {
-            return <Pie data={chartData} options={options as ChartOptions<"pie">} />;
+        if (viewType === "pie") {
+            return <ChartPie data={data} fill />;
         }
-        if (chartType === "doughnut") {
-            return <Doughnut data={chartData} options={options as ChartOptions<"doughnut">} />;
+        if (viewType === "doughnut") {
+            return <ChartDoughnut data={data} fill />;
         }
-        return <Bar data={chartData} options={options as ChartOptions<"bar">} />;
-    };
+        return <ChartBar data={data} fill />;
+    }, [viewType, data]);
 
     return (
-        <div className="w-full h-full flex flex-col gap-2">
-            <div className="flex items-center gap-1 shrink-0">
-                {CHART_VIEW_BUTTONS.map(({ type, label, icon }) => (
-                    <button
-                        key={type}
-                        type="button"
-                        onClick={() => handleViewTypeClick(type)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors focus:outline-none focus:ring-1 focus:ring-white/30 ${viewType === type ? "bg-white/20 text-white" : "text-gray-400 hover:text-white hover:bg-white/10"}`}
-                        aria-label={`${label} 차트로 보기`}
-                        aria-pressed={viewType === type}>
-                        <Icon icon={icon} className="w-4 h-4" />
-                        {label}
-                    </button>
-                ))}
-            </div>
-            <div className="min-h-0 flex-1 flex items-center justify-center">
-                <div className="w-full h-full flex items-center justify-center transition-opacity duration-150 ease-out" style={{ opacity: chartOpacity }}>
-                    {renderChart()}
+        <div className="h-full flex flex-col min-h-0 gap-2">
+            <div className="flex items-center justify-start gap-2 flex-shrink-0">
+                <div className="flex rounded-lg overflow-hidden border border-[#40424a] bg-[#393a42] p-0.5">
+                    {CHART_VIEW_BUTTONS.map(({ type, label }) => (
+                        <button key={type} type="button" onClick={() => handleViewTypeClick(type)} className={`px-3 py-1.5 text-xs font-medium transition-colors rounded-md ${viewType === type ? "bg-[#4b5563] text-white" : "text-gray-400 hover:text-gray-200"}`} aria-label={`${label} 차트로 보기`} aria-pressed={viewType === type}>
+                            {label}
+                        </button>
+                    ))}
                 </div>
             </div>
+            <div className="min-h-0 flex-1 flex items-center justify-center">
+                <div className="w-full h-full flex items-center justify-center">{renderChart()}</div>
+            </div>
         </div>
     );
 };
 
-const TableContent: React.FC<{ data: CompleteStreamTableData }> = ({ data }) => {
+const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (lat: number, lng: number) => void }> = ({ data, onMapLocationRequest }) => {
     const columns = data.columns ?? [];
-    const rows = data.rows ?? [];
-    if (data.html) {
-        return <div className="text-sm text-gray-200 overflow-auto [&_table]:w-full [&_th]:text-left [&_th]:font-semibold [&_th]:py-2 [&_th]:pr-3 [&_th]:border-b [&_th]:border-[#31353a] [&_td]:py-2 [&_td]:pr-3 [&_td]:border-b [&_td]:border-[#31353a]/60" dangerouslySetInnerHTML={{ __html: data.html }} />;
-    }
+    const rows = data.data ?? [];
+
+    const handleCellClick = (row: Record<string, string | number | boolean>) => {
+        if (row.type === "map" && onMapLocationRequest) {
+            const lat = typeof row.lat === "number" ? row.lat : Number(row.lat);
+            const lng = typeof row.lng === "number" ? row.lng : Number(row.lng);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                onMapLocationRequest(lat, lng);
+            }
+        }
+    };
 
     return (
-        <div className="overflow-auto h-full">
-            <table className="w-full text-sm">
-                <thead>
-                    <tr>
-                        {columns.map((col, i) => (
-                            <th key={i} className="text-left font-semibold text-white py-2 pr-3 border-b border-[#31353a]">
-                                {col}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map((row, ri) => (
-                        <tr key={ri}>
-                            {row.map((cell, ci) => (
-                                <td key={ci} className="text-gray-300 py-2 pr-3 border-b border-[#31353a]/60" dangerouslySetInnerHTML={{ __html: String(cell) }} />
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+        <div className="flex flex-col h-full min-h-0 gap-3">
+            <div className="flex-1 min-h-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                        <thead className="sticky top-0 z-10">
+                            <tr style={{ background: "rgb(40,40,48)" }}>
+                                {columns.map((col, i) => (
+                                    <th key={i} className="px-3 py-2.5 text-left text-white font-semibold">
+                                        {col}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((row, ri) => {
+                                const isClickable = data.extension?.[ri]?.type !== "text" && data.extension?.[ri]?.clickable;
+
+                                return (
+                                    <tr key={ri} className={`${isClickable ? "cursor-pointer hover:bg-[#393a42]!" : ""}`} style={{ background: ri % 2 === 0 ? "rgb(35,35,42)" : "rgb(40,40,48)" }}>
+                                        {row.map((cell, cellIdx) => {
+                                            const cellStr = String(cell);
+                                            const text = stripHtmlTags(cellStr);
+                                            const extension = data.extension?.[ri];
+                                            return (
+                                                <td
+                                                    key={cellIdx}
+                                                    className={`px-3 py-2 text-gray-300 font-medium`}
+                                                    onClick={isClickable && extension ? () => handleCellClick(extension) : undefined}
+                                                    role={isClickable ? "button" : undefined}
+                                                    tabIndex={isClickable ? 0 : undefined}
+                                                    onKeyDown={isClickable && extension ? (e) => e.key === "Enter" && handleCellClick(extension) : undefined}
+                                                    aria-label={isClickable ? `위치 보기: ${text}` : undefined}>
+                                                    {text}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {data.meta && (
+                <div
+                    className="flex-shrink-0 rounded-lg px-3 py-2.5"
+                    style={{
+                        background: "rgba(40,40,48,0.6)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                    <p className="text-sm text-white font-medium">{data.meta.criteria}</p>
+                    <p className="text-sm text-gray-300 mt-1">{data.meta.guide}</p>
+                </div>
+            )}
         </div>
     );
 };
 
-export type AgentCardData = { type: "chart"; title: string; chartData: ChartStreamData } | { type: "table"; title: string; tableData: CompleteStreamTableData };
+export type AgentCardData = { type: "chart"; title: string; chartData: ChartStreamData } | { type: "table"; title: string; tableData: TableStreamData };
 
 interface AgentCardProps {
     /** 차트 또는 테이블 데이터 */
@@ -216,21 +160,22 @@ interface AgentCardProps {
     className?: string;
     /** 카드 루트에 적용할 스타일 */
     style?: React.CSSProperties;
+    /** 차트 메시지 표에서 위치 클릭 시 지도 이동 (lat, lng) */
+    onMapLocationRequest?: (lat: number, lng: number) => void;
 }
 
-export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style }) => {
+export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style, onMapLocationRequest }) => {
     return (
-        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden gradient-border-left-top min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
-            <div className="shrink-0 flex items-center justify-between gap-2 px-4 py-3 border-b border-[#31353a]">
-                <span className="text-sm font-semibold text-white truncate">{data.title}</span>
-                {onRemove && (
+        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
+            {onRemove && (
+                <div className="absolute top-3 right-3 z-10">
                     <button type="button" onClick={onRemove} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none" aria-label="카드 제거">
                         <Icon icon="mdi:close" className="w-5 h-5" />
                     </button>
-                )}
-            </div>
-            <div className="flex flex-1 min-h-0 p-4 flex items-center justify-center overflow-auto">
-                <div className={`h-full rounded-lg border border-[#31353a] bg-black/20 p-3 w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} />}</div>
+                </div>
+            )}
+            <div className="flex-1 min-h-0 p-4 pt-12 overflow-auto">
+                <div className={`h-full rounded-lg w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} onMapLocationRequest={onMapLocationRequest} />}</div>
             </div>
         </div>
     );

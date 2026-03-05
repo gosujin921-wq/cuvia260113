@@ -2,47 +2,47 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --color-black: #000000;
-  --color-gray-100: #f3f4f6;
-  --scale-factor: 0.8;
+    --background: #ffffff;
+    --foreground: #171717;
+    --color-black: #000000;
+    --color-gray-100: #f3f4f6;
+    --scale-factor: 0.8;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+    :root {
+        --background: #0a0a0a;
+        --foreground: #ededed;
+    }
 }
 
 html {
-  margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* Next.js 루트 요소 (React로 전환 후 사용 안함) */
@@ -59,441 +59,438 @@ body {
 } */
 
 body {
-  background: #091326;
-  color: var(--foreground);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+    background: #091326;
+    color: var(--foreground);
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 /* 흐르는 오퍼시티 애니메이션 */
 @keyframes flowing-opacity {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
 }
 
 /* 동선 경로 dash 애니메이션 */
 @keyframes dash {
-  to {
-    stroke-dashoffset: -20;
-  }
+    to {
+        stroke-dashoffset: -20;
+    }
 }
 
 .animate-dash {
-  animation: dash 3s linear infinite;
+    animation: dash 3s linear infinite;
 }
 
 /* 원 크기 펄스 애니메이션 - 위험 상황 알람 스타일 */
 @keyframes circle-pulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(2.2);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(2.5);
-    opacity: 0;
-  }
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(2.2);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(2.5);
+        opacity: 0;
+    }
 }
 
 .animate-circle-pulse {
-  animation: circle-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  animation-fill-mode: both;
+    animation: circle-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    animation-fill-mode: both;
 }
 
 /* 블루 펄스 애니메이션 - 대시 스트로크 크기를 넘지 않도록 제한 */
 @keyframes blue-circle-pulse {
-  0% {
-    transform: scale(0.8);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(0.95);
-    opacity: 0.6;
-  }
-  100% {
-    transform: scale(1.0);
-    opacity: 0;
-  }
+    0% {
+        transform: scale(0.8);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(0.95);
+        opacity: 0.6;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
 }
 
 .animate-blue-circle-pulse {
-  animation: blue-circle-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  animation-fill-mode: both;
+    animation: blue-circle-pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    animation-fill-mode: both;
 }
 
 /* 이벤트 핀 광원 애니메이션 - 블랙 솔리드 배경에만 적용 (외곽 보더 제외) */
 @keyframes pin-glow {
-  0%, 100% {
-    box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.2), inset 0 0 20px rgba(239, 68, 68, 0.1);
-  }
-  50% {
-    box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.4), inset 0 0 30px rgba(239, 68, 68, 0.2);
-  }
+    0%,
+    100% {
+        box-shadow: inset 0 0 12px rgba(239, 68, 68, 0.2), inset 0 0 20px rgba(239, 68, 68, 0.1);
+    }
+    50% {
+        box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.4), inset 0 0 30px rgba(239, 68, 68, 0.2);
+    }
 }
 
 .animate-pin-glow {
-  animation: pin-glow 2s ease-in-out infinite;
-  will-change: box-shadow;
+    animation: pin-glow 2s ease-in-out infinite;
+    will-change: box-shadow;
 }
 
 /* Tailwind pulse 애니메이션 */
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* 마우스 가이드 원 전용 펄스 - 선 스타일에서 더 잘 보이는 opacity */
 @keyframes guide-circle-pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
 }
 
 .animate-guide-circle-pulse {
-  animation: guide-circle-pulse 1.2s ease-in-out infinite;
+    animation: guide-circle-pulse 1.2s ease-in-out infinite;
 }
 
-
 .flowing-opacity {
-  overflow: hidden;
+    overflow: hidden;
 }
 
 .flowing-opacity::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.3) 25%,
-    rgba(255, 255, 255, 0.5) 50%,
-    rgba(255, 255, 255, 0.3) 75%,
-    transparent 100%
-  );
-  animation: flowing-opacity 3s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 25%, rgba(255, 255, 255, 0.5) 50%, rgba(255, 255, 255, 0.3) 75%, transparent 100%);
+    animation: flowing-opacity 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
 }
 
 /* 맥 기본 스크롤바 스타일 */
 ::-webkit-scrollbar {
-  width: 11px;
-  height: 11px;
+    width: 11px;
+    height: 11px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.3);
-  border-radius: 6px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  transition: background 0.2s ease;
+    background: rgba(128, 128, 128, 0.3);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.5);
-  background-clip: padding-box;
+    background: rgba(128, 128, 128, 0.5);
+    background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background: rgba(128, 128, 128, 0.7);
-  background-clip: padding-box;
+    background: rgba(128, 128, 128, 0.7);
+    background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-corner {
-  background: transparent;
+    background: transparent;
 }
 
 /* Range input 스타일 */
 input[type="range"].slider {
-  -webkit-appearance: none;
-  appearance: none;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 input[type="range"].slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
 }
 
 input[type="range"].slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #3b82f6;
-  cursor: pointer;
-  border: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: none;
 }
 
 /* Agent Chat 페이지 전용 스타일 - 기본 폰트 16px */
 .agent-chat-page {
-  font-size: 16px;
+    font-size: 16px;
 }
 
 .agent-chat-page .text-sm {
-  font-size: 16px !important;
+    font-size: 16px !important;
 }
 
 .agent-chat-page .text-xs {
-  font-size: 12.8px !important;
+    font-size: 12.8px !important;
 }
 
 /* CUVIA Link 백그라운드 그라데이션 애니메이션 */
 @keyframes cuvia-link-float1 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(60px, -80px) scale(1.15);
-  }
-  66% {
-    transform: translate(-40px, 60px) scale(0.85);
-  }
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(60px, -80px) scale(1.15);
+    }
+    66% {
+        transform: translate(-40px, 60px) scale(0.85);
+    }
 }
 
 @keyframes cuvia-link-float2 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-70px, 50px) scale(0.9);
-  }
-  66% {
-    transform: translate(50px, -60px) scale(1.1);
-  }
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(-70px, 50px) scale(0.9);
+    }
+    66% {
+        transform: translate(50px, -60px) scale(1.1);
+    }
 }
 
 @keyframes cuvia-link-float3 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(80px, 40px) scale(1.12);
-  }
-  66% {
-    transform: translate(-50px, -70px) scale(0.88);
-  }
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(80px, 40px) scale(1.12);
+    }
+    66% {
+        transform: translate(-50px, -70px) scale(0.88);
+    }
 }
 
 @keyframes cuvia-link-float4 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-60px, -50px) scale(0.96);
-  }
-  66% {
-    transform: translate(70px, 80px) scale(1.04);
-  }
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(-60px, -50px) scale(0.96);
+    }
+    66% {
+        transform: translate(70px, 80px) scale(1.04);
+    }
 }
 
 .cuvia-link-gradient-1 {
-  animation: cuvia-link-float1 15s ease-in-out infinite;
+    animation: cuvia-link-float1 15s ease-in-out infinite;
 }
 
 .cuvia-link-gradient-2 {
-  animation: cuvia-link-float2 18s ease-in-out infinite;
+    animation: cuvia-link-float2 18s ease-in-out infinite;
 }
 
 .cuvia-link-gradient-3 {
-  animation: cuvia-link-float3 20s ease-in-out infinite;
+    animation: cuvia-link-float3 20s ease-in-out infinite;
 }
 
 .cuvia-link-gradient-4 {
-  animation: cuvia-link-float4 16s ease-in-out infinite;
+    animation: cuvia-link-float4 16s ease-in-out infinite;
 }
 
 /* CUVIA Link 채팅창 그라데이션 보더 애니메이션 */
 @keyframes cuvia-link-gradient-flow {
-  0% {
-    background: conic-gradient(from 0deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  2.5% {
-    background: conic-gradient(from 9deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  5% {
-    background: conic-gradient(from 18deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  7.5% {
-    background: conic-gradient(from 27deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  10% {
-    background: conic-gradient(from 36deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  12.5% {
-    background: conic-gradient(from 45deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  15% {
-    background: conic-gradient(from 54deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  17.5% {
-    background: conic-gradient(from 63deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  20% {
-    background: conic-gradient(from 72deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  22.5% {
-    background: conic-gradient(from 81deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  25% {
-    background: conic-gradient(from 90deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  27.5% {
-    background: conic-gradient(from 99deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  30% {
-    background: conic-gradient(from 108deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  32.5% {
-    background: conic-gradient(from 117deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  35% {
-    background: conic-gradient(from 126deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  37.5% {
-    background: conic-gradient(from 135deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  40% {
-    background: conic-gradient(from 144deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  42.5% {
-    background: conic-gradient(from 153deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  45% {
-    background: conic-gradient(from 162deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  47.5% {
-    background: conic-gradient(from 171deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  50% {
-    background: conic-gradient(from 180deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  52.5% {
-    background: conic-gradient(from 189deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  55% {
-    background: conic-gradient(from 198deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  57.5% {
-    background: conic-gradient(from 207deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  60% {
-    background: conic-gradient(from 216deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  62.5% {
-    background: conic-gradient(from 225deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  65% {
-    background: conic-gradient(from 234deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  67.5% {
-    background: conic-gradient(from 243deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  70% {
-    background: conic-gradient(from 252deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  72.5% {
-    background: conic-gradient(from 261deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  75% {
-    background: conic-gradient(from 270deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  77.5% {
-    background: conic-gradient(from 279deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  80% {
-    background: conic-gradient(from 288deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  82.5% {
-    background: conic-gradient(from 297deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  85% {
-    background: conic-gradient(from 306deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  87.5% {
-    background: conic-gradient(from 315deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  90% {
-    background: conic-gradient(from 324deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  92.5% {
-    background: conic-gradient(from 333deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  95% {
-    background: conic-gradient(from 342deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  97.5% {
-    background: conic-gradient(from 351deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
-  100% {
-    background: conic-gradient(from 360deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  }
+    0% {
+        background: conic-gradient(from 0deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    2.5% {
+        background: conic-gradient(from 9deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    5% {
+        background: conic-gradient(from 18deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    7.5% {
+        background: conic-gradient(from 27deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    10% {
+        background: conic-gradient(from 36deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    12.5% {
+        background: conic-gradient(from 45deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    15% {
+        background: conic-gradient(from 54deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    17.5% {
+        background: conic-gradient(from 63deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    20% {
+        background: conic-gradient(from 72deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    22.5% {
+        background: conic-gradient(from 81deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    25% {
+        background: conic-gradient(from 90deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    27.5% {
+        background: conic-gradient(from 99deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    30% {
+        background: conic-gradient(from 108deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    32.5% {
+        background: conic-gradient(from 117deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    35% {
+        background: conic-gradient(from 126deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    37.5% {
+        background: conic-gradient(from 135deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    40% {
+        background: conic-gradient(from 144deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    42.5% {
+        background: conic-gradient(from 153deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    45% {
+        background: conic-gradient(from 162deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    47.5% {
+        background: conic-gradient(from 171deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    50% {
+        background: conic-gradient(from 180deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    52.5% {
+        background: conic-gradient(from 189deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    55% {
+        background: conic-gradient(from 198deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    57.5% {
+        background: conic-gradient(from 207deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    60% {
+        background: conic-gradient(from 216deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    62.5% {
+        background: conic-gradient(from 225deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    65% {
+        background: conic-gradient(from 234deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    67.5% {
+        background: conic-gradient(from 243deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    70% {
+        background: conic-gradient(from 252deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    72.5% {
+        background: conic-gradient(from 261deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    75% {
+        background: conic-gradient(from 270deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    77.5% {
+        background: conic-gradient(from 279deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    80% {
+        background: conic-gradient(from 288deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    82.5% {
+        background: conic-gradient(from 297deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    85% {
+        background: conic-gradient(from 306deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    87.5% {
+        background: conic-gradient(from 315deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    90% {
+        background: conic-gradient(from 324deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    92.5% {
+        background: conic-gradient(from 333deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    95% {
+        background: conic-gradient(from 342deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    97.5% {
+        background: conic-gradient(from 351deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
+    100% {
+        background: conic-gradient(from 360deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    }
 }
 
 .cuvia-link-chat-input {
-  position: relative;
-  background: rgb(249, 250, 251);
-  isolation: isolate;
+    position: relative;
+    background: rgb(249, 250, 251);
+    isolation: isolate;
 }
 
 .cuvia-link-chat-input::before {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  background: conic-gradient(from 0deg, #0066FF 0deg, #8A2BE2 120deg, #ff8566 240deg, #0066FF 360deg);
-  animation: cuvia-link-gradient-flow 3s cubic-bezier(0.2, 0, 0.2, 1) infinite;
-  opacity: 0.5;
-  z-index: 0;
-  pointer-events: none;
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box, 
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  padding: 3px;
-  transition: border-radius 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg, #0066ff 0deg, #8a2be2 120deg, #ff8566 240deg, #0066ff 360deg);
+    animation: cuvia-link-gradient-flow 3s cubic-bezier(0.2, 0, 0.2, 1) infinite;
+    opacity: 0.5;
+    z-index: 0;
+    pointer-events: none;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    padding: 3px;
+    transition: border-radius 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .cuvia-link-chat-input > * {
-  position: relative;
-  z-index: 1;
+    position: relative;
+    z-index: 1;
 }
 
 /* Home-agent 페이지용 다크 모드 채팅 입력 */
@@ -504,464 +501,455 @@ input[type="range"].slider::-moz-range-thumb {
 }
 
 .gradient-border-left-top {
-  position: relative;
-  border-radius: 0.5rem; /* rounded-lg */
+    position: relative;
+    border-radius: 0.5rem; /* rounded-lg */
 }
 
 .gradient-border-left-top::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;                  /* 보더 두께 */
-  pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px; /* 보더 두께 */
+    pointer-events: none;
 
-  background: linear-gradient(
-    135deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.55) 60%,
-    rgba(255,255,255,0.15) 100%
-  );
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 60%, rgba(255, 255, 255, 0.15) 100%);
 
-  /* 핵심: 가운데를 뻥 뚫고 테두리만 남김 */
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+    /* 핵심: 가운데를 뻥 뚫고 테두리만 남김 */
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
 }
 
 .gradient-border-right-bottom {
-  position: relative;
-  border-radius: 0.5rem; /* rounded-lg */
+    position: relative;
+    border-radius: 0.5rem; /* rounded-lg */
 }
 
 .gradient-border-right-bottom::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;                  /* 보더 두께 */
-  pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px; /* 보더 두께 */
+    pointer-events: none;
 
-  background: linear-gradient(
-    315deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.55) 60%,
-    rgba(255,255,255,0.15) 100%
-  );
+    background: linear-gradient(315deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.55) 60%, rgba(255, 255, 255, 0.15) 100%);
 
-  /* 핵심: 가운데를 뻥 뚫고 테두리만 남김 */
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+    /* 핵심: 가운데를 뻥 뚫고 테두리만 남김 */
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
 }
 
 /* Fast Search 그라데이션 움직임 애니메이션 */
 @keyframes fast-search-gradient-move {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 /* 스켈레톤 너비 애니메이션 - 3가지 패턴 */
 @keyframes skeleton-width-0 {
-  0%, 100% {
-    width: 60%;
-  }
-  50% {
-    width: 85%;
-  }
+    0%,
+    100% {
+        width: 60%;
+    }
+    50% {
+        width: 85%;
+    }
 }
 
 @keyframes skeleton-width-1 {
-  0%, 100% {
-    width: 75%;
-  }
-  50% {
-    width: 50%;
-  }
+    0%,
+    100% {
+        width: 75%;
+    }
+    50% {
+        width: 50%;
+    }
 }
 
 @keyframes skeleton-width-2 {
-  0%, 100% {
-    width: 45%;
-  }
-  50% {
-    width: 70%;
-  }
+    0%,
+    100% {
+        width: 45%;
+    }
+    50% {
+        width: 70%;
+    }
 }
 
 /* 캡처 애니메이션 - 플래시 효과 */
 @keyframes capture-flash {
-  0% {
-    opacity: 0.8;
-  }
-  50% {
-    opacity: 0.4;
-  }
-  100% {
-    opacity: 0;
-  }
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        opacity: 0;
+    }
 }
 
 /* 캡처 애니메이션 - 프레임 효과 */
 @keyframes capture-frame {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  30% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.05);
-  }
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    30% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.05);
+    }
 }
 
 /* 캡처 애니메이션 - 체크 아이콘 */
 @keyframes capture-check {
-  0% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  40% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-  80% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.9);
-  }
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    40% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    80% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.9);
+    }
 }
 
 .animate-capture-flash {
-  animation: capture-flash 1s ease-out forwards;
+    animation: capture-flash 1s ease-out forwards;
 }
 
 .animate-capture-frame {
-  animation: capture-frame 1s ease-out forwards;
+    animation: capture-frame 1s ease-out forwards;
 }
 
 .animate-capture-check {
-  animation: capture-check 1s ease-out forwards;
+    animation: capture-check 1s ease-out forwards;
 }
 
 /* 포착 알림 애니메이션 - 메뉴 플래시 */
 @keyframes capture-menu-flash {
-  0% {
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.6;
-  }
-  30% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.5;
-  }
-  70% {
-    opacity: 0.2;
-  }
-  100% {
-    opacity: 0;
-  }
+    0% {
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6;
+    }
+    30% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    70% {
+        opacity: 0.2;
+    }
+    100% {
+        opacity: 0;
+    }
 }
 
 /* 포착 알림 애니메이션 - 뱃지 팝 */
 @keyframes capture-badge-pop {
-  0% {
-    transform: scale(1);
-  }
-  20% {
-    transform: scale(1.4);
-  }
-  40% {
-    transform: scale(1.1);
-  }
-  60% {
-    transform: scale(1.3);
-  }
-  80% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-  }
+    0% {
+        transform: scale(1);
+    }
+    20% {
+        transform: scale(1.4);
+    }
+    40% {
+        transform: scale(1.1);
+    }
+    60% {
+        transform: scale(1.3);
+    }
+    80% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 .animate-capture-menu-flash {
-  animation: capture-menu-flash 3s ease-out forwards;
+    animation: capture-menu-flash 3s ease-out forwards;
 }
 
 .animate-capture-badge-pop {
-  animation: capture-badge-pop 0.8s ease-out;
+    animation: capture-badge-pop 0.8s ease-out;
 }
 
 /* 포착 아이콘 바운스 애니메이션 */
 @keyframes icon-bounce {
-  0% {
-    transform: scale(1);
-  }
-  15% {
-    transform: scale(1.15);
-  }
-  30% {
-    transform: scale(0.95);
-  }
-  45% {
-    transform: scale(1.1);
-  }
-  60% {
-    transform: scale(0.98);
-  }
-  75% {
-    transform: scale(1.05);
-  }
-  90% {
-    transform: scale(0.99);
-  }
-  100% {
-    transform: scale(1);
-  }
+    0% {
+        transform: scale(1);
+    }
+    15% {
+        transform: scale(1.15);
+    }
+    30% {
+        transform: scale(0.95);
+    }
+    45% {
+        transform: scale(1.1);
+    }
+    60% {
+        transform: scale(0.98);
+    }
+    75% {
+        transform: scale(1.05);
+    }
+    90% {
+        transform: scale(0.99);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 .animate-icon-bounce {
-  animation: icon-bounce 0.8s ease-out;
+    animation: icon-bounce 0.8s ease-out;
 }
 
 /* 썸네일이 포착 목록 메뉴로 날아가는 애니메이션 (동적 위치) */
 @keyframes fly-to-menu-dynamic {
-  0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-  60% {
-    transform: translate(calc(-50% + (var(--end-x) * 0.7)), calc(-50% + (var(--end-y) * 0.7))) scale(0.6);
-    opacity: 1;
-  }
-  70% {
-    transform: translate(calc(-50% + (var(--end-x) * 0.8)), calc(-50% + (var(--end-y) * 0.8))) scale(0.5);
-    opacity: 0;
-  }
-  100% {
-    transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(0.4);
-    opacity: 0;
-  }
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    60% {
+        transform: translate(calc(-50% + (var(--end-x) * 0.7)), calc(-50% + (var(--end-y) * 0.7))) scale(0.6);
+        opacity: 1;
+    }
+    70% {
+        transform: translate(calc(-50% + (var(--end-x) * 0.8)), calc(-50% + (var(--end-y) * 0.8))) scale(0.5);
+        opacity: 0;
+    }
+    100% {
+        transform: translate(calc(-50% + var(--end-x)), calc(-50% + var(--end-y))) scale(0.4);
+        opacity: 0;
+    }
 }
 
 /* 마우스 유도 애니메이션 - 확장되는 원 */
 @keyframes mouse-ripple {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(4.5);
-    opacity: 0;
-  }
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(4.5);
+        opacity: 0;
+    }
 }
 
 /* 마우스 유도 애니메이션 - 작은 확장 원 */
 @keyframes mouse-ripple-small {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(3);
-    opacity: 0;
-  }
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0;
+    }
 }
 
 /* 회전 애니메이션 */
 @keyframes spin {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
 }
 
 /* 중심 고정 회전 애니메이션 */
 @keyframes spin-center {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* 마우스 가이드 메시지 페이드인 애니메이션 */
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
+    animation: fade-in 0.3s ease-out forwards;
 }
 
 /* 2키 전환 - 예측 리스트 featured 레이아웃 애니메이션 */
 @keyframes featured-fade-slide {
-  from {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes featured-grid-fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .animate-featured-fade-slide {
-  animation: featured-fade-slide 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: featured-fade-slide 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .animate-featured-grid-fade {
-  animation: featured-grid-fade 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards;
-  opacity: 0;
+    animation: featured-grid-fade 0.35s cubic-bezier(0.22, 1, 0.36, 1) 0.08s forwards;
+    opacity: 0;
 }
 
 /* 1키 이벤트 영상 프레임 - 레드 스트로크 깜빡임 */
 @keyframes red-stroke-blink {
-  0%,
-  100% {
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 1);
-    border-color: #ef4444;
-  }
-  50% {
-    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
-    border-color: rgba(239, 68, 68, 0.5);
-  }
+    0%,
+    100% {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 1);
+        border-color: #ef4444;
+    }
+    50% {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+        border-color: rgba(239, 68, 68, 0.5);
+    }
 }
 
 .video-frame-red-blink {
-  animation: red-stroke-blink 1s ease-in-out infinite;
+    animation: red-stroke-blink 1s ease-in-out infinite;
 }
 
-/* ========== Agent Chat HTML 렌더링 스타일 ========== */
+/* ========== Agent Chat HTML 렌더링 스타일 (다크 글래스모피즘) ========== */
 .agent-html-content {
-  line-height: 1.6;
+    line-height: 1.6;
+    color: #e5e7eb;
 }
 
 .agent-html-content .agent-conclusion {
-  font-weight: 700;
-  color: #18181b;
-  padding: 16px 24px;
-  background: linear-gradient(101deg, #eef2ff 0%, #f5ebff 70%, #fff0ea 100%);
-  border-radius: 14px;
-  margin-bottom: 20px;
-  border: 1px solid #e0e7ff;
-  box-shadow: 0 2px 8px 0 rgba(80, 80, 200, 0.09), 0 1px 4px 0 rgba(229, 90, 108, 0.08);
-  letter-spacing: -0.01em;
-  white-space: pre-line;
+    font-weight: 700;
+    color: #f3f4f6;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(23, 23, 23, 0.6) 100%);
+    border-radius: 14px;
+    margin-bottom: 20px;
+    border: 1px solid #31353a;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    letter-spacing: -0.01em;
+    white-space: pre-line;
 }
 
 .agent-html-content .agent-evidence {
-  margin: 12px 0;
+    margin: 12px 0;
+    color: #d1d5db;
 }
 
 .agent-html-content .agent-rationale {
-  font-size: 13px;
-  color: #4b5563;
-  margin-bottom: 12px;
-  padding: 12px 14px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid #31353a;
 }
 
 .agent-html-content .agent-criteria {
-  font-size: 12px;
-  color: #6b7280;
-  margin-top: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 8px;
 }
 
-/* 테이블 공통: 일반 table / .agent-table 모두 심플 스타일 */
+/* 테이블 공통: 다크 테마 */
 .agent-html-content table,
 .agent-html-content .agent-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  margin: 14px 0;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin: 14px 0;
+    background: #393a42;
+    border: 1px solid #31353a;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .agent-html-content thead th,
 .agent-html-content .agent-table-header,
 .agent-html-content .agent-table .agent-table-header {
-  background: #f1f5f9;
-  color: #334155;
-  font-weight: 600;
-  padding: 10px 14px;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #e5e7eb;
+    font-weight: 600;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid #31353a;
+    font-size: 12px;
 }
 
 .agent-html-content tbody td,
 .agent-html-content .agent-table-cell,
 .agent-html-content .agent-table .agent-table-cell {
-  padding: 10px 14px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #475569;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(49, 53, 58, 0.8);
+    color: #d1d5db;
 }
 
 .agent-html-content table tbody tr:last-child td,
 .agent-html-content .agent-table tbody tr:last-child .agent-table-cell {
-  border-bottom: none;
+    border-bottom: none;
 }
 
 .agent-html-content table tbody tr:nth-child(even) td,
 .agent-html-content .agent-table tbody tr:nth-child(even) .agent-table-cell {
-  background: #fafbfc;
+    background: rgba(255, 255, 255, 0.03);
 }

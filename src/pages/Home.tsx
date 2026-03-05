@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import EventList from "@/components/dashboard/HOME/EventList";
-import MapView from "@/components/dashboard/HOME/MapView";
 import UnityMapView from "@/components/dashboard/HOME/unity/UnityMapView";
 import LeftPanel from "@/components/dashboard/LeftPanel";
 import HeatmapPanel from "@/components/dashboard/HeatmapPanel";
@@ -372,8 +371,9 @@ export default function Home() {
                 },
             },
         };
-        console.log(eventToUnity);
-        sendToUnity(JSON.stringify(eventToUnity));
+        setTimeout(() => {
+            sendToUnity(JSON.stringify(eventToUnity));
+        }, 200);
     }, [isUnityMode, missingEventId, resetEventState]);
 
     // 이벤트 트리거 함수 (키보드 1 또는 웹소켓 이벤트에서 호출)
@@ -579,38 +579,20 @@ export default function Home() {
 
                 {/* 맵 - 메인 영역 전체 */}
                 <div className="absolute inset-0" style={{ width: "100%", height: "100%" }}>
-                    {isUnityMode ? (
-                        <UnityMapView
-                            events={events}
-                            selectedEventId={selectedEventId}
-                            aiDetectionEventId={aiDetectionEventId}
-                            onAiDetectionClose={clearSelection}
-                            externalZoomLevel={mapZoomLevel}
-                            onZoomLevelChange={setMapZoomLevel}
-                            hideControls={hideControls}
-                            leftPanelWidth={leftPanelCollapsed ? 80 : 416}
-                            isAutoMode={isAutoMode}
-                            isEventStreaming={isEventStreaming}
-                            activeEventCameraInfo={activeEventCameraInfo}
-                            onBridgeSlotsChange={setBridgeSlots}
-                        />
-                    ) : (
-                        <MapView
-                            events={events}
-                            highlightedEventId={highlightedEventId}
-                            selectedEventId={selectedEventId}
-                            aiDetectionEventId={aiDetectionEventId}
-                            cctvIndex={cctvIndex}
-                            onEventClick={handleEventAction}
-                            onAiDetectionClose={clearSelection}
-                            onMapClick={() => {}}
-                            externalZoomLevel={mapZoomLevel}
-                            onZoomLevelChange={setMapZoomLevel}
-                            hideControls={hideControls}
-                            leftPanelWidth={leftPanelCollapsed ? 80 : 416}
-                            isAutoMode={isAutoMode}
-                        />
-                    )}
+                    <UnityMapView
+                        events={events}
+                        selectedEventId={selectedEventId}
+                        aiDetectionEventId={aiDetectionEventId}
+                        onAiDetectionClose={clearSelection}
+                        externalZoomLevel={mapZoomLevel}
+                        onZoomLevelChange={setMapZoomLevel}
+                        hideControls={hideControls}
+                        leftPanelWidth={leftPanelCollapsed ? 80 : 416}
+                        isAutoMode={isAutoMode}
+                        isEventStreaming={isEventStreaming}
+                        activeEventCameraInfo={activeEventCameraInfo}
+                        onBridgeSlotsChange={setBridgeSlots}
+                    />
                 </div>
 
                 {/* 우측: 이벤트 리스트 패널 - 플로팅. 1키: 우측으로 이동·페이드아웃 */}
@@ -632,7 +614,7 @@ export default function Home() {
                     isOpen={showAIAgentPopup}
                     onClose={() => setShowAIAgentPopup(false)}
                     hideControls={hideControls}
-                    eventTime={key1PressTime as Date}
+                    eventTime={key1PressTime ?? new Date()}
                     isReadyToAnalyze={isReadyToAnalyze}
                     onChangePropagationTime={setPropagationTime}
                     onChangeShowPropagationModal={setShowPropagationModal}
@@ -640,7 +622,7 @@ export default function Home() {
                     onChangeCurrentPropagationMenu={setCurrentPropagationMenu}
                 />
             )}
-            {showAIAgentPopup && !isUnityMode && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime as Date} />}
+            {showAIAgentPopup && !isUnityMode && <AIAgentPopup isOpen={showAIAgentPopup} onClose={() => setShowAIAgentPopup(false)} hideControls={hideControls} eventTime={key1PressTime ?? new Date()} />}
             {showPropagationModal && isUnityMode && vlmAnalysisResult && <PropagationModal isVisible={true} onClose={() => setShowPropagationModal(false)} eventType={eventType} vlmAnalysisResult={vlmAnalysisResult} propagationTime={propagationTime} />}
         </div>
     );

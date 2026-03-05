@@ -1,6 +1,6 @@
 import { Event } from "@/types";
 import { Icon } from "@iconify/react";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import CCTVIcon from "@/components/common/CCTVIcon";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
@@ -68,6 +68,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
     const mediaAgentUrl = mediaAgent ? `ws://${mediaAgent.agent_ip}:${mediaAgent.agent_port}/v1/media-agent/camera/stream` : undefined;
 
     const { data: iceServerList } = useGetIceServerList();
+    const iceServers = useMemo(() => iceServerList?.ice_servers ?? [], [iceServerList?.ice_servers]);
 
     const { data: cameraAssignCameraInfo } = useGetCameraAssignCameraInfo();
 
@@ -120,19 +121,40 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isUserScrollingRef = useRef(false);
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    /** CCTV 팝업 한꺼번에 열/닫을 때 렌더 부하 방지용 스태거 타이머 */
+    const cctvStaggerTimeoutRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-    // 투망감시 모드 시작 시 그룹핑된 CCTV 팝업 열기 (aiDetectionEventId가 설정되어야 열림)
+    const STAGGER_OPEN_MS = 100;
+
+    // 투망감시 모드: 그룹 CCTV 팝업 열기/닫기 (한꺼번에 마운트/언마운트되지 않도록 단계적 처리)
     useEffect(() => {
         const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
+        const shouldOpen = !!(isEvent1Selected || aiDetectionEventId);
+        const blueCCTVIndices = cctvList.filter((cctv) => cctv.isGrouped).map((cctv) => cctv.bridgeId);
 
-        // aiDetectionEventId가 있거나 특정 이벤트 선택 시 그룹핑된 카메라 팝업 열기
-        // (웹소켓 이벤트는 Home.tsx 딜레이 후 aiDetectionEventId 설정됨)
-        if (isEvent1Selected || aiDetectionEventId) {
-            const blueCCTVIndices = cctvList.filter((cctv) => cctv.isGrouped).map((cctv) => cctv.bridgeId);
-            setOpenedCCTVPopups(new Set(blueCCTVIndices));
-        } else {
-            setOpenedCCTVPopups(new Set());
+        cctvStaggerTimeoutRef.current.forEach((id) => clearTimeout(id));
+        cctvStaggerTimeoutRef.current = [];
+
+        if (!shouldOpen) {
+            requestAnimationFrame(() => setOpenedCCTVPopups(new Set()));
+            return;
         }
+
+        if (blueCCTVIndices.length === 0) {
+            setOpenedCCTVPopups(new Set());
+            return;
+        }
+        setOpenedCCTVPopups(new Set([blueCCTVIndices[0]]));
+        for (let i = 1; i < blueCCTVIndices.length; i += 1) {
+            const id = setTimeout(() => {
+                setOpenedCCTVPopups((prev) => new Set([...prev, blueCCTVIndices[i]]));
+            }, i * STAGGER_OPEN_MS);
+            cctvStaggerTimeoutRef.current.push(id);
+        }
+        return () => {
+            cctvStaggerTimeoutRef.current.forEach((id) => clearTimeout(id));
+            cctvStaggerTimeoutRef.current = [];
+        };
     }, [selectedEventId, events, cctvList, aiDetectionEventId]);
 
     useEffect(() => {
@@ -355,32 +377,13 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
         }
     };
 
-    const handleHoverCctv = (cctvId: string | null) => {
+    const handleHoverCctv = useCallback((cctvId: string | null) => {
         if (!cctvId) {
-            if (hoveredCCTVId) {
-                const eventToUnity: EventToUnity = {
-                    methodName: "exitHover",
-                    payload: {
-                        value: hoveredCCTVId,
-                    },
-                };
-                sendToUnity(JSON.stringify(eventToUnity));
-            }
             setHoveredCCTVId(null);
             return;
         }
-
-        // hover 시작 시
         setHoveredCCTVId(cctvId);
-
-        const eventToUnity: EventToUnity = {
-            methodName: "enterHover",
-            payload: {
-                value: cctvId,
-            },
-        };
-        sendToUnity(JSON.stringify(eventToUnity));
-    };
+    }, []);
 
     useEffect(() => {
         // ✅ Unity → React 이벤트 수신 설정
@@ -646,7 +649,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                                             pointerEvents: "auto",
                                         }}>
                                         <UnityCCTVMeshTracking
-                                            iceServerList={iceServerList?.ice_servers ?? []}
+                                            iceServerList={iceServers}
                                             mediaAgentUrl={mediaAgentUrl}
                                             event={currentEvent}
                                             onClose={isMain ? () => onAiDetectionClose?.() : () => {}}
@@ -677,7 +680,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
 
                 return (
                     <UnityCCTVMeshTracking
-                        iceServerList={iceServerList?.ice_servers ?? []}
+                        iceServerList={iceServers}
                         mediaAgentUrl={mediaAgentUrl}
                         event={events.find((e) => e.id === aiDetectionEventId) || null}
                         onClose={() => {}}
@@ -700,7 +703,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
             })()}
 
             <UnityBottomPanel
-                iceServerList={iceServerList?.ice_servers ?? []}
+                iceServerList={iceServers}
                 cctvList={cameraList?.page_data ?? []}
                 showCCTV={showCCTV}
                 hideControls={hideControls}
