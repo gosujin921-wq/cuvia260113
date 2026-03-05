@@ -1633,10 +1633,21 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         className="flex flex-col flex-shrink-0 overflow-hidden relative border border-[#40424a] transition-[width] duration-300 ease-out w-[480px] rounded-2xl"
                         style={{
                             height: maxHeightProp ?? 600,
-                            background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
-                            backdropFilter: "blur(4px)",
-                            WebkitBackdropFilter: "blur(4px)",
+                            background: "linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(23,23,23,0.4) 100%)",
+                            backdropFilter: "blur(5px)",
+                            WebkitBackdropFilter: "blur(5px)",
                         }}>
+                        {/* 닫기 버튼 하위: 상단 그라데이션 블러 (블러 약하게 + 어두운 틴트로 글로우 감소) */}
+                        <div
+                            className="absolute top-0 left-0 right-0 z-[1] h-12 pointer-events-none backdrop-blur-[4px] rounded-t-2xl"
+                            style={{
+                                background: "linear-gradient(to bottom, rgba(10,14,20,0.25) 0%, transparent 100%)",
+                                WebkitBackdropFilter: "blur(2px)",
+                                maskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
+                                WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
+                            }}
+                            aria-hidden="true"
+                        />
                         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
                             <button
                                 type="button"
@@ -1651,7 +1662,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                 <Icon icon="mdi:close" className="w-5 h-5" />
                             </button>
                         </div>
-                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-6">
+                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-12">
                             <div className="space-y-3">
                                 <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} />
                             </div>
