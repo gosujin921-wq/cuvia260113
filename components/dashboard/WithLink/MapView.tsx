@@ -722,6 +722,7 @@ const MapView = ({
                     const parts = bboxParam.split(",").map(Number);
                     if (parts.length >= 4) {
                         const srs = urlObj.searchParams.get("srs")?.toUpperCase() ?? urlObj.searchParams.get("crs")?.toUpperCase() ?? "EPSG:3857";
+                        const version = (urlObj.searchParams.get("version") ?? urlObj.searchParams.get("VERSION") ?? "1.1.1").toUpperCase();
                         let minLng: number, minLat: number, maxLng: number, maxLat: number;
                         if (srs.includes("3857")) {
                             const b = bbox3857To4326(parts[0], parts[1], parts[2], parts[3]);
@@ -729,17 +730,35 @@ const MapView = ({
                             minLat = b.minLat;
                             maxLng = b.maxLng;
                             maxLat = b.maxLat;
+                        } else if (srs.includes("4326")) {
+                            const isLikelyLatLonOrder =
+                                version.startsWith("1.3") ||
+                                (parts[0] >= -90 && parts[0] <= 90 && Math.abs(parts[1]) <= 180 && parts[0] !== parts[1]);
+                            if (isLikelyLatLonOrder) {
+                                // WMS 1.3.0 또는 위도·경도 범위로 추정: bbox = minLat, minLon, maxLat, maxLon
+                                minLat = parts[0];
+                                minLng = parts[1];
+                                maxLat = parts[2];
+                                maxLng = parts[3];
+                            } else {
+                                // WMS 1.1.x: bbox = minLon, minLat, maxLon, maxLat
+                                minLng = parts[0];
+                                minLat = parts[1];
+                                maxLng = parts[2];
+                                maxLat = parts[3];
+                            }
                         } else {
                             minLng = parts[0];
                             minLat = parts[1];
                             maxLng = parts[2];
                             maxLat = parts[3];
                         }
+                        // y축(상하) 뒤집기: 위·아래 위도 교환 [하좌, 하우, 상우, 상좌]
                         const coordinates: [[number, number], [number, number], [number, number], [number, number]] = [
-                            [minLng, minLat],
-                            [maxLng, minLat],
-                            [maxLng, maxLat],
                             [minLng, maxLat],
+                            [maxLng, maxLat],
+                            [maxLng, minLat],
+                            [minLng, minLat],
                         ];
                         map.addSource(sourceId, {
                             type: "image",
