@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import type { ChartStreamData, TableStreamData } from "@/types/streamJson.types";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from "chart.js";
@@ -6,6 +6,7 @@ import { ChartLine } from "@/components/chart/ChartLine";
 import { ChartBar } from "@/components/chart/ChartBar";
 import { ChartPie } from "@/components/chart/ChartPie";
 import { ChartDoughnut } from "@/components/chart/ChartDoughnut";
+import { stripHtmlTags } from "./TableMessage";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
 
@@ -25,30 +26,37 @@ const CHART_VIEW_BUTTONS: { type: ChartViewType; label: string }[] = [
     { type: "doughnut", label: "도넛" },
 ];
 
-const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
-    const initialType = (data.type || "bar").toLowerCase();
-    const normalizedInitial: ChartViewType = initialType === "line" || initialType === "pie" || initialType === "bar" || initialType === "doughnut" ? initialType : "bar";
-    const [viewType, setViewType] = useState<ChartViewType>(normalizedInitial);
+const getNormalizedChartType = (type: string | undefined): ChartViewType => {
+    const initial = (type || "bar").toLowerCase();
+    return initial === "line" || initial === "pie" || initial === "bar" || initial === "doughnut" ? initial : "bar";
+};
 
-    const chartType = viewType;
+const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
+    const [viewType, setViewType] = useState<ChartViewType>(() => getNormalizedChartType(data.type));
+
+    useEffect(() => {
+        const nextType = getNormalizedChartType(data.type);
+        const id = requestAnimationFrame(() => setViewType(nextType));
+        return () => cancelAnimationFrame(id);
+    }, [data.type]);
 
     const handleViewTypeClick = (type: ChartViewType) => {
         if (type === viewType) return;
         setViewType(type);
     };
 
-    const renderChart = () => {
-        if (chartType === "line") {
+    const renderChart = useCallback(() => {
+        if (viewType === "line") {
             return <ChartLine data={data} fill />;
         }
-        if (chartType === "pie") {
+        if (viewType === "pie") {
             return <ChartPie data={data} fill />;
         }
-        if (chartType === "doughnut") {
+        if (viewType === "doughnut") {
             return <ChartDoughnut data={data} fill />;
         }
         return <ChartBar data={data} fill />;
-    };
+    }, [viewType, data]);
 
     return (
         <div className="h-full flex flex-col min-h-0 gap-2">
@@ -68,9 +76,20 @@ const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     );
 };
 
-const TableContent: React.FC<{ data: TableStreamData }> = ({ data }) => {
+const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (lat: number, lng: number) => void }> = ({ data, onMapLocationRequest }) => {
     const columns = data.columns ?? [];
     const rows = data.data ?? [];
+
+    const handleCellClick = (row: Record<string, string | number | boolean>) => {
+        if (row.type === "map" && onMapLocationRequest) {
+            const lat = typeof row.lat === "number" ? row.lat : Number(row.lat);
+            const lng = typeof row.lng === "number" ? row.lng : Number(row.lng);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                onMapLocationRequest(lat, lng);
+            }
+        }
+    };
+
     return (
         <div className="flex flex-col h-full min-h-0 gap-3">
             <div className="flex-1 min-h-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
@@ -86,13 +105,31 @@ const TableContent: React.FC<{ data: TableStreamData }> = ({ data }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.map((row, ri) => (
-                                <tr key={ri} style={{ background: ri % 2 === 0 ? "rgb(35,35,42)" : "rgb(40,40,48)" }}>
-                                    {row.map((cell, ci) => (
-                                        <td key={ci} className="px-3 py-2 text-gray-200" dangerouslySetInnerHTML={{ __html: String(cell) }} />
-                                    ))}
-                                </tr>
-                            ))}
+                            {rows.map((row, ri) => {
+                                const isClickable = data.extension?.[ri]?.type !== "text" && data.extension?.[ri]?.clickable;
+
+                                return (
+                                    <tr key={ri} className={`${isClickable ? "cursor-pointer hover:bg-[#393a42]!" : ""}`} style={{ background: ri % 2 === 0 ? "rgb(35,35,42)" : "rgb(40,40,48)" }}>
+                                        {row.map((cell, cellIdx) => {
+                                            const cellStr = String(cell);
+                                            const text = stripHtmlTags(cellStr);
+                                            const extension = data.extension?.[ri];
+                                            return (
+                                                <td
+                                                    key={cellIdx}
+                                                    className={`px-3 py-2 text-gray-300 font-medium`}
+                                                    onClick={isClickable && extension ? () => handleCellClick(extension) : undefined}
+                                                    role={isClickable ? "button" : undefined}
+                                                    tabIndex={isClickable ? 0 : undefined}
+                                                    onKeyDown={isClickable && extension ? (e) => e.key === "Enter" && handleCellClick(extension) : undefined}
+                                                    aria-label={isClickable ? `위치 보기: ${text}` : undefined}>
+                                                    {text}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
@@ -123,9 +160,11 @@ interface AgentCardProps {
     className?: string;
     /** 카드 루트에 적용할 스타일 */
     style?: React.CSSProperties;
+    /** 차트 메시지 표에서 위치 클릭 시 지도 이동 (lat, lng) */
+    onMapLocationRequest?: (lat: number, lng: number) => void;
 }
 
-export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style }) => {
+export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style, onMapLocationRequest }) => {
     return (
         <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
             {onRemove && (
@@ -136,7 +175,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className 
                 </div>
             )}
             <div className="flex-1 min-h-0 p-4 pt-12 overflow-auto">
-                <div className={`h-full rounded-lg w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} />}</div>
+                <div className={`h-full rounded-lg w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} onMapLocationRequest={onMapLocationRequest} />}</div>
             </div>
         </div>
     );

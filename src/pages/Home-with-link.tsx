@@ -1059,6 +1059,7 @@ export default function HomeV2() {
                     setIsAgentActive(true);
                 }}
                 floatingBarStyle={floatingBarStyle}
+                onMapLocationRequest={(lat, lng) => setFlyToLocation([lng, lat])}
                 hideControls={uiState.hideControls}
                 position={{ bottom: "24px", right: "24px" }}
                 maxHeight={agentPopupMaxHeight}

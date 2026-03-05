@@ -3,40 +3,35 @@ import { useMemo } from "react";
 
 interface TableMessageProps {
     message: ChatMessage;
-    onLocationClick?: (lat: number, lng: number, text: string) => void;
+    onMapLocationRequest?: (lat: number, lng: number) => void;
 }
 
-const stripHtmlTags = (html: string): string => {
+export const stripHtmlTags = (html: string): string => {
     const tmp = document.createElement("div");
     tmp.innerHTML = html;
     return tmp.textContent || tmp.innerText || "";
 };
 
-const isClickable = (html: string): boolean => html.includes("clickable");
-
-const parseClickableData = (html: string): { lat: number; lng: number } | null => {
-    const latMatch = html.match(/data-lat=['"]([^'"]+)['"]/);
-    const lngMatch = html.match(/data-lng=['"]([^'"]+)['"]/);
-    if (latMatch && lngMatch) {
-        return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[1]) };
-    }
-    return null;
-};
-
 export const ROW_LIMIT = 5;
 
-export function TableMessage({ message, onLocationClick }: TableMessageProps) {
+export function TableMessage({ message, onMapLocationRequest }: TableMessageProps) {
     const displayTables = useMemo(() => {
         if (!message.tableData) return null;
-        return { ...message.tableData, visibleRows: message.tableData.data?.slice(0, ROW_LIMIT), needsTruncation: (message.tableData.data?.length ?? 0) > ROW_LIMIT, totalRows: message.tableData.data?.length ?? 0, idx: 0 };
+        const totalRows = message.tableData.total_count ?? 0;
+        const visibleRows = message.tableData.data?.slice(0, ROW_LIMIT) ?? [];
+        const needsTruncation = totalRows > ROW_LIMIT;
+        const remainingCount = needsTruncation ? totalRows - ROW_LIMIT : 0;
+        const extensions = message.tableData.extension ?? [];
+        return { ...message.tableData, visibleRows, needsTruncation, totalRows, remainingCount, idx: 0, extensions };
     }, [message]);
 
-    const handleCellClick = (cell: string | number) => {
-        const cellStr = String(cell);
-        if (!isClickable(cellStr) || !onLocationClick) return;
-        const coords = parseClickableData(cellStr);
-        if (coords) {
-            onLocationClick(coords.lat, coords.lng, stripHtmlTags(cellStr));
+    const handleCellClick = (row: Record<string, string | number | boolean>) => {
+        if (row.type === "map" && onMapLocationRequest) {
+            const lat = typeof row.lat === "number" ? row.lat : Number(row.lat);
+            const lng = typeof row.lng === "number" ? row.lng : Number(row.lng);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
+                onMapLocationRequest(lat, lng);
+            }
         }
     };
 
@@ -73,37 +68,34 @@ export function TableMessage({ message, onLocationClick }: TableMessageProps) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {displayTables.visibleRows?.map((row, rowIdx) => (
-                                        <tr key={rowIdx} style={{ background: rowIdx % 2 === 0 ? "rgba(35,35,42,0.6)" : "rgba(40,40,48,0.6)" }}>
-                                            {row.map((cell, cellIdx) => {
-                                                const cellStr = String(cell);
-                                                const clickable = isClickable(cellStr);
-                                                const text = stripHtmlTags(cellStr);
-                                                return (
-                                                    <td
-                                                        key={cellIdx}
-                                                        className={`px-3 py-2 text-gray-300 font-medium`}
-                                                        onClick={clickable ? () => handleCellClick(cell) : undefined}
-                                                        role={clickable ? "button" : undefined}
-                                                        tabIndex={clickable ? 0 : undefined}
-                                                        onKeyDown={clickable ? (e) => e.key === "Enter" && handleCellClick(cell) : undefined}
-                                                        aria-label={clickable ? `위치 보기: ${text}` : undefined}>
-                                                        {text}
-                                                    </td>
-                                                );
-                                            })}
-                                        </tr>
-                                    ))}
+                                    {displayTables.visibleRows?.map((row, rowIdx) => {
+                                        const isClickable = displayTables.extension?.[rowIdx]?.type !== "text" && displayTables.extension?.[rowIdx]?.clickable;
+                                        return (
+                                            <tr key={rowIdx} className={`${isClickable ? "cursor-pointer hover:bg-[#393a42]!" : ""}`} style={{ background: rowIdx % 2 === 0 ? "rgba(35,35,42,0.6)" : "rgba(40,40,48,0.6)" }}>
+                                                {row.map((cell, cellIdx) => {
+                                                    const cellStr = String(cell);
+                                                    const text = stripHtmlTags(cellStr);
+                                                    const extension = displayTables.extension?.[rowIdx];
+                                                    return (
+                                                        <td
+                                                            key={cellIdx}
+                                                            className={`px-3 py-2 text-gray-300 font-medium`}
+                                                            onClick={isClickable && extension ? () => handleCellClick(extension) : undefined}
+                                                            role={isClickable ? "button" : undefined}
+                                                            tabIndex={isClickable ? 0 : undefined}
+                                                            onKeyDown={isClickable && extension ? (e) => e.key === "Enter" && handleCellClick(extension) : undefined}
+                                                            aria-label={isClickable ? `위치 보기: ${text}` : undefined}>
+                                                            {text}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
-                        {displayTables.needsTruncation && (
-                            <div className="flex flex-col items-center py-2 text-gray-400 select-none text-lg leading-tight">
-                                <span>⦁</span>
-                                <span>⦁</span>
-                                <span>⦁</span>
-                            </div>
-                        )}
+                        {displayTables.remainingCount > 0 && <p className="text-sm text-gray-400 py-2">... {displayTables.remainingCount}건 더 있음</p>}
                     </>
                 )}
             </div>

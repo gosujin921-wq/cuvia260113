@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Icon } from "@iconify/react";
 import { useChatStream } from "@/src/hooks/useChatStream";
-import type { MapStreamData, ChartStreamData, CompleteStreamTableData, CompleteStreamPayload, TableStreamData } from "@/types/streamJson.types";
+import type { MapStreamData, ChartStreamData, CompleteStreamPayload, TableStreamData } from "@/types/streamJson.types";
 import { AgentCard } from "@/components/dashboard/WithLink/AgentCard";
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend, type ChartOptions } from "chart.js";
-import { Bar, Line, Pie, Doughnut } from "react-chartjs-2";
 import { ChartMessage } from "./ChartMessage";
 import { TableMessage } from "./TableMessage";
 import { NormalMessage } from "./NormalMessage";
@@ -51,6 +50,8 @@ interface AIAgentPopupProps {
     onOpenRequest?: () => void;
     /** 첫 검색용 하단 바 위치/스타일 */
     floatingBarStyle?: React.CSSProperties;
+    /** 차트 메시지 표에서 위치 클릭 시 지도 이동 (lat, lng) */
+    onMapLocationRequest?: (lat: number, lng: number) => void;
 }
 
 export interface ChatMessage {
@@ -86,7 +87,8 @@ export interface ChatMessage {
     chartData?: ChartStreamData | null;
     tableData?: TableStreamData | null;
     disclaimer?: string | null;
-    hasTableOrChart?: boolean;
+    hasExpanded?: boolean;
+    isBlackBg?: boolean;
 }
 
 /** AI 응답으로 누적 노출할 차트/테이블 카드 타입 */
@@ -144,6 +146,7 @@ interface MessageListProps {
     onVideoView?: () => void;
     trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
     onClickExpandTableOrChart?: (messageId: string) => void;
+    onMapLocationRequest?: (lat: number, lng: number) => void;
 }
 
 /** 초기 환영 문구 (채팅 시작 시 한 번만 표시) */
@@ -167,7 +170,7 @@ const getTrackingUpdateMsgContent = () => {
     };
 };
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest }) => {
     const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
     return (
         <>
@@ -396,7 +399,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                         <div
                                             className={`rounded-xl border border-[#40424a] bg-[#393a42] p-4 text-gray-200`}
                                             style={
-                                                message.hasTableOrChart
+                                                message.isBlackBg
                                                     ? {
                                                           background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
                                                           backdropFilter: "blur(4px)",
@@ -440,9 +443,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                     {/* <div className="text-xs text-gray-200 pt-1">{message.timestamp}</div> */}
                                                 </>
                                             ) : message.chartData ? (
-                                                <ChartMessage message={message} />
+                                                <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} />
                                             ) : message.tableData ? (
-                                                <TableMessage message={message} />
+                                                <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} />
                                             ) : message.htmlContent ? (
                                                 <NormalMessage message={message} />
                                             ) : (
@@ -455,7 +458,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 </>
                                             )}
                                         </div>
-                                        {message.hasTableOrChart && (
+                                        {message.hasExpanded && (
                                             <button className="text-sm text-blue-400 hover:text-blue-500 cursor-pointer underline flex items-center gap-1 mt-2" onClick={() => onClickExpandTableOrChart?.(message.id)}>
                                                 <Icon icon="mdi:arrow-left" className="w-5 h-5" />
                                                 확장
@@ -592,6 +595,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     onMapDataReceived,
     onOpenRequest,
     floatingBarStyle,
+    onMapLocationRequest,
 }) => {
     const [slideEntered, setSlideEntered] = useState(false);
     const [chatInput, setChatInput] = useState("");
@@ -751,7 +755,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         onDisclaimerReceived: useCallback((data: string) => {
             const msgId = streamMessageIdRef.current;
             if (!msgId) return;
-            console.log(data);
             setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", disclaimer: data } : msg)));
         }, []),
         onStepChange: useCallback((step: number, message: string) => {
@@ -770,18 +773,22 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         onComplete: useCallback((success: boolean, message: string, payload?: CompleteStreamPayload) => {
             const msgId = streamMessageIdRef.current;
             if (!msgId) return;
+            const table = payload?.data?.table ?? payload?.data?.tables?.[payload?.data?.tables?.length ? payload.data.tables.length - 1 : 0];
+            const tableCount = table?.data?.length ?? (table as { total_count?: number })?.total_count ?? 0;
             setMessages((prev) =>
                 prev.map((msg) => {
                     if (msg.id !== msgId) return msg;
                     const hasChart = !!(payload?.data?.chart ?? payload?.data?.chart_data);
                     const hasTable = !!(payload?.data?.table ?? (payload?.data?.tables && payload.data.tables.length > 0));
+                    const hasExpanded = hasChart || tableCount > 5;
                     const isBlack = hasChart || hasTable;
                     const next: ChatMessage = {
                         ...msg,
                         type: "normal",
                         htmlContent: message,
                         stepMessage: undefined,
-                        hasTableOrChart: isBlack,
+                        hasExpanded: hasExpanded,
+                        isBlackBg: isBlack,
                     };
                     if (payload?.title) next.title = payload.title;
                     if (payload?.rationale) next.rationale = payload.rationale;
@@ -789,7 +796,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 })
             );
             if (!payload?.data?.chart_data && !payload?.data?.chart) setLastChartData(null);
-            if (!payload?.data?.tables && !payload?.data?.table) setLastTableData(null);
+            if (!table || (tableCount && tableCount <= 5)) setLastTableData(null);
             setIsResponding(false);
             streamMessageIdRef.current = null;
         }, []),
@@ -1578,12 +1585,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         <div className="flex flex-col flex-shrink-0 gap-2 w-[680px]" style={{ height: maxHeightProp ?? 600 }}>
                             {lastTableData && (
                                 <div className="flex flex-col max-h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
-                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} />
+                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} onMapLocationRequest={onMapLocationRequest} />
                                 </div>
                             )}
                             {lastChartData && (
                                 <div className="flex flex-col h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
-                                    <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} />
+                                    <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} onMapLocationRequest={onMapLocationRequest} />
                                 </div>
                             )}
                         </div>
@@ -1613,7 +1620,18 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         </div>
                         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-6">
                             <div className="space-y-3">
-                                <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} onClickExpandTableOrChart={handleExpandTableOrChart} />
+                                <MessageList
+                                    messages={messages}
+                                    isResponding={isResponding}
+                                    listCardCount={listCardCount}
+                                    cameraCount={cameraCount}
+                                    isExpanded={false}
+                                    onObjectTrackingStart={onObjectTrackingStart}
+                                    onVideoView={onVideoView}
+                                    trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
+                                    onClickExpandTableOrChart={handleExpandTableOrChart}
+                                    onMapLocationRequest={onMapLocationRequest}
+                                />
                             </div>
                             <div ref={bottomRef} className="h-2" />
                         </div>
