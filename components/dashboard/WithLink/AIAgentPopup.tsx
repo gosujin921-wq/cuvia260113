@@ -86,7 +86,7 @@ export interface ChatMessage {
     chartData?: ChartStreamData | null;
     tableData?: TableStreamData | null;
     disclaimer?: string | null;
-    isBlackBg?: boolean;
+    hasTableOrChart?: boolean;
 }
 
 /** AI 응답으로 누적 노출할 차트/테이블 카드 타입 */
@@ -133,72 +133,6 @@ const getChartOptions = (title: string): ChartOptions<"bar" | "line" | "pie" | "
     },
 });
 
-/** 스트림 chart 타입 데이터를 Chart.js로 렌더링 */
-const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
-    const chartType = (data.type || "bar").toLowerCase();
-    const labels = data.labels ?? [];
-    const datasets = (data.datasets ?? []).map((ds, i) => {
-        const isLine = chartType === "line";
-        const color = isLine ? LINE_CHART_COLORS[i % LINE_CHART_COLORS.length] : CHART_COLORS[i % CHART_COLORS.length];
-        return {
-            label: ds.label ?? `데이터 ${i + 1}`,
-            data: ds.data ?? [],
-            backgroundColor: (ds as { backgroundColor?: string }).backgroundColor ?? color,
-            ...(isLine && {
-                borderColor: (ds as { borderColor?: string }).borderColor ?? color,
-                borderWidth: 2,
-                pointBackgroundColor: (ds as { pointBackgroundColor?: string }).pointBackgroundColor ?? color,
-                pointBorderColor: "rgba(229, 231, 235, 0.9)",
-                pointBorderWidth: 1,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                tension: 0.2,
-            }),
-        };
-    });
-
-    const chartData = {
-        labels,
-        datasets,
-    };
-
-    const options = getChartOptions(data.title ?? "");
-
-    if (chartType === "line") {
-        return (
-            <div className="w-full max-w-md h-64">
-                <Line data={chartData} options={options as ChartOptions<"line">} />
-            </div>
-        );
-    }
-    if (chartType === "pie") {
-        return (
-            <div className="w-full max-w-xs h-64 mx-auto">
-                <Pie data={chartData} options={options as ChartOptions<"pie">} />
-            </div>
-        );
-    }
-    if (chartType === "doughnut") {
-        return (
-            <div className="w-full max-w-xs h-64 mx-auto">
-                <Doughnut data={chartData} options={options as ChartOptions<"doughnut">} />
-            </div>
-        );
-    }
-    return (
-        <div className="w-full max-w-md h-64">
-            <Bar data={chartData} options={options as ChartOptions<"bar">} />
-        </div>
-    );
-};
-
-/** 카드 공통 스타일 (LeftPanel 헤더와 동일한 다크 글래스) */
-const CARD_PANEL_STYLE: React.CSSProperties = {
-    background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
-    backdropFilter: "blur(4px)",
-    WebkitBackdropFilter: "blur(4px)",
-};
-
 // 메시지 렌더링 공통 컴포넌트
 interface MessageListProps {
     messages: ChatMessage[];
@@ -209,6 +143,7 @@ interface MessageListProps {
     onObjectTrackingStart?: () => void;
     onVideoView?: () => void;
     trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
+    onClickExpandTableOrChart?: (messageId: string) => void;
 }
 
 /** 초기 환영 문구 (채팅 시작 시 한 번만 표시) */
@@ -232,7 +167,7 @@ const getTrackingUpdateMsgContent = () => {
     };
 };
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart }) => {
     const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
     return (
         <>
@@ -461,7 +396,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                         <div
                                             className={`rounded-xl border border-[#40424a] bg-[#393a42] p-4 text-gray-200`}
                                             style={
-                                                message.isBlackBg
+                                                message.hasTableOrChart
                                                     ? {
                                                           background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
                                                           backdropFilter: "blur(4px)",
@@ -520,6 +455,12 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 </>
                                             )}
                                         </div>
+                                        {message.hasTableOrChart && (
+                                            <button className="text-sm text-blue-400 hover:text-blue-500 cursor-pointer underline flex items-center gap-1 mt-2" onClick={() => onClickExpandTableOrChart?.(message.id)}>
+                                                <Icon icon="mdi:arrow-left" className="w-5 h-5" />
+                                                확장
+                                            </button>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -564,68 +505,66 @@ interface ChatInputFormProps {
 
 const ChatInputForm: React.FC<ChatInputFormProps> = ({ chatInput, setChatInput, handleSendMessage, isResponding, onSkipResponse, textareaRef, inputKey, ignoreNextChangeRef, isExpanded, placeholder = "검색 조건을 자연어로 입력해 주세요." }) => {
     return (
-        <div className={isExpanded ? "flex-shrink-0 border-t border-[#40424a]" : "p-4 border-t border-[#40424a] flex-shrink-0"} style={{ background: "transparent" }}>
-            <div className={isExpanded ? "p-4" : ""}>
-                <div className="relative flex items-center gap-3 bg-[#393a42] border border-[#40424a] rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
-                    {isExpanded && (
-                        <button
-                            onClick={() => {
-                                // 도구 팝업 (나중에 구현)
-                            }}
-                            className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors self-center"
-                            aria-label="도구 열기">
-                            <Icon icon="mdi:plus" className="w-5 h-5" />
-                        </button>
-                    )}
-                    <textarea
-                        id="agent-chat-input"
-                        ref={textareaRef}
-                        key={inputKey}
-                        value={chatInput}
-                        onChange={(e) => {
-                            if (ignoreNextChangeRef.current) {
-                                ignoreNextChangeRef.current = false;
-                                return;
-                            }
-                            setChatInput(e.target.value);
+        <div className={`min-w-0 ${isExpanded ? "flex-shrink-0" : "p-4 border-t border-[#31353a] flex-shrink-0"} relative z-20`} style={{ background: "transparent" }}>
+            <div className="relative flex items-center gap-3 min-w-0 bg-[#393a42] border border-[#40424a] rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
+                {isExpanded && (
+                    <button
+                        onClick={() => {
+                            // 도구 팝업 (나중에 구현)
                         }}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendMessage();
-                            }
-                        }}
-                        placeholder={placeholder}
-                        className={`flex-1 bg-transparent border-none text-white text-sm placeholder-gray-400 focus:outline-none resize-none ${isExpanded ? "overflow-hidden self-center" : "overflow-y-auto"}`}
-                        style={{
-                            minHeight: "24px",
-                            maxHeight: isExpanded ? "96px" : "72px",
-                            lineHeight: "24px",
-                        }}
-                        rows={1}
-                    />
-                    {isResponding ? (
-                        <button type="button" onClick={onSkipResponse} className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${isExpanded ? "self-center" : ""}`} style={{ background: AGENT_GRADIENT }} aria-label="답변 취소">
-                            <Icon icon="mdi:close" className="w-5 h-5 text-white" />
-                        </button>
-                    ) : (
-                        <button
-                            id="agent-chat-send-button"
-                            type="button"
-                            onClick={() => handleSendMessage()}
-                            disabled={!chatInput.trim()}
-                            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${isExpanded ? "self-center" : ""}`}
-                            style={{ background: AGENT_GRADIENT }}
-                            aria-label="전송">
-                            <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
-                        </button>
-                    )}
-                </div>
-                <p className="text-xs text-gray-400 mt-2 text-center">
-                    <span className="font-semibold text-gray-300">{isExpanded ? "CUVIA Agent" : "CUVIA Link"}</span>
-                    <span className="text-gray-400">는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.</span>
-                </p>
+                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors self-center"
+                        aria-label="도구 열기">
+                        <Icon icon="mdi:plus" className="w-5 h-5" />
+                    </button>
+                )}
+                <textarea
+                    id="agent-chat-input"
+                    ref={textareaRef}
+                    key={inputKey}
+                    value={chatInput}
+                    onChange={(e) => {
+                        if (ignoreNextChangeRef.current) {
+                            ignoreNextChangeRef.current = false;
+                            return;
+                        }
+                        setChatInput(e.target.value);
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                        }
+                    }}
+                    placeholder={placeholder}
+                    className={`flex-1 min-w-0 bg-transparent border-none text-white text-sm placeholder-gray-400 focus:outline-none resize-none relative z-10 break-words overflow-y-auto ${isExpanded ? "self-center" : ""}`}
+                    style={{
+                        minHeight: "24px",
+                        maxHeight: isExpanded ? "96px" : "72px",
+                        lineHeight: "24px",
+                    }}
+                    rows={1}
+                />
+                {isResponding ? (
+                    <button type="button" onClick={onSkipResponse} className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${isExpanded ? "self-center" : ""}`} style={{ background: AGENT_GRADIENT }} aria-label="답변 취소">
+                        <Icon icon="mdi:close" className="w-5 h-5 text-white" />
+                    </button>
+                ) : (
+                    <button
+                        id="agent-chat-send-button"
+                        type="button"
+                        onClick={() => handleSendMessage()}
+                        disabled={!chatInput.trim()}
+                        className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${isExpanded ? "self-center" : ""}`}
+                        style={{ background: AGENT_GRADIENT }}
+                        aria-label="전송">
+                        <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
+                    </button>
+                )}
             </div>
+            <p className="text-xs text-gray-300 mt-2 text-center">
+                <span className="font-semibold text-gray-300">{isExpanded ? "CUVIA Agent" : "CUVIA Link"}</span>
+                <span className="text-gray-400">는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.</span>
+            </p>
         </div>
     );
 };
@@ -842,7 +781,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         type: "normal",
                         htmlContent: message,
                         stepMessage: undefined,
-                        isBlackBg: isBlack,
+                        hasTableOrChart: isBlack,
                     };
                     if (payload?.title) next.title = payload.title;
                     if (payload?.rationale) next.rationale = payload.rationale;
@@ -863,6 +802,27 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             streamMessageIdRef.current = null;
         }, []),
     });
+
+    const handleExpandTableOrChart = (messageId: string) => {
+        const findMessage = messages.find((msg) => msg.id === messageId);
+        if (!findMessage) {
+            setLastChartData(null);
+            setLastTableData(null);
+            return;
+        }
+        if (findMessage.chartData) {
+            setLastChartData(findMessage.chartData);
+        } else {
+            setLastChartData(null);
+        }
+        if (findMessage.tableData) {
+            if (findMessage.tableData.total_count && findMessage.tableData.total_count > 5) {
+                setLastTableData(findMessage.tableData);
+            } else {
+                setLastTableData(null);
+            }
+        }
+    };
 
     // 팝업 열릴 때 세션 초기화
     useEffect(() => {
@@ -1664,7 +1624,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         </div>
                         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-12">
                             <div className="space-y-3">
-                                <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} />
+                                <MessageList messages={messages} isResponding={isResponding} listCardCount={listCardCount} cameraCount={cameraCount} isExpanded={false} onObjectTrackingStart={onObjectTrackingStart} onVideoView={onVideoView} trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined} onClickExpandTableOrChart={handleExpandTableOrChart} />
                             </div>
                             <div ref={bottomRef} className="h-2" />
                         </div>
