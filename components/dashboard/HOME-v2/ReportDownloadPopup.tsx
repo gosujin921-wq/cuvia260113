@@ -34,8 +34,14 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
     setCurrentPage((prev) => Math.min(totalPages, prev + 1));
   };
 
-  const handleFormatClick = (_format: FormatType) => {
-    // 추후 파일 다운로드 구현 예정
+  const handleFormatClick = (format: FormatType) => {
+    if (format === 'pdf') {
+      const link = document.createElement('a');
+      link.href = '/report.pdf';
+      link.download = '사건처리결과보고서.pdf';
+      link.click();
+    }
+    // 기타 형식(hwp, jpg, docx) 추후 구현 예정
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -55,7 +61,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
       <div
         className="bg-[#1a1a1a] border border-[#31353a] rounded-xl shadow-2xl overflow-hidden flex flex-col"
         style={{
-          width: '800px',
+          width: '960px',
           maxWidth: '95vw',
           height: '560px',
           maxHeight: '85vh',
@@ -83,24 +89,22 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
         <div className="flex-1 flex min-h-0">
           {/* 좌측: PDF 미리보기 영역 */}
           <div
-            className="flex flex-col flex-1 border-r border-[#31353a]"
-            style={{ minWidth: 0 }}
+            className="flex flex-col flex-1 min-w-0 border-r border-[#31353a]"
           >
             <div className="flex-1 flex items-center justify-center bg-[#0f0f0f]/50 relative overflow-hidden">
-              {/* 실제 PDF 구현 예정 - placeholder */}
-              <div className="w-full h-full flex items-center justify-center text-gray-500">
-                <span className="text-sm">PDF 미리보기 영역</span>
-                <span className="ml-2 text-xs text-gray-600">
-                  (페이지 {currentPage}/{totalPages})
-                </span>
-              </div>
+              <iframe
+                src={`/report.pdf#page=${currentPage}&navpanes=0`}
+                title="사건 처리 결과 보고서"
+                className="w-full h-full border-0"
+                style={{ minHeight: '400px' }}
+              />
 
               {/* 좌우 페이지 넘김 버튼 */}
               <button
                 type="button"
                 onClick={handlePrevPage}
                 disabled={currentPage <= 1}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-[#31353a] hover:bg-black/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-[#31353a] hover:bg-black/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors z-10"
                 aria-label="이전 페이지"
               >
                 <Icon icon="mdi:chevron-left" className="w-6 h-6" />
@@ -109,7 +113,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
                 type="button"
                 onClick={handleNextPage}
                 disabled={currentPage >= totalPages}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-[#31353a] hover:bg-black/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-[#31353a] hover:bg-black/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors z-10"
                 aria-label="다음 페이지"
               >
                 <Icon icon="mdi:chevron-right" className="w-6 h-6" />
@@ -125,7 +129,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
           </div>
 
           {/* 우측: 저장 형식 선택 */}
-          <div className="flex flex-col w-[260px] flex-shrink-0 p-5 bg-[#0f0f0f]/30">
+          <div className="flex flex-col w-[180px] flex-shrink-0 p-3 bg-[#0f0f0f]/30">
             <h4 className="text-sm font-semibold text-gray-200 mb-4">
               다음형식으로 저장
             </h4>

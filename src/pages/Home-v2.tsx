@@ -345,11 +345,11 @@ export default function HomeV2() {
     img.src = '/people.jpg';
   }, []);
 
-  // 시작 메시지창: 3초 로딩 후 시작 버튼 활성화
+  // 시작 메시지창: 10초 로딩 후 시작 버튼 활성화
   useEffect(() => {
     if (!showStartMessage) return;
     setIsInitialLoading(true);
-    const timer = setTimeout(() => setIsInitialLoading(false), 3000);
+    const timer = setTimeout(() => setIsInitialLoading(false), 10000);
     return () => clearTimeout(timer);
   }, [showStartMessage]);
 
@@ -922,9 +922,10 @@ export default function HomeV2() {
             pinOffset={pinOffset}
             focusTargetXPercent={fastSearchFocusXPercent}
             flyToLocation={flyToLocation}
-            externalShowCCTV={!uiState.showObjectTracking}
+            externalShowCCTV={showStartMessage ? false : !uiState.showObjectTracking}
             onMapStateChange={setLastMapState}
             hideAgentButton={uiState.showAIAgentOnly}
+            showInitialCCTVClusters={showStartMessage}
           />
         )}
       </div>
@@ -1236,14 +1237,14 @@ export default function HomeV2() {
               실종 시뮬레이션을 해보시려면<br />
               <span className="font-bold text-blue-400">1</span> 또는 <span className="font-bold">시작 버튼</span>을 눌러주세요.
             </p>
-            {/* 로딩바: 3초 동안 0→100% 애니메이션 */}
+            {/* 로딩바: 10초 동안 0→100% 애니메이션 */}
             {isInitialLoading && (
               <>
                 <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
                 <div className="h-1 w-full bg-gray-700 rounded-full overflow-hidden mb-4">
                   <div
                     className="h-full bg-blue-500 rounded-full"
-                    style={{ animation: 'loading-fill 3s linear forwards' }}
+                    style={{ animation: 'loading-fill 10s linear forwards' }}
                   />
                 </div>
               </>
