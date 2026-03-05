@@ -4,7 +4,6 @@ import EventList from "@/components/dashboard/HOME/EventList";
 import MapView from "@/components/dashboard/WithLink/MapView";
 import ObjectTrackingMapView from "@/components/dashboard/WithLink/ObjectTrackingMapView";
 import LeftPanel from "@/components/dashboard/WithLink/LeftPanel";
-import LeftMenuPanel from "@/components/dashboard/WithLink/LeftMenuPanel";
 import HeatmapPanel from "@/components/dashboard/HeatmapPanel";
 import BottomPanel from "@/components/dashboard/BottomPanel";
 import ReportPopup from "@/components/dashboard/HOME/ReportPopup";
@@ -14,8 +13,6 @@ import CaptureListPanel, { CaptureItem } from "@/components/dashboard/WithLink/C
 import PropagationListPanel from "@/components/dashboard/WithLink/PropagationListPanel";
 import AIAgentPopup from "@/components/dashboard/WithLink/AIAgentPopup";
 import ConfirmDialog from "@/components/dashboard/WithLink/ConfirmDialog";
-import { MouseGuide } from "@/components/dashboard/WithLink/MouseGuide";
-import { useMouseGuide } from "@/src/pages/useMouseGuide";
 import { Event } from "@/types";
 import { allEvents, convertToDashboardEvent } from "@/lib/events-data";
 import { parseExcludedAttributesFromMessage } from "@/lib/fast-search-attribute-utils";
@@ -286,7 +283,6 @@ export default function HomeV2() {
     const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
     const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
     const [streamMapData, setStreamMapData] = useState<MapStreamData | null>(null); // 스트림에서 받은 맵 데이터
-    const { showMouseGuide, setShowMouseGuide, mousePosition, guideTarget, guideMessage, guideType, jumpToStep, resetGuide, toggleGuide, syncToAppState } = useMouseGuide();
     const [captureDetailCloseCount, setCaptureDetailCloseCount] = useState<number>(0); // 포착 디테일 팝업 닫기 횟수
     const [agentMessage, setAgentMessage] = useState<string>("");
     const [pendingPopupMessage, setPendingPopupMessage] = useState<string | null>(null);
@@ -474,16 +470,6 @@ export default function HomeV2() {
         (menuId: "net-monitoring" | "fast-search" | "object-tracking" | "capture-list" | "propagation" | "broadcast") => {
             dispatch({ type: "SET_MENU", payload: menuId });
 
-            if (showMouseGuide) {
-                if (menuId === "fast-search") {
-                    jumpToStep("radius-chip");
-                } else if (menuId === "object-tracking") {
-                    jumpToStep("object-tracking-confirm");
-                } else if (menuId === "capture-list") {
-                    jumpToStep("capture-item-0");
-                }
-            }
-
             if (menuId === "net-monitoring") {
                 dispatch({ type: "SHOW_NET_MONITORING_DIALOG" });
             } else if (menuId === "fast-search") {
@@ -511,7 +497,7 @@ export default function HomeV2() {
                 dispatch({ type: "SHOW_PROPAGATION_LIST" });
             }
         },
-        [allConvertedEvents, showMouseGuide, jumpToStep]
+        [allConvertedEvents]
     );
 
     // 포착 아이템 추가 핸들러
@@ -607,8 +593,7 @@ export default function HomeV2() {
         setShowPredictedCCTVList(false);
         setObjectTrackingCompleted(false);
         setVisibleTrackingPins(0);
-        resetGuide();
-    }, [resetGuide]);
+    }, []);
 
     // 완전 초기화: 시작 메시지 다이얼로그가 떠 있는 상태로 되돌림
     const handleBackToInitial = useCallback(() => {
@@ -625,27 +610,13 @@ export default function HomeV2() {
         setReSearchResult(null);
         setCaptureDetailCloseCount(0);
         setOpenCandidateId(null);
-        resetGuide();
-    }, [resetGuide]);
-
-    // 재검색 완료 후 가이드 이동 (에이전트 팝업 결과 표시 후)
-    // - 우산 삭제(에이전트): 별빛A-604 가이드
-    // - 결과재검색 버튼: 객체 추적 메뉴 가이드
-    useEffect(() => {
-        if (!showMouseGuide || !reSearchResult || uiState.showReSearchProgress) return;
-        const isResultReSearchButton = reSearchResult.excludedAttributes.some((a) => a.includes("대표 후보"));
-        jumpToStep(isResultReSearchButton ? "object-tracking-menu" : "fast-search-candidate-10");
-    }, [showMouseGuide, reSearchResult, uiState.showReSearchProgress, jumpToStep]);
+    }, []);
 
     // 객체 추적 애니메이션 완료 핸들러
     const handleTrackingComplete = useCallback(() => {
         setShowPredictedCCTVList(true);
         setObjectTrackingCompleted(true);
-
-        if (showMouseGuide) {
-            jumpToStep("predicted-cctv-7");
-        }
-    }, [showMouseGuide, jumpToStep]);
+    }, []);
 
     // 스트림 맵 데이터 수신 핸들러
     const handleMapDataReceived = useCallback((data: MapStreamData) => {
@@ -672,29 +643,6 @@ export default function HomeV2() {
     );
 
     const clearPendingPopupMessage = useCallback(() => setPendingPopupMessage(null), []);
-
-    // syncToAppState: 타겟 요소가 없을 때 앱 상태에 맞춰 가이드 단계 동기화
-    useEffect(() => {
-        const inputEl = document.getElementById("agent-chat-input") as HTMLTextAreaElement | null;
-        const agentChatHasUsan = !!inputEl?.value?.includes("우산");
-
-        syncToAppState({
-            fastSearchStarted: uiState.showFastSearchList,
-            fastSearchProgressDone: !uiState.showFastSearchProgress,
-            reSearchInProgress: uiState.showReSearchProgress,
-            radiusConfirmed: false,
-            agentChatHasUsan,
-            agentChatSent: false,
-            reSearchResult: !!reSearchResult,
-            reSearchExcludedAttributes: reSearchResult?.excludedAttributes ?? [],
-            reSearchProgressDone: !uiState.showReSearchProgress,
-            objectTrackingStarted: uiState.showObjectTracking,
-            objectTrackingCompleted,
-            showPredictedCCTVList,
-            showCaptureList: uiState.showCaptureList,
-            showPropagationList: uiState.showPropagationList,
-        });
-    }, [syncToAppState, uiState.showFastSearchList, uiState.showFastSearchProgress, uiState.showReSearchProgress, uiState.showObjectTracking, uiState.showCaptureList, uiState.showPropagationList, reSearchResult, objectTrackingCompleted, showPredictedCCTVList]);
 
     // 객체 추적 시퀀스 시작 핸들러
     const handleStartTrackingSequence = useCallback(() => {
@@ -791,12 +739,8 @@ export default function HomeV2() {
             dispatch({ type: "SET_HIGHLIGHTED_EVENT", payload: missingEvent.id });
             setVisibleEventIds((prev) => new Set([...prev, missingEvent.id]));
             setFlyToLocation([126.783853180335, 37.5049838114765]);
-
-            if (showMouseGuide) {
-                jumpToStep("fast-search-start", 500);
-            }
         }
-    }, [allConvertedEvents, showMouseGuide, jumpToStep]);
+    }, [allConvertedEvents]);
 
     // 키보드 단축키 핸들러 (시나리오 프로토타입용)
     const handleKeyPress = useCallback(
@@ -808,7 +752,6 @@ export default function HomeV2() {
             const missingEvent = allConvertedEvents.find((event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004");
 
             if (e.key === "0") {
-                toggleGuide();
                 setShowStartMessage((prev) => !prev);
             } else if (e.key === "1" && missingEvent) {
                 setShowStartMessage(false);
@@ -816,10 +759,6 @@ export default function HomeV2() {
                 dispatch({ type: "SET_HIGHLIGHTED_EVENT", payload: missingEvent.id });
                 setVisibleEventIds((prev) => new Set([...prev, missingEvent.id]));
                 setFlyToLocation([126.783853180335, 37.5049838114765]);
-
-                if (showMouseGuide) {
-                    jumpToStep("fast-search-start", 500);
-                }
             } else if (e.key === "2") {
                 setShowPredictedCCTVList(true);
                 setObjectTrackingCompleted(true);
@@ -833,7 +772,7 @@ export default function HomeV2() {
                 dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
             }
         },
-        [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide]
+        [allConvertedEvents, handleStartTrackingSequence]
     );
 
     useEffect(() => {
@@ -1001,7 +940,7 @@ export default function HomeV2() {
                 onCandidateOpened={() => setOpenCandidateId(null)}
                 showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress || showReSearchSkeleton}
                 onAddCapture={handleAddCaptureItem}
-                scrollToBottomTrigger={guideTarget}
+                scrollToBottomTrigger={undefined}
             />
 
             {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}
@@ -1083,7 +1022,6 @@ export default function HomeV2() {
                 onFastSearchComplete={() => {
                     dispatch({ type: "COMPLETE_FAST_SEARCH_PROGRESS" });
                     setPinOffset({ x: 0, y: 0 });
-                    if (showMouseGuide) jumpToStep("radius-chip");
                 }}
                 onReSearchStart={() => {
                     dispatch({ type: "START_RE_SEARCH" });
@@ -1093,7 +1031,6 @@ export default function HomeV2() {
                 onReSearchComplete={() => {
                     dispatch({ type: "COMPLETE_RE_SEARCH" });
                     isReSearchingRef.current = true;
-                    if (showMouseGuide) jumpToStep("fast-search-candidate-10");
                 }}
                 onMapDataReceived={handleMapDataReceived}
             />
@@ -1168,8 +1105,6 @@ export default function HomeV2() {
                     </div>
                 </div>
             )}
-
-            <MouseGuide show={showMouseGuide} hideDuringProgress={uiState.showFastSearchProgress || uiState.showReSearchProgress} guideTarget={guideTarget} guideMessage={guideMessage} guideType={guideType} mousePosition={mousePosition} />
         </div>
     );
 }
