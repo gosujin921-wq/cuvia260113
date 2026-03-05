@@ -198,6 +198,7 @@ const MapView = ({
     const [mapBearing, setMapBearing] = useState(-17.6);
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
     const [streamMarkerViewType, setStreamMarkerViewType] = useState<"individual" | "cluster" | "heatmap">("individual");
+    const [showTrafficLayer, setShowTrafficLayer] = useState(true);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -511,6 +512,46 @@ const MapView = ({
                     map.moveLayer(id);
                 }
             });
+
+            // ========== 테스트 WMS 레이어 (서울 교통정보) ==========
+            const testWmsSourceId = "test-wms-traffic-source";
+            const testWmsLayerId = "test-wms-traffic-layer";
+
+            if (!map.getSource(testWmsSourceId)) {
+                // WMS 타일 URL 템플릿 (Vite 프록시 경로 사용으로 CORS 우회)
+                const wmsBaseUrl = "/wms-proxy/geoserver/wms";
+                const wmsParams = new URLSearchParams({
+                    SERVICE: "WMS",
+                    VERSION: "1.1.1",
+                    REQUEST: "GetMap",
+                    FORMAT: "image/png",
+                    TRANSPARENT: "true",
+                    LAYERS: "utopis:VW_MAP_TRAFFIC2",
+                    TILED: "true",
+                    WIDTH: "256",
+                    HEIGHT: "256",
+                    SRS: "EPSG:3857",
+                });
+                const wmsTileUrl = `${wmsBaseUrl}?${wmsParams.toString()}&BBOX={bbox-epsg-3857}`;
+
+                map.addSource(testWmsSourceId, {
+                    type: "raster",
+                    tiles: [wmsTileUrl],
+                    tileSize: 256,
+                });
+
+                map.addLayer({
+                    id: testWmsLayerId,
+                    type: "raster",
+                    source: testWmsSourceId,
+                    paint: {
+                        "raster-opacity": 0.7,
+                    },
+                });
+
+                console.log("[MapView] 테스트 WMS 레이어 추가됨:", testWmsLayerId);
+            }
+            // ========== 테스트 WMS 레이어 끝 ==========
         });
 
         mapRef.current = map;
@@ -539,6 +580,26 @@ const MapView = ({
             mapRef.current = null;
         };
     }, [onMapStateChange]);
+
+    // 실시간 교통정보 WMS 레이어 visibility 토글
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const testWmsLayerId = "test-wms-traffic-layer";
+
+        const toggleLayer = () => {
+            if (map.getLayer(testWmsLayerId)) {
+                map.setLayoutProperty(testWmsLayerId, "visibility", showTrafficLayer ? "visible" : "none");
+            }
+        };
+
+        if (map.isStyleLoaded()) {
+            toggleLayer();
+        } else {
+            map.once("load", toggleLayer);
+        }
+    }, [showTrafficLayer]);
 
     // streamMapData가 변경되면 마커와 WMS 레이어 업데이트
     useEffect(() => {
@@ -2323,51 +2384,57 @@ const MapView = ({
                             aria-label="회전 오른쪽">
                             <Icon icon="mdi:rotate-right" className="w-5 h-5" />
                         </button>
-                    </div>
-                )}
-
-                {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
-                {(!hideControls || showFastSearchList) && streamMapData?.markers && streamMapData.markers.length > 0 && (
-                    <div
-                        className="absolute top-[340px] flex flex-col gap-2 transition-all duration-500 ease-in-out"
-                        style={{
-                            left: showFastSearchList ? "800px" : `${leftPanelWidth + 24}px`,
-                            zIndex: 250,
-                        }}
-                        onClick={(e) => e.stopPropagation()}>
+                        <div className="w-full h-px bg-gray-300 my-1" />
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                setStreamMarkerViewType("individual");
+                                setShowTrafficLayer((prev) => !prev);
                             }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "individual" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                            aria-label="개별 마커"
-                            aria-pressed={streamMarkerViewType === "individual"}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showTrafficLayer ? "bg-green-600 hover:bg-green-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            aria-label="실시간 교통정보"
+                            aria-pressed={showTrafficLayer}
                             tabIndex={0}>
-                            <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
+                            <Icon icon="mdi:traffic-light" className="w-5 h-5" />
                         </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setStreamMarkerViewType("cluster");
-                            }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "cluster" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                            aria-label="클러스터"
-                            aria-pressed={streamMarkerViewType === "cluster"}
-                            tabIndex={0}>
-                            <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setStreamMarkerViewType("heatmap");
-                            }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "heatmap" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                            aria-label="히트맵"
-                            aria-pressed={streamMarkerViewType === "heatmap"}
-                            tabIndex={0}>
-                            <Icon icon="mdi:fire-circle" className="w-5 h-5" />
-                        </button>
+                        {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
+                        {streamMapData?.markers && streamMapData.markers.length > 0 && (
+                            <>
+                                <div className="w-full h-px bg-gray-300 my-1" />
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setStreamMarkerViewType("individual");
+                                    }}
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "individual" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                    aria-label="개별 마커"
+                                    aria-pressed={streamMarkerViewType === "individual"}
+                                    tabIndex={0}>
+                                    <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setStreamMarkerViewType("cluster");
+                                    }}
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "cluster" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                    aria-label="클러스터"
+                                    aria-pressed={streamMarkerViewType === "cluster"}
+                                    tabIndex={0}>
+                                    <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setStreamMarkerViewType("heatmap");
+                                    }}
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "heatmap" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                    aria-label="히트맵"
+                                    aria-pressed={streamMarkerViewType === "heatmap"}
+                                    tabIndex={0}>
+                                    <Icon icon="mdi:fire-circle" className="w-5 h-5" />
+                                </button>
+                            </>
+                        )}
                     </div>
                 )}
 
