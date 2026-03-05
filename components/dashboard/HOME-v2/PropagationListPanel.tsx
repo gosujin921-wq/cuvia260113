@@ -177,14 +177,29 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   const hasAddedDiscoveryRef = useRef(false);
   const [showReportDownloadPopup, setShowReportDownloadPopup] = useState(false);
 
+  const handleClose = () => {
+    onBackToInitial?.();
+    onClose?.();
+  };
+
   // 전파 패널 열림 시 0.5초 후 스크롤을 맨 아래로
   useEffect(() => {
     if (!isVisible) return;
+    let checkTimer: ReturnType<typeof setTimeout> | null = null;
     const scrollTimer = window.setTimeout(() => {
       const el = scrollContainerRef.current;
-      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      if (el) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        // smooth 스크롤 완료 후 탑 버튼 표시 보장
+        checkTimer = window.setTimeout(() => {
+          setShowScrollTop(el.scrollTop > 300);
+        }, 600);
+      }
     }, 500);
-    return () => window.clearTimeout(scrollTimer);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      if (checkTimer) window.clearTimeout(checkTimer);
+    };
   }, [isVisible]);
 
   // ESC 키로 닫기
@@ -192,14 +207,14 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     if (!isVisible) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onClose) {
-        onClose();
+      if (e.key === 'Escape') {
+        handleClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isVisible, onClose]);
+  }, [isVisible, onClose, onBackToInitial]);
 
   const [threads, setThreads] = useState<PropagationThread[]>(() => {
     const now = new Date();
@@ -299,15 +314,16 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   // 스크롤 위치에 따라 탑 버튼 표시/숨김
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container) return;
+    if (!container || !isVisible) return;
 
     const handleScroll = () => {
       setShowScrollTop(container.scrollTop > 300);
     };
 
+    handleScroll(); // 초기 체크 (패널 열림/스크롤 후 상태 반영)
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isVisible, threadMessages]);
 
   const scrollToTop = () => {
     scrollContainerRef.current?.scrollTo({
@@ -332,11 +348,11 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
       textareaRef.current.style.height = `${newHeight}px`;
     }
     
-    // 입력창 높이 측정
-    if (inputContainerRef.current) {
+    // 입력창 높이 측정 (패널 열림 시 및 레이아웃 변경 시)
+    if (isVisible && inputContainerRef.current) {
       setInputContainerHeight(inputContainerRef.current.offsetHeight);
     }
-  }, [messageInput]);
+  }, [messageInput, isVisible]);
 
   const addMessage = (role: 'agency' | 'user', content: string, author?: string) => {
     const timestamp = new Date().toLocaleTimeString('ko-KR', {
@@ -387,7 +403,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
       <div 
         className="fixed inset-0 bg-black/30 transition-opacity duration-500"
         style={{ zIndex: 10001 }}
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* 중앙 패널 */}
@@ -438,7 +454,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               {/* 닫기 버튼 */}
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="flex-shrink-0 w-8 h-8 rounded-full bg-white/90 border border-gray-200 hover:border-red-300 hover:bg-red-50 flex items-center justify-center text-gray-600 hover:text-red-500 transition-all shadow-sm"
                 aria-label="닫기"
               >
@@ -521,19 +537,6 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                     .replace(/\*(.+?)\*/g, '<em class="text-gray-800">$1</em>'),
                                 }}
                               />
-                              {message.showCompletionButton && (
-                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                  <p className="text-sm text-gray-600 mb-4">해당 시뮬레이션을 종료합니다.</p>
-                                  <button
-                                    type="button"
-                                    onClick={() => onBackToInitial?.()}
-                                    className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors"
-                                    aria-label="확인"
-                                  >
-                                    확인
-                                  </button>
-                                </div>
-                              )}
                               <div className="text-xs text-gray-500 mt-2">{message.timestamp}</div>
                             </div>
                           </div>
@@ -542,7 +545,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
                       {/* 오른쪽 정렬: system (전파 전송), user (담당자) - 발신 메시지 */}
                       {(message.role === 'system' || message.role === 'user') && (
-                        <div className="flex items-end gap-2 w-[80%] min-w-[80%]">
+                        <div className="flex items-start gap-2 w-[80%] min-w-[80%]">
                           <div className="flex-1 min-w-0 flex flex-col items-end">
                             {message.role === 'system' && (
                               <div className="bg-blue-50 border border-blue-100 rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">

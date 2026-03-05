@@ -107,11 +107,21 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   // 전파 패널 열림 시 0.5초 후 스크롤을 맨 아래로
   useEffect(() => {
     if (!isVisible) return;
+    let checkTimer: ReturnType<typeof setTimeout> | null = null;
     const scrollTimer = window.setTimeout(() => {
       const el = scrollContainerRef.current;
-      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      if (el) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        // smooth 스크롤 완료 후 탑 버튼 표시 보장
+        checkTimer = window.setTimeout(() => {
+          setShowScrollTop(el.scrollTop > 300);
+        }, 600);
+      }
     }, 500);
-    return () => window.clearTimeout(scrollTimer);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      if (checkTimer) window.clearTimeout(checkTimer);
+    };
   }, [isVisible]);
 
   // ESC 키로 닫기
@@ -320,15 +330,16 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   // 스크롤 위치에 따라 탑 버튼 표시/숨김
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container) return;
+    if (!container || !isVisible) return;
 
     const handleScroll = () => {
       setShowScrollTop(container.scrollTop > 300);
     };
 
+    handleScroll(); // 초기 체크 (패널 열림/스크롤 후 상태 반영)
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isVisible, threadMessages]);
 
   const scrollToTop = () => {
     scrollContainerRef.current?.scrollTo({
@@ -353,11 +364,11 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
       textareaRef.current.style.height = `${newHeight}px`;
     }
     
-    // 입력창 높이 측정
-    if (inputContainerRef.current) {
+    // 입력창 높이 측정 (패널 열림 시 및 레이아웃 변경 시)
+    if (isVisible && inputContainerRef.current) {
       setInputContainerHeight(inputContainerRef.current.offsetHeight);
     }
-  }, [messageInput]);
+  }, [messageInput, isVisible]);
 
   const addMessage = (role: 'agency' | 'user', content: string, author?: string) => {
     const timestamp = new Date().toLocaleTimeString('ko-KR', {
@@ -561,7 +572,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
                       {/* 오른쪽 정렬: system (전파 전송), user (김쿠도) - 발신 메시지 */}
                       {(message.role === 'system' || message.role === 'user') && (
-                        <div className="flex items-end gap-2 w-[80%] min-w-[80%]">
+                        <div className="flex items-start gap-2 w-[80%] min-w-[80%]">
                           <div className="flex-1 min-w-0 flex flex-col items-end">
                             {message.role === 'system' && (
                               <div className="bg-blue-50 border border-blue-100 rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
