@@ -472,18 +472,8 @@ interface ChatInputFormProps {
 
 const ChatInputForm: React.FC<ChatInputFormProps> = ({ chatInput, setChatInput, handleSendMessage, isResponding, onSkipResponse, textareaRef, inputKey, ignoreNextChangeRef, isExpanded, placeholder = "검색 조건을 자연어로 입력해 주세요." }) => {
     return (
-        <div className={`min-w-0 ${isExpanded ? "flex-shrink-0" : "p-4 border-t border-[#31353a] flex-shrink-0"} relative z-20`} style={{ background: "transparent" }}>
+        <div className="min-w-0 p-4 border-t border-[#31353a] flex-shrink-0 relative z-20 bg-transparent">
             <div className="relative flex items-center gap-3 min-w-0 bg-[#393a42] border border-[#40424a] rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
-                {isExpanded && (
-                    <button
-                        onClick={() => {
-                            // 도구 팝업 (나중에 구현)
-                        }}
-                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors self-center"
-                        aria-label="도구 열기">
-                        <Icon icon="mdi:plus" className="w-5 h-5" />
-                    </button>
-                )}
                 <textarea
                     id="agent-chat-input"
                     ref={textareaRef}
@@ -503,11 +493,15 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({ chatInput, setChatInput, 
                         }
                     }}
                     placeholder={placeholder}
-                    className={`flex-1 min-w-0 bg-transparent border-none text-white text-sm placeholder-gray-400 focus:outline-none resize-none relative z-10 break-words overflow-y-auto ${isExpanded ? "self-center" : ""}`}
+                    className={`flex-1 min-w-0 w-full max-w-full bg-transparent border-none text-white text-sm placeholder-gray-400 focus:outline-none resize-none relative z-10 break-words overflow-y-auto ${isExpanded ? "self-center" : ""}`}
                     style={{
                         minHeight: "24px",
                         maxHeight: isExpanded ? "96px" : "72px",
                         lineHeight: "24px",
+                        width: "100%",
+                        minWidth: 0,
+                        maxWidth: "100%",
+                        boxSizing: "border-box",
                     }}
                     rows={1}
                 />
@@ -1522,112 +1516,116 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     </div>
                 </div>
             ) : (
-                <div
-                    className="absolute flex items-stretch gap-2 transition-all duration-300 ease-out"
-                    style={
-                        positionOverride
-                            ? {
-                                  ...positionOverride,
-                                  top: `${padding}px`,
-                                  right: `${padding}px`,
-                                  bottom: `${padding}px`,
-                                  zIndex: 90,
-                                  transform: slideEntered ? "translateX(0)" : "translateX(100%)",
-                                  opacity: slideEntered ? 1 : 0,
-                                  transition: "transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out, bottom 0.3s ease-out",
-                              }
-                            : {
-                                  top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
-                                  right: `${padding}px`,
-                                  bottom: `${padding}px`,
-                                  zIndex: 90,
-                                  transform: slideEntered ? "translateX(0)" : "translateX(100%)",
-                                  opacity: slideEntered ? 1 : 0,
-                                  transition: "transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out",
-                              }
-                    }
-                    onClick={(e) => e.stopPropagation()}>
-                    {/* 시각화 카드 패널 */}
+                <>
                     {(lastChartData || lastTableData) && (
-                        <div className="flex flex-col flex-shrink-0 gap-2 w-[680px]" style={{ height: maxHeightProp ?? 600 }}>
+                        <div className="absolute top-[20px] right-[510px] flex flex-col flex-shrink-0 gap-2 w-[680px]">
                             {lastTableData && (
-                                <div className="flex flex-col max-h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
-                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} style={{ height: "100%" }} onRemove={() => setLastTableData(null)} onMapLocationRequest={onMapLocationRequest} />
+                                <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ maxHeight: `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
+                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} onRemove={() => setLastTableData(null)} onMapLocationRequest={onMapLocationRequest} />
                                 </div>
                             )}
                             {lastChartData && (
-                                <div className="flex flex-col h-[calc((100%-12px)/2)] min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]">
+                                <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ height: lastTableData ? `calc((${maxHeightProp ?? 600}px - 8px) / 2)` : `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
                                     <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} onMapLocationRequest={onMapLocationRequest} />
                                 </div>
                             )}
                         </div>
                     )}
-                    {/* 채팅창 */}
                     <div
-                        className="flex flex-col flex-shrink-0 overflow-hidden relative border border-[#40424a] transition-[width] duration-300 ease-out w-[480px] rounded-2xl"
-                        style={{
-                            height: maxHeightProp ?? 600,
-                            background: "linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(23,23,23,0.4) 100%)",
-                            backdropFilter: "blur(5px)",
-                            WebkitBackdropFilter: "blur(5px)",
-                        }}>
-                        {/* 닫기 버튼 하위: 상단 그라데이션 블러 (블러 약하게 + 어두운 틴트로 글로우 감소) */}
+                        className="absolute flex items-stretch gap-2 transition-all duration-300 ease-out"
+                        style={
+                            positionOverride
+                                ? {
+                                      ...positionOverride,
+                                      top: `${padding}px`,
+                                      right: `${padding}px`,
+                                      bottom: `${padding}px`,
+                                      zIndex: 90,
+                                      visibility: slideEntered ? "visible" : "hidden",
+                                      transform: slideEntered ? "translateX(0)" : "translateX(100%)",
+                                      opacity: slideEntered ? 1 : 0,
+                                      transition: slideEntered ? "transform 0.3s ease-out, opacity 0.3s ease-out" : "transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0s linear 0.3s",
+                                  }
+                                : {
+                                      top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
+                                      right: `${padding}px`,
+                                      bottom: `${padding}px`,
+                                      zIndex: 90,
+                                      visibility: slideEntered ? "visible" : "hidden",
+                                      transform: slideEntered ? "translateX(0)" : "translateX(100%)",
+                                      opacity: slideEntered ? 1 : 0,
+                                      transition: slideEntered ? "transform 0.3s ease-out, opacity 0.3s ease-out" : "transform 0.3s ease-out, opacity 0.3s ease-out, visibility 0s linear 0.3s",
+                                  }
+                        }
+                        onClick={(e) => e.stopPropagation()}>
+                        {/* 시각화 카드 패널 */}
+                        {/* 채팅창 */}
                         <div
-                            className="absolute top-0 left-0 right-0 z-[1] h-12 pointer-events-none backdrop-blur-[4px] rounded-t-2xl"
+                            className="flex flex-col flex-shrink-0 overflow-hidden relative border border-[#40424a] transition-[width] duration-300 ease-out w-[480px] rounded-2xl"
                             style={{
-                                background: "linear-gradient(to bottom, rgba(10,14,20,0.25) 0%, transparent 100%)",
-                                WebkitBackdropFilter: "blur(2px)",
-                                maskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
-                                WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
-                            }}
-                            aria-hidden="true"
-                        />
-                        <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setMessages([]);
-                                    setLastChartData(null);
-                                    setLastTableData(null);
-                                    onClose();
+                                height: maxHeightProp ?? 600,
+                                background: "linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(23,23,23,0.4) 100%)",
+                                backdropFilter: "blur(5px)",
+                                WebkitBackdropFilter: "blur(5px)",
+                            }}>
+                            {/* 닫기 버튼 하위: 상단 그라데이션 블러 (블러 약하게 + 어두운 틴트로 글로우 감소) */}
+                            <div
+                                className="absolute top-0 left-0 right-0 z-[1] h-12 pointer-events-none backdrop-blur-[4px] rounded-t-2xl"
+                                style={{
+                                    background: "linear-gradient(to bottom, rgba(10,14,20,0.25) 0%, transparent 100%)",
+                                    WebkitBackdropFilter: "blur(2px)",
+                                    maskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
+                                    WebkitMaskImage: "linear-gradient(to bottom, black 0%, black 40%, transparent 100%)",
                                 }}
-                                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0 focus:outline-none"
-                                aria-label="카드 제거">
-                                <Icon icon="mdi:close" className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-12">
-                            <div className="space-y-3">
-                                <MessageList
-                                    messages={messages}
-                                    isResponding={isResponding}
-                                    listCardCount={listCardCount}
-                                    cameraCount={cameraCount}
-                                    isExpanded={false}
-                                    onObjectTrackingStart={onObjectTrackingStart}
-                                    onVideoView={onVideoView}
-                                    trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
-                                    onClickExpandTableOrChart={handleExpandTableOrChart}
-                                    onMapLocationRequest={onMapLocationRequest}
-                                    onActionClick={handleSendMessage}
-                                />
+                                aria-hidden="true"
+                            />
+                            <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setMessages([]);
+                                        setLastChartData(null);
+                                        setLastTableData(null);
+                                        onClose();
+                                    }}
+                                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0 focus:outline-none"
+                                    aria-label="카드 제거">
+                                    <Icon icon="mdi:close" className="w-5 h-5" />
+                                </button>
                             </div>
-                            <div ref={bottomRef} className="h-2" />
+                            <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 min-w-0 p-4 space-y-4 pt-12">
+                                <div className="space-y-3">
+                                    <MessageList
+                                        messages={messages}
+                                        isResponding={isResponding}
+                                        listCardCount={listCardCount}
+                                        cameraCount={cameraCount}
+                                        isExpanded={false}
+                                        onObjectTrackingStart={onObjectTrackingStart}
+                                        onVideoView={onVideoView}
+                                        trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
+                                        onClickExpandTableOrChart={handleExpandTableOrChart}
+                                        onMapLocationRequest={onMapLocationRequest}
+                                        onActionClick={handleSendMessage}
+                                    />
+                                </div>
+                                <div ref={bottomRef} className="h-2" />
+                            </div>
+                            <ChatInputForm
+                                chatInput={chatInput}
+                                setChatInput={setChatInput}
+                                handleSendMessage={handleSendMessage}
+                                isResponding={isResponding}
+                                onSkipResponse={handleSkipResponse}
+                                textareaRef={textareaRef}
+                                inputKey={inputKey}
+                                ignoreNextChangeRef={ignoreNextChangeRef}
+                                isExpanded={false}
+                                placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
+                            />
                         </div>
-                        <ChatInputForm
-                            chatInput={chatInput}
-                            setChatInput={setChatInput}
-                            handleSendMessage={handleSendMessage}
-                            isResponding={isResponding}
-                            onSkipResponse={handleSkipResponse}
-                            textareaRef={textareaRef}
-                            inputKey={inputKey}
-                            ignoreNextChangeRef={ignoreNextChangeRef}
-                            isExpanded={false}
-                            placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
-                        />
                     </div>
-                </div>
+                </>
             )}
         </>
     );
