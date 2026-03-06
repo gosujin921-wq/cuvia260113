@@ -13,6 +13,7 @@ import {
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
 import { getCCTVPanelLayout } from '@/lib/dashboard-cctv-layout';
+import { KOREA_BOUNDS } from '@/src/const/const';
 
 interface MapViewProps {
   events: Event[];
@@ -291,6 +292,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
       center: [126.989127259713, 37.425989842666], // 정부과천청사역 (v2 동일)
       zoom: 15,
+      minZoom: 9,
+      maxZoom: 22,
+      maxBounds: KOREA_BOUNDS, // 한국 범위로 이동 제한
       pitch: 45,
       bearing: 0,
       attributionControl: false,
