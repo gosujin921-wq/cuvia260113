@@ -44,7 +44,7 @@ const INCIDENT_CARDS: IncidentCard[] = [
     occurrenceTime: "2026-03-05 17:55",
     endTime: "미정",
     control: "5차로",
-    hasThumbnail: false,
+    hasThumbnail: true,
     icon: "mdi:car-brake-alert",
   },
   {
@@ -55,7 +55,7 @@ const INCIDENT_CARDS: IncidentCard[] = [
     occurrenceTime: "2025-07-16 20:18",
     endTime: "미정",
     control: "전차로",
-    hasThumbnail: false,
+    hasThumbnail: true,
     icon: "mdi:alert-octagon",
   },
   {
