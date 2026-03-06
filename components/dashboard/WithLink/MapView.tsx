@@ -557,6 +557,7 @@ const MapView = ({
                         "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" +
                         "&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true" +
                         "&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false" +
+                        "&apikey=4825cf7feed5cc3fc4a9e3f57fd19c3e516f5a8" +
                         `&BBOX=${bboxWgs84}`;
 
                     return fetch(wmsUrl, { signal: abortController.signal })
