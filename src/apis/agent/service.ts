@@ -1,7 +1,7 @@
 import { axiosInstance } from "../axios";
 import { normalizeResponse } from "../base";
 import { BaseResponse } from "../types";
-import { AgentAddRequest, AgentDeleteRequest, AgentListResponse, AgentUpdateRequest } from "./types";
+import { AgentAddRequest, AgentDeleteRequest, AgentListResponse, AgentUpdateRequest, IncidentListData } from "./types";
 
 export const postAgent = async (payload: AgentAddRequest) => {
     const resp = await axiosInstance.post<BaseResponse>("/v1/cuvia-was/agent-info/regist", payload);
@@ -22,5 +22,11 @@ export const deleteAgent = async (payload: AgentDeleteRequest) => {
 
 export const getAgentList = async (page: number, pageSize: number, searchData: string, sort: string): Promise<AgentListResponse> => {
     const resp = await axiosInstance.get<BaseResponse<AgentListResponse>>(`/v1/cuvia-was/agent-info/list?page=${page}&page_size=${pageSize}&search_data=${searchData}&sort=${sort}`);
+    return normalizeResponse(resp.data);
+};
+
+/** 도로 돌발 상황 조회 */
+export const getIncidentList = async (): Promise<IncidentListData> => {
+    const resp = await axiosInstance.get<BaseResponse<IncidentListData>>("/v1/cuvia-was/incident/list");
     return normalizeResponse(resp.data);
 };
