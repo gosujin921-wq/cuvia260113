@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { MapStreamData, ChartStreamData, isStepStreamPayload, isMessageStreamPayload, isMapStreamPayload, isChartStreamPayload, isCompleteStreamPayload, CompleteStreamPayload, isTableStreamPayload, TableStreamData, isDisclaimerStreamPayload, isHtmlStreamPayload, isMarkdownStreamPayload } from "@/types/streamJson.types";
 
+const API_BASE_URL = "http://192.168.102.101:9090";
+
 export interface ChatStreamState {
     isStreaming: boolean;
     currentStep: number;
@@ -98,7 +100,7 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
             const controller = new AbortController();
             abortControllerRef.current = controller;
 
-            const url = `/api/chat/stream?user_message=${encodeURIComponent(userMessage)}&session_id=${sessionId}`;
+            const url = `${API_BASE_URL}/api/chat/stream?user_message=${encodeURIComponent(userMessage)}&session_id=${sessionId}`;
 
             try {
                 const response = await fetch(url, {
