@@ -14,6 +14,13 @@ import {
 } from '@/lib/cctv-view-angle-utils';
 import { getCCTVPanelLayout } from '@/lib/dashboard-cctv-layout';
 import { getInitialCCTVClusters, getRoadIncidentMarkers, type InitialCCTVItem } from '@/lib/initial-cctv-clusters';
+import proj4 from 'proj4';
+
+// EPSG:5181 (한국 중부원점 TM) 좌표계 정의
+proj4.defs(
+  'EPSG:5181',
+  '+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
+);
 
 interface MapViewProps {
   events: Event[];
@@ -399,6 +406,47 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           }
         }
       });
+
+      // ========== 교통정보 WMS 커스텀 프로토콜 등록 (레이어는 토글 시 동적 생성) ==========
+      if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
+        maplibregl.addProtocol('gitsmap-wms', (params: { url: string }, abortController: AbortController) => {
+          const urlParts = params.url.replace('gitsmap-wms://', '').split('/');
+          const z = parseInt(urlParts[0], 10);
+          const x = parseInt(urlParts[1], 10);
+          const y = parseInt(urlParts[2], 10);
+
+          const tileCount = Math.pow(2, z);
+          const worldSize = 20037508.342789244 * 2;
+          const tileSize = worldSize / tileCount;
+
+          const minX3857 = x * tileSize - 20037508.342789244;
+          const maxX3857 = (x + 1) * tileSize - 20037508.342789244;
+          const maxY3857 = 20037508.342789244 - y * tileSize;
+          const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
+
+          const toWgs84 = proj4('EPSG:3857', 'EPSG:4326');
+          const minWgs84 = toWgs84.forward([minX3857, minY3857]);
+          const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
+          const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
+
+          const wmsUrl =
+            '/gitsmap-proxy/cgi-bin/mapserv.exe?' +
+            'map=/ms4w/mapserver/mapfile/LV10.map' +
+            '&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap' +
+            '&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true' +
+            '&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false' +
+            `&BBOX=${bboxWgs84}`;
+
+          return fetch(wmsUrl, { signal: abortController.signal })
+            .then((response) => {
+              if (!response.ok) throw new Error(`WMS request failed: ${response.status}`);
+              return response.arrayBuffer();
+            })
+            .then((data) => ({ data }));
+        });
+        (maplibregl as any)._gitsmapWmsProtocolRegistered = true;
+      }
+      // ========== 교통정보 WMS 프로토콜 등록 끝 ==========
     });
 
     mapRef.current = map;
@@ -427,6 +475,113 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       mapRef.current = null;
     };
   }, [onMapStateChange]);
+
+  // 도로 버튼(showRoad) → 실시간 교통정보 WMS 레이어 + 교통/돌발 마커 토글
+  // OFF 시 레이어/소스 완전 제거로 진행 중인 타일 요청 중단
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const trafficWmsSourceId = 'gitsmap-traffic-source';
+    const trafficWmsLayerId = 'gitsmap-traffic-layer';
+    const MARKER_KEY = '_trafficIncidentMarkers';
+
+    const removeWmsLayer = () => {
+      try {
+        if (map.getLayer && map.getLayer(trafficWmsLayerId)) {
+          map.removeLayer(trafficWmsLayerId);
+        }
+        if (map.getSource && map.getSource(trafficWmsSourceId)) {
+          map.removeSource(trafficWmsSourceId);
+        }
+      } catch {
+        // map이 이미 제거된 경우 무시
+      }
+    };
+
+    const addWmsLayer = () => {
+      if (map.getSource(trafficWmsSourceId)) return;
+      map.addSource(trafficWmsSourceId, {
+        type: 'raster',
+        tiles: ['gitsmap-wms://{z}/{x}/{y}'],
+        tileSize: 256
+      });
+      map.addLayer({
+        id: trafficWmsLayerId,
+        type: 'raster',
+        source: trafficWmsSourceId,
+        paint: { 'raster-opacity': 0.7 }
+      });
+    };
+
+    const removeMarkers = () => {
+      try {
+        const existing = (map as any)[MARKER_KEY] as maplibregl.Marker[] | undefined;
+        if (existing) {
+          existing.forEach((m) => m.remove());
+          (map as any)[MARKER_KEY] = null;
+        }
+      } catch {
+        // map이 이미 제거된 경우 무시
+      }
+    };
+
+    const addMarkers = () => {
+      if (!map.loaded()) {
+        setTimeout(addMarkers, 100);
+        return;
+      }
+      if (!initialRoadIncidentRef.current) {
+        initialRoadIncidentRef.current = getRoadIncidentMarkers();
+      }
+      const markers: maplibregl.Marker[] = [];
+      initialRoadIncidentRef.current.forEach((item) => {
+        const container = document.createElement('div');
+        container.style.cssText = 'display: flex; align-items: center; justify-content: center; pointer-events: auto;';
+        const iconWrapper = document.createElement('div');
+        iconWrapper.style.cssText = `
+          width: 28px; height: 28px;
+          background: #e85c2a; border-radius: 6px;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 44;
+        `;
+        const img = document.createElement('img');
+        img.src = `https://api.iconify.design/${item.icon.replace(':', '/')}.svg?color=white`;
+        img.alt = item.icon;
+        img.style.cssText = 'width: 18px; height: 18px;';
+        iconWrapper.appendChild(img);
+        container.appendChild(iconWrapper);
+        const marker = new maplibregl.Marker({ element: container, anchor: 'center' })
+          .setLngLat([item.lng, item.lat])
+          .addTo(map);
+        const el = marker.getElement();
+        if (el) (el as HTMLElement).style.zIndex = '44';
+        markers.push(marker);
+      });
+      (map as any)[MARKER_KEY] = markers;
+    };
+
+    const execute = () => {
+      if (showRoad) {
+        addMarkers();
+        setTimeout(addWmsLayer, 150);
+      } else {
+        removeMarkers();
+        removeWmsLayer();
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      execute();
+    } else {
+      map.once('load', execute);
+    }
+
+    return () => {
+      removeMarkers();
+      removeWmsLayer();
+    };
+  }, [showRoad]);
 
   // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
   useEffect(() => {
@@ -835,72 +990,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       });
     };
   }, [showInitialCCTVClusters, showCCTV, showCCTVName, showCCTVViewAngle]);
-
-  // 도로 버튼 연결: 교통/돌발 아이콘 (무작위, showRoad 토글 시 표시)
-  useEffect(() => {
-    if (!mapRef.current || !showInitialCCTVClusters || !showRoad) {
-      if (mapRef.current) {
-        const old = (mapRef.current as any)._initialRoadIncidentMarkers;
-        if (old) {
-          old.forEach((m: maplibregl.Marker) => m.remove());
-          (mapRef.current as any)._initialRoadIncidentMarkers = null;
-        }
-      }
-      return;
-    }
-    const map = mapRef.current;
-    const old = (map as any)._initialRoadIncidentMarkers;
-    if (old) {
-      old.forEach((m: maplibregl.Marker) => m.remove());
-      (map as any)._initialRoadIncidentMarkers = null;
-    }
-
-    if (!initialRoadIncidentRef.current) {
-      initialRoadIncidentRef.current = getRoadIncidentMarkers();
-    }
-    const items = initialRoadIncidentRef.current;
-
-    const addRoadMarkers = () => {
-      if (!map.loaded()) {
-        setTimeout(addRoadMarkers, 100);
-        return;
-      }
-      const roadMarkers: maplibregl.Marker[] = [];
-      items.forEach((item) => {
-        const container = document.createElement('div');
-        container.style.cssText = 'display: flex; align-items: center; justify-content: center; pointer-events: auto;';
-        const iconWrapper = document.createElement('div');
-        iconWrapper.style.cssText = `
-          width: 28px; height: 28px;
-          background: #e85c2a; border-radius: 6px;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 44;
-        `;
-        const img = document.createElement('img');
-        img.src = `https://api.iconify.design/${item.icon.replace(':', '/')}.svg?color=white`;
-        img.alt = item.icon;
-        img.style.cssText = 'width: 18px; height: 18px;';
-        iconWrapper.appendChild(img);
-        container.appendChild(iconWrapper);
-        const marker = new maplibregl.Marker({ element: container, anchor: 'center' })
-          .setLngLat([item.lng, item.lat])
-          .addTo(map);
-        if (marker.getElement()) (marker.getElement() as HTMLElement).style.zIndex = '44';
-        roadMarkers.push(marker);
-      });
-      (map as any)._initialRoadIncidentMarkers = roadMarkers;
-    };
-
-    addRoadMarkers();
-
-    return () => {
-      const current = (map as any)._initialRoadIncidentMarkers;
-      if (current) {
-        current.forEach((m: maplibregl.Marker) => m.remove());
-        (map as any)._initialRoadIncidentMarkers = null;
-      }
-    };
-  }, [showInitialCCTVClusters, showRoad]);
 
   // 초기 CCTV 마커 visibility 업데이트 (showCCTV 토글 시 - CCTV 컨트롤 버튼으로 제어)
   useEffect(() => {

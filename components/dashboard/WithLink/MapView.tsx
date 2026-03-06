@@ -10,6 +10,7 @@ import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVDirection, generateVie
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
 import type { MapStreamData, MapStreamWmsLayer } from "@/types/streamJson.types";
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
+import { getRoadIncidentMarkers, type RoadIncidentItem } from "@/lib/initial-cctv-clusters";
 import proj4 from "proj4";
 
 // EPSG:5181 (한국 중부원점 TM) 좌표계 정의
@@ -205,7 +206,8 @@ const MapView = ({
     const [mapBearing, setMapBearing] = useState(-17.6);
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
     const [streamMarkerViewType, setStreamMarkerViewType] = useState<"individual" | "cluster" | "heatmap">("individual");
-    const [showTrafficLayer, setShowTrafficLayer] = useState(true);
+    const [showTrafficLayer, setShowTrafficLayer] = useState(false);
+    const roadIncidentMarkersRef = useRef<RoadIncidentItem[] | null>(null);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -520,26 +522,17 @@ const MapView = ({
                 }
             });
 
-            // ========== 교통정보 WMS 레이어 (경기도 교통정보센터) ==========
-            const trafficWmsSourceId = "gitsmap-traffic-source";
-            const trafficWmsLayerId = "gitsmap-traffic-layer";
-
-            if (!map.getSource(trafficWmsSourceId)) {
-                // WMS GetMap URL (Vite 프록시 경로 사용으로 CORS 우회)
-                // 원본 URL: https://gitsmap.gg.go.kr/cgi-bin/mapserv.exe?map=/ms4w/mapserver/mapfile/LV10.map&...
-                // 주의: 서버가 SRS=EPSG:5181이라고 하지만 실제로는 경위도(WGS84) 좌표를 기대함
-
-                // 커스텀 프로토콜 등록: gitsmap-wms://
+            // ========== 교통정보 WMS 커스텀 프로토콜 등록 (레이어는 토글 시 동적 생성) ==========
+            // 프로토콜은 한 번만 등록
+            if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
                 maplibregl.addProtocol("gitsmap-wms", (params, abortController) => {
-                    // URL에서 타일 좌표 추출: gitsmap-wms://{z}/{x}/{y}
                     const urlParts = params.url.replace("gitsmap-wms://", "").split("/");
                     const z = parseInt(urlParts[0], 10);
                     const x = parseInt(urlParts[1], 10);
                     const y = parseInt(urlParts[2], 10);
 
-                    // 타일 좌표 → Web Mercator (EPSG:3857) bbox 계산
                     const tileCount = Math.pow(2, z);
-                    const worldSize = 20037508.342789244 * 2; // Web Mercator 전체 범위
+                    const worldSize = 20037508.342789244 * 2;
                     const tileSize = worldSize / tileCount;
 
                     const minX3857 = x * tileSize - 20037508.342789244;
@@ -547,61 +540,29 @@ const MapView = ({
                     const maxY3857 = 20037508.342789244 - y * tileSize;
                     const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
 
-                    // EPSG:3857 → EPSG:4326 (WGS84 경위도) 변환
-                    // 서버가 SRS=EPSG:5181이라고 명시하지만 실제로는 경위도 좌표를 기대함
                     const toWgs84 = proj4("EPSG:3857", "EPSG:4326");
-
                     const minWgs84 = toWgs84.forward([minX3857, minY3857]);
                     const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
-
-                    // 경위도 bbox (minLng, minLat, maxLng, maxLat)
                     const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
 
-                    // WMS GetMap URL 생성
                     const wmsUrl =
                         "/gitsmap-proxy/cgi-bin/mapserv.exe?" +
                         "map=/ms4w/mapserver/mapfile/LV10.map" +
-                        "&SERVICE=WMS" +
-                        "&VERSION=1.1.1" +
-                        "&REQUEST=GetMap" +
-                        "&LAYERS=LV10" +
-                        "&STYLES=" +
-                        "&FORMAT=PNG" +
-                        "&TRANSPARENT=true" +
-                        "&SRS=EPSG:5181" +
-                        "&WIDTH=256" +
-                        "&HEIGHT=256" +
-                        "&ISBASELAYER=false" +
+                        "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" +
+                        "&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true" +
+                        "&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false" +
                         `&BBOX=${bboxWgs84}`;
 
                     return fetch(wmsUrl, { signal: abortController.signal })
                         .then((response) => {
-                            if (!response.ok) {
-                                throw new Error(`WMS request failed: ${response.status}`);
-                            }
+                            if (!response.ok) throw new Error(`WMS request failed: ${response.status}`);
                             return response.arrayBuffer();
                         })
                         .then((data) => ({ data }));
                 });
-
-                map.addSource(trafficWmsSourceId, {
-                    type: "raster",
-                    tiles: ["gitsmap-wms://{z}/{x}/{y}"],
-                    tileSize: 256,
-                });
-
-                map.addLayer({
-                    id: trafficWmsLayerId,
-                    type: "raster",
-                    source: trafficWmsSourceId,
-                    paint: {
-                        "raster-opacity": 0.7,
-                    },
-                });
-
-                console.log("[MapView] 교통정보 WMS 레이어 추가됨 (경위도 좌표):", trafficWmsLayerId);
+                (maplibregl as any)._gitsmapWmsProtocolRegistered = true;
             }
-            // ========== 교통정보 WMS 레이어 끝 ==========
+            // ========== 교통정보 WMS 프로토콜 등록 끝 ==========
         });
 
         mapRef.current = map;
@@ -631,24 +592,129 @@ const MapView = ({
         };
     }, [onMapStateChange]);
 
-    // 실시간 교통정보 WMS 레이어 visibility 토글
+    // 실시간 교통정보 WMS 레이어 + 교통/돌발 마커 토글
+    // OFF 시 레이어/소스 완전 제거로 진행 중인 타일 요청 중단
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
 
+        const trafficWmsSourceId = "gitsmap-traffic-source";
         const trafficWmsLayerId = "gitsmap-traffic-layer";
+        const MARKER_KEY = "_trafficIncidentMarkers";
 
-        const toggleLayer = () => {
-            if (map.getLayer(trafficWmsLayerId)) {
-                map.setLayoutProperty(trafficWmsLayerId, "visibility", showTrafficLayer ? "visible" : "none");
+        // 레이어/소스 제거 함수
+        const removeWmsLayer = () => {
+            try {
+                if (map.getLayer && map.getLayer(trafficWmsLayerId)) {
+                    map.removeLayer(trafficWmsLayerId);
+                }
+                if (map.getSource && map.getSource(trafficWmsSourceId)) {
+                    map.removeSource(trafficWmsSourceId);
+                }
+            } catch {
+                // map이 이미 제거된 경우 무시
+            }
+        };
+
+        // 레이어/소스 추가 함수
+        const addWmsLayer = () => {
+            if (map.getSource(trafficWmsSourceId)) return;
+
+            map.addSource(trafficWmsSourceId, {
+                type: "raster",
+                tiles: ["gitsmap-wms://{z}/{x}/{y}"],
+                tileSize: 256,
+            });
+
+            map.addLayer({
+                id: trafficWmsLayerId,
+                type: "raster",
+                source: trafficWmsSourceId,
+                paint: { "raster-opacity": 0.7 },
+            });
+        };
+
+        // 마커 제거 함수
+        const removeMarkers = () => {
+            try {
+                const existing = (map as any)[MARKER_KEY] as maplibregl.Marker[] | undefined;
+                if (existing) {
+                    existing.forEach((m) => m.remove());
+                    (map as any)[MARKER_KEY] = null;
+                }
+            } catch {
+                // map이 이미 제거된 경우 무시
+            }
+        };
+
+        // 마커 추가 함수
+        const addMarkers = () => {
+            if (!map.loaded()) {
+                setTimeout(addMarkers, 100);
+                return;
+            }
+
+            if (!roadIncidentMarkersRef.current) {
+                roadIncidentMarkersRef.current = getRoadIncidentMarkers();
+            }
+
+            const markers: maplibregl.Marker[] = [];
+            roadIncidentMarkersRef.current.forEach((item) => {
+                const container = document.createElement("div");
+                container.style.cssText = "display: flex; align-items: center; justify-content: center; pointer-events: auto;";
+
+                const iconWrapper = document.createElement("div");
+                iconWrapper.style.cssText = `
+                    width: 28px; height: 28px;
+                    background: #e85c2a; border-radius: 6px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 44;
+                `;
+
+                const img = document.createElement("img");
+                img.src = `https://api.iconify.design/${item.icon.replace(":", "/")}.svg?color=white`;
+                img.alt = item.icon;
+                img.style.cssText = "width: 18px; height: 18px;";
+
+                iconWrapper.appendChild(img);
+                container.appendChild(iconWrapper);
+
+                const marker = new maplibregl.Marker({ element: container, anchor: "center" })
+                    .setLngLat([item.lng, item.lat])
+                    .addTo(map);
+
+                const el = marker.getElement();
+                if (el) (el as HTMLElement).style.zIndex = "44";
+
+                markers.push(marker);
+            });
+
+            (map as any)[MARKER_KEY] = markers;
+        };
+
+        const execute = () => {
+            if (showTrafficLayer) {
+                // ON: 마커 먼저 추가, WMS 레이어는 약간 지연
+                addMarkers();
+                setTimeout(addWmsLayer, 150);
+            } else {
+                // OFF: 즉시 제거 (레이어 제거 시 진행 중인 타일 요청도 중단됨)
+                removeMarkers();
+                removeWmsLayer();
             }
         };
 
         if (map.isStyleLoaded()) {
-            toggleLayer();
+            execute();
         } else {
-            map.once("load", toggleLayer);
+            map.once("load", execute);
         }
+
+        return () => {
+            // cleanup: OFF 전환 또는 컴포넌트 언마운트 시
+            removeMarkers();
+            removeWmsLayer();
+        };
     }, [showTrafficLayer]);
 
     // streamMapData가 변경되면 마커와 WMS 레이어 업데이트
@@ -2440,11 +2506,11 @@ const MapView = ({
                                 e.stopPropagation();
                                 setShowTrafficLayer((prev) => !prev);
                             }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showTrafficLayer ? "bg-green-600 hover:bg-green-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showTrafficLayer ? "bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
                             aria-label="실시간 교통정보"
                             aria-pressed={showTrafficLayer}
                             tabIndex={0}>
-                            <Icon icon="mdi:traffic-light" className="w-5 h-5" />
+                            <Icon icon="mdi:highway" className="w-5 h-5" />
                         </button>
                         {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
                         {streamMapData?.markers && streamMapData.markers.length > 0 && (
