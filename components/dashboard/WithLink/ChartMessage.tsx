@@ -44,9 +44,11 @@ const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
 interface ChartMessageProps {
     message: ChatMessage;
     onMapLocationRequest?: (lat: number, lng: number) => void;
+    flyToLocation?: [number, number] | null;
+    isMapMoving?: boolean;
 }
 
-export function ChartMessage({ message, onMapLocationRequest }: ChartMessageProps) {
+export function ChartMessage({ message, onMapLocationRequest, flyToLocation, isMapMoving }: ChartMessageProps) {
     const displayTables = useMemo(() => {
         if (!message.tableData) return null;
         const totalRows = message.tableData.total_count ?? 0;
@@ -100,10 +102,24 @@ export function ChartMessage({ message, onMapLocationRequest }: ChartMessageProp
                             </thead>
                             <tbody>
                                 {displayTables.visibleRows?.map((row, rowIdx) => {
-                                    const isClickable = displayTables.extension?.[rowIdx]?.type !== "text" && displayTables.extension?.[rowIdx]?.clickable;
-
+                                    const isClickable = !isMapMoving && displayTables.extension?.[rowIdx]?.type !== "text" && displayTables.extension?.[rowIdx]?.clickable;
+                                    const ext = displayTables.extension?.[rowIdx];
+                                    const isHighlighted = (() => {
+                                        if (!flyToLocation || !ext) return false;
+                                        const extLat = typeof ext.lat === "number" ? ext.lat : Number(ext.lat);
+                                        const extLng = typeof ext.lng === "number" ? ext.lng : Number(ext.lng);
+                                        if (!Number.isFinite(extLat) || !Number.isFinite(extLng)) return false;
+                                        return Math.abs(flyToLocation[0] - extLng) < 0.0001 && Math.abs(flyToLocation[1] - extLat) < 0.0001;
+                                    })();
+                                    const rowBg = isHighlighted ? "rgba(239, 68, 68, 0.15)" : rowIdx % 2 === 0 ? "rgba(35,35,42,0.6)" : "rgba(40,40,48,0.6)";
                                     return (
-                                        <tr key={rowIdx} className={`${isClickable ? "cursor-pointer hover:bg-[#393a42]!" : ""}`} style={{ background: rowIdx % 2 === 0 ? "rgba(35,35,42,0.6)" : "rgba(40,40,48,0.6)" }}>
+                                        <tr
+                                            key={rowIdx}
+                                            className={`transition-colors duration-200 ${isClickable ? "cursor-pointer hover:bg-[#393a42]!" : "cursor-default"}`}
+                                            style={{
+                                                background: rowBg,
+                                                borderLeft: isHighlighted ? "2px solid #ef4444" : "2px solid transparent",
+                                            }}>
                                             {row.map((cell, cellIdx) => {
                                                 const cellStr = String(cell);
                                                 const text = stripHtmlTags(cellStr);
@@ -111,7 +127,7 @@ export function ChartMessage({ message, onMapLocationRequest }: ChartMessageProp
                                                 return (
                                                     <td
                                                         key={cellIdx}
-                                                        className={`px-3 py-2 text-gray-300 font-medium`}
+                                                        className={`px-3 py-2 font-medium ${isHighlighted ? "text-white" : "text-gray-300"}`}
                                                         onClick={isClickable && extension ? () => handleCellClick(extension) : undefined}
                                                         role={isClickable ? "button" : undefined}
                                                         tabIndex={isClickable ? 0 : undefined}
@@ -134,7 +150,7 @@ export function ChartMessage({ message, onMapLocationRequest }: ChartMessageProp
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">차트 데이터</h3>
                 <StreamChart data={message.chartData} />
             </div>
-            <br />
+            {/* <br />
             {message.tableData && message.tableData.meta && (
                 <div
                     className="mt-0 rounded-lg px-3 py-2.5"
@@ -145,7 +161,7 @@ export function ChartMessage({ message, onMapLocationRequest }: ChartMessageProp
                     <p className="text-sm text-white font-medium">{message.tableData?.meta?.criteria}</p>
                     <p className="text-sm text-gray-300 mt-1">{message.tableData?.meta?.guide}</p>
                 </div>
-            )}
+            )} */}
             {message.disclaimer && (
                 <>
                     <hr className="border-t border-[#40424a] my-6" role="separator" />

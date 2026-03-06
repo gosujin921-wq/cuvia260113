@@ -265,6 +265,9 @@ export default function HomeV2() {
     const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(600);
     const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
     const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
+    const handleLocationRequest = useCallback((lat: number, lng: number) => setFlyToLocation([lng, lat]), []);
+    const [isMapMoving, setIsMapMoving] = useState(false);
+    const handleMapMovingChange = useCallback((moving: boolean) => setIsMapMoving(moving), []);
     const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
     const [showReSearchSkeleton, setShowReSearchSkeleton] = useState<boolean>(false); // 재검색 스켈레톤 표시 여부
     const [excludedImageIds, setExcludedImageIds] = useState<string[]>([]); // 직접 제외할 이미지 ID (예: ['1', '2', '3'])
@@ -805,6 +808,8 @@ export default function HomeV2() {
                         streamMapData={streamMapData}
                         keepControlPosition
                         isAgentActive={isAgentActive}
+                        onMarkerLocationRequest={handleLocationRequest}
+                        onMapMovingChange={handleMapMovingChange}
                     />
                 )}
             </div>
@@ -970,7 +975,9 @@ export default function HomeV2() {
                     setIsAgentActive(true);
                 }}
                 floatingBarStyle={floatingBarStyle}
-                onMapLocationRequest={(lat, lng) => setFlyToLocation([lng, lat])}
+                onMapLocationRequest={handleLocationRequest}
+                flyToLocation={flyToLocation}
+                isMapMoving={isMapMoving}
                 hideControls={uiState.hideControls}
                 position={{ bottom: "24px", right: "24px" }}
                 maxHeight={agentPopupMaxHeight}

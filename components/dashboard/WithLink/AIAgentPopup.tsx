@@ -52,6 +52,8 @@ interface AIAgentPopupProps {
     floatingBarStyle?: React.CSSProperties;
     /** 차트 메시지 표에서 위치 클릭 시 지도 이동 (lat, lng) */
     onMapLocationRequest?: (lat: number, lng: number) => void;
+    flyToLocation?: [number, number] | null;
+    isMapMoving?: boolean;
 }
 
 export interface ChatMessage {
@@ -110,6 +112,8 @@ interface MessageListProps {
     trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
     onClickExpandTableOrChart?: (messageId: string) => void;
     onMapLocationRequest?: (lat: number, lng: number) => void;
+    flyToLocation?: [number, number] | null;
+    isMapMoving?: boolean;
     onActionClick: (prompt: string) => void;
 }
 
@@ -134,7 +138,7 @@ const getTrackingUpdateMsgContent = () => {
     };
 };
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest, onActionClick }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }) => {
     const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
     return (
         <>
@@ -407,9 +411,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                     {/* <div className="text-xs text-gray-200 pt-1">{message.timestamp}</div> */}
                                                 </>
                                             ) : message.chartData ? (
-                                                <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} />
+                                                <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
                                             ) : message.tableData ? (
-                                                <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} />
+                                                <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
                                             ) : message.htmlContent ? (
                                                 <NormalMessage message={message} onActionClick={onActionClick} />
                                             ) : (
@@ -554,6 +558,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     onOpenRequest,
     floatingBarStyle,
     onMapLocationRequest,
+    flyToLocation,
+    isMapMoving,
 }) => {
     const [slideEntered, setSlideEntered] = useState(false);
     const [chatInput, setChatInput] = useState("");
@@ -1521,7 +1527,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         <div className="absolute top-[20px] right-[510px] flex flex-col flex-shrink-0 gap-2 w-[680px]">
                             {lastTableData && (
                                 <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ maxHeight: `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
-                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} onRemove={() => setLastTableData(null)} onMapLocationRequest={onMapLocationRequest} />
+                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} onRemove={() => setLastTableData(null)} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
                                 </div>
                             )}
                             {lastChartData && (
@@ -1606,6 +1612,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                         trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                                         onClickExpandTableOrChart={handleExpandTableOrChart}
                                         onMapLocationRequest={onMapLocationRequest}
+                                        flyToLocation={flyToLocation}
+                                        isMapMoving={isMapMoving}
                                         onActionClick={handleSendMessage}
                                     />
                                 </div>

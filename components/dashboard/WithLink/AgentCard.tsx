@@ -75,7 +75,7 @@ const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     );
 };
 
-const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (lat: number, lng: number) => void }> = ({ data, onMapLocationRequest }) => {
+const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (lat: number, lng: number) => void; flyToLocation?: [number, number] | null; isMapMoving?: boolean }> = ({ data, onMapLocationRequest, flyToLocation, isMapMoving }) => {
     const columns = data.columns ?? [];
     const rows = data.data ?? [];
 
@@ -107,10 +107,24 @@ const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (la
                     <table className="w-full text-sm border-collapse">
                         <tbody>
                             {rows.map((row, ri) => {
-                                const isClickable = data.extension?.[ri]?.type !== "text" && data.extension?.[ri]?.clickable;
-
+                                const isClickable = !isMapMoving && data.extension?.[ri]?.type !== "text" && data.extension?.[ri]?.clickable;
+                                const ext = data.extension?.[ri];
+                                const isHighlighted = (() => {
+                                    if (!flyToLocation || !ext) return false;
+                                    const extLat = typeof ext.lat === "number" ? ext.lat : Number(ext.lat);
+                                    const extLng = typeof ext.lng === "number" ? ext.lng : Number(ext.lng);
+                                    if (!Number.isFinite(extLat) || !Number.isFinite(extLng)) return false;
+                                    return Math.abs(flyToLocation[0] - extLng) < 0.0001 && Math.abs(flyToLocation[1] - extLat) < 0.0001;
+                                })();
+                                const rowBg = isHighlighted ? "rgba(239, 68, 68, 0.15)" : ri % 2 === 0 ? "rgb(35,35,42)" : "rgb(40,40,48)";
                                 return (
-                                    <tr key={ri} className={`${isClickable ? "cursor-pointer hover:bg-[#393a42]!" : ""}`} style={{ background: ri % 2 === 0 ? "rgb(35,35,42)" : "rgb(40,40,48)" }}>
+                                    <tr
+                                        key={ri}
+                                        className={`transition-colors duration-200 ${isClickable ? "cursor-pointer hover:bg-[#393a42]!" : "cursor-default"}`}
+                                        style={{
+                                            background: rowBg,
+                                            borderLeft: isHighlighted ? "2px solid #ef4444" : "2px solid transparent",
+                                        }}>
                                         {row.map((cell, cellIdx) => {
                                             const cellStr = String(cell);
                                             const text = stripHtmlTags(cellStr);
@@ -118,7 +132,7 @@ const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (la
                                             return (
                                                 <td
                                                     key={cellIdx}
-                                                    className="px-3 py-2 text-gray-300 font-medium"
+                                                    className={`px-3 py-2 font-medium ${isHighlighted ? "text-white" : "text-gray-300"}`}
                                                     onClick={isClickable && extension ? () => handleCellClick(extension) : undefined}
                                                     role={isClickable ? "button" : undefined}
                                                     tabIndex={isClickable ? 0 : undefined}
@@ -163,9 +177,11 @@ interface AgentCardProps {
     style?: React.CSSProperties;
     /** 차트 메시지 표에서 위치 클릭 시 지도 이동 (lat, lng) */
     onMapLocationRequest?: (lat: number, lng: number) => void;
+    flyToLocation?: [number, number] | null;
+    isMapMoving?: boolean;
 }
 
-export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style, onMapLocationRequest }) => {
+export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style, onMapLocationRequest, flyToLocation, isMapMoving }) => {
     return (
         <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
             {onRemove && (
@@ -176,7 +192,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className 
                 </div>
             )}
             <div className={`flex-1 min-h-0 p-4 pt-12 ${data.type === "chart" ? "overflow-auto" : "overflow-hidden flex flex-col"}`}>
-                <div className={`rounded-lg w-full ${data.type === "chart" ? "h-full overflow-hidden" : "flex-1 min-h-0 flex flex-col"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} onMapLocationRequest={onMapLocationRequest} />}</div>
+                <div className={`rounded-lg w-full ${data.type === "chart" ? "h-full overflow-hidden" : "flex-1 min-h-0 flex flex-col"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />}</div>
             </div>
         </div>
     );

@@ -11,18 +11,20 @@ import proj4 from "proj4";
 import { KOREA_BOUNDS } from "@/src/const/const";
 
 // EPSG:5181 (한국 중부원점 TM) 좌표계 정의
-proj4.defs(
-    "EPSG:5181",
-    "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
-);
+proj4.defs("EPSG:5181", "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
 const PIXEL_RATIO = 2;
 const MARKER_SIZE = 28 * PIXEL_RATIO;
 
+const INITIAL_MAP_CENTER: [number, number] = [126.8136, 37.4865];
+const INITIAL_MAP_ZOOM = 15;
+const INITIAL_MAP_PITCH = 45;
+const INITIAL_MAP_BEARING = 0;
+
 const escapeHtml = (text: string): string => {
     const div = document.createElement("div");
     div.textContent = text;
-    return div.innerHTML;
+    return div.innerHTML.replace(/\n/g, "<br>");
 };
 
 const createStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
@@ -157,6 +159,8 @@ interface MapViewProps {
     streamMapData?: MapStreamData | null; // 스트림에서 받은 맵 데이터
     keepControlPosition?: boolean;
     isAgentActive?: boolean;
+    onMarkerLocationRequest?: (lat: number, lng: number) => void;
+    onMapMovingChange?: (isMoving: boolean) => void;
 }
 
 const MapView = ({
@@ -185,6 +189,8 @@ const MapView = ({
     streamMapData,
     keepControlPosition = false,
     isAgentActive = false,
+    onMarkerLocationRequest,
+    onMapMovingChange,
 }: MapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(0);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
@@ -520,14 +526,7 @@ const MapView = ({
                     const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
                     const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
 
-                    const wmsUrl =
-                        "/gitsmap-proxy/cgi-bin/mapserv.exe?" +
-                        "map=/ms4w/mapserver/mapfile/LV10.map" +
-                        "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" +
-                        "&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true" +
-                        "&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false" +
-                        "&apikey=4825cf7feed5cc3fc4a9e3f57fd19c3e516f5a8" +
-                        `&BBOX=${bboxWgs84}`;
+                    const wmsUrl = "/gitsmap-proxy/cgi-bin/mapserv.exe?" + "map=/ms4w/mapserver/mapfile/LV10.map" + "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" + "&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true" + "&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false" + "&apikey=4825cf7feed5cc3fc4a9e3f57fd19c3e516f5a8" + `&BBOX=${bboxWgs84}`;
 
                     return fetch(wmsUrl, { signal: abortController.signal })
                         .then((response) => {
@@ -561,12 +560,19 @@ const MapView = ({
 
         map.on("moveend", updateMapState);
 
+        const handleMoveStart = () => onMapMovingChange?.(true);
+        const handleMoveEnd = () => onMapMovingChange?.(false);
+        map.on("movestart", handleMoveStart);
+        map.on("moveend", handleMoveEnd);
+
         return () => {
             map.off("moveend", updateMapState);
+            map.off("movestart", handleMoveStart);
+            map.off("moveend", handleMoveEnd);
             map.remove();
             mapRef.current = null;
         };
-    }, [onMapStateChange]);
+    }, [onMapStateChange, onMapMovingChange]);
 
     // 토글 ON 시 로딩 상태 시작
     useEffect(() => {
@@ -698,7 +704,7 @@ const MapView = ({
         const createPopupContent = (item: typeof incidentData extends { items: (infer T)[] } | undefined ? T : never): string => {
             const iconName = getIncidentIcon(item.restrict_type);
             const iconUrl = `https://api.iconify.design/${iconName.replace(":", "/")}.svg?color=%23e85c2a`;
-            
+
             return `
                 <div style="
                     font-family: 'Pretendard', sans-serif;
@@ -765,7 +771,7 @@ const MapView = ({
             }
 
             const incidentItems = incidentData?.items ?? [];
-            
+
             // 기존 마커가 있고 새 데이터와 개수가 다르면 제거 후 재생성
             const existingMarkers = (map as any)[MARKER_KEY] as maplibregl.Marker[] | undefined;
             if (existingMarkers && existingMarkers.length > 0) {
@@ -814,10 +820,7 @@ const MapView = ({
                     className: "incident-popup",
                 }).setHTML(createPopupContent(item));
 
-                const marker = new maplibregl.Marker({ element: container, anchor: "center" })
-                    .setLngLat([lng, lat])
-                    .setPopup(popup)
-                    .addTo(map);
+                const marker = new maplibregl.Marker({ element: container, anchor: "center" }).setLngLat([lng, lat]).setPopup(popup).addTo(map);
 
                 // 호버 효과
                 container.addEventListener("mouseenter", () => {
@@ -1228,17 +1231,22 @@ const MapView = ({
             if (geometry.type !== "Point") return;
 
             const coords = geometry.coordinates as [number, number];
+
+            if (onMarkerLocationRequest) {
+                onMarkerLocationRequest(coords[1], coords[0]);
+                return;
+            }
+
             const props = feature.properties as Record<string, string | null> | undefined;
             const title = props?.title ?? "";
             const description = props?.description ?? "";
 
-            // 기존 팝업 제거
             const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
             if (existingPopup) {
                 existingPopup.remove();
             }
 
-            const popupContent = ['<div class="stream-marker-popup__inner">', title ? `<div class=\"stream-marker-popup__title\">${escapeHtml(title)}</div>` : "", description ? `<div class=\"stream-marker-popup__desc\">${escapeHtml(description)}</div>` : "", "</div>"].filter(Boolean).join("");
+            const popupContent = ['<div class="stream-marker-popup__inner">', title ? `<div class="stream-marker-popup__title">${escapeHtml(title)}</div>` : "", description ? `<div class="stream-marker-popup__desc">${escapeHtml(description)}</div>` : "", "</div>"].filter(Boolean).join("");
 
             if (!title && !description) return;
 
@@ -1295,193 +1303,115 @@ const MapView = ({
                 (map as any)._streamMarkerPopup = undefined;
             }
         };
-    }, [streamMapData, streamMarkerViewType]);
+    }, [streamMapData, streamMarkerViewType, onMarkerLocationRequest]);
 
-    // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
+    // flyToLocation이 변경되면 지도 이동 + 펄스 애니메이션 + 자동 팝업 (마커는 기존 스트림 마커를 사용)
     useEffect(() => {
         if (!mapRef.current) return;
-
         const map = mapRef.current;
-        const oldEventMarker = (map as any)._eventMarker;
+
+        const oldPulseMarker = (map as any)._pulseMarker as maplibregl.Marker | undefined;
+        if (oldPulseMarker) {
+            oldPulseMarker.remove();
+            (map as any)._pulseMarker = undefined;
+        }
+
+        const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+        if (existingPopup) {
+            existingPopup.remove();
+            (map as any)._streamMarkerPopup = undefined;
+        }
 
         if (flyToLocation) {
-            // 기존 이벤트 마커 제거
-            if (oldEventMarker) {
-                oldEventMarker.remove();
-            }
+            const targetLng = (flyToLocation as [number, number])[0];
+            const targetLat = (flyToLocation as [number, number])[1];
 
-            // 지도 이동
             if (map.loaded()) {
                 map.flyTo({
-                    center: flyToLocation as [number, number],
+                    center: [targetLng, targetLat],
                     zoom: 17,
                     pitch: 60,
-                    bearing: -17.6 + 165, // 11번 회전 (15도 × 11 = 165도)
+                    bearing: -17.6 + 165,
                     duration: 1500,
                     essential: true,
                 });
             }
 
-            // 새 이벤트 마커 생성 (일반 모드만)
-            const markerContainer = document.createElement("div");
-            markerContainer.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      `;
-
-            const centerWrapper = document.createElement("div");
-            centerWrapper.style.cssText = `
-        position: relative;
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-
-            // 펄스 효과 3개 (고속검색 모드가 아닐 때만)
-            if (!showFastSearchList) {
-                for (let i = 0; i < 3; i++) {
-                    const pulse = document.createElement("div");
-                    pulse.style.cssText = `
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) translateZ(0) scale(0.8);
-            animation: circle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            animation-delay: ${i * 0.2}s;
-            will-change: transform, opacity;
-            pointer-events: none;
-            z-index: 1;
-          `;
-                    const pulseInner = document.createElement("div");
-                    pulseInner.style.cssText = `
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background-color: rgba(239, 68, 68, ${0.5 - i * 0.1});
-          `;
-                    pulse.appendChild(pulseInner);
-                    centerWrapper.appendChild(pulse);
-                }
-            }
-
-            // 펄스 애니메이션 keyframes 추가
             if (!document.getElementById("circle-pulse-style")) {
                 const styleEl = document.createElement("style");
                 styleEl.id = "circle-pulse-style";
                 styleEl.textContent = `
-          @keyframes circle-pulse {
-            0% {
-              transform: translate(-50%, -50%) translateZ(0) scale(0.8);
-              opacity: 1;
-            }
-            100% {
-              transform: translate(-50%, -50%) translateZ(0) scale(2);
-              opacity: 0;
-            }
-          }
-        `;
+                    @keyframes circle-pulse {
+                        0% { transform: translate(-50%, -50%) translateZ(0) scale(0.8); opacity: 1; }
+                        100% { transform: translate(-50%, -50%) translateZ(0) scale(2); opacity: 0; }
+                    }
+                `;
                 document.head.appendChild(styleEl);
             }
 
-            // 마커 아이콘
-            const markerEl = document.createElement("div");
-            markerEl.style.cssText = `
-        width: 28px;
-        height: 28px;
-        background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
-        border: 2px solid #ef4444;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.3);
-        cursor: pointer;
-        backdrop-filter: blur(4px);
-        position: relative;
-        z-index: 130;
-      `;
+            const pulseContainer = document.createElement("div");
+            pulseContainer.style.cssText = "position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;";
 
-            const ringEl = document.createElement("div");
-            ringEl.style.cssText = `
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        border: 2px solid rgba(239, 68, 68, 0.3);
-        border-radius: 14px;
-        pointer-events: none;
-      `;
-            markerEl.appendChild(ringEl);
+            if (!showFastSearchList) {
+                for (let i = 0; i < 3; i++) {
+                    const pulse = document.createElement("div");
+                    pulse.style.cssText = `
+                        position:absolute;width:120px;height:120px;top:50%;left:50%;
+                        transform:translate(-50%,-50%) translateZ(0) scale(0.8);
+                        animation:circle-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
+                        animation-delay:${i * 0.2}s;
+                        will-change:transform,opacity;pointer-events:none;z-index:1;
+                    `;
+                    const pulseInner = document.createElement("div");
+                    pulseInner.style.cssText = `width:100%;height:100%;border-radius:50%;background-color:rgba(239,68,68,${0.5 - i * 0.1});`;
+                    pulse.appendChild(pulseInner);
+                    pulseContainer.appendChild(pulse);
+                }
+            }
 
-            const iconEl = document.createElement("div");
-            iconEl.innerHTML = `
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: #f87171;">
-          <path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" />
-        </svg>
-      `;
-            markerEl.appendChild(iconEl);
-
-            centerWrapper.appendChild(markerEl);
-            markerContainer.appendChild(centerWrapper);
-
-            // 주소 라벨
-            const labelEl = document.createElement("div");
-            labelEl.style.cssText = `
-        margin-top: 8px;
-        padding: 6px 8px;
-        border-radius: 8px;
-        background: rgba(15, 15, 15, 0.95);
-        border: 1px solid #31353a;
-        white-space: nowrap;
-        z-index: 140;
-      `;
-            labelEl.innerHTML = `
-        <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
-        <div style="font-size: 12px; font-weight: 600; color: white;">은하로363번길 48</div>
-      `;
-            markerContainer.appendChild(labelEl);
-
-            // 새 마커 생성 및 추가
-            const newMarker = new maplibregl.Marker({
-                element: markerContainer,
+            const pulseMarker = new maplibregl.Marker({
+                element: pulseContainer,
                 anchor: "center",
             })
-                .setLngLat(flyToLocation as [number, number])
+                .setLngLat([targetLng, targetLat])
                 .addTo(map);
 
-            // 이벤트 마커 z-index 설정 (반경 원보다 위)
-            const eventMarkerElement = newMarker.getElement();
-            if (eventMarkerElement) {
-                eventMarkerElement.style.zIndex = "100";
-            }
+            (map as any)._pulseMarker = pulseMarker;
 
-            // 저장
-            (map as any)._eventMarker = newMarker;
+            const matchedMarker = streamMapData?.markers?.find((m) => Math.abs(m.lng - targetLng) < 0.0001 && Math.abs(m.lat - targetLat) < 0.0001);
+
+            if (matchedMarker && (matchedMarker.title || matchedMarker.description)) {
+                const showPopup = () => {
+                    const popupContent = ['<div class="stream-marker-popup__inner">', matchedMarker.title ? `<div class="stream-marker-popup__title">${escapeHtml(matchedMarker.title)}</div>` : "", matchedMarker.description ? `<div class="stream-marker-popup__desc">${escapeHtml(matchedMarker.description)}</div>` : "", "</div>"].filter(Boolean).join("");
+
+                    const popup = new maplibregl.Popup({
+                        closeButton: true,
+                        closeOnClick: true,
+                        className: "stream-marker-popup",
+                        offset: [0, -16],
+                    })
+                        .setLngLat([matchedMarker.lng, matchedMarker.lat])
+                        .setHTML(popupContent)
+                        .addTo(map);
+
+                    (map as any)._streamMarkerPopup = popup;
+                };
+
+                map.once("moveend", showPopup);
+            }
         } else {
-            // 마커 제거
-            if (oldEventMarker) {
-                oldEventMarker.remove();
-            }
-
-            // 초기 위치로 복귀
             if (map.loaded()) {
                 map.flyTo({
-                    center: [126.8136, 37.4865], // 성운동 좌표
-                    zoom: 15,
-                    pitch: 45,
-                    bearing: 0,
+                    center: INITIAL_MAP_CENTER,
+                    zoom: INITIAL_MAP_ZOOM,
+                    pitch: INITIAL_MAP_PITCH,
+                    bearing: INITIAL_MAP_BEARING,
                     duration: 1500,
                     essential: true,
                 });
             }
         }
-    }, [flyToLocation, showFastSearchList]);
+    }, [flyToLocation, showFastSearchList, streamMapData]);
 
     // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
     useEffect(() => {
@@ -2494,6 +2424,21 @@ const MapView = ({
     useEffect(() => {
         if (isAgentActive) {
             setShowTrafficLayer(false);
+        } else {
+            const map = mapRef.current;
+            if (!map) return;
+
+            const pulseMarker = (map as any)._pulseMarker as maplibregl.Marker | undefined;
+            if (pulseMarker) {
+                pulseMarker.remove();
+                (map as any)._pulseMarker = undefined;
+            }
+
+            const popup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+            if (popup) {
+                popup.remove();
+                (map as any)._streamMarkerPopup = undefined;
+            }
         }
     }, [isAgentActive]);
 
@@ -2502,41 +2447,44 @@ const MapView = ({
             <style>{`
                 .stream-marker-popup .maplibregl-popup-content {
                     padding: 0;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.1);
-                    border: 1px solid #e5e7eb;
-                    background: #fff;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 1px rgba(0, 0, 0, 0.2);
+                    border: 1px solid #31353a;
+                    background: rgba(15, 15, 15, 0.95);
                     min-width: 140px;
                     max-width: 280px;
                 }
+                .stream-marker-popup .maplibregl-popup-tip {
+                    border-top-color: rgba(15, 15, 15, 0.95);
+                }
                 .stream-marker-popup .stream-marker-popup__inner {
-                    padding: 12px 36px 12px 14px;
+                    padding: 6px 28px 6px 8px;
                 }
                 .stream-marker-popup .stream-marker-popup__title {
-                    font-size: 14px;
+                    font-size: 12px;
                     font-weight: 600;
-                    color: #111827;
+                    color: #ffffff;
                     line-height: 1.35;
                 }
                 .stream-marker-popup .stream-marker-popup__desc {
-                    font-size: 13px;
-                    color: #4b5563;
+                    font-size: 12px;
+                    color:rgb(197, 206, 221);
                     line-height: 1.45;
-                    margin-top: 6px;
+                    margin-top: 2px;
                 }
                 .stream-marker-popup .maplibregl-popup-close-button {
-                    font-size: 20px;
-                    padding: 6px 10px;
-                    color: #6b7280;
+                    font-size: 18px;
+                    padding: 4px 8px;
+                    color: #9ca3af;
                     right: 2px;
                     top: 2px;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     background: transparent;
                     transition: background-color 0.15s, color 0.15s;
                 }
                 .stream-marker-popup .maplibregl-popup-close-button:hover {
-                    background: #f3f4f6;
-                    color: #111827;
+                    background: rgba(255, 255, 255, 0.1);
+                    color: #ffffff;
                 }
             `}</style>
             <div
