@@ -515,6 +515,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const style = document.createElement('style');
       style.id = POPUP_STYLE_ID;
       style.textContent = `
+        .incident-popup {
+          z-index: 100;
+        }
         .incident-popup .maplibregl-popup-content {
           padding: 10px;
           border-radius: 8px;
