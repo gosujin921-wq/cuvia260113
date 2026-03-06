@@ -13,7 +13,7 @@ import {
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
 import { getCCTVPanelLayout } from '@/lib/dashboard-cctv-layout';
-import { getInitialCCTVClusters, getRoadIncidentMarkers, type InitialCCTVItem } from '@/lib/initial-cctv-clusters';
+import { getInitialCCTVClusters, clusterInitialCCTVs, getRoadIncidentMarkers, type InitialCCTVItem } from '@/lib/initial-cctv-clusters';
 
 interface MapViewProps {
   events: Event[];
@@ -54,17 +54,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [showCCTV, setShowCCTV] = useState(externalShowCCTV !== undefined ? externalShowCCTV : true);
   const [showRoad, setShowRoad] = useState(false);
   
-  // 외부에서 CCTV 표시 제어
-  useEffect(() => {
-    if (externalShowCCTV !== undefined) {
-      setShowCCTV(externalShowCCTV);
-    }
-  }, [externalShowCCTV]);
-  
+  // (삭제) 전파 닫고 초기 복귀 시 showCCTV 강제 OFF 하던 effect - CCTV 컨트롤 버튼 반응 방해로 제거
+
   const [currentCCTVIndex, setCurrentCCTVIndex] = useState(0);
   const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
   const [showCCTVName, setShowCCTVName] = useState(true);
   const [is3DMode, setIs3DMode] = useState(true);
+
+  // [DEBUG] v2 MapView 렌더 - showCCTV 등 상태 포함
+  console.log('[v2 MapView] render', { showCCTV, showCCTVName, showCCTVViewAngle, hideControls, showFastSearchList, showInitialCCTVClusters, externalShowCCTV, controlsVisible: !hideControls || showFastSearchList });
   const [mapBearing, setMapBearing] = useState(-17.6);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
 
@@ -620,13 +618,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
   // 초기 화면용 CCTV 클러스터 (1키 누르기 전, 과천역 주변 5개 동)
   useEffect(() => {
+    console.log('[v2 MapView] 초기CCTV effect 진입', { showInitialCCTVClusters, showCCTVName, showCCTVViewAngle, showCCTV });
     if (!showInitialCCTVClusters) {
       hasFliedForInitialCCTVRef.current = false;
       initialCctvClustersRef.current = null;
       initialRoadIncidentRef.current = null;
       if (mapRef.current) {
         const map = mapRef.current;
-        ['_initialCctvMarkers', '_initialPoliceMarkers', '_initialFireMarkers', '_initialRoadIncidentMarkers'].forEach((key) => {
+        ['_initialCctvMarkers', '_initialRoadIncidentMarkers'].forEach((key) => {
           const markers = (map as any)[key];
           if (markers) {
             markers.forEach((m: maplibregl.Marker) => m.remove());
@@ -639,7 +638,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     if (!mapRef.current) return;
 
     const map = mapRef.current!;
-    ['_initialCctvMarkers', '_initialPoliceMarkers', '_initialFireMarkers', '_initialRoadIncidentMarkers'].forEach((key) => {
+    ['_initialCctvMarkers', '_initialRoadIncidentMarkers'].forEach((key) => {
       const old = (map as any)[key];
       if (old) {
         old.forEach((m: maplibregl.Marker) => m.remove());
@@ -647,7 +646,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }
     });
 
-    const createSimpleCCTV = (name: string, direction: number) => {
+    const createSimpleCCTV = (name: string, direction: number, showName: boolean, showViewAngle: boolean) => {
       const el = document.createElement('div');
       el.className = 'initial-cctv-marker';
       el.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
@@ -655,21 +654,22 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const iconContainer = document.createElement('div');
       iconContainer.style.cssText = 'position: relative; width: 24px; height: 24px;';
 
-      if (showCCTVViewAngle) {
-        const viewAngleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        viewAngleSvg.style.cssText = `
-          position: absolute; width: 80px; height: 80px; top: 50%; left: 50%;
-          transform: translate(-50%, -50%) rotate(${direction - 90}deg);
-          pointer-events: none; z-index: 0;
-        `;
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'M 40 40 L 20 10 A 35 35 0 0 1 60 10 Z');
-        path.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
-        path.setAttribute('stroke', 'rgba(59, 130, 246, 0.4)');
-        path.setAttribute('stroke-width', '1.5');
-        viewAngleSvg.appendChild(path);
-        iconContainer.appendChild(viewAngleSvg);
-      }
+      // 시야각: 항상 DOM에 추가, data-cctv-viewangle으로 나중에 토글
+      const viewAngleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      viewAngleSvg.setAttribute('data-cctv-viewangle', '1');
+      viewAngleSvg.style.cssText = `
+        position: absolute; width: 80px; height: 80px; top: 50%; left: 50%;
+        transform: translate(-50%, -50%) rotate(${direction - 90}deg);
+        pointer-events: none; z-index: 0;
+        display: ${showViewAngle ? 'block' : 'none'};
+      `;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', 'M 40 40 L 20 10 A 35 35 0 0 1 60 10 Z');
+      path.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
+      path.setAttribute('stroke', 'rgba(59, 130, 246, 0.4)');
+      path.setAttribute('stroke-width', '1.5');
+      viewAngleSvg.appendChild(path);
+      iconContainer.appendChild(viewAngleSvg);
 
       const icon = document.createElement('div');
       icon.style.cssText = `
@@ -687,17 +687,52 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       iconContainer.appendChild(icon);
       el.appendChild(iconContainer);
 
-      if (showCCTVName) {
-        const label = document.createElement('div');
-        label.style.cssText = `
-          margin-top: 4px; padding: 2px 6px; background: rgba(26,26,26,0.95);
-          border: 1px solid rgb(107,114,128); border-radius: 4px;
-          color: white; font-size: 10px; white-space: nowrap;
-        `;
-        label.textContent = name;
-        el.appendChild(label);
-      }
+      // 라벨: 항상 DOM에 추가, data-cctv-label로 나중에 토글
+      const label = document.createElement('div');
+      label.setAttribute('data-cctv-label', '1');
+      label.style.cssText = `
+        margin-top: 4px; padding: 2px 6px; background: rgba(26,26,26,0.95);
+        border: 1px solid rgb(107,114,128); border-radius: 4px;
+        color: white; font-size: 10px; white-space: nowrap;
+        display: ${showName ? 'block' : 'none'};
+      `;
+      label.textContent = name;
+      el.appendChild(label);
 
+      return el;
+    };
+
+    const createClusterMarker = (groupName: string, count: number) => {
+      const el = document.createElement('div');
+      el.className = 'initial-cctv-marker initial-cctv-cluster';
+      el.style.cssText = 'display: flex; flex-direction: column; align-items: center; cursor: default;';
+
+      const icon = document.createElement('div');
+      icon.style.cssText = `
+        min-width: 32px; height: 32px; padding: 0 8px;
+        background: linear-gradient(135deg, rgba(74,74,74,1) 0%, rgba(58,58,58,1) 50%, rgba(42,42,42,1) 100%);
+        border: 2px solid rgba(209,213,219,0.8); border-radius: 16px;
+        display: flex; align-items: center; justify-content: center; gap: 4px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+      `;
+      icon.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color:#d1d5db">
+          <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
+        </svg>
+        <span style="font-size: 12px; font-weight: 600; color: #9ca3af;">${count}</span>
+      `;
+      el.appendChild(icon);
+
+      const label = document.createElement('div');
+      label.setAttribute('data-cctv-label', '1');
+      label.style.cssText = `
+        margin-top: 4px; padding: 2px 6px; background: rgba(26,26,26,0.95);
+        border: 1px solid rgb(107,114,128); border-radius: 4px;
+        color: white; font-size: 10px; white-space: nowrap;
+        display: ${showCCTVName ? 'block' : 'none'};
+      `;
+      label.textContent = groupName;
+      el.appendChild(label);
       return el;
     };
 
@@ -706,14 +741,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       initialCctvClustersRef.current = getInitialCCTVClusters();
     }
     const items = initialCctvClustersRef.current;
-    const markers: maplibregl.Marker[] = [];
+    const clusters = clusterInitialCCTVs(items);
 
     const addMarkers = () => {
       if (!map.loaded()) {
         setTimeout(addMarkers, 100);
         return;
       }
-      // 최초 1회만 지도 중심을 과천역으로 이동
       if (!hasFliedForInitialCCTVRef.current) {
         hasFliedForInitialCCTVRef.current = true;
         map.flyTo({
@@ -725,108 +759,66 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           essential: true
         });
       }
-      items.forEach((item) => {
-        const el = createSimpleCCTV(item.name, item.direction);
+      const visible = externalShowCCTV === false ? false : showCCTV;
+
+      const clusterMarkers = clusters.map((group) => {
+        const el = createClusterMarker(group.name, group.items.length);
         const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([item.lng, item.lat])
-          .addTo(map);
+          .setLngLat([group.centerLng, group.centerLat]);
         const markerEl = marker.getElement();
         if (markerEl) {
           markerEl.style.zIndex = '45';
-          // 초기 복귀 시 externalShowCCTV로 생성, 이후 CCTV 버튼(showCCTV)으로 제어
-          const visible = externalShowCCTV === false ? false : showCCTV;
           (markerEl as HTMLElement).style.display = visible ? 'flex' : 'none';
         }
-        markers.push(marker);
+        return marker;
       });
-      (map as any)._initialCctvMarkers = markers;
 
-      // 경찰서 (3개)
-      const policeStationLocations = [
-        { location: [126.997906819665, 37.436486188524] as [number, number], name: '별빛파출소' },
-        { location: [126.994206819665, 37.434286188524] as [number, number], name: '은하지구대' },
-        { location: [126.998706819665, 37.434586188524] as [number, number], name: '별빛경찰서' },
-      ];
-      const policeMarkerList: maplibregl.Marker[] = [];
-      policeStationLocations.forEach((station) => {
-        const container = document.createElement('div');
-        container.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: auto;';
-        const iconWrapper = document.createElement('div');
-        iconWrapper.style.cssText = `
-          width: 32px; height: 32px;
-          background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
-          border: 2px solid #16a34a; border-radius: 12px;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 0 12px rgba(22, 163, 74, 0.4), 0 0 24px rgba(22, 163, 74, 0.15);
-          backdrop-filter: blur(4px); z-index: 40;
-        `;
-        const img = document.createElement('img');
-        img.src = '/police.svg';
-        img.alt = station.name;
-        img.style.cssText = 'width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(67%) sepia(61%) saturate(459%) hue-rotate(93deg) brightness(95%) contrast(92%);';
-        iconWrapper.appendChild(img);
-        const label = document.createElement('div');
-        label.style.cssText = `
-          margin-top: 6px; padding: 3px 8px; border-radius: 6px;
-          background: rgba(15, 15, 15, 0.9); border: 1px solid rgba(22, 163, 74, 0.4);
-          white-space: nowrap; font-size: 11px; font-weight: 600; color: #4ade80;
-        `;
-        label.textContent = station.name;
-        container.appendChild(iconWrapper);
-        container.appendChild(label);
-        const policeMarker = new maplibregl.Marker({ element: container, anchor: 'center' })
-          .setLngLat(station.location)
-          .addTo(map);
-        if (policeMarker.getElement()) (policeMarker.getElement() as HTMLElement).style.zIndex = '40';
-        policeMarkerList.push(policeMarker);
+      const clusteredItemIds = new Set(clusters.flatMap((c) => c.items.map((i) => i.id)));
+      const individualMarkerEntries = items.map((item) => {
+        const el = createSimpleCCTV(item.name, item.direction, showCCTVName, showCCTVViewAngle);
+        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([item.lng, item.lat]);
+        const markerEl = marker.getElement();
+        if (markerEl) {
+          markerEl.style.zIndex = '45';
+          (markerEl as HTMLElement).style.display = visible ? 'flex' : 'none';
+        }
+        return { item, marker };
       });
-      (map as any)._initialPoliceMarkers = policeMarkerList;
+      const individualMarkers = individualMarkerEntries.map((e) => e.marker);
 
-      // 소방서 (2개) - 119.svg
-      const fireStationLocations = [
-        { location: [126.9935, 37.4375] as [number, number], name: '별빛소방서' },
-        { location: [126.9995, 37.4325] as [number, number], name: '은하소방서' },
-      ];
-      const fireMarkerList: maplibregl.Marker[] = [];
-      fireStationLocations.forEach((station) => {
-        const container = document.createElement('div');
-        container.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: auto;';
-        const iconWrapper = document.createElement('div');
-        iconWrapper.style.cssText = `
-          width: 32px; height: 32px;
-          background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
-          border: 2px solid #ef4444; border-radius: 12px;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 0 12px rgba(239, 68, 68, 0.4), 0 0 24px rgba(239, 68, 68, 0.15);
-          backdrop-filter: blur(4px); z-index: 40;
-        `;
-        const img = document.createElement('img');
-        img.src = '/119.svg';
-        img.alt = station.name;
-        img.style.cssText = 'width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(27%) sepia(95%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);';
-        iconWrapper.appendChild(img);
-        const label = document.createElement('div');
-        label.style.cssText = `
-          margin-top: 6px; padding: 3px 8px; border-radius: 6px;
-          background: rgba(15, 15, 15, 0.9); border: 1px solid rgba(239, 68, 68, 0.4);
-          white-space: nowrap; font-size: 11px; font-weight: 600; color: #f87171;
-        `;
-        label.textContent = station.name;
-        container.appendChild(iconWrapper);
-        container.appendChild(label);
-        const fireMarker = new maplibregl.Marker({ element: container, anchor: 'center' })
-          .setLngLat(station.location)
-          .addTo(map);
-        if (fireMarker.getElement()) (fireMarker.getElement() as HTMLElement).style.zIndex = '40';
-        fireMarkerList.push(fireMarker);
-      });
-      (map as any)._initialFireMarkers = fireMarkerList;
+      const updateDisplay = () => {
+        const zoom = map.getZoom();
+        if (zoom >= 16.5) {
+          clusterMarkers.forEach((m) => m.remove());
+          individualMarkers.forEach((m) => m.addTo(map));
+        } else {
+          individualMarkerEntries.forEach(({ item, marker }) => {
+            marker.remove();
+            if (!clusteredItemIds.has(item.id)) marker.addTo(map);
+          });
+          clusterMarkers.forEach((m) => m.addTo(map));
+        }
+      };
+
+      updateDisplay();
+
+      const zoomHandler = () => updateDisplay();
+      map.on('zoom', zoomHandler);
+      (map as any)._initialCctvZoomHandler = zoomHandler;
+
+      (map as any)._initialCctvMarkers = [...clusterMarkers, ...individualMarkers];
     };
 
     addMarkers();
 
     return () => {
-      ['_initialCctvMarkers', '_initialPoliceMarkers', '_initialFireMarkers'].forEach((key) => {
+      const zoomHandler = (map as any)._initialCctvZoomHandler;
+      if (zoomHandler) {
+        map.off('zoom', zoomHandler);
+        (map as any)._initialCctvZoomHandler = null;
+      }
+      ['_initialCctvMarkers'].forEach((key) => {
         const current = (map as any)[key];
         if (current) {
           current.forEach((m: maplibregl.Marker) => m.remove());
@@ -834,7 +826,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       });
     };
-  }, [showInitialCCTVClusters, showCCTV, showCCTVName, showCCTVViewAngle]);
+  }, [showInitialCCTVClusters, showCCTV]);
 
   // 도로 버튼 연결: 교통/돌발 아이콘 (무작위, showRoad 토글 시 표시)
   useEffect(() => {
@@ -916,6 +908,22 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       });
     }
   }, [showInitialCCTVClusters, showCCTV]);
+
+  // 초기 CCTV 마커 라벨·시야각 업데이트 (라벨/시야각 버튼 토글 시 - 마커 재생성 없이 DOM만 갱신)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !showInitialCCTVClusters) return;
+    const markers = (map as any)._initialCctvMarkers;
+    if (!markers) return;
+    markers.forEach((marker: maplibregl.Marker) => {
+      const el = marker.getElement() as HTMLElement | null;
+      if (!el) return;
+      const labelEl = el.querySelector<HTMLElement>('[data-cctv-label]');
+      const viewAngleEl = el.querySelector<HTMLElement>('[data-cctv-viewangle]');
+      if (labelEl) labelEl.style.display = showCCTVName ? 'block' : 'none';
+      if (viewAngleEl) viewAngleEl.style.display = showCCTVViewAngle ? 'block' : 'none';
+    });
+  }, [showInitialCCTVClusters, showCCTVName, showCCTVViewAngle]);
 
   // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
   useEffect(() => {
@@ -1348,7 +1356,51 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     });
     
     (map as any)._policeStationMarkers = policeMarkerList;
-    
+
+    // 소방서 (2개)
+    const oldFireMarkers = (map as any)._fireStationMarkers;
+    if (oldFireMarkers) {
+      oldFireMarkers.forEach((m: maplibregl.Marker) => m.remove());
+    }
+    const fireStationLocations = [
+      { location: [126.9935, 37.4375] as [number, number], name: '별빛소방서' },
+      { location: [126.9995, 37.4325] as [number, number], name: '은하소방서' },
+    ];
+    const fireMarkerList: maplibregl.Marker[] = [];
+    fireStationLocations.forEach((station) => {
+      const container = document.createElement('div');
+      container.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: auto;';
+      const iconWrapper = document.createElement('div');
+      iconWrapper.style.cssText = `
+        width: 32px; height: 32px;
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+        border: 2px solid #ef4444; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 12px rgba(239, 68, 68, 0.4), 0 0 24px rgba(239, 68, 68, 0.15);
+        backdrop-filter: blur(4px); z-index: 40;
+      `;
+      const img = document.createElement('img');
+      img.src = '/119.svg';
+      img.alt = station.name;
+      img.style.cssText = 'width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(27%) sepia(95%) saturate(2878%) hue-rotate(346deg) brightness(104%) contrast(97%);';
+      iconWrapper.appendChild(img);
+      const label = document.createElement('div');
+      label.style.cssText = `
+        margin-top: 6px; padding: 3px 8px; border-radius: 6px;
+        background: rgba(15, 15, 15, 0.9); border: 1px solid rgba(239, 68, 68, 0.4);
+        white-space: nowrap; font-size: 11px; font-weight: 600; color: #f87171;
+      `;
+      label.textContent = station.name;
+      container.appendChild(iconWrapper);
+      container.appendChild(label);
+      const fireMarker = new maplibregl.Marker({ element: container, anchor: 'center' })
+        .setLngLat(station.location)
+        .addTo(map);
+      if (fireMarker.getElement()) (fireMarker.getElement() as HTMLElement).style.zIndex = '40';
+      fireMarkerList.push(fireMarker);
+    });
+    (map as any)._fireStationMarkers = fireMarkerList;
+
     // cleanup
       return () => {
         map.off('zoom', zoomHandler);
@@ -1358,6 +1410,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         if (pMarkers) {
           pMarkers.forEach((m: maplibregl.Marker) => m.remove());
           (map as any)._policeStationMarkers = null;
+        }
+        const fMarkers = (map as any)._fireStationMarkers;
+        if (fMarkers) {
+          fMarkers.forEach((m: maplibregl.Marker) => m.remove());
+          (map as any)._fireStationMarkers = null;
         }
       };
     };
@@ -1641,22 +1698,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const cctvMarkers = (map as any)._cctvMarkers;
     if (cctvMarkers) {
       cctvMarkers.forEach((marker: any) => {
-        const element = marker.getElement();
-        if (element && !element.classList.contains('predicted-cctv-marker')) {
-          element.style.display = showCCTV ? 'block' : 'none';
-        }
-      });
-    }
-  }, [showCCTV]);
-
-  // CCTV 마커 표시/숨김 제어
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    
-    const cctvMarkers = (map as any)._cctvMarkers;
-    if (cctvMarkers) {
-      cctvMarkers.forEach((marker: maplibregl.Marker) => {
         const element = marker.getElement();
         if (element && !element.classList.contains('predicted-cctv-marker')) {
           element.style.display = showCCTV ? 'block' : 'none';
@@ -1976,7 +2017,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }}
     >
        {/* 맵 컨트롤 + CCTV 컨트롤 - 초기 화면 + 고속검색 리스트 표시 시 */}
-       {(!hideControls || showFastSearchList) && (
+       {(!hideControls || showFastSearchList) ? (
        <div 
          className="absolute top-4 flex flex-col transition-all duration-500 ease-in-out" 
          style={{ 
@@ -2094,7 +2135,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <div style={{ height: 30 }} />
          {/* CCTV 컨트롤 */}
          <div className="flex flex-col gap-2">
-        {/* 도로 버튼 */}
+        {/* 도로 버튼 - 초기 화면에서만 표시 (고속검색 시 숨김) */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -2105,6 +2146,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               ? 'bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm'
               : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
           }`}
+          style={{
+            visibility: showFastSearchList ? 'hidden' : 'visible',
+            pointerEvents: showFastSearchList ? 'none' : 'auto',
+          }}
           aria-label="도로"
         >
           <Icon icon="mdi:highway" className="w-5 h-5" />
@@ -2114,6 +2159,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           onClick={(e) => {
             e.stopPropagation();
             const newValue = !showCCTV;
+            console.log('[v2 MapView] CCTV 버튼 클릭', { prev: showCCTV, next: newValue });
             setShowCCTV(newValue);
             if (newValue) {
               setShowCCTVViewAngle(true);
@@ -2143,9 +2189,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           onClick={(e) => {
             e.stopPropagation();
             const newValue = !showCCTVName;
+            console.log('[v2 MapView] 라벨 버튼 클릭', { prev: showCCTVName, next: newValue });
             setShowCCTVName(newValue);
             if (typeof window !== 'undefined') {
               localStorage.setItem('cctv-show-name', newValue.toString());
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              const newValue = !showCCTVName;
+              setShowCCTVName(newValue);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cctv-show-name', newValue.toString());
+              }
             }
           }}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
@@ -2154,9 +2212,11 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
           }`}
           style={{
-            visibility: showCCTV ? 'visible' : 'hidden'
+            visibility: showCCTV ? 'visible' : 'hidden',
+            pointerEvents: showCCTV ? 'auto' : 'none',
           }}
           aria-label="CCTV 라벨"
+          tabIndex={showCCTV ? 0 : -1}
         >
           <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? 'text-blue-600' : 'text-gray-800'}`} />
         </button>
@@ -2166,9 +2226,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           onClick={(e) => {
             e.stopPropagation();
             const newValue = !showCCTVViewAngle;
+            console.log('[v2 MapView] 시야각 버튼 클릭', { prev: showCCTVViewAngle, next: newValue });
             setShowCCTVViewAngle(newValue);
             if (typeof window !== 'undefined') {
               localStorage.setItem('cctv-show-view-angle', newValue.toString());
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              const newValue = !showCCTVViewAngle;
+              setShowCCTVViewAngle(newValue);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cctv-show-view-angle', newValue.toString());
+              }
             }
           }}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
@@ -2177,15 +2249,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
           }`}
           style={{
-            visibility: showCCTV ? 'visible' : 'hidden'
+            visibility: showCCTV ? 'visible' : 'hidden',
+            pointerEvents: showCCTV ? 'auto' : 'none',
           }}
           aria-label="CCTV 시야각"
+          tabIndex={showCCTV ? 0 : -1}
         >
           <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
         </button>
          </div>
        </div>
-       )}
+       ) : (console.log('[v2 MapView] 컨트롤 패널 숨김', { hideControls, showFastSearchList }), null)}
 
       {/* 지도 - 박스 밖으로 */}
       <div

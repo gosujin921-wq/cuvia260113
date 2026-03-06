@@ -5,11 +5,11 @@
 
 /** 동별 좌표 범위 [lngMin, lngMax, latMin, latMax] - 과천역 주변, 넓게 펼침 */
 const DISTRICT_BOUNDS: Record<string, [number, number, number, number]> = {
-  중앙동: [126.9925, 127.0005, 37.4315, 37.4390],
-  별양동: [126.9940, 127.0020, 37.4345, 37.4410],
-  부림동: [126.9915, 126.9995, 37.4285, 37.4360],
-  원문동: [126.9875, 126.9955, 37.4295, 37.4375],
-  관문동: [126.9955, 127.0045, 37.4295, 37.4395],
+  중앙동: [126.9900, 127.0030, 37.4290, 37.4415],
+  별양동: [126.9920, 127.0050, 37.4320, 37.4440],
+  부림동: [126.9885, 127.0025, 37.4255, 37.4385],
+  원문동: [126.9845, 126.9985, 37.4265, 37.4400],
+  관문동: [126.9930, 127.0075, 37.4265, 37.4420],
 };
 
 export interface InitialCCTVItem {
@@ -61,6 +61,68 @@ export const getInitialCCTVClusters = (): InitialCCTVItem[] => {
   });
 
   return items; // 50개
+};
+
+/** 거리 기반 클러스터 그룹 (가까운 CCTV 묶음) */
+export interface InitialCCTVClusterGroup {
+  id: string;
+  name: string; // 대표 이름 (첫 번째 아이템)
+  centerLng: number;
+  centerLat: number;
+  items: InitialCCTVItem[];
+}
+
+/** 거리 기반 클러스터링 (반경 ~50m, 1도≈111km → 0.00045 deg) */
+const CLUSTER_RADIUS_DEG = 0.00045;
+
+const distSq = (a: InitialCCTVItem, b: InitialCCTVItem): number => {
+  const dlng = a.lng - b.lng;
+  const dlat = a.lat - b.lat;
+  return dlng * dlng + dlat * dlat;
+};
+
+export const clusterInitialCCTVs = (items: InitialCCTVItem[]): InitialCCTVClusterGroup[] => {
+  const r2 = CLUSTER_RADIUS_DEG * CLUSTER_RADIUS_DEG;
+  const n = items.length;
+  const parent = items.map((_, i) => i);
+
+  const find = (i: number): number => {
+    if (parent[i] !== i) parent[i] = find(parent[i]);
+    return parent[i];
+  };
+  const union = (a: number, b: number) => {
+    const pa = find(a);
+    const pb = find(b);
+    if (pa !== pb) parent[pa] = pb;
+  };
+
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (distSq(items[i], items[j]) <= r2) union(i, j);
+    }
+  }
+
+  const groupMap = new Map<number, InitialCCTVItem[]>();
+  for (let i = 0; i < n; i++) {
+    const root = find(i);
+    if (!groupMap.has(root)) groupMap.set(root, []);
+    groupMap.get(root)!.push(items[i]);
+  }
+
+  const groups: InitialCCTVClusterGroup[] = [];
+  groupMap.forEach((groupItems) => {
+    if (groupItems.length < 2) return; // 1개는 클러스터링하지 않음
+    const centerLng = groupItems.reduce((s, p) => s + p.lng, 0) / groupItems.length;
+    const centerLat = groupItems.reduce((s, p) => s + p.lat, 0) / groupItems.length;
+    groups.push({
+      id: `cluster-${groupItems[0].id}`,
+      name: groupItems[0].name,
+      centerLng,
+      centerLat,
+      items: groupItems,
+    });
+  });
+  return groups;
 };
 
 /** 도로 아이콘용 교통/돌발 아이콘 (무작위 좌표, 무작위 타입) */
