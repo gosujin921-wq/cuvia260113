@@ -1138,6 +1138,17 @@ const MapView = ({
         };
 
         const updateStreamData = () => {
+            const oldPulse = (map as any)._pulseMarker as maplibregl.Marker | undefined;
+            if (oldPulse) {
+                oldPulse.remove();
+                (map as any)._pulseMarker = undefined;
+            }
+            const oldPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+            if (oldPopup) {
+                oldPopup.remove();
+                (map as any)._streamMarkerPopup = undefined;
+            }
+
             if (!streamMapData) {
                 clearStreamLayers();
                 return;

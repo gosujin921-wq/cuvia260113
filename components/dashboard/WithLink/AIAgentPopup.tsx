@@ -45,7 +45,7 @@ interface AIAgentPopupProps {
     /** "사건 영상 바로 보기" 버튼 클릭 시 호출 - 고속검색 팝업 표시 */
     onVideoView?: () => void;
     /** 스트림에서 map 타입 데이터 수신 시 호출 */
-    onMapDataReceived?: (data: MapStreamData) => void;
+    onMapDataReceived?: (data: MapStreamData | null) => void;
     /** 첫 전송 시 팝업 열기 요청 */
     onOpenRequest?: () => void;
     /** 첫 검색용 하단 바 위치/스타일 */
@@ -764,6 +764,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             );
             if (!payload?.data?.chart_data && !payload?.data?.chart) setLastChartData(null);
             if (!table || (tableCount && tableCount <= 5)) setLastTableData(null);
+            if (!payload?.data?.map_data) onMapDataReceivedRef.current?.(null);
             setIsResponding(false);
             streamMessageIdRef.current = null;
         }, []),
