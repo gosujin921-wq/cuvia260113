@@ -1,15 +1,19 @@
 import { Event } from "@/types";
 import { Icon } from "@iconify/react";
 import { useMemo, useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { getCCTVIconClassName, getCCTVLabelClassName, getPrimaryButtonClassName } from "@/components/shared/styles";
-import CCTVIcon from "@/components/common/CCTVIcon";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVDirection, generateViewAnglePath, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
-import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
+import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
 import type { MapStreamData, MapStreamWmsLayer } from "@/types/streamJson.types";
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
+import { useGetIncidentList } from "@/src/apis/agent/hooks";
+import proj4 from "proj4";
+
+// EPSG:5181 (한국 중부원점 TM) 좌표계 정의
+proj4.defs(
+    "EPSG:5181",
+    "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+);
 
 const PIXEL_RATIO = 2;
 const MARKER_SIZE = 28 * PIXEL_RATIO;
@@ -198,7 +202,14 @@ const MapView = ({
     const [mapBearing, setMapBearing] = useState(-17.6);
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
     const [streamMarkerViewType, setStreamMarkerViewType] = useState<"individual" | "cluster" | "heatmap">("individual");
-    const [showTrafficLayer, setShowTrafficLayer] = useState(true);
+    const [showTrafficLayer, setShowTrafficLayer] = useState(false);
+    const [isTrafficLayerLoading, setIsTrafficLayerLoading] = useState(false);
+    const showTrafficLayerRef = useRef(false);
+
+    // 도로 돌발 상황 API 조회 (토글 ON 시에만 20초마다 갱신)
+    const { data: incidentData, isFetching: isIncidentFetching } = useGetIncidentList(showTrafficLayer);
+    const trafficToggleCooldownRef = useRef(0);
+    const TRAFFIC_TOGGLE_COOLDOWN_MS = 300;
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -257,38 +268,6 @@ const MapView = ({
             localStorage.setItem("cctv-view-angles", JSON.stringify(cctvViewAngles));
         }
     }, [cctvViewAngles]);
-
-    const getCCTVDirection = (cctvId: string, defaultDirection: number): number => {
-        return defaultDirection;
-    };
-
-    const getCCTVViewAngle = (cctvId: string, defaultViewAngle: number): number => {
-        if (cctvViewAngles[cctvId] !== undefined) {
-            return cctvViewAngles[cctvId];
-        }
-        return getCCTVViewAngleUtil(cctvId, defaultViewAngle);
-    };
-
-    const setCCTVViewAngle = (cctvId: string, viewAngle: number) => {
-        setCctvViewAngles((prev) => ({
-            ...prev,
-            [cctvId]: Math.max(0, Math.min(180, viewAngle)),
-        }));
-    };
-
-    const formatCCTVCount = (count: number): string => {
-        return count > 999 ? "999+" : count.toString();
-    };
-
-    const getCCTVIconBoxStyle = (count: number, scale: number, hasMultiple: boolean, zIndex: number = 110) => {
-        return {
-            zIndex,
-            position: "relative" as const,
-            transform: `scale(${scale})`,
-            paddingLeft: hasMultiple ? "4px" : undefined,
-            paddingRight: hasMultiple ? "4px" : undefined,
-        };
-    };
 
     useEffect(() => {
         if (externalZoomLevel !== undefined) {
@@ -513,45 +492,48 @@ const MapView = ({
                 }
             });
 
-            // ========== 테스트 WMS 레이어 (서울 교통정보) ==========
-            const testWmsSourceId = "test-wms-traffic-source";
-            const testWmsLayerId = "test-wms-traffic-layer";
+            // ========== 교통정보 WMS 커스텀 프로토콜 등록 (레이어는 토글 시 동적 생성) ==========
+            // 프로토콜은 한 번만 등록
+            if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
+                maplibregl.addProtocol("gitsmap-wms", (params, abortController) => {
+                    const urlParts = params.url.replace("gitsmap-wms://", "").split("/");
+                    const z = parseInt(urlParts[0], 10);
+                    const x = parseInt(urlParts[1], 10);
+                    const y = parseInt(urlParts[2], 10);
 
-            if (!map.getSource(testWmsSourceId)) {
-                // WMS 타일 URL 템플릿 (Vite 프록시 경로 사용으로 CORS 우회)
-                const wmsBaseUrl = "/wms-proxy/geoserver/wms";
-                const wmsParams = new URLSearchParams({
-                    SERVICE: "WMS",
-                    VERSION: "1.1.1",
-                    REQUEST: "GetMap",
-                    FORMAT: "image/png",
-                    TRANSPARENT: "true",
-                    LAYERS: "utopis:VW_MAP_TRAFFIC2",
-                    TILED: "true",
-                    WIDTH: "256",
-                    HEIGHT: "256",
-                    SRS: "EPSG:3857",
+                    const tileCount = Math.pow(2, z);
+                    const worldSize = 20037508.342789244 * 2;
+                    const tileSize = worldSize / tileCount;
+
+                    const minX3857 = x * tileSize - 20037508.342789244;
+                    const maxX3857 = (x + 1) * tileSize - 20037508.342789244;
+                    const maxY3857 = 20037508.342789244 - y * tileSize;
+                    const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
+
+                    const toWgs84 = proj4("EPSG:3857", "EPSG:4326");
+                    const minWgs84 = toWgs84.forward([minX3857, minY3857]);
+                    const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
+                    const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
+
+                    const wmsUrl =
+                        "/gitsmap-proxy/cgi-bin/mapserv.exe?" +
+                        "map=/ms4w/mapserver/mapfile/LV10.map" +
+                        "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" +
+                        "&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true" +
+                        "&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false" +
+                        "&apikey=4825cf7feed5cc3fc4a9e3f57fd19c3e516f5a8" +
+                        `&BBOX=${bboxWgs84}`;
+
+                    return fetch(wmsUrl, { signal: abortController.signal })
+                        .then((response) => {
+                            if (!response.ok) throw new Error(`WMS request failed: ${response.status}`);
+                            return response.arrayBuffer();
+                        })
+                        .then((data) => ({ data }));
                 });
-                const wmsTileUrl = `${wmsBaseUrl}?${wmsParams.toString()}&BBOX={bbox-epsg-3857}`;
-
-                map.addSource(testWmsSourceId, {
-                    type: "raster",
-                    tiles: [wmsTileUrl],
-                    tileSize: 256,
-                });
-
-                map.addLayer({
-                    id: testWmsLayerId,
-                    type: "raster",
-                    source: testWmsSourceId,
-                    paint: {
-                        "raster-opacity": 0.7,
-                    },
-                });
-
-                console.log("[MapView] 테스트 WMS 레이어 추가됨:", testWmsLayerId);
+                (maplibregl as any)._gitsmapWmsProtocolRegistered = true;
             }
-            // ========== 테스트 WMS 레이어 끝 ==========
+            // ========== 교통정보 WMS 프로토콜 등록 끝 ==========
         });
 
         mapRef.current = map;
@@ -581,25 +563,311 @@ const MapView = ({
         };
     }, [onMapStateChange]);
 
-    // 실시간 교통정보 WMS 레이어 visibility 토글
+    // 토글 ON 시 로딩 상태 시작
+    useEffect(() => {
+        if (showTrafficLayer && !incidentData) {
+            setIsTrafficLayerLoading(true);
+        }
+    }, [showTrafficLayer, incidentData]);
+
+    // 실시간 교통정보 WMS 레이어 + 교통/돌발 마커 토글
+    // OFF 시 레이어/소스 완전 제거로 진행 중인 타일 요청 중단
     useEffect(() => {
         const map = mapRef.current;
         if (!map) return;
 
-        const testWmsLayerId = "test-wms-traffic-layer";
+        showTrafficLayerRef.current = showTrafficLayer;
 
-        const toggleLayer = () => {
-            if (map.getLayer(testWmsLayerId)) {
-                map.setLayoutProperty(testWmsLayerId, "visibility", showTrafficLayer ? "visible" : "none");
+        const trafficWmsSourceId = "gitsmap-traffic-source";
+        const trafficWmsLayerId = "gitsmap-traffic-layer";
+        const MARKER_KEY = "_trafficIncidentMarkers";
+        const POPUP_STYLE_ID = "incident-popup-style";
+
+        // 팝업 스타일 추가
+        if (!document.getElementById(POPUP_STYLE_ID)) {
+            const style = document.createElement("style");
+            style.id = POPUP_STYLE_ID;
+            style.textContent = `
+                .incident-popup {
+                    z-index: 100;
+                }
+                .incident-popup .maplibregl-popup-content {
+                    padding: 10px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                    border: none;
+                }
+                .incident-popup .maplibregl-popup-close-button {
+                    font-size: 18px;
+                    padding: 4px 8px;
+                    color: white;
+                    right: 4px;
+                    top: 4px;
+                }
+                .incident-popup .maplibregl-popup-close-button:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 4px;
+                }
+                .incident-popup .maplibregl-popup-tip {
+                    border-top-color: white;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // 레이어/소스 제거 함수
+        const removeWmsLayer = () => {
+            try {
+                if (map.getLayer && map.getLayer(trafficWmsLayerId)) {
+                    map.removeLayer(trafficWmsLayerId);
+                }
+                if (map.getSource && map.getSource(trafficWmsSourceId)) {
+                    map.removeSource(trafficWmsSourceId);
+                }
+            } catch {
+                // map이 이미 제거된 경우 무시
             }
         };
 
-        if (map.isStyleLoaded()) {
-            toggleLayer();
-        } else {
-            map.once("load", toggleLayer);
+        // 레이어/소스 추가 함수
+        const addWmsLayer = () => {
+            if (map.getSource(trafficWmsSourceId)) return;
+
+            map.addSource(trafficWmsSourceId, {
+                type: "raster",
+                tiles: ["gitsmap-wms://{z}/{x}/{y}"],
+                tileSize: 256,
+            });
+
+            map.addLayer({
+                id: trafficWmsLayerId,
+                type: "raster",
+                source: trafficWmsSourceId,
+                paint: { "raster-opacity": 0.7 },
+            });
+        };
+
+        // 마커 제거 함수
+        const removeMarkers = () => {
+            try {
+                const existing = (map as any)[MARKER_KEY] as maplibregl.Marker[] | undefined;
+                if (existing) {
+                    existing.forEach((m) => m.remove());
+                    (map as any)[MARKER_KEY] = null;
+                }
+            } catch {
+                // map이 이미 제거된 경우 무시
+            }
+        };
+
+        // 돌발 유형에 따른 아이콘 매핑
+        const getIncidentIcon = (restrictType: string): string => {
+            if (restrictType.includes("사고") || restrictType.includes("차량")) return "mdi:car";
+            if (restrictType.includes("공사") || restrictType.includes("철거")) return "mdi:shovel";
+            if (restrictType.includes("침하") || restrictType.includes("함몰")) return "mdi:minus-circle";
+            if (restrictType.includes("통제") || restrictType.includes("전차로")) return "mdi:road-variant";
+            if (restrictType.includes("갓길")) return "mdi:road";
+            return "mdi:alert-circle";
+        };
+
+        // 날짜 포맷 함수
+        const formatDate = (dateStr: string | null): string => {
+            if (!dateStr) return "-";
+            // 이미 "YYYY-MM-DD HH:mm:ss" 형식인 경우 초 부분만 제거
+            if (dateStr.includes("-") && dateStr.includes(":")) {
+                return dateStr.slice(0, 16); // "YYYY-MM-DD HH:mm" 까지만 반환
+            }
+            // 연속된 숫자 형식 (예: "202507162016")인 경우
+            if (dateStr.length >= 12) {
+                const year = dateStr.slice(0, 4);
+                const month = dateStr.slice(4, 6);
+                const day = dateStr.slice(6, 8);
+                const hour = dateStr.slice(8, 10);
+                const min = dateStr.slice(10, 12);
+                return `${year}-${month}-${day} ${hour}:${min}`;
+            }
+            return dateStr;
+        };
+
+        // 팝업 HTML 생성 함수
+        const createPopupContent = (item: typeof incidentData extends { items: (infer T)[] } | undefined ? T : never): string => {
+            const iconName = getIncidentIcon(item.restrict_type);
+            const iconUrl = `https://api.iconify.design/${iconName.replace(":", "/")}.svg?color=%23e85c2a`;
+            
+            return `
+                <div style="
+                    font-family: 'Pretendard', sans-serif;
+                    min-width: 280px;
+                    max-width: 320px;
+                    padding: 0;
+                ">
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 12px 14px;
+                        background: linear-gradient(135deg, #e85c2a 0%, #d14d1e 100%);
+                        border-radius: 8px 8px 0 0;
+                        margin: -10px -10px 0 -10px;
+                    ">
+                        <img src="${iconUrl}" alt="" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
+                        <span style="color: white; font-weight: 600; font-size: 14px;">도로 돌발 상황</span>
+                    </div>
+                    
+                    <div style="padding: 14px 4px 4px 4px;">
+                        <div style="
+                            background: #f8f9fa;
+                            border-radius: 6px;
+                            padding: 10px 12px;
+                            margin-bottom: 10px;
+                        ">
+                            <div style="font-size: 13px; font-weight: 600; color: #1a1a1a; line-height: 1.4;">
+                                ${escapeHtml(item.inci_desc || "정보 없음")}
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #555;">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #888;">위치</span>
+                                <span style="font-weight: 500; color: #333; text-align: right; max-width: 180px;">
+                                    ${escapeHtml(item.inci_place1 || "")}${item.inci_place2 ? " " + escapeHtml(item.inci_place2) : ""}
+                                </span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #888;">통제 유형</span>
+                                <span style="font-weight: 500; color: #e85c2a;">${escapeHtml(item.restrict_type || "-")}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #888;">발생 시간</span>
+                                <span style="font-weight: 500; color: #333;">${formatDate(item.start_date)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #888;">예상 종료</span>
+                                <span style="font-weight: 500; color: #333;">${formatDate(item.est_end_date)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        // 마커 추가 함수
+        const addMarkers = () => {
+            if (!showTrafficLayerRef.current) return;
+            if (!map.loaded()) {
+                setTimeout(addMarkers, 100);
+                return;
+            }
+
+            const incidentItems = incidentData?.items ?? [];
+            
+            // 기존 마커가 있고 새 데이터와 개수가 다르면 제거 후 재생성
+            const existingMarkers = (map as any)[MARKER_KEY] as maplibregl.Marker[] | undefined;
+            if (existingMarkers && existingMarkers.length > 0) {
+                if (existingMarkers.length === incidentItems.length) {
+                    return; // 동일한 데이터면 재생성 불필요
+                }
+                removeMarkers();
+            }
+            if (incidentItems.length === 0) return;
+
+            const markers: maplibregl.Marker[] = [];
+            incidentItems.forEach((item) => {
+                const lng = parseFloat(item.coord_x);
+                const lat = parseFloat(item.coord_y);
+
+                if (isNaN(lng) || isNaN(lat)) return;
+
+                const icon = getIncidentIcon(item.restrict_type);
+
+                const container = document.createElement("div");
+                container.style.cssText = "display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer;";
+
+                const iconWrapper = document.createElement("div");
+                iconWrapper.style.cssText = `
+                    width: 28px; height: 28px;
+                    background: #e85c2a; border-radius: 6px;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 44;
+                    transition: transform 0.15s ease, box-shadow 0.15s ease;
+                `;
+
+                const img = document.createElement("img");
+                img.src = `https://api.iconify.design/${icon.replace(":", "/")}.svg?color=white`;
+                img.alt = item.restrict_type;
+                img.style.cssText = "width: 18px; height: 18px;";
+
+                iconWrapper.appendChild(img);
+                container.appendChild(iconWrapper);
+
+                // 팝업 생성
+                const popup = new maplibregl.Popup({
+                    offset: 20,
+                    closeButton: true,
+                    closeOnClick: true,
+                    maxWidth: "340px",
+                    className: "incident-popup",
+                }).setHTML(createPopupContent(item));
+
+                const marker = new maplibregl.Marker({ element: container, anchor: "center" })
+                    .setLngLat([lng, lat])
+                    .setPopup(popup)
+                    .addTo(map);
+
+                // 호버 효과
+                container.addEventListener("mouseenter", () => {
+                    iconWrapper.style.transform = "scale(1.1)";
+                    iconWrapper.style.boxShadow = "0 2px 8px rgba(232, 92, 42, 0.5)";
+                });
+                container.addEventListener("mouseleave", () => {
+                    iconWrapper.style.transform = "scale(1)";
+                    iconWrapper.style.boxShadow = "0 1px 3px rgba(0,0,0,0.3)";
+                });
+
+                const el = marker.getElement();
+                if (el) (el as HTMLElement).style.zIndex = "44";
+
+                markers.push(marker);
+            });
+
+            (map as any)[MARKER_KEY] = markers;
+        };
+
+        const execute = () => {
+            if (showTrafficLayer) {
+                // ON: API 응답 완료 후 마커 먼저, 그 다음 WMS 레이어
+                if (incidentData?.items && incidentData.items.length > 0) {
+                    addMarkers();
+                    // 마커 생성 후 WMS 레이어 추가, 완료 후 로딩 해제
+                    setTimeout(() => {
+                        addWmsLayer();
+                        // WMS 레이어 렌더링 완료 대기 후 로딩 해제
+                        setTimeout(() => {
+                            setIsTrafficLayerLoading(false);
+                        }, 300);
+                    }, 150);
+                }
+            } else {
+                // OFF: 즉시 제거 (레이어 제거 시 진행 중인 타일 요청도 중단됨)
+                removeMarkers();
+                removeWmsLayer();
+                setIsTrafficLayerLoading(false);
+            }
+        };
+
+        // 토글 OFF 시에는 스타일 로드 여부와 관계없이 즉시 제거
+        if (!showTrafficLayer) {
+            execute();
+            return;
         }
-    }, [showTrafficLayer]);
+
+        // 토글 ON 시에는 스타일 로드 후 실행
+        if (map.isStyleLoaded()) {
+            execute();
+        } else {
+            map.once("load", execute);
+        }
+    }, [showTrafficLayer, incidentData]);
 
     // streamMapData가 변경되면 마커와 WMS 레이어 업데이트
     useEffect(() => {
@@ -2388,13 +2656,29 @@ const MapView = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
+                                if (isTrafficLayerLoading) return;
+                                const now = Date.now();
+                                if (now - trafficToggleCooldownRef.current < TRAFFIC_TOGGLE_COOLDOWN_MS) return;
+                                trafficToggleCooldownRef.current = now;
                                 setShowTrafficLayer((prev) => !prev);
                             }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showTrafficLayer ? "bg-green-600 hover:bg-green-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                            disabled={isTrafficLayerLoading}
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                                isTrafficLayerLoading
+                                    ? "bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed"
+                                    : showTrafficLayer
+                                        ? "bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm"
+                                        : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                            }`}
                             aria-label="실시간 교통정보"
                             aria-pressed={showTrafficLayer}
+                            aria-busy={isTrafficLayerLoading}
                             tabIndex={0}>
-                            <Icon icon="mdi:traffic-light" className="w-5 h-5" />
+                            {isTrafficLayerLoading ? (
+                                <Icon icon="mdi:loading" className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <Icon icon="mdi:highway" className="w-5 h-5" />
+                            )}
                         </button>
                         {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
                         {streamMapData?.markers && streamMapData.markers.length > 0 && (

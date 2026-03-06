@@ -13,6 +13,15 @@ import {
   getCCTVConfigMap
 } from '@/lib/cctv-view-angle-utils';
 import { getCCTVPanelLayout } from '@/lib/dashboard-cctv-layout';
+
+import { useGetIncidentList } from '@/src/apis/agent/hooks';
+import proj4 from 'proj4';
+
+// EPSG:5181 (한국 중부원점 TM) 좌표계 정의
+proj4.defs(
+  'EPSG:5181',
+  '+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
+);
 import { getInitialCCTVClusters, clusterInitialCCTVs, getRoadIncidentMarkers, type InitialCCTVItem } from '@/lib/initial-cctv-clusters';
 
 interface MapViewProps {
@@ -53,6 +62,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
   const [showCCTV, setShowCCTV] = useState(externalShowCCTV !== undefined ? externalShowCCTV : true);
   const [showRoad, setShowRoad] = useState(false);
+  const [isRoadLayerLoading, setIsRoadLayerLoading] = useState(false);
+
+  // 도로 돌발 상황 API 조회 (토글 ON 시에만 20초마다 갱신)
+  const { data: incidentData } = useGetIncidentList(showRoad);
   
   // (삭제) 전파 닫고 초기 복귀 시 showCCTV 강제 OFF 하던 effect - CCTV 컨트롤 버튼 반응 방해로 제거
 
@@ -199,7 +212,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     map.easeTo(options);
   };
   const initialCctvClustersRef = useRef<InitialCCTVItem[] | null>(null);
-  const initialRoadIncidentRef = useRef<ReturnType<typeof getRoadIncidentMarkers> | null>(null);
+  const showRoadLayerRef = useRef(false);
+  const roadToggleCooldownRef = useRef(0);
+  const ROAD_TOGGLE_COOLDOWN_MS = 300;
 
   useEffect(() => {
     if (zoomLevel > 0 && prevZoomLevelRef.current === 0 && showCCTV && showCCTVViewAngle) {
@@ -410,6 +425,47 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           }
         }
       });
+
+      // ========== 교통정보 WMS 커스텀 프로토콜 등록 (레이어는 토글 시 동적 생성) ==========
+      if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
+        maplibregl.addProtocol('gitsmap-wms', (params: { url: string }, abortController: AbortController) => {
+          const urlParts = params.url.replace('gitsmap-wms://', '').split('/');
+          const z = parseInt(urlParts[0], 10);
+          const x = parseInt(urlParts[1], 10);
+          const y = parseInt(urlParts[2], 10);
+
+          const tileCount = Math.pow(2, z);
+          const worldSize = 20037508.342789244 * 2;
+          const tileSize = worldSize / tileCount;
+
+          const minX3857 = x * tileSize - 20037508.342789244;
+          const maxX3857 = (x + 1) * tileSize - 20037508.342789244;
+          const maxY3857 = 20037508.342789244 - y * tileSize;
+          const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
+
+          const toWgs84 = proj4('EPSG:3857', 'EPSG:4326');
+          const minWgs84 = toWgs84.forward([minX3857, minY3857]);
+          const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
+          const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
+
+          const wmsUrl =
+            '/gitsmap-proxy/cgi-bin/mapserv.exe?' +
+            'map=/ms4w/mapserver/mapfile/LV10.map' +
+            '&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap' +
+            '&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true' +
+            '&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false' +
+            `&BBOX=${bboxWgs84}`;
+
+          return fetch(wmsUrl, { signal: abortController.signal })
+            .then((response) => {
+              if (!response.ok) throw new Error(`WMS request failed: ${response.status}`);
+              return response.arrayBuffer();
+            })
+            .then((data) => ({ data }));
+        });
+        (maplibregl as any)._gitsmapWmsProtocolRegistered = true;
+      }
+      // ========== 교통정보 WMS 프로토콜 등록 끝 ==========
     });
 
     mapRef.current = map;
@@ -438,6 +494,313 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       mapRef.current = null;
     };
   }, [onMapStateChange]);
+
+  // 토글 ON 시 로딩 상태 시작
+  useEffect(() => {
+    if (showRoad && !incidentData) {
+      setIsRoadLayerLoading(true);
+    }
+  }, [showRoad, incidentData]);
+
+  // 도로 버튼(showRoad) → 실시간 교통정보 WMS 레이어 + 교통/돌발 마커 토글
+  // OFF 시 레이어/소스 완전 제거로 진행 중인 타일 요청 중단
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    showRoadLayerRef.current = showRoad;
+
+    const trafficWmsSourceId = 'gitsmap-traffic-source';
+    const trafficWmsLayerId = 'gitsmap-traffic-layer';
+    const MARKER_KEY = '_trafficIncidentMarkers';
+    const POPUP_STYLE_ID = 'incident-popup-style';
+
+    // HTML 이스케이프 함수
+    const escapeHtml = (text: string): string => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    };
+
+    // 팝업 스타일 추가
+    if (!document.getElementById(POPUP_STYLE_ID)) {
+      const style = document.createElement('style');
+      style.id = POPUP_STYLE_ID;
+      style.textContent = `
+        .incident-popup {
+          z-index: 100;
+        }
+        .incident-popup .maplibregl-popup-content {
+          padding: 10px;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          border: none;
+        }
+        .incident-popup .maplibregl-popup-close-button {
+          font-size: 18px;
+          padding: 4px 8px;
+          color: white;
+          right: 4px;
+          top: 4px;
+        }
+        .incident-popup .maplibregl-popup-close-button:hover {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 4px;
+        }
+        .incident-popup .maplibregl-popup-tip {
+          border-top-color: white;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const removeWmsLayer = () => {
+      try {
+        if (map.getLayer && map.getLayer(trafficWmsLayerId)) {
+          map.removeLayer(trafficWmsLayerId);
+        }
+        if (map.getSource && map.getSource(trafficWmsSourceId)) {
+          map.removeSource(trafficWmsSourceId);
+        }
+      } catch {
+        // map이 이미 제거된 경우 무시
+      }
+    };
+
+    const addWmsLayer = () => {
+      if (map.getSource(trafficWmsSourceId)) return;
+      map.addSource(trafficWmsSourceId, {
+        type: 'raster',
+        tiles: ['gitsmap-wms://{z}/{x}/{y}'],
+        tileSize: 256
+      });
+      map.addLayer({
+        id: trafficWmsLayerId,
+        type: 'raster',
+        source: trafficWmsSourceId,
+        paint: { 'raster-opacity': 0.7 }
+      });
+    };
+
+    const removeMarkers = () => {
+      try {
+        const existing = (map as any)[MARKER_KEY] as maplibregl.Marker[] | undefined;
+        if (existing) {
+          existing.forEach((m) => m.remove());
+          (map as any)[MARKER_KEY] = null;
+        }
+      } catch {
+        // map이 이미 제거된 경우 무시
+      }
+    };
+
+    // 돌발 유형에 따른 아이콘 매핑
+    const getIncidentIcon = (restrictType: string): string => {
+      if (restrictType.includes('사고') || restrictType.includes('차량')) return 'mdi:car';
+      if (restrictType.includes('공사') || restrictType.includes('철거')) return 'mdi:shovel';
+      if (restrictType.includes('침하') || restrictType.includes('함몰')) return 'mdi:minus-circle';
+      if (restrictType.includes('통제') || restrictType.includes('전차로')) return 'mdi:road-variant';
+      if (restrictType.includes('갓길')) return 'mdi:road';
+      return 'mdi:alert-circle';
+    };
+
+      // 날짜 포맷 함수
+    const formatDate = (dateStr: string | null): string => {
+        if (!dateStr) return "-";
+        // 이미 "YYYY-MM-DD HH:mm:ss" 형식인 경우 초 부분만 제거
+        if (dateStr.includes("-") && dateStr.includes(":")) {
+            return dateStr.slice(0, 16); // "YYYY-MM-DD HH:mm" 까지만 반환
+        }
+        // 연속된 숫자 형식 (예: "202507162016")인 경우
+        if (dateStr.length >= 12) {
+            const year = dateStr.slice(0, 4);
+            const month = dateStr.slice(4, 6);
+            const day = dateStr.slice(6, 8);
+            const hour = dateStr.slice(8, 10);
+            const min = dateStr.slice(10, 12);
+            return `${year}-${month}-${day} ${hour}:${min}`;
+        }
+        return dateStr;
+    };
+
+    // 팝업 HTML 생성 함수
+    const createPopupContent = (item: typeof incidentData extends { items: (infer T)[] } | undefined ? T : never): string => {
+      const iconName = getIncidentIcon(item.restrict_type);
+      const iconUrl = `https://api.iconify.design/${iconName.replace(':', '/')}.svg?color=%23e85c2a`;
+      
+      return `
+        <div style="
+          font-family: 'Pretendard', sans-serif;
+          min-width: 280px;
+          max-width: 320px;
+          padding: 0;
+        ">
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 14px;
+            background: linear-gradient(135deg, #e85c2a 0%, #d14d1e 100%);
+            border-radius: 8px 8px 0 0;
+            margin: -10px -10px 0 -10px;
+          ">
+            <img src="${iconUrl}" alt="" style="width: 20px; height: 20px; filter: brightness(0) invert(1);" />
+            <span style="color: white; font-weight: 600; font-size: 14px;">도로 돌발 상황</span>
+          </div>
+          
+          <div style="padding: 14px 4px 4px 4px;">
+            <div style="
+              background: #f8f9fa;
+              border-radius: 6px;
+              padding: 10px 12px;
+              margin-bottom: 10px;
+            ">
+              <div style="font-size: 13px; font-weight: 600; color: #1a1a1a; line-height: 1.4;">
+                ${escapeHtml(item.inci_desc || '정보 없음')}
+              </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #555;">
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #888;">위치</span>
+                <span style="font-weight: 500; color: #333; text-align: right; max-width: 180px;">
+                  ${escapeHtml(item.inci_place1 || '')}${item.inci_place2 ? ' ' + escapeHtml(item.inci_place2) : ''}
+                </span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #888;">통제 유형</span>
+                <span style="font-weight: 500; color: #e85c2a;">${escapeHtml(item.restrict_type || '-')}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #888;">발생 시간</span>
+                <span style="font-weight: 500; color: #333;">${formatDate(item.start_date)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #888;">예상 종료</span>
+                <span style="font-weight: 500; color: #333;">${formatDate(item.est_end_date)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    const addMarkers = () => {
+      if (!showRoadLayerRef.current) return;
+      if (!map.loaded()) {
+        setTimeout(addMarkers, 100);
+        return;
+      }
+
+      const incidentItems = incidentData?.items ?? [];
+      
+      // 기존 마커가 있고 새 데이터와 개수가 다르면 제거 후 재생성
+      const existingMarkers = (map as any)[MARKER_KEY] as maplibregl.Marker[] | undefined;
+      if (existingMarkers && existingMarkers.length > 0) {
+        if (existingMarkers.length === incidentItems.length) {
+          return; // 동일한 데이터면 재생성 불필요
+        }
+        removeMarkers();
+      }
+      if (incidentItems.length === 0) return;
+
+      const markers: maplibregl.Marker[] = [];
+      incidentItems.forEach((item) => {
+        const lng = parseFloat(item.coord_x);
+        const lat = parseFloat(item.coord_y);
+
+        if (isNaN(lng) || isNaN(lat)) return;
+
+        const icon = getIncidentIcon(item.restrict_type);
+
+        const container = document.createElement('div');
+        container.style.cssText = 'display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer;';
+
+        const iconWrapper = document.createElement('div');
+        iconWrapper.style.cssText = `
+          width: 28px; height: 28px;
+          background: #e85c2a; border-radius: 6px;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 44;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        `;
+
+        const img = document.createElement('img');
+        img.src = `https://api.iconify.design/${icon.replace(':', '/')}.svg?color=white`;
+        img.alt = item.restrict_type;
+        img.style.cssText = 'width: 18px; height: 18px;';
+
+        iconWrapper.appendChild(img);
+        container.appendChild(iconWrapper);
+
+        // 팝업 생성
+        const popup = new maplibregl.Popup({
+          offset: 20,
+          closeButton: true,
+          closeOnClick: true,
+          maxWidth: '340px',
+          className: 'incident-popup',
+        }).setHTML(createPopupContent(item));
+
+        const marker = new maplibregl.Marker({ element: container, anchor: 'center' })
+          .setLngLat([lng, lat])
+          .setPopup(popup)
+          .addTo(map);
+
+        // 호버 효과
+        container.addEventListener('mouseenter', () => {
+          iconWrapper.style.transform = 'scale(1.1)';
+          iconWrapper.style.boxShadow = '0 2px 8px rgba(232, 92, 42, 0.5)';
+        });
+        container.addEventListener('mouseleave', () => {
+          iconWrapper.style.transform = 'scale(1)';
+          iconWrapper.style.boxShadow = '0 1px 3px rgba(0,0,0,0.3)';
+        });
+
+        const el = marker.getElement();
+        if (el) (el as HTMLElement).style.zIndex = '44';
+
+        markers.push(marker);
+      });
+
+      (map as any)[MARKER_KEY] = markers;
+    };
+
+    const execute = () => {
+      if (showRoad) {
+        // ON: API 응답 완료 후 마커 먼저, 그 다음 WMS 레이어
+        if (incidentData?.items && incidentData.items.length > 0) {
+          addMarkers();
+          // 마커 생성 후 WMS 레이어 추가, 완료 후 로딩 해제
+          setTimeout(() => {
+            addWmsLayer();
+            // WMS 레이어 렌더링 완료 대기 후 로딩 해제
+            setTimeout(() => {
+              setIsRoadLayerLoading(false);
+            }, 300);
+          }, 150);
+        }
+      } else {
+        // OFF: 즉시 제거 (레이어 제거 시 진행 중인 타일 요청도 중단됨)
+        removeMarkers();
+        removeWmsLayer();
+        setIsRoadLayerLoading(false);
+      }
+    };
+
+    // 토글 OFF 시에는 스타일 로드 여부와 관계없이 즉시 제거
+    if (!showRoad) {
+      execute();
+      return;
+    }
+
+    // 토글 ON 시에는 스타일 로드 후 실행
+    if (map.isStyleLoaded()) {
+      execute();
+    } else {
+      map.once('load', execute);
+    }
+  }, [showRoad, incidentData]);
 
   // flyToLocation이 변경되면 지도 이동 및 마커 표시/숨김
   useEffect(() => {
@@ -633,7 +996,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     if (!showInitialCCTVClusters) {
       hasFliedForInitialCCTVRef.current = false;
       initialCctvClustersRef.current = null;
-      initialRoadIncidentRef.current = null;
       if (mapRef.current) {
         const map = mapRef.current;
         ['_initialCctvMarkers', '_initialRoadIncidentMarkers'].forEach((key) => {
@@ -838,72 +1200,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       });
     };
   }, [showInitialCCTVClusters, showCCTV]);
-
-  // 도로 버튼 연결: 교통/돌발 아이콘 (무작위, showRoad 토글 시 표시)
-  useEffect(() => {
-    if (!mapRef.current || !showInitialCCTVClusters || !showRoad) {
-      if (mapRef.current) {
-        const old = (mapRef.current as any)._initialRoadIncidentMarkers;
-        if (old) {
-          old.forEach((m: maplibregl.Marker) => m.remove());
-          (mapRef.current as any)._initialRoadIncidentMarkers = null;
-        }
-      }
-      return;
-    }
-    const map = mapRef.current;
-    const old = (map as any)._initialRoadIncidentMarkers;
-    if (old) {
-      old.forEach((m: maplibregl.Marker) => m.remove());
-      (map as any)._initialRoadIncidentMarkers = null;
-    }
-
-    if (!initialRoadIncidentRef.current) {
-      initialRoadIncidentRef.current = getRoadIncidentMarkers();
-    }
-    const items = initialRoadIncidentRef.current;
-
-    const addRoadMarkers = () => {
-      if (!map.loaded()) {
-        setTimeout(addRoadMarkers, 100);
-        return;
-      }
-      const roadMarkers: maplibregl.Marker[] = [];
-      items.forEach((item) => {
-        const container = document.createElement('div');
-        container.style.cssText = 'display: flex; align-items: center; justify-content: center; pointer-events: auto;';
-        const iconWrapper = document.createElement('div');
-        iconWrapper.style.cssText = `
-          width: 28px; height: 28px;
-          background: #e85c2a; border-radius: 6px;
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 44;
-        `;
-        const img = document.createElement('img');
-        img.src = `https://api.iconify.design/${item.icon.replace(':', '/')}.svg?color=white`;
-        img.alt = item.icon;
-        img.style.cssText = 'width: 18px; height: 18px;';
-        iconWrapper.appendChild(img);
-        container.appendChild(iconWrapper);
-        const marker = new maplibregl.Marker({ element: container, anchor: 'center' })
-          .setLngLat([item.lng, item.lat])
-          .addTo(map);
-        if (marker.getElement()) (marker.getElement() as HTMLElement).style.zIndex = '44';
-        roadMarkers.push(marker);
-      });
-      (map as any)._initialRoadIncidentMarkers = roadMarkers;
-    };
-
-    addRoadMarkers();
-
-    return () => {
-      const current = (map as any)._initialRoadIncidentMarkers;
-      if (current) {
-        current.forEach((m: maplibregl.Marker) => m.remove());
-        (map as any)._initialRoadIncidentMarkers = null;
-      }
-    };
-  }, [showInitialCCTVClusters, showRoad]);
 
   // 초기 CCTV 마커 visibility 업데이트 (showCCTV 토글 시 - CCTV 컨트롤 버튼으로 제어)
   useEffect(() => {
@@ -2149,20 +2445,32 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         <button
           onClick={(e) => {
             e.stopPropagation();
+            if (isRoadLayerLoading) return;
+            const now = Date.now();
+            if (now - roadToggleCooldownRef.current < ROAD_TOGGLE_COOLDOWN_MS) return;
+            roadToggleCooldownRef.current = now;
             setShowRoad((prev) => !prev);
           }}
+          disabled={isRoadLayerLoading}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            showRoad
-              ? 'bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm'
-              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+            isRoadLayerLoading
+              ? 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed'
+              : showRoad
+                ? 'bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm'
+                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
           }`}
           style={{
             visibility: showFastSearchList ? 'hidden' : 'visible',
             pointerEvents: showFastSearchList ? 'none' : 'auto',
           }}
           aria-label="도로"
+          aria-busy={isRoadLayerLoading}
         >
-          <Icon icon="mdi:highway" className="w-5 h-5" />
+          {isRoadLayerLoading ? (
+            <Icon icon="mdi:loading" className="w-5 h-5 animate-spin" />
+          ) : (
+            <Icon icon="mdi:highway" className="w-5 h-5" />
+          )}
         </button>
         {/* CCTV 아이콘 토글 */}
         <button

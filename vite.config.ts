@@ -26,6 +26,24 @@ export default defineConfig({
                 secure: false,
                 rewrite: (path) => path.replace(/^\/v1/, ""),
             },
+            "/wms-proxy": {
+                target: "https://topisgeo.eseoul.go.kr:8443",
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/wms-proxy/, ""),
+            },
+            "/its-proxy": {
+                target: "https://its.go.kr:9443",
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/its-proxy/, ""),
+            },
+            "/gitsmap-proxy": {
+                target: "https://gitsmap.gg.go.kr",
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/gitsmap-proxy/, ""),
+            },
         },
     },
     css: {
