@@ -10,6 +10,13 @@ import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVDirection, generateVie
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
 import type { MapStreamData, MapStreamWmsLayer } from "@/types/streamJson.types";
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
+import proj4 from "proj4";
+
+// EPSG:5181 (한국 중부원점 TM) 좌표계 정의
+proj4.defs(
+    "EPSG:5181",
+    "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+);
 
 const PIXEL_RATIO = 2;
 const MARKER_SIZE = 28 * PIXEL_RATIO;
@@ -513,45 +520,88 @@ const MapView = ({
                 }
             });
 
-            // ========== 테스트 WMS 레이어 (서울 교통정보) ==========
-            const testWmsSourceId = "test-wms-traffic-source";
-            const testWmsLayerId = "test-wms-traffic-layer";
+            // ========== 교통정보 WMS 레이어 (경기도 교통정보센터) ==========
+            const trafficWmsSourceId = "gitsmap-traffic-source";
+            const trafficWmsLayerId = "gitsmap-traffic-layer";
 
-            if (!map.getSource(testWmsSourceId)) {
-                // WMS 타일 URL 템플릿 (Vite 프록시 경로 사용으로 CORS 우회)
-                const wmsBaseUrl = "/wms-proxy/geoserver/wms";
-                const wmsParams = new URLSearchParams({
-                    SERVICE: "WMS",
-                    VERSION: "1.1.1",
-                    REQUEST: "GetMap",
-                    FORMAT: "image/png",
-                    TRANSPARENT: "true",
-                    LAYERS: "utopis:VW_MAP_TRAFFIC2",
-                    TILED: "true",
-                    WIDTH: "256",
-                    HEIGHT: "256",
-                    SRS: "EPSG:3857",
+            if (!map.getSource(trafficWmsSourceId)) {
+                // WMS GetMap URL (Vite 프록시 경로 사용으로 CORS 우회)
+                // 원본 URL: https://gitsmap.gg.go.kr/cgi-bin/mapserv.exe?map=/ms4w/mapserver/mapfile/LV10.map&...
+                // 주의: 서버가 SRS=EPSG:5181이라고 하지만 실제로는 경위도(WGS84) 좌표를 기대함
+
+                // 커스텀 프로토콜 등록: gitsmap-wms://
+                maplibregl.addProtocol("gitsmap-wms", (params, abortController) => {
+                    // URL에서 타일 좌표 추출: gitsmap-wms://{z}/{x}/{y}
+                    const urlParts = params.url.replace("gitsmap-wms://", "").split("/");
+                    const z = parseInt(urlParts[0], 10);
+                    const x = parseInt(urlParts[1], 10);
+                    const y = parseInt(urlParts[2], 10);
+
+                    // 타일 좌표 → Web Mercator (EPSG:3857) bbox 계산
+                    const tileCount = Math.pow(2, z);
+                    const worldSize = 20037508.342789244 * 2; // Web Mercator 전체 범위
+                    const tileSize = worldSize / tileCount;
+
+                    const minX3857 = x * tileSize - 20037508.342789244;
+                    const maxX3857 = (x + 1) * tileSize - 20037508.342789244;
+                    const maxY3857 = 20037508.342789244 - y * tileSize;
+                    const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
+
+                    // EPSG:3857 → EPSG:4326 (WGS84 경위도) 변환
+                    // 서버가 SRS=EPSG:5181이라고 명시하지만 실제로는 경위도 좌표를 기대함
+                    const toWgs84 = proj4("EPSG:3857", "EPSG:4326");
+
+                    const minWgs84 = toWgs84.forward([minX3857, minY3857]);
+                    const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
+
+                    // 경위도 bbox (minLng, minLat, maxLng, maxLat)
+                    const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
+
+                    // WMS GetMap URL 생성
+                    const wmsUrl =
+                        "/gitsmap-proxy/cgi-bin/mapserv.exe?" +
+                        "map=/ms4w/mapserver/mapfile/LV10.map" +
+                        "&SERVICE=WMS" +
+                        "&VERSION=1.1.1" +
+                        "&REQUEST=GetMap" +
+                        "&LAYERS=LV10" +
+                        "&STYLES=" +
+                        "&FORMAT=PNG" +
+                        "&TRANSPARENT=true" +
+                        "&SRS=EPSG:5181" +
+                        "&WIDTH=256" +
+                        "&HEIGHT=256" +
+                        "&ISBASELAYER=false" +
+                        `&BBOX=${bboxWgs84}`;
+
+                    return fetch(wmsUrl, { signal: abortController.signal })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(`WMS request failed: ${response.status}`);
+                            }
+                            return response.arrayBuffer();
+                        })
+                        .then((data) => ({ data }));
                 });
-                const wmsTileUrl = `${wmsBaseUrl}?${wmsParams.toString()}&BBOX={bbox-epsg-3857}`;
 
-                map.addSource(testWmsSourceId, {
+                map.addSource(trafficWmsSourceId, {
                     type: "raster",
-                    tiles: [wmsTileUrl],
+                    tiles: ["gitsmap-wms://{z}/{x}/{y}"],
                     tileSize: 256,
                 });
 
                 map.addLayer({
-                    id: testWmsLayerId,
+                    id: trafficWmsLayerId,
                     type: "raster",
-                    source: testWmsSourceId,
+                    source: trafficWmsSourceId,
                     paint: {
                         "raster-opacity": 0.7,
                     },
                 });
 
-                console.log("[MapView] 테스트 WMS 레이어 추가됨:", testWmsLayerId);
+                console.log("[MapView] 교통정보 WMS 레이어 추가됨 (경위도 좌표):", trafficWmsLayerId);
             }
-            // ========== 테스트 WMS 레이어 끝 ==========
+            // ========== 교통정보 WMS 레이어 끝 ==========
         });
 
         mapRef.current = map;
@@ -586,11 +636,11 @@ const MapView = ({
         const map = mapRef.current;
         if (!map) return;
 
-        const testWmsLayerId = "test-wms-traffic-layer";
+        const trafficWmsLayerId = "gitsmap-traffic-layer";
 
         const toggleLayer = () => {
-            if (map.getLayer(testWmsLayerId)) {
-                map.setLayoutProperty(testWmsLayerId, "visibility", showTrafficLayer ? "visible" : "none");
+            if (map.getLayer(trafficWmsLayerId)) {
+                map.setLayoutProperty(trafficWmsLayerId, "visibility", showTrafficLayer ? "visible" : "none");
             }
         };
 
