@@ -623,27 +623,6 @@ export default function HomeV2() {
         setStreamMapData(data);
     }, []);
 
-    const handleSendAgentMessage = useCallback(
-        (messageText?: string) => {
-            let currentValue = messageText;
-            if (!currentValue && agentTextareaRef.current) currentValue = agentTextareaRef.current.value;
-            if (!currentValue) currentValue = agentMessage;
-            const trimmed = currentValue.trim();
-            if (!trimmed) return;
-            setAgentMessages((prev) => [...prev, { id: Date.now(), text: trimmed, role: "user" }]);
-            setAgentMessage("");
-            if (agentTextareaRef.current) agentTextareaRef.current.value = "";
-            if (!isAgentActive) {
-                setPendingPopupMessage(trimmed);
-                setIsAgentActive(true);
-                dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
-            }
-        },
-        [agentMessage, agentTextareaRef, isAgentActive]
-    );
-
-    const clearPendingPopupMessage = useCallback(() => setPendingPopupMessage(null), []);
-
     // 객체 추적 시퀀스 시작 핸들러
     const handleStartTrackingSequence = useCallback(() => {
         // 기존 이벤트 핀 숨기기 (하지만 selectedEventId는 유지하여 신고 팝업 표시)

@@ -1,13 +1,9 @@
 import { Event } from "@/types";
 import { Icon } from "@iconify/react";
 import { useMemo, useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { getCCTVIconClassName, getCCTVLabelClassName, getPrimaryButtonClassName } from "@/components/shared/styles";
-import CCTVIcon from "@/components/common/CCTVIcon";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVDirection, generateViewAnglePath, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
-import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
+import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
 import type { MapStreamData, MapStreamWmsLayer } from "@/types/streamJson.types";
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
 import { useGetIncidentList } from "@/src/apis/agent/hooks";
@@ -272,38 +268,6 @@ const MapView = ({
             localStorage.setItem("cctv-view-angles", JSON.stringify(cctvViewAngles));
         }
     }, [cctvViewAngles]);
-
-    const getCCTVDirection = (cctvId: string, defaultDirection: number): number => {
-        return defaultDirection;
-    };
-
-    const getCCTVViewAngle = (cctvId: string, defaultViewAngle: number): number => {
-        if (cctvViewAngles[cctvId] !== undefined) {
-            return cctvViewAngles[cctvId];
-        }
-        return getCCTVViewAngleUtil(cctvId, defaultViewAngle);
-    };
-
-    const setCCTVViewAngle = (cctvId: string, viewAngle: number) => {
-        setCctvViewAngles((prev) => ({
-            ...prev,
-            [cctvId]: Math.max(0, Math.min(180, viewAngle)),
-        }));
-    };
-
-    const formatCCTVCount = (count: number): string => {
-        return count > 999 ? "999+" : count.toString();
-    };
-
-    const getCCTVIconBoxStyle = (count: number, scale: number, hasMultiple: boolean, zIndex: number = 110) => {
-        return {
-            zIndex,
-            position: "relative" as const,
-            transform: `scale(${scale})`,
-            paddingLeft: hasMultiple ? "4px" : undefined,
-            paddingRight: hasMultiple ? "4px" : undefined,
-        };
-    };
 
     useEffect(() => {
         if (externalZoomLevel !== undefined) {
