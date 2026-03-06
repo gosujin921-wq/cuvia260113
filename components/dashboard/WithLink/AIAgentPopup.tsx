@@ -83,6 +83,7 @@ export interface ChatMessage {
     };
     isTyping?: boolean;
     displayedContent?: string;
+    markdownContent?: string;
     htmlContent?: string;
     stepMessage?: string;
     /** 스트림 type: 'chart' 수신 시 차트 데이터 */
@@ -414,8 +415,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
                                             ) : message.tableData ? (
                                                 <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
+                                            ) : message.markdownContent ? (
+                                                <NormalMessage message={message} type="markdown" onActionClick={onActionClick} />
                                             ) : message.htmlContent ? (
-                                                <NormalMessage message={message} onActionClick={onActionClick} />
+                                                <NormalMessage message={message} type="html" onActionClick={onActionClick} />
                                             ) : (
                                                 <>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">
@@ -733,6 +736,16 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         }, []),
         onMapDataReceived: useCallback((data: MapStreamData) => {
             onMapDataReceivedRef.current?.(data);
+        }, []),
+        onMarkdownReceived: useCallback((data: string) => {
+            const msgId = streamMessageIdRef.current;
+            if (!msgId) return;
+            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", markdownContent: data } : msg)));
+        }, []),
+        onHtmlReceived: useCallback((data: string) => {
+            const msgId = streamMessageIdRef.current;
+            if (!msgId) return;
+            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", htmlContent: data } : msg)));
         }, []),
         onComplete: useCallback((success: boolean, message: string, payload?: CompleteStreamPayload) => {
             const msgId = streamMessageIdRef.current;
