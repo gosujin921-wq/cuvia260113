@@ -23,6 +23,7 @@ proj4.defs(
   '+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
 );
 import { getInitialCCTVClusters, clusterInitialCCTVs, getRoadIncidentMarkers, type InitialCCTVItem } from '@/lib/initial-cctv-clusters';
+import { KOREA_BOUNDS } from '@/src/const/const';
 
 interface MapViewProps {
   events: Event[];
@@ -320,6 +321,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
       center: [126.989127259713, 37.425989842666], // 정부과천청사역
       zoom: 15,
+      minZoom: 9,
+      maxZoom: 22,
+      maxBounds: KOREA_BOUNDS, // 한국 범위로 이동 제한
       pitch: 45,
       bearing: 0,
       attributionControl: false,

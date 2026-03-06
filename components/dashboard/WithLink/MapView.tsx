@@ -8,6 +8,7 @@ import type { MapStreamData, MapStreamWmsLayer } from "@/types/streamJson.types"
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
 import { useGetIncidentList } from "@/src/apis/agent/hooks";
 import proj4 from "proj4";
+import { KOREA_BOUNDS } from "@/src/const/const";
 
 // EPSG:5181 (한국 중부원점 TM) 좌표계 정의
 proj4.defs(
@@ -393,12 +394,14 @@ const MapView = ({
 
     useEffect(() => {
         if (!mapContainerRef.current || mapRef.current) return;
-
         const map = new maplibregl.Map({
             container: mapContainerRef.current,
             style: "https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh",
             center: [126.8136, 37.4865], // 성운동 좌표
             zoom: 15,
+            minZoom: 9,
+            maxZoom: 22,
+            maxBounds: KOREA_BOUNDS, // 한국 범위로 이동 제한
             pitch: 45,
             bearing: 0,
             attributionControl: false,
