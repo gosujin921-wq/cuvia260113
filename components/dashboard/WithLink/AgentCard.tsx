@@ -14,7 +14,6 @@ const CARD_STYLE: React.CSSProperties = {
     background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)",
     backdropFilter: "blur(4px)",
     WebkitBackdropFilter: "blur(4px)",
-    height: "calc((100% - 12px) / 2)",
 };
 
 type ChartViewType = "line" | "pie" | "bar" | "doughnut";
@@ -91,19 +90,21 @@ const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (la
     };
 
     return (
-        <div className="flex flex-col h-full min-h-0 gap-3">
+        <div className="flex flex-col flex-1 min-h-0">
             <div className="flex-1 min-h-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                <table className="w-full text-sm border-collapse">
+                    <thead>
+                        <tr style={{ background: "rgb(40,40,48)" }}>
+                            {columns.map((col, i) => (
+                                <th key={i} className="px-3 py-2.5 text-left text-white font-semibold">
+                                    {col}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                </table>
                 <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
                     <table className="w-full text-sm border-collapse">
-                        <thead className="sticky top-0 z-10">
-                            <tr style={{ background: "rgb(40,40,48)" }}>
-                                {columns.map((col, i) => (
-                                    <th key={i} className="px-3 py-2.5 text-left text-white font-semibold">
-                                        {col}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
                         <tbody>
                             {rows.map((row, ri) => {
                                 const isClickable = data.extension?.[ri]?.type !== "text" && data.extension?.[ri]?.clickable;
@@ -117,7 +118,7 @@ const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (la
                                             return (
                                                 <td
                                                     key={cellIdx}
-                                                    className={`px-3 py-2 text-gray-300 font-medium`}
+                                                    className="px-3 py-2 text-gray-300 font-medium"
                                                     onClick={isClickable && extension ? () => handleCellClick(extension) : undefined}
                                                     role={isClickable ? "button" : undefined}
                                                     tabIndex={isClickable ? 0 : undefined}
@@ -136,7 +137,7 @@ const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (la
             </div>
             {data.meta && (
                 <div
-                    className="flex-shrink-0 rounded-lg px-3 py-2.5"
+                    className="flex-shrink-0 rounded-lg px-3 py-2.5 mt-3"
                     style={{
                         background: "rgba(40,40,48,0.6)",
                         border: "1px solid rgba(255,255,255,0.08)",
@@ -174,8 +175,8 @@ export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className 
                     </button>
                 </div>
             )}
-            <div className="flex-1 min-h-0 p-4 pt-12 overflow-auto">
-                <div className={`h-full rounded-lg w-full ${data.type === "chart" ? "overflow-hidden" : "overflow-auto"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} onMapLocationRequest={onMapLocationRequest} />}</div>
+            <div className={`flex-1 min-h-0 p-4 pt-12 ${data.type === "chart" ? "overflow-auto" : "overflow-hidden flex flex-col"}`}>
+                <div className={`rounded-lg w-full ${data.type === "chart" ? "h-full overflow-hidden" : "flex-1 min-h-0 flex flex-col"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} onMapLocationRequest={onMapLocationRequest} />}</div>
             </div>
         </div>
     );
