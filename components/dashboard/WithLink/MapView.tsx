@@ -208,6 +208,9 @@ const MapView = ({
     const [streamMarkerViewType, setStreamMarkerViewType] = useState<"individual" | "cluster" | "heatmap">("individual");
     const [showTrafficLayer, setShowTrafficLayer] = useState(false);
     const roadIncidentMarkersRef = useRef<RoadIncidentItem[] | null>(null);
+    const showTrafficLayerRef = useRef(false);
+    const trafficToggleCooldownRef = useRef(0);
+    const TRAFFIC_TOGGLE_COOLDOWN_MS = 300;
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -598,6 +601,8 @@ const MapView = ({
         const map = mapRef.current;
         if (!map) return;
 
+        showTrafficLayerRef.current = showTrafficLayer;
+
         const trafficWmsSourceId = "gitsmap-traffic-source";
         const trafficWmsLayerId = "gitsmap-traffic-layer";
         const MARKER_KEY = "_trafficIncidentMarkers";
@@ -649,6 +654,7 @@ const MapView = ({
 
         // 마커 추가 함수
         const addMarkers = () => {
+            if (!showTrafficLayerRef.current) return;
             if (!map.loaded()) {
                 setTimeout(addMarkers, 100);
                 return;
@@ -2504,6 +2510,9 @@ const MapView = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
+                                const now = Date.now();
+                                if (now - trafficToggleCooldownRef.current < TRAFFIC_TOGGLE_COOLDOWN_MS) return;
+                                trafficToggleCooldownRef.current = now;
                                 setShowTrafficLayer((prev) => !prev);
                             }}
                             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showTrafficLayer ? "bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}

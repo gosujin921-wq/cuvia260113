@@ -196,6 +196,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const hasFliedForInitialCCTVRef = useRef(false);
   const initialCctvClustersRef = useRef<InitialCCTVItem[] | null>(null);
   const initialRoadIncidentRef = useRef<ReturnType<typeof getRoadIncidentMarkers> | null>(null);
+  const showRoadLayerRef = useRef(false);
+  const roadToggleCooldownRef = useRef(0);
+  const ROAD_TOGGLE_COOLDOWN_MS = 300;
 
   useEffect(() => {
     if (zoomLevel > 0 && prevZoomLevelRef.current === 0 && showCCTV && showCCTVViewAngle) {
@@ -482,6 +485,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     const map = mapRef.current;
     if (!map) return;
 
+    showRoadLayerRef.current = showRoad;
+
     const trafficWmsSourceId = 'gitsmap-traffic-source';
     const trafficWmsLayerId = 'gitsmap-traffic-layer';
     const MARKER_KEY = '_trafficIncidentMarkers';
@@ -527,6 +532,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     };
 
     const addMarkers = () => {
+      if (!showRoadLayerRef.current) return;
       if (!map.loaded()) {
         setTimeout(addMarkers, 100);
         return;
@@ -2187,6 +2193,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         <button
           onClick={(e) => {
             e.stopPropagation();
+            const now = Date.now();
+            if (now - roadToggleCooldownRef.current < ROAD_TOGGLE_COOLDOWN_MS) return;
+            roadToggleCooldownRef.current = now;
             setShowRoad((prev) => !prev);
           }}
           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
