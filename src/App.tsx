@@ -12,7 +12,7 @@ import CuviaLinkPage from "./pages/cuvia-link";
 function App() {
     return (
         <Routes>
-            <Route path="/" element={<Navigate to="/v2" replace />} />
+            <Route path="/" element={<Navigate to="/tutorial" replace />} />
             <Route path="/live" element={<Home />} />
             <Route path="/tutorial" element={<HomeV2 />} />
             <Route path="/v3" element={<HomeV3 />} />
