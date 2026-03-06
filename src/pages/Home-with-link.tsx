@@ -284,15 +284,7 @@ export default function HomeV2() {
     const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
     const [streamMapData, setStreamMapData] = useState<MapStreamData | null>(null); // 스트림에서 받은 맵 데이터
     const [captureDetailCloseCount, setCaptureDetailCloseCount] = useState<number>(0); // 포착 디테일 팝업 닫기 횟수
-    const [agentMessage, setAgentMessage] = useState<string>("");
-    const [pendingPopupMessage, setPendingPopupMessage] = useState<string | null>(null);
-    const [agentMessages, setAgentMessages] = useState<Array<{ id: number; text: string; role: "agent" | "user" }>>([]);
-    const [isAgentInputExpanded, setIsAgentInputExpanded] = useState(false);
     const [isAgentActive, setIsAgentActive] = useState(false);
-    const agentMessagesEndRef = useRef<HTMLDivElement | null>(null);
-    const agentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
-    const agentIsComposingRef = useRef(false);
-    const agentPendingEnterRef = useRef(false);
 
     // Refs
     const previousListCardCountRef = useRef<number>(0);
@@ -812,6 +804,7 @@ export default function HomeV2() {
                         onMapStateChange={setLastMapState}
                         streamMapData={streamMapData}
                         keepControlPosition
+                        isAgentActive={isAgentActive}
                     />
                 )}
             </div>

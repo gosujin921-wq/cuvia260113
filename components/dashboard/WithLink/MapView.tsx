@@ -155,6 +155,7 @@ interface MapViewProps {
     onMapStateChange?: (state: { center: [number, number]; zoom: number; pitch: number; bearing: number }) => void; // 지도 상태 변경 콜백
     streamMapData?: MapStreamData | null; // 스트림에서 받은 맵 데이터
     keepControlPosition?: boolean;
+    isAgentActive?: boolean;
 }
 
 const MapView = ({
@@ -182,6 +183,7 @@ const MapView = ({
     onMapStateChange,
     streamMapData,
     keepControlPosition = false,
+    isAgentActive = false,
 }: MapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(0);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
@@ -2486,6 +2488,12 @@ const MapView = ({
         return { fireStations: nearbyFire, policeStations: nearbyPolice };
     }, [selectedEventId, events, fireStations, policeStations, positionsById]);
 
+    useEffect(() => {
+        if (isAgentActive) {
+            setShowTrafficLayer(false);
+        }
+    }, [isAgentActive]);
+
     return (
         <>
             <style>{`
@@ -2653,33 +2661,35 @@ const MapView = ({
                             <Icon icon="mdi:rotate-right" className="w-5 h-5" />
                         </button>
                         <div className="w-full h-px bg-gray-300 my-1" />
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (isTrafficLayerLoading) return;
-                                const now = Date.now();
-                                if (now - trafficToggleCooldownRef.current < TRAFFIC_TOGGLE_COOLDOWN_MS) return;
-                                trafficToggleCooldownRef.current = now;
-                                setShowTrafficLayer((prev) => !prev);
-                            }}
-                            disabled={isTrafficLayerLoading}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                                isTrafficLayerLoading
-                                    ? "bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed"
-                                    : showTrafficLayer
-                                        ? "bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm"
-                                        : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                            }`}
-                            aria-label="실시간 교통정보"
-                            aria-pressed={showTrafficLayer}
-                            aria-busy={isTrafficLayerLoading}
-                            tabIndex={0}>
-                            {isTrafficLayerLoading ? (
-                                <Icon icon="mdi:loading" className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <Icon icon="mdi:highway" className="w-5 h-5" />
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isAgentActive) return;
+                                    if (isTrafficLayerLoading) return;
+                                    const now = Date.now();
+                                    if (now - trafficToggleCooldownRef.current < TRAFFIC_TOGGLE_COOLDOWN_MS) return;
+                                    trafficToggleCooldownRef.current = now;
+                                    setShowTrafficLayer((prev) => !prev);
+                                }}
+                                disabled={isTrafficLayerLoading || isAgentActive}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                                    isTrafficLayerLoading || isAgentActive ? "bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60" : showTrafficLayer ? "bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                                }`}
+                                aria-label="실시간 교통정보"
+                                aria-pressed={showTrafficLayer}
+                                aria-busy={isTrafficLayerLoading}
+                                tabIndex={0}>
+                                {isTrafficLayerLoading ? <Icon icon="mdi:loading" className="w-5 h-5 animate-spin" /> : <Icon icon="mdi:highway" className="w-5 h-5" />}
+                            </button>
+                            {isAgentActive && (
+                                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                    <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                        에이전트 활성화 중이므로 사용할 수 없습니다.
+                                    </div>
+                                </div>
                             )}
-                        </button>
+                        </div>
                         {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
                         {streamMapData?.markers && streamMapData.markers.length > 0 && (
                             <>
