@@ -208,7 +208,7 @@ const MapView = ({
     const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
     const [showCCTVName, setShowCCTVName] = useState(true);
     const [is3DMode, setIs3DMode] = useState(true);
-    const [mapBearing, setMapBearing] = useState(-17.6);
+    const [mapBearing, setMapBearing] = useState(INITIAL_MAP_BEARING);
     const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1920);
     const [streamMarkerViewType, setStreamMarkerViewType] = useState<"individual" | "cluster" | "heatmap">("individual");
     const [showTrafficLayer, setShowTrafficLayer] = useState(false);
@@ -559,6 +559,8 @@ const MapView = ({
         };
 
         map.on("moveend", updateMapState);
+        const syncBearing = () => setMapBearing(map.getBearing());
+        map.on("moveend", syncBearing);
 
         const handleMoveStart = () => onMapMovingChange?.(true);
         const handleMoveEnd = () => onMapMovingChange?.(false);
@@ -567,6 +569,7 @@ const MapView = ({
 
         return () => {
             map.off("moveend", updateMapState);
+            map.off("moveend", syncBearing);
             map.off("movestart", handleMoveStart);
             map.off("moveend", handleMoveEnd);
             map.remove();
@@ -2526,10 +2529,10 @@ const MapView = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (mapRef.current) {
-                                    mapRef.current.zoomIn({ duration: 300 });
-                                }
-                                setZoomLevel((prev) => Math.min(prev + 1, 1));
+                                if (!mapRef.current) return;
+                                const map = mapRef.current;
+                                const nextZoom = Math.min(map.getZoom() + 1, map.getMaxZoom());
+                                map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
                             }}
                             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                             aria-label="확대">
@@ -2538,10 +2541,10 @@ const MapView = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (mapRef.current) {
-                                    mapRef.current.zoomOut({ duration: 300 });
-                                }
-                                setZoomLevel((prev) => Math.max(prev - 1, 0));
+                                if (!mapRef.current) return;
+                                const map = mapRef.current;
+                                const nextZoom = Math.max(map.getZoom() - 1, map.getMinZoom());
+                                map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
                             }}
                             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                             aria-label="축소">
@@ -2582,14 +2585,17 @@ const MapView = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const newBearing = mapBearing - 15;
+                                const map = mapRef.current;
+                                if (!map) return;
+                                const currentBearing = map.getBearing();
+                                const newBearing = currentBearing - 15;
                                 setMapBearing(newBearing);
-                                if (mapRef.current) {
-                                    mapRef.current.easeTo({
-                                        bearing: newBearing,
-                                        duration: 300,
-                                    });
-                                }
+                                map.easeTo({
+                                    bearing: newBearing,
+                                    duration: 500,
+                                    easing: (t) => 1 - Math.pow(1 - t, 3),
+                                    essential: true,
+                                });
                             }}
                             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                             aria-label="회전 왼쪽">
@@ -2598,14 +2604,17 @@ const MapView = ({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const newBearing = mapBearing + 15;
+                                const map = mapRef.current;
+                                if (!map) return;
+                                const currentBearing = map.getBearing();
+                                const newBearing = currentBearing + 15;
                                 setMapBearing(newBearing);
-                                if (mapRef.current) {
-                                    mapRef.current.easeTo({
-                                        bearing: newBearing,
-                                        duration: 300,
-                                    });
-                                }
+                                map.easeTo({
+                                    bearing: newBearing,
+                                    duration: 500,
+                                    easing: (t) => 1 - Math.pow(1 - t, 3),
+                                    essential: true,
+                                });
                             }}
                             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
                             aria-label="회전 오른쪽">
