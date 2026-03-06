@@ -185,6 +185,19 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const prevZoomLevelRef = useRef(zoomLevel);
   const animationFrameRef = useRef<number | null>(null);
   const hasFliedForInitialCCTVRef = useRef(false);
+  const [isMapAnimating, setIsMapAnimating] = useState(false);
+
+  const animatedFlyTo = (map: maplibregl.Map, options: maplibregl.FlyToOptions) => {
+    setIsMapAnimating(true);
+    map.once('moveend', () => setIsMapAnimating(false));
+    map.flyTo(options);
+  };
+
+  const animatedEaseTo = (map: maplibregl.Map, options: maplibregl.EaseToOptions) => {
+    setIsMapAnimating(true);
+    map.once('moveend', () => setIsMapAnimating(false));
+    map.easeTo(options);
+  };
   const initialCctvClustersRef = useRef<InitialCCTVItem[] | null>(null);
   const initialRoadIncidentRef = useRef<ReturnType<typeof getRoadIncidentMarkers> | null>(null);
 
@@ -439,13 +452,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         oldEventMarker.remove();
       }
       
-      // 지도 이동
       if (map.loaded()) {
-        map.flyTo({
+        animatedFlyTo(map, {
           center: flyToLocation as [number, number],
           zoom: 17,
           pitch: 60,
-          bearing: -17.6 + 165, // 11번 회전 (15도 × 11 = 165도)
+          bearing: -17.6 + 165,
           duration: 1500,
           essential: true
         });
@@ -602,10 +614,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         oldEventMarker.remove();
       }
       
-      // 초기 위치로 복귀
       if (map.loaded()) {
-        map.flyTo({
-          center: [126.989127259713, 37.425989842666], // 정부과천청사역
+        animatedFlyTo(map, {
+          center: [126.989127259713, 37.425989842666],
           zoom: 15,
           pitch: 45,
           bearing: 0,
@@ -750,7 +761,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }
       if (!hasFliedForInitialCCTVRef.current) {
         hasFliedForInitialCCTVRef.current = true;
-        map.flyTo({
+        animatedFlyTo(map, {
           center: [126.99656, 37.43527],
           zoom: 15,
           pitch: 45,
@@ -949,8 +960,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const metersPerPixel = 156543.03392 * Math.cos(currentCenter.lat * Math.PI / 180) / Math.pow(2, currentZoom);
       const lngOffset = (pixelOffset * metersPerPixel) / 111320; // 경도 1도 = 약 111.32km
       
-      // 우측으로 이동 (경도 증가)
-      map.easeTo({
+      animatedEaseTo(map, {
         center: [currentCenter.lng + lngOffset, currentCenter.lat],
         duration: 800,
         essential: true
@@ -2290,6 +2300,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
           className="absolute inset-0 bg-black/5 pointer-events-none" 
           style={{ zIndex: 2 }}
         ></div>
+        {isMapAnimating && (
+          <div
+            className="absolute inset-0"
+            style={{ zIndex: 9999 }}
+            aria-hidden="true"
+          />
+        )}
         
         {/* 화각 펼쳐지는 애니메이션 스타일 */}
         <style>{`
