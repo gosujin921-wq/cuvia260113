@@ -63,26 +63,17 @@ export interface TableStreamPayload {
 }
 
 // ========== htmlType.json ==========
-export interface HtmlStreamData {
-    type: "html";
-    data: string;
-}
-
 export interface HtmlStreamPayload {
     type: "html";
-    data: HtmlStreamData;
+    content: string;
 }
 
 // ========== markdownType.json ==========
-export interface MarkdownStreamData {
-    type: "markdown";
-    data: string;
-}
-
 export interface MarkdownStreamPayload {
     type: "markdown";
-    data: MarkdownStreamData;
+    content: string;
 }
+
 // ========== mapType.json ==========
 export interface MapStreamFilters {
     event_name?: string;
@@ -185,9 +176,9 @@ export const isChartStreamPayload = (payload: unknown): payload is ChartStreamPa
 
 export const isTableStreamPayload = (payload: unknown): payload is TableStreamPayload => typeof payload === "object" && payload !== null && (payload as TableStreamPayload).type === "table" && typeof (payload as TableStreamPayload).data === "object";
 
-export const isHtmlStreamPayload = (payload: unknown): payload is HtmlStreamPayload => typeof payload === "object" && payload !== null && (payload as HtmlStreamPayload).type === "html" && typeof (payload as HtmlStreamPayload).data === "string";
+export const isHtmlStreamPayload = (payload: unknown): payload is HtmlStreamPayload => typeof payload === "object" && payload !== null && (payload as HtmlStreamPayload).type === "html" && typeof (payload as HtmlStreamPayload).content === "string";
 
-export const isMarkdownStreamPayload = (payload: unknown): payload is MarkdownStreamPayload => typeof payload === "object" && payload !== null && (payload as MarkdownStreamPayload).type === "markdown" && typeof (payload as MarkdownStreamPayload).data === "string";
+export const isMarkdownStreamPayload = (payload: unknown): payload is MarkdownStreamPayload => typeof payload === "object" && payload !== null && (payload as MarkdownStreamPayload).type === "markdown" && typeof (payload as MarkdownStreamPayload).content === "string";
 
 export const isMapStreamPayload = (payload: unknown): payload is MapStreamPayload => typeof payload === "object" && payload !== null && (payload as MapStreamPayload).type === "map" && typeof (payload as MapStreamPayload).data === "object";
 

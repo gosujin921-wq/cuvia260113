@@ -614,8 +614,9 @@ export default function HomeV2() {
     }, []);
 
     // 스트림 맵 데이터 수신 핸들러
-    const handleMapDataReceived = useCallback((data: MapStreamData) => {
+    const handleMapDataReceived = useCallback((data: MapStreamData | null) => {
         setStreamMapData(data);
+        setFlyToLocation(null);
     }, []);
 
     // 객체 추적 시퀀스 시작 핸들러
@@ -969,6 +970,7 @@ export default function HomeV2() {
                     dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
                     setStreamMapData(null);
                     setIsAgentActive(false);
+                    setFlyToLocation(null);
                 }}
                 onOpenRequest={() => {
                     if (!uiState.showAIAgentPopup) dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });

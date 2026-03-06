@@ -3,19 +3,25 @@ import { ChatMessage } from "./AIAgentPopup";
 
 interface NormalMessageProps {
     message: ChatMessage;
+    type?: "html" | "markdown";
     onActionClick: (prompt: string) => void;
 }
 
-export function NormalMessage({ message, onActionClick }: NormalMessageProps) {
+export function NormalMessage({ message, type = "html", onActionClick }: NormalMessageProps) {
     const handleClickAction = (action: unknown) => {
         const actionData = action as { label: string; action: string; payload: { query: string } };
         onActionClick(actionData.payload.query);
     };
     return (
         <>
-            {message.htmlContent && (
+            {type === "markdown" && message.markdownContent && (
                 <div className="text-sm leading-relaxed text-gray-200 mb-3">
-                    <Markdown>{message.htmlContent}</Markdown>
+                    <Markdown>{message.markdownContent}</Markdown>
+                </div>
+            )}
+            {type === "html" && message.htmlContent && (
+                <div className="text-sm leading-relaxed text-gray-200 mb-3">
+                    <div dangerouslySetInnerHTML={{ __html: message.htmlContent }} />
                 </div>
             )}
             {message.actions && (

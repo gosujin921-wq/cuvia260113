@@ -146,7 +146,6 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
 
                         try {
                             const payload = JSON.parse(jsonStr);
-
                             if (isStepStreamPayload(payload)) {
                                 const { step, message } = payload.data;
                                 setState((prev) => ({
@@ -185,11 +184,11 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
                                 setState((prev) => ({ ...prev, disclaimer: payload.data }));
                                 options.onDisclaimerReceived?.(payload.data);
                             } else if (isHtmlStreamPayload(payload)) {
-                                setState((prev) => ({ ...prev, htmlContent: payload.data }));
-                                options.onHtmlReceived?.(payload.data);
+                                setState((prev) => ({ ...prev, htmlContent: payload.content }));
+                                options.onHtmlReceived?.(payload.content);
                             } else if (isMarkdownStreamPayload(payload)) {
-                                setState((prev) => ({ ...prev, markdownContent: payload.data }));
-                                options.onMarkdownReceived?.(payload.data);
+                                setState((prev) => ({ ...prev, markdownContent: payload.content }));
+                                options.onMarkdownReceived?.(payload.content);
                             } else if (isCompleteStreamPayload(payload)) {
                                 setState((prev) => ({
                                     ...prev,

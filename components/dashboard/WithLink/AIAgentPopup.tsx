@@ -45,7 +45,7 @@ interface AIAgentPopupProps {
     /** "사건 영상 바로 보기" 버튼 클릭 시 호출 - 고속검색 팝업 표시 */
     onVideoView?: () => void;
     /** 스트림에서 map 타입 데이터 수신 시 호출 */
-    onMapDataReceived?: (data: MapStreamData) => void;
+    onMapDataReceived?: (data: MapStreamData | null) => void;
     /** 첫 전송 시 팝업 열기 요청 */
     onOpenRequest?: () => void;
     /** 첫 검색용 하단 바 위치/스타일 */
@@ -83,6 +83,7 @@ export interface ChatMessage {
     };
     isTyping?: boolean;
     displayedContent?: string;
+    markdownContent?: string;
     htmlContent?: string;
     stepMessage?: string;
     /** 스트림 type: 'chart' 수신 시 차트 데이터 */
@@ -414,8 +415,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
                                             ) : message.tableData ? (
                                                 <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
+                                            ) : message.markdownContent ? (
+                                                <NormalMessage message={message} type="markdown" onActionClick={onActionClick} />
                                             ) : message.htmlContent ? (
-                                                <NormalMessage message={message} onActionClick={onActionClick} />
+                                                <NormalMessage message={message} type="html" onActionClick={onActionClick} />
                                             ) : (
                                                 <>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">
@@ -734,6 +737,16 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         onMapDataReceived: useCallback((data: MapStreamData) => {
             onMapDataReceivedRef.current?.(data);
         }, []),
+        onMarkdownReceived: useCallback((data: string) => {
+            const msgId = streamMessageIdRef.current;
+            if (!msgId) return;
+            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", markdownContent: data } : msg)));
+        }, []),
+        onHtmlReceived: useCallback((data: string) => {
+            const msgId = streamMessageIdRef.current;
+            if (!msgId) return;
+            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", htmlContent: data } : msg)));
+        }, []),
         onComplete: useCallback((success: boolean, message: string, payload?: CompleteStreamPayload) => {
             const msgId = streamMessageIdRef.current;
             if (!msgId) return;
@@ -764,6 +777,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             );
             if (!payload?.data?.chart_data && !payload?.data?.chart) setLastChartData(null);
             if (!table || (tableCount && tableCount <= 5)) setLastTableData(null);
+            if (!payload?.data?.map_data) onMapDataReceivedRef.current?.(null);
             setIsResponding(false);
             streamMessageIdRef.current = null;
         }, []),
