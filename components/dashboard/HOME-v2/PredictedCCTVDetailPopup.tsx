@@ -256,9 +256,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     setTimeout(() => setFlyingThumbnail(null), 600);
     setTimeout(() => {
       setIsCaptureAnimating(false);
-      if (!autoCapture) {
-        onClose();
-      }
+      onClose();
     }, 1000);
   };
 
@@ -276,7 +274,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
 
     const timer = setTimeout(() => {
       handleCaptureTargetRef.current();
-    }, 1500);
+    }, 300);
     return () => clearTimeout(timer);
   }, [autoCapture, isOpen, cctv]);
 

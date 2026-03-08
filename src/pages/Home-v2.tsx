@@ -305,6 +305,8 @@ export default function HomeV2() {
   const [closePopupSignal, setClosePopupSignal] = useState(0);
   const [showPropagationPackagePopup, setShowPropagationPackagePopup] = useState(false);
   const [openReportPopupSignal, setOpenReportPopupSignal] = useState(0);
+  const [candidateAutoCapture, setCandidateAutoCapture] = useState(false);
+  const [cctvAutoCapture, setCCTVAutoCapture] = useState(false);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
   const [showReSearchSkeleton, setShowReSearchSkeleton] = useState<boolean>(false); // 재검색 스켈레톤 표시 여부
@@ -523,48 +525,6 @@ export default function HomeV2() {
 
   // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
   const fastSearchFocusXPercent = uiState.showFastSearchList ? 52 : 50;
-
-  // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
-  const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
-    dispatch({ type: 'SET_MENU', payload: menuId });
-
-    if (showMouseGuide) {
-      if (menuId === 'fast-search') {
-        jumpToStep('searching');
-      } else if (menuId === 'capture-list') {
-        jumpToStep('capture-list-review');
-      }
-    }
-
-    if (menuId === 'net-monitoring') {
-      dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
-    } else if (menuId === 'fast-search') {
-      // 예측 CCTV 리스트 패널 닫기
-      setShowPredictedCCTVList(false);
-      setObjectTrackingCompleted(false);
-      setVisibleTrackingPins(0);
-      // 고속검색 시작 시 신고 팝업을 위한 이벤트 선택
-      const missingEvent = allConvertedEvents.find(event =>
-        event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
-      );
-      if (missingEvent) {
-        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
-        // 이벤트 핀을 지도에 표시하기 위해 visibleEventIds에 추가
-        setVisibleEventIds(new Set([missingEvent.id]));
-        // 이벤트 위치로 지도 이동
-        setFlyToLocation([126.99656, 37.43527]);
-      }
-      dispatch({ type: 'START_FAST_SEARCH' });
-    } else if (menuId === 'object-tracking') {
-      // 객체 추적 메뉴 선택 시 - 에이전트 팝업과 동일한 로직
-      // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
-      dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
-    } else if (menuId === 'capture-list') {
-      dispatch({ type: 'SHOW_CAPTURE_LIST' });
-    } else if (menuId === 'propagation') {
-      dispatch({ type: 'SHOW_PROPAGATION_LIST' });
-    }
-  }, [allConvertedEvents, showMouseGuide, jumpToStep]);
 
   // 포착 아이템 추가 핸들러
   const handleAddCaptureItem = useCallback((
@@ -795,6 +755,8 @@ export default function HomeV2() {
 
   // 가이드 스텝 네비게이션: 이전/다음 버튼으로 앱 상태까지 전환
   const handleGuideNavigate = useCallback((targetStepId: string) => {
+    setCandidateAutoCapture(false);
+    setCCTVAutoCapture(false);
     // 전파 패키지 팝업: propagation step에서만 열고 나머지는 항상 닫기
     setShowPropagationPackagePopup(targetStepId === 'propagation');
 
@@ -855,8 +817,14 @@ export default function HomeV2() {
       setObjectTrackingCompleted(true);
     } else if (PHASE_CAPTURE.includes(targetStepId)) {
       dispatch({ type: 'SHOW_CAPTURE_LIST' });
+      setShowPredictedCCTVList(false);
+      setVisibleTrackingPins(0);
+      setFlyToLocation(null);
     } else if (PHASE_PROPAGATION.includes(targetStepId)) {
       dispatch({ type: 'SHOW_PROPAGATION_LIST' });
+      setShowPredictedCCTVList(false);
+      setVisibleTrackingPins(0);
+      setFlyToLocation(null);
       if (targetStepId === 'report-result') {
         setOpenReportPopupSignal(prev => prev + 1);
       }
@@ -873,9 +841,59 @@ export default function HomeV2() {
 
   const handleGuideNext = useCallback(() => {
     if (currentStepIndex >= totalSteps - 1) return;
+    if (currentStepId === 'candidate-detail') {
+      setCandidateAutoCapture(true);
+      return;
+    }
+    if (currentStepId === 'predicted-cctv-detail') {
+      setCCTVAutoCapture(true);
+      return;
+    }
     const nextId = getStepId(currentStepIndex + 1);
     if (nextId) handleGuideNavigate(nextId);
-  }, [currentStepIndex, totalSteps, getStepId, handleGuideNavigate]);
+  }, [currentStepIndex, totalSteps, currentStepId, getStepId, handleGuideNavigate]);
+
+  // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
+  const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
+    if (showMouseGuide) {
+      const menuToStep: Record<string, string> = {
+        'fast-search': 'searching',
+        'object-tracking': 'route-analysis',
+        'capture-list': 'capture-list-review',
+        'propagation': 'report-download',
+      };
+      const targetStep = menuToStep[menuId];
+      if (targetStep) {
+        handleGuideNavigate(targetStep);
+        return;
+      }
+    }
+
+    dispatch({ type: 'SET_MENU', payload: menuId });
+
+    if (menuId === 'net-monitoring') {
+      dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
+    } else if (menuId === 'fast-search') {
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      setVisibleTrackingPins(0);
+      const missingEvent = allConvertedEvents.find(event =>
+        event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+      );
+      if (missingEvent) {
+        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+        setVisibleEventIds(new Set([missingEvent.id]));
+        setFlyToLocation([126.99656, 37.43527]);
+      }
+      dispatch({ type: 'START_FAST_SEARCH' });
+    } else if (menuId === 'object-tracking') {
+      dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+    } else if (menuId === 'capture-list') {
+      dispatch({ type: 'SHOW_CAPTURE_LIST' });
+    } else if (menuId === 'propagation') {
+      dispatch({ type: 'SHOW_PROPAGATION_LIST' });
+    }
+  }, [allConvertedEvents, showMouseGuide, handleGuideNavigate]);
 
   /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
   useEffect(() => {
@@ -1130,7 +1148,7 @@ export default function HomeV2() {
           }
         }}
         closePopupSignal={closePopupSignal}
-        autoCapture={currentStepId === 'candidate-detail' && captureItems.length === 0}
+        autoCapture={candidateAutoCapture}
         onPopupClose={() => {
           if (showMouseGuide && currentStepId === 'candidate-detail') {
             jumpToStep('capture-complete');
@@ -1161,7 +1179,7 @@ export default function HomeV2() {
         openCCTVId={openCCTVId}
         onCCTVOpened={() => setOpenCCTVId(null)}
         closeCCTVPopupSignal={closeCCTVPopupSignal}
-        autoCapture={currentStepId === 'predicted-cctv-detail' && captureItems.length <= 1}
+        autoCapture={cctvAutoCapture}
       />
 
       {/* CaptureListPanel - 포착 목록 */}

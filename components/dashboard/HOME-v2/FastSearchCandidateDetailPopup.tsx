@@ -499,9 +499,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     setTimeout(() => setFlyingThumbnail(null), 600);
     setTimeout(() => {
       setIsCaptureAnimating(false);
-      if (!autoCapture) {
-        onClose();
-      }
+      onClose();
     }, 700);
   };
 
@@ -519,7 +517,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
 
     const timer = setTimeout(() => {
       handleCaptureTargetRef.current();
-    }, 1500);
+    }, 300);
     return () => clearTimeout(timer);
   }, [autoCapture, isOpen, candidate]);
 
