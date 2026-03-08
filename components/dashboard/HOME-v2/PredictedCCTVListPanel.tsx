@@ -10,6 +10,10 @@ interface PredictedCCTVListPanelProps {
   onCCTVHover?: (cctvId: string | null) => void;
   /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
   onRadiusChange?: (radius: number) => void;
+  /** CCTV 카드 선택(상세 팝업 오픈) 시 호출 */
+  onCCTVSelect?: () => void;
+  /** CCTV 상세 팝업 닫힘 시 호출 */
+  onCCTVDetailClose?: () => void;
 }
 
 export interface PredictedCCTVItem {
@@ -169,6 +173,8 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   hoveredCCTVId: externalHoveredCCTVId,
   onCCTVHover,
   onRadiusChange,
+  onCCTVSelect,
+  onCCTVDetailClose,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
@@ -392,7 +398,10 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                   <div
                     key={item.id}
                     id={item.id === '4' ? 'predicted-cctv-7' : undefined}
-                    onClick={() => setSelectedCCTV(item)}
+                    onClick={() => {
+                      setSelectedCCTV(item);
+                      onCCTVSelect?.();
+                    }}
                     onMouseEnter={() => onCCTVHover?.(item.id)}
                     onMouseLeave={() => onCCTVHover?.(null)}
                     className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group ${
@@ -431,7 +440,10 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
       {/* CCTV 상세 팝업 */}
       <PredictedCCTVDetailPopup
         isOpen={selectedCCTV !== null}
-        onClose={() => setSelectedCCTV(null)}
+        onClose={() => {
+          setSelectedCCTV(null);
+          onCCTVDetailClose?.();
+        }}
         cctv={selectedCCTV}
         onAddCapture={onAddCapture}
       />

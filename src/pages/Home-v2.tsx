@@ -18,7 +18,8 @@ import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
 import { useMouseGuide } from '@/src/pages/useMouseGuide';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
-import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
+import { parseExcludedAttributesFromMessage, parseIncludedAttributesFromMessage, parseShowOnlyAttributesFromMessage, getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
+import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
 
 // UI 상태 관리를 위한 reducer
 type UIState = {
@@ -323,10 +324,15 @@ export default function HomeV2() {
     guideTarget,
     guideMessage,
     guideType,
+    currentStepIndex,
+    currentStepId,
     jumpToStep,
+    goToPrevStep,
+    goToNextStep,
     resetGuide,
     toggleGuide,
     syncToAppState,
+    totalSteps,
   } = useMouseGuide();
   const [captureDetailCloseCount, setCaptureDetailCloseCount] = useState<number>(0); // 포착 디테일 팝업 닫기 횟수
   
@@ -519,11 +525,9 @@ export default function HomeV2() {
 
     if (showMouseGuide) {
       if (menuId === 'fast-search') {
-        jumpToStep('radius-chip');
-      } else if (menuId === 'object-tracking') {
-        jumpToStep('object-tracking-confirm');
+        jumpToStep('searching');
       } else if (menuId === 'capture-list') {
-        jumpToStep('capture-item-0');
+        jumpToStep('capture-list-review');
       }
     }
 
@@ -633,7 +637,13 @@ export default function HomeV2() {
     setTimeout(() => {
       setShowCaptureNotification(false);
     }, overlayDuration);
-  }, []);
+
+    if (showMouseGuide && optionsParam?.hideOverlayWithPopup) {
+      setTimeout(() => {
+        jumpToStep('capture-complete');
+      }, 500);
+    }
+  }, [showMouseGuide, jumpToStep]);
 
   // 이벤트 액션 핸들러 (useCallback으로 메모이제이션)
   const handleEventAction = useCallback((eventId: string) => {
@@ -698,8 +708,7 @@ export default function HomeV2() {
   // - 결과재검색 버튼: 객체 추적 메뉴 가이드
   useEffect(() => {
     if (!showMouseGuide || !reSearchResult || uiState.showReSearchProgress) return;
-    const isResultReSearchButton = reSearchResult.excludedAttributes.some((a) => a.includes('대표 후보'));
-    jumpToStep(isResultReSearchButton ? 'object-tracking-menu' : 'fast-search-candidate-10');
+    jumpToStep('review-candidates');
   }, [showMouseGuide, reSearchResult, uiState.showReSearchProgress, jumpToStep]);
 
   // 객체 추적 애니메이션 완료 핸들러
@@ -708,40 +717,26 @@ export default function HomeV2() {
     setObjectTrackingCompleted(true);
 
     if (showMouseGuide) {
-      jumpToStep('predicted-cctv-7');
+      jumpToStep('predicted-cctv');
     }
   }, [showMouseGuide, jumpToStep]);
 
-  // syncToAppState: 타겟 요소가 없을 때 앱 상태에 맞춰 가이드 단계 동기화
+  // syncToAppState: 앱 상태에 맞춰 가이드 마일스톤 동기화
   useEffect(() => {
-    const inputEl = document.getElementById('agent-chat-input') as HTMLTextAreaElement | null;
-    const agentChatHasUsan = !!inputEl?.value?.includes('우산');
-
     syncToAppState({
       fastSearchStarted: uiState.showFastSearchList,
       fastSearchProgressDone: !uiState.showFastSearchProgress,
       reSearchInProgress: uiState.showReSearchProgress,
-      radiusConfirmed: false,
-      agentChatHasUsan,
-      agentChatSent: false,
-      reSearchResult: !!reSearchResult,
-      reSearchExcludedAttributes: reSearchResult?.excludedAttributes ?? [],
-      reSearchProgressDone: !uiState.showReSearchProgress,
-      objectTrackingStarted: uiState.showObjectTracking,
       objectTrackingCompleted,
       showPredictedCCTVList,
       showCaptureList: uiState.showCaptureList,
-      showPropagationList: uiState.showPropagationList,
     });
   }, [
     syncToAppState,
     uiState.showFastSearchList,
     uiState.showFastSearchProgress,
     uiState.showReSearchProgress,
-    uiState.showObjectTracking,
     uiState.showCaptureList,
-    uiState.showPropagationList,
-    reSearchResult,
     objectTrackingCompleted,
     showPredictedCCTVList,
   ]);
@@ -835,7 +830,7 @@ export default function HomeV2() {
       setFlyToLocation([126.99656, 37.43527]);
       
       if (showMouseGuide) {
-        jumpToStep('fast-search-start', 500);
+        jumpToStep('intro', 500);
       }
     }
   }, [allConvertedEvents, showMouseGuide, jumpToStep]);
@@ -861,7 +856,7 @@ export default function HomeV2() {
       setFlyToLocation([126.99656, 37.43527]);
       
       if (showMouseGuide) {
-        jumpToStep('fast-search-start', 500);
+        jumpToStep('intro', 500);
       }
     } else if (e.key === '2') {
       setShowPredictedCCTVList(true);
@@ -1040,6 +1035,11 @@ export default function HomeV2() {
         showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress || showReSearchSkeleton}
         onAddCapture={handleAddCaptureItem}
         scrollToBottomTrigger={guideTarget}
+        onCandidateSelect={() => {
+          if (showMouseGuide) {
+            jumpToStep('candidate-detail');
+          }
+        }}
       />
 
       {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}
@@ -1052,6 +1052,16 @@ export default function HomeV2() {
           setShowCCTVLabel(false); // 썸네일 호버 시 라벨 표시 안함
         }}
         onRadiusChange={setCaptureListRadius}
+        onCCTVSelect={() => {
+          if (showMouseGuide) {
+            jumpToStep('predicted-cctv-detail');
+          }
+        }}
+        onCCTVDetailClose={() => {
+          if (showMouseGuide) {
+            jumpToStep('capture-list-guide');
+          }
+        }}
       />
 
       {/* CaptureListPanel - 포착 목록 */}
@@ -1093,6 +1103,9 @@ export default function HomeV2() {
           dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' });
           dispatch({ type: 'START_OBJECT_TRACKING' });
           handleStartTrackingSequence();
+          if (showMouseGuide) {
+            jumpToStep('route-analysis');
+          }
         }}
         onCancel={() => dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' })}
       />
@@ -1120,6 +1133,44 @@ export default function HomeV2() {
               
               return parsed;
             }}
+            onShowOnlyRequest={({ rawMessage }) => {
+              const parsed = parseShowOnlyAttributesFromMessage(rawMessage);
+              if (!parsed.length) return [];
+
+              const { excludeAttrs, hiddenCount } = computeExcludeForShowOnly(parsed);
+              previousListCardCountRef.current = listCardCount;
+              currentExcludedAttributesRef.current = excludeAttrs;
+              setExcludedImageIds([]);
+              setExcludedAttributes(excludeAttrs);
+
+              const displayAttrs = getCanonicalDisplayNames(parsed);
+              setReSearchResult({
+                excludedAttributes: displayAttrs.map((a) => `${a}만 표시`),
+                deletedCount: hiddenCount,
+              });
+
+              return parsed;
+            }}
+            onAddLikeRequest={({ rawMessage }) => {
+              const parsed = parseIncludedAttributesFromMessage(rawMessage);
+
+              if (parsed.length) {
+                previousListCardCountRef.current = listCardCount;
+                currentExcludedAttributesRef.current = parsed;
+                const prevExcluded = excludedAttributes;
+                const actuallyRestored = parsed.filter((attr) => prevExcluded.includes(attr));
+                setExcludedAttributes((prev) => prev.filter((attr) => !parsed.includes(attr)));
+
+                if (actuallyRestored.length > 0) {
+                  setReSearchResult({
+                    excludedAttributes: actuallyRestored.map((a) => `${a} 복원`),
+                    deletedCount: -actuallyRestored.length,
+                  });
+                }
+              }
+
+              return parsed;
+            }}
             maxHeight={agentPopupMaxHeight}
             reSearchResult={reSearchResult}
             isObjectTracking={uiState.showObjectTracking}
@@ -1141,7 +1192,7 @@ export default function HomeV2() {
               setPinOffset({ x: 0, y: 0 });
               
               if (showMouseGuide) {
-                jumpToStep('radius-chip');
+                jumpToStep('review-candidates');
               }
             }}
             onReSearchStart={() => {
@@ -1157,7 +1208,7 @@ export default function HomeV2() {
               dispatch({ type: 'COMPLETE_RE_SEARCH' });
               isReSearchingRef.current = true;
               if (showMouseGuide) {
-                jumpToStep('fast-search-candidate-10');
+                jumpToStep('review-candidates');
               }
             }}
           />
@@ -1268,11 +1319,15 @@ export default function HomeV2() {
 
       <MouseGuide
         show={showMouseGuide}
-        hideDuringProgress={uiState.showFastSearchProgress || uiState.showReSearchProgress}
         guideTarget={guideTarget}
         guideMessage={guideMessage}
         guideType={guideType}
         mousePosition={mousePosition}
+        currentStepIndex={currentStepIndex}
+        totalSteps={totalSteps}
+        currentStepId={currentStepId}
+        onPrev={goToPrevStep}
+        onNext={goToNextStep}
       />
 
     </div>

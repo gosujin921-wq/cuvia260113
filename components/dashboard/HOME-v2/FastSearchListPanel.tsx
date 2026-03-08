@@ -28,6 +28,8 @@ interface FastSearchListPanelProps {
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string) => void;
   /** 이 값이 'wrong-button-1'일 때 리스트를 맨 아래로 스크롤 (틀림 시퀀스 유도용) */
   scrollToBottomTrigger?: string | null;
+  /** 후보 카드 선택(상세 팝업 오픈) 시 호출 */
+  onCandidateSelect?: () => void;
 }
 
 interface CaptureItem {
@@ -103,6 +105,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   showSkeleton = false,
   onAddCapture,
   scrollToBottomTrigger = null,
+  onCandidateSelect,
 }) => {
   const [radius, setRadius] = useState<number>(200); // 반경 (m) - 실제 적용된 값
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
@@ -337,29 +340,28 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     });
   }, []);
 
+  const PINNED_CANDIDATE_ID = '10';
+
   const visibleCaptureList = useMemo(() => {
     let list = excludedAttributes.length
-      ? captureList.filter((item) => !shouldHideCaptureItem(item, excludedAttributes))
+      ? captureList.filter((item) => item.id === PINNED_CANDIDATE_ID || !shouldHideCaptureItem(item, excludedAttributes))
       : captureList;
     
-    // excludedImageIds로 직접 제외 (결과 재검색)
     if (excludedImageIds.length > 0) {
-      list = list.filter((item) => !excludedImageIds.includes(item.id));
+      list = list.filter((item) => item.id === PINNED_CANDIDATE_ID || !excludedImageIds.includes(item.id));
     }
     
-    // 반경에 따라 CCTV 필터링
     // ID 매핑: 1-3(별빛A-230), 4-5(별빛A-444), 6(별빛A-481), 7(별빛A-498), 8-9(별빛A-583), 10(별빛A-604)
     list = list.filter((item) => {
+      if (item.id === PINNED_CANDIDATE_ID) return true;
+
       const cctvName = getCctvNameForCaptureItem(item);
       
       if (radius <= 200) {
-        // 200m 이하: 별빛A-498, 별빛A-583만
         return ['별빛A-498', '별빛A-583'].includes(cctvName);
       } else if (radius < 400) {
-        // 200m 초과~399m: 별빛A-498, 별빛A-583, 별빛A-444, 별빛A-481
         return ['별빛A-498', '별빛A-583', '별빛A-444', '별빛A-481'].includes(cctvName);
       } else {
-        // 400m 이상: 모든 CCTV
         return true;
       }
     });
@@ -549,6 +551,11 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                       onClick={() => {
                         setTimeRange([tempTimeRange[0], tempTimeRange[1]]);
                         setOpenPopover(null);
+
+                        setShowRadiusSkeleton(true);
+                        setTimeout(() => {
+                          setShowRadiusSkeleton(false);
+                        }, 500);
                       }}
                       className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
                     >
@@ -805,11 +812,22 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               <div
                 key={item.id}
                 id={`fast-search-candidate-${item.id}`}
-                onClick={() => setSelectedCandidate(item)}
+                onClick={() => {
+                  setSelectedCandidate(item);
+                  onCandidateSelect?.();
+                }}
                 className="bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-colors flex flex-col hover:bg-[#40424a]"
               >
                 {/* 썸네일 */}
                 <div className="relative w-full bg-black" style={{ height: '160px' }}>
+                  {item.id === '10' && (
+                    <div
+                      className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-blue-500/90 text-white"
+                      aria-label="유사 후보"
+                    >
+                      유사 후보
+                    </div>
+                  )}
                   {isMatched && (
                     <div
                       className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-green-500/90 text-white"
