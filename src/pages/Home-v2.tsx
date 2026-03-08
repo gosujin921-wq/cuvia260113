@@ -12,6 +12,7 @@ import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPa
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
 import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/CaptureListPanel';
 import PropagationListPanel from '@/components/dashboard/HOME-v2/PropagationListPanel';
+import PropagationPackagePopup from '@/components/dashboard/HOME-v2/PropagationPackagePopup';
 import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
 import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
 import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
@@ -299,6 +300,11 @@ export default function HomeV2() {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
   const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
+  const [openCCTVId, setOpenCCTVId] = useState<string | null>(null);
+  const [closeCCTVPopupSignal, setCloseCCTVPopupSignal] = useState(0);
+  const [closePopupSignal, setClosePopupSignal] = useState(0);
+  const [showPropagationPackagePopup, setShowPropagationPackagePopup] = useState(false);
+  const [openReportPopupSignal, setOpenReportPopupSignal] = useState(0);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
   const [showReSearchSkeleton, setShowReSearchSkeleton] = useState<boolean>(false); // 재검색 스켈레톤 표시 여부
@@ -327,8 +333,7 @@ export default function HomeV2() {
     currentStepIndex,
     currentStepId,
     jumpToStep,
-    goToPrevStep,
-    goToNextStep,
+    getStepId,
     resetGuide,
     toggleGuide,
     syncToAppState,
@@ -638,12 +643,12 @@ export default function HomeV2() {
       setShowCaptureNotification(false);
     }, overlayDuration);
 
-    if (showMouseGuide && optionsParam?.hideOverlayWithPopup) {
+    if (showMouseGuide && optionsParam?.hideOverlayWithPopup && currentStepId !== 'candidate-detail') {
       setTimeout(() => {
         jumpToStep('capture-complete');
       }, 500);
     }
-  }, [showMouseGuide, jumpToStep]);
+  }, [showMouseGuide, jumpToStep, currentStepId]);
 
   // 이벤트 액션 핸들러 (useCallback으로 메모이제이션)
   const handleEventAction = useCallback((eventId: string) => {
@@ -787,6 +792,90 @@ export default function HomeV2() {
       setFlyToLocation(trackingSequence[3] as [number, number]);
     }, 6100);
   }, []);
+
+  // 가이드 스텝 네비게이션: 이전/다음 버튼으로 앱 상태까지 전환
+  const handleGuideNavigate = useCallback((targetStepId: string) => {
+    // 전파 패키지 팝업: propagation step에서만 열고 나머지는 항상 닫기
+    setShowPropagationPackagePopup(targetStepId === 'propagation');
+
+    if (targetStepId !== 'candidate-detail') {
+      setOpenCandidateId(null);
+    }
+    if (targetStepId === 'review-candidates' || targetStepId === 'capture-complete') {
+      setClosePopupSignal(prev => prev + 1);
+    }
+    if (targetStepId === 'predicted-cctv-detail') {
+      setOpenCCTVId('4');
+    } else if (targetStepId === 'predicted-cctv' || targetStepId === 'capture-list-guide') {
+      setCloseCCTVPopupSignal(prev => prev + 1);
+    }
+
+    const PHASE_INTRO = ['intro'];
+    const PHASE_SEARCH_PROGRESS = ['searching'];
+    const PHASE_SEARCH_LIST = ['review-candidates', 'candidate-detail', 'capture-complete'];
+    const PHASE_TRACKING = ['route-analysis'];
+    const PHASE_TRACKING_DONE = ['predicted-cctv', 'predicted-cctv-detail', 'capture-list-guide'];
+    const PHASE_CAPTURE = ['capture-list-review', 'propagation'];
+    const PHASE_PROPAGATION = ['report-download', 'report-result'];
+
+    const missingEvent = allConvertedEvents.find(
+      e => e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'
+    );
+
+    if (PHASE_INTRO.includes(targetStepId)) {
+      dispatch({ type: 'CLEAR_ALL' });
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      setVisibleTrackingPins(0);
+      setPinOffset({ x: 0, y: 0 });
+      if (missingEvent) {
+        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+        dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
+        setVisibleEventIds(new Set([missingEvent.id]));
+        setFlyToLocation([126.99656, 37.43527]);
+      }
+    } else if (PHASE_SEARCH_PROGRESS.includes(targetStepId)) {
+      dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+    } else if (PHASE_SEARCH_LIST.includes(targetStepId)) {
+      dispatch({ type: 'START_FAST_SEARCH' });
+      setPinOffset({ x: 0, y: 0 });
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      if (targetStepId === 'candidate-detail') {
+        setOpenCandidateId('10');
+      }
+    } else if (PHASE_TRACKING.includes(targetStepId)) {
+      dispatch({ type: 'START_OBJECT_TRACKING' });
+      handleStartTrackingSequence();
+    } else if (PHASE_TRACKING_DONE.includes(targetStepId)) {
+      dispatch({ type: 'START_OBJECT_TRACKING' });
+      setShowPredictedCCTVList(true);
+      setObjectTrackingCompleted(true);
+    } else if (PHASE_CAPTURE.includes(targetStepId)) {
+      dispatch({ type: 'SHOW_CAPTURE_LIST' });
+    } else if (PHASE_PROPAGATION.includes(targetStepId)) {
+      dispatch({ type: 'SHOW_PROPAGATION_LIST' });
+      if (targetStepId === 'report-result') {
+        setOpenReportPopupSignal(prev => prev + 1);
+      }
+    }
+
+    jumpToStep(targetStepId);
+  }, [allConvertedEvents, jumpToStep, handleStartTrackingSequence]);
+
+  const handleGuidePrev = useCallback(() => {
+    if (currentStepIndex <= 0) return;
+    const prevId = getStepId(currentStepIndex - 1);
+    if (prevId) handleGuideNavigate(prevId);
+  }, [currentStepIndex, getStepId, handleGuideNavigate]);
+
+  const handleGuideNext = useCallback(() => {
+    if (currentStepIndex >= totalSteps - 1) return;
+    const nextId = getStepId(currentStepIndex + 1);
+    if (nextId) handleGuideNavigate(nextId);
+  }, [currentStepIndex, totalSteps, getStepId, handleGuideNavigate]);
 
   /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
   useEffect(() => {
@@ -1040,6 +1129,13 @@ export default function HomeV2() {
             jumpToStep('candidate-detail');
           }
         }}
+        closePopupSignal={closePopupSignal}
+        autoCapture={currentStepId === 'candidate-detail' && captureItems.length === 0}
+        onPopupClose={() => {
+          if (showMouseGuide && currentStepId === 'candidate-detail') {
+            jumpToStep('capture-complete');
+          }
+        }}
       />
 
       {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}
@@ -1062,6 +1158,10 @@ export default function HomeV2() {
             jumpToStep('capture-list-guide');
           }
         }}
+        openCCTVId={openCCTVId}
+        onCCTVOpened={() => setOpenCCTVId(null)}
+        closeCCTVPopupSignal={closeCCTVPopupSignal}
+        autoCapture={currentStepId === 'predicted-cctv-detail' && captureItems.length <= 1}
       />
 
       {/* CaptureListPanel - 포착 목록 */}
@@ -1073,12 +1173,25 @@ export default function HomeV2() {
         }}
       />
 
+      {showPropagationPackagePopup && (
+        <PropagationPackagePopup
+          isOpen={showPropagationPackagePopup}
+          onClose={() => setShowPropagationPackagePopup(false)}
+          selectedItems={captureItems}
+          onSendPropagation={() => {
+            setShowPropagationPackagePopup(false);
+            dispatch({ type: 'SHOW_PROPAGATION_LIST' });
+          }}
+        />
+      )}
+
       {/* PropagationListPanel - 전파 */}
       <PropagationListPanel
         isVisible={uiState.showPropagationList}
         onClose={() => dispatch({ type: 'HIDE_PROPAGATION_LIST' })}
         onBackToInitial={handleBackToInitial}
         captureItems={captureItems}
+        openReportPopupSignal={openReportPopupSignal}
       />
 
       {/* 투망감시 안내 다이얼로그 */}
@@ -1326,8 +1439,8 @@ export default function HomeV2() {
         currentStepIndex={currentStepIndex}
         totalSteps={totalSteps}
         currentStepId={currentStepId}
-        onPrev={goToPrevStep}
-        onNext={goToNextStep}
+        onPrev={handleGuidePrev}
+        onNext={handleGuideNext}
       />
 
     </div>

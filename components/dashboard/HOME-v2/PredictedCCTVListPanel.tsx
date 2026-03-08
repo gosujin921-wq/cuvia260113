@@ -14,6 +14,14 @@ interface PredictedCCTVListPanelProps {
   onCCTVSelect?: () => void;
   /** CCTV 상세 팝업 닫힘 시 호출 */
   onCCTVDetailClose?: () => void;
+  /** 외부에서 열 CCTV ID */
+  openCCTVId?: string | null;
+  /** CCTV가 열렸을 때 호출 */
+  onCCTVOpened?: () => void;
+  /** 외부에서 팝업 닫기 신호 */
+  closeCCTVPopupSignal?: number;
+  /** 팝업 열릴 때 자동 포착 실행 여부 */
+  autoCapture?: boolean;
 }
 
 export interface PredictedCCTVItem {
@@ -175,6 +183,10 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   onRadiusChange,
   onCCTVSelect,
   onCCTVDetailClose,
+  openCCTVId,
+  onCCTVOpened,
+  closeCCTVPopupSignal,
+  autoCapture = false,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
@@ -219,6 +231,21 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
     if (!onRadiusChange) return;
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
+
+  React.useEffect(() => {
+    if (closeCCTVPopupSignal && closeCCTVPopupSignal > 0) {
+      setSelectedCCTV(null);
+    }
+  }, [closeCCTVPopupSignal]);
+
+  React.useEffect(() => {
+    if (!openCCTVId || !isVisible) return;
+    const cctv = PREDICTED_CCTV_DATA.find(item => item.id === openCCTVId);
+    if (cctv) {
+      setSelectedCCTV(cctv);
+      if (onCCTVOpened) onCCTVOpened();
+    }
+  }, [openCCTVId, isVisible, onCCTVOpened]);
 
   const isPopupOpen = selectedCCTV !== null;
 
@@ -446,6 +473,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
         }}
         cctv={selectedCCTV}
         onAddCapture={onAddCapture}
+        autoCapture={autoCapture}
       />
     </>
   );

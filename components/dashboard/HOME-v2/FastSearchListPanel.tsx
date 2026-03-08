@@ -30,6 +30,12 @@ interface FastSearchListPanelProps {
   scrollToBottomTrigger?: string | null;
   /** 후보 카드 선택(상세 팝업 오픈) 시 호출 */
   onCandidateSelect?: () => void;
+  /** 외부에서 팝업 닫기 신호 (값 변경 시 팝업 닫힘) */
+  closePopupSignal?: number;
+  /** 팝업 열릴 때 자동 포착 실행 여부 */
+  autoCapture?: boolean;
+  /** 팝업 닫힐 때 호출 */
+  onPopupClose?: () => void;
 }
 
 interface CaptureItem {
@@ -106,6 +112,9 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   onAddCapture,
   scrollToBottomTrigger = null,
   onCandidateSelect,
+  closePopupSignal,
+  autoCapture = false,
+  onPopupClose,
 }) => {
   const [radius, setRadius] = useState<number>(200); // 반경 (m) - 실제 적용된 값
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
@@ -397,6 +406,12 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     if (!onRadiusChange) return;
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
+
+  useEffect(() => {
+    if (closePopupSignal && closePopupSignal > 0) {
+      setSelectedCandidate(null);
+    }
+  }, [closePopupSignal]);
 
   // 외부에서 특정 후보 열기
   useEffect(() => {
@@ -930,9 +945,13 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
 
       <FastSearchCandidateDetailPopup
         isOpen={!!selectedCandidate}
-        onClose={() => setSelectedCandidate(null)}
+        onClose={() => {
+          setSelectedCandidate(null);
+          onPopupClose?.();
+        }}
         candidate={selectedCandidate}
         onAddCapture={onAddCapture}
+        autoCapture={autoCapture}
       />
     </>
   );

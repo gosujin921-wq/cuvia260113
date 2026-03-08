@@ -137,9 +137,12 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
               {FORMAT_BUTTONS.map(({ type, label }) => (
                 <button
                   key={type}
+                  id={type === 'pdf' ? 'report-pdf-button' : undefined}
                   type="button"
                   onClick={() => handleFormatClick(type)}
-                  className="w-full px-4 py-3 rounded-lg text-sm font-medium text-gray-200 bg-[#1f1f1f] border border-[#31353a] hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300 transition-colors text-left"
+                  className={`w-full px-4 py-3 rounded-lg text-sm font-medium text-gray-200 bg-[#1f1f1f] border border-[#31353a] hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300 transition-colors text-left ${
+                    type !== 'pdf' ? 'pointer-events-none' : ''
+                  }`}
                   aria-label={label}
                 >
                   {label}

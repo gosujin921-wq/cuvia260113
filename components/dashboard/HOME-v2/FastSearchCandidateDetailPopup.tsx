@@ -26,6 +26,7 @@ interface FastSearchCandidateDetailPopupProps {
   onClose: () => void;
   candidate: CandidateCard | null;
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string, options?: { hideOverlayWithPopup?: boolean }) => void;
+  autoCapture?: boolean;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
@@ -33,6 +34,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   onClose,
   candidate,
   onAddCapture,
+  autoCapture = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -497,9 +499,29 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     setTimeout(() => setFlyingThumbnail(null), 600);
     setTimeout(() => {
       setIsCaptureAnimating(false);
-      onClose();
+      if (!autoCapture) {
+        onClose();
+      }
     }, 700);
   };
+
+  const handleCaptureTargetRef = useRef(handleCaptureTarget);
+  handleCaptureTargetRef.current = handleCaptureTarget;
+
+  const autoCaptureTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!autoCapture || !isOpen || !candidate) {
+      autoCaptureTriggeredRef.current = false;
+      return;
+    }
+    if (autoCaptureTriggeredRef.current) return;
+    autoCaptureTriggeredRef.current = true;
+
+    const timer = setTimeout(() => {
+      handleCaptureTargetRef.current();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [autoCapture, isOpen, candidate]);
 
   if (!isOpen || !candidate) return null;
 

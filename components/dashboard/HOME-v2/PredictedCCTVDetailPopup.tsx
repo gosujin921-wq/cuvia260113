@@ -20,6 +20,7 @@ interface PredictedCCTVDetailPopupProps {
   onClose: () => void;
   cctv: PredictedCCTVItem | null;
   onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string) => void;
+  autoCapture?: boolean;
 }
 
 const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
@@ -27,6 +28,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   onClose,
   cctv,
   onAddCapture,
+  autoCapture = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -159,20 +161,6 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     }
   };
 
-  if (!isOpen || !cctv) return null;
-
-  const liveTimeString = currentLiveTime.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return;
-    onClose();
-  };
-
-  // 마크다운 분석결과 생성 함수
   const generateAnalysisMarkdown = (cctvItem: PredictedCCTVItem): string => {
     return `# 객체 추적 분석 결과
 
@@ -266,7 +254,43 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     }, 300);
 
     setTimeout(() => setFlyingThumbnail(null), 600);
-    setTimeout(() => setIsCaptureAnimating(false), 1000);
+    setTimeout(() => {
+      setIsCaptureAnimating(false);
+      if (!autoCapture) {
+        onClose();
+      }
+    }, 1000);
+  };
+
+  const handleCaptureTargetRef = useRef(handleCaptureTarget);
+  handleCaptureTargetRef.current = handleCaptureTarget;
+
+  const autoCaptureTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!autoCapture || !isOpen || !cctv) {
+      autoCaptureTriggeredRef.current = false;
+      return;
+    }
+    if (autoCaptureTriggeredRef.current) return;
+    autoCaptureTriggeredRef.current = true;
+
+    const timer = setTimeout(() => {
+      handleCaptureTargetRef.current();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [autoCapture, isOpen, cctv]);
+
+  if (!isOpen || !cctv) return null;
+
+  const liveTimeString = currentLiveTime.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    onClose();
   };
 
   return (

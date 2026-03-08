@@ -58,9 +58,10 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     id: 'predicted-cctv-detail',
+    targetId: 'predicted-target-found-button',
     message: '예측된 CCTV와 분석 근거를 확인하세요.<br/><br/>대상이 발견되면 \'대상 포착\'을 선택하세요.',
-    type: 'eye',
-    delayAfterClick: 0,
+    type: 'mouse',
+    delayAfterClick: 500,
   },
   {
     id: 'capture-list-guide',
@@ -71,14 +72,29 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     id: 'capture-list-review',
+    targetId: 'create-propagation-package-button',
     message: '포착한 대상의 근거들을 확인하고,<br/>전파할 내용을 선택하여<br/>전파 패키지를 생성하세요.',
-    type: 'eye',
-    delayAfterClick: 0,
+    type: 'mouse',
+    delayAfterClick: 500,
   },
   {
     id: 'propagation',
-    targetId: 'create-propagation-package-button',
+    targetId: 'send-propagation-package-button',
     message: '확보된 영상을 기반으로<br/>현장 대응을 위한 전파 패키지를 생성합니다.',
+    type: 'mouse',
+    delayAfterClick: 500,
+  },
+  {
+    id: 'report-download',
+    targetId: 'report-download-button',
+    message: '전파패키지 버튼을 누르세요.<br/>현장/타기관 공유를 위해<br/>핵심 근거를 패키지로 생성하고 공유합니다.',
+    type: 'mouse',
+    delayAfterClick: 500,
+  },
+  {
+    id: 'report-result',
+    targetId: 'report-pdf-button',
+    message: '사건 처리 결과 보고서를 다운로드하세요.',
     type: 'mouse',
     delayAfterClick: 500,
   },
@@ -250,15 +266,10 @@ export const useMouseGuide = () => {
     return () => clearInterval(interval);
   }, [showMouseGuide, guideTarget]);
 
-  const goToPrevStep = useCallback(() => {
-    if (currentStepIndex <= 0) return;
-    applyStep(currentStepIndex - 1);
-  }, [currentStepIndex, applyStep]);
-
-  const goToNextStep = useCallback(() => {
-    if (currentStepIndex >= GUIDE_STEPS.length - 1) return;
-    applyStep(currentStepIndex + 1);
-  }, [currentStepIndex, applyStep]);
+  const getStepId = useCallback((index: number): string | undefined => {
+    if (index < 0 || index >= GUIDE_STEPS.length) return undefined;
+    return GUIDE_STEPS[index].id;
+  }, []);
 
   const resetGuide = useCallback(() => {
     clearTimers();
@@ -292,8 +303,7 @@ export const useMouseGuide = () => {
     applyStep,
     advanceToNext,
     jumpToStep,
-    goToPrevStep,
-    goToNextStep,
+    getStepId,
     syncToAppState,
     resetGuide,
     toggleGuide,
