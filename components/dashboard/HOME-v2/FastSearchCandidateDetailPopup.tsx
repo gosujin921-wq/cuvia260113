@@ -38,7 +38,6 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [metaOpen, setMetaOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'timeline' | 'detail'>('timeline');
   const playCountRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -66,33 +65,6 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     imageData: string;
   } | null>(null);
   
-  const moveGreenBox = (direction: 'up' | 'down' | 'left' | 'right') => {
-    setIsAutoMode(false);
-    const step = 10;
-    setGreenBoxPosition(prev => {
-      switch (direction) {
-        case 'up': return { ...prev, y: prev.y - step };
-        case 'down': return { ...prev, y: prev.y + step };
-        case 'left': return { ...prev, x: prev.x - step };
-        case 'right': return { ...prev, x: prev.x + step };
-        default: return prev;
-      }
-    });
-  };
-  
-  const resizeGreenBox = (type: 'width' | 'height', delta: number) => {
-    setIsAutoMode(false);
-    setGreenBoxSize(prev => {
-      const newSize = { ...prev };
-      if (type === 'width') {
-        newSize.width = Math.max(10, prev.width + delta);
-      } else {
-        newSize.height = Math.max(10, prev.height + delta);
-      }
-      return newSize;
-    });
-  };
-
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -341,7 +341,6 @@ export default function HomeV2() {
     syncToAppState,
     totalSteps,
   } = useMouseGuide();
-  const [captureDetailCloseCount, setCaptureDetailCloseCount] = useState<number>(0); // 포착 디테일 팝업 닫기 횟수
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -663,7 +662,6 @@ export default function HomeV2() {
     setObjectTrackingCompleted(false);
     setVisibleTrackingPins(0);
     setReSearchResult(null);
-    setCaptureDetailCloseCount(0);
     setOpenCandidateId(null);
     setOpenCCTVId(null);
     setShowPropagationPackagePopup(false);
@@ -963,30 +961,18 @@ export default function HomeV2() {
     
     if (e.key === '0') {
       toggleGuide();
-      setShowStartMessage(prev => !prev);
     } else if (e.key === '1' && missingEvent && !isInitialLoading) {
       setShowStartMessage(false);
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setFlyToLocation([126.99656, 37.43527]);
-      
+
       if (showMouseGuide) {
         jumpToStep('intro', 500);
       }
-    } else if (e.key === '2') {
-      setShowPredictedCCTVList(true);
-      setObjectTrackingCompleted(true);
-    } else if (e.key === '3') {
-      handleStartTrackingSequence();
-    } else if (e.key === '4') {
-      dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
-      setPinOffset({ x: 0, y: 0 });
-      setOpenCandidateId('43');
-    } else if (e.key === 'l' || e.key === 'L') {
-      dispatch({ type: 'SHOW_AI_AGENT_ONLY' });
     }
-  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading]);
+  }, [allConvertedEvents, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -1239,7 +1225,8 @@ export default function HomeV2() {
       <ConfirmDialog
         isOpen={uiState.showObjectTrackingConfirm}
         title="객체 추적 검사"
-        message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.\n객체 추적 검사를 시작하시겠습니까?`}
+        message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.<br/>객체 추적 검사를 시작하시겠습니까?`}
+        variant="dark"
         confirmText="시작"
         cancelText="취소"
         onConfirm={() => {

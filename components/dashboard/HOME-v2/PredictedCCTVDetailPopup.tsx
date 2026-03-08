@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
-import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import { getPredictedCCTVDetail } from '@/lib/predicted-cctv-details';
 
 export interface PredictedCCTVItem {

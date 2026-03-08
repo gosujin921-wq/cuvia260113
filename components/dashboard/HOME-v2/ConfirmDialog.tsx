@@ -10,6 +10,7 @@ interface ConfirmDialogProps {
   hideCancel?: boolean;
   showDim?: boolean;
   zIndex?: number;
+  variant?: 'glass' | 'dark';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -23,10 +24,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   hideCancel = false,
   showDim = false,
   zIndex = 10000,
+  variant = 'glass',
   onConfirm,
   onCancel,
 }) => {
   if (!isOpen) return null;
+
+  const isDark = variant === 'dark';
 
   return (
     <div
@@ -35,8 +39,13 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       onClick={onCancel}
     >
       <div
-        className="gradient-border-right-bottom rounded-lg overflow-hidden"
-        style={{
+        className={`rounded-lg overflow-hidden ${isDark ? '' : 'gradient-border-right-bottom'}`}
+        style={isDark ? {
+          background: 'rgba(30, 30, 30, 0.95)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 4px 24px 0 rgba(0, 0, 0, 0.5)',
+          width: '400px',
+        } : {
           background: 'rgba(255, 255, 255, 0.6)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
@@ -47,15 +56,15 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 pt-5 pb-2 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
-            <Icon icon="mdi:information" className="w-5 h-5 text-blue-600" />
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-500/20' : 'bg-blue-500/15'}`}>
+            <Icon icon="mdi:information" className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
           </div>
-          <h3 className="text-gray-900 font-semibold text-sm">{title}</h3>
+          <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{title}</h3>
         </div>
 
         <div className="px-6 py-3">
           <p
-            className="text-gray-700 leading-relaxed"
+            className={`leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
             style={{ fontSize: '16px' }}
             dangerouslySetInnerHTML={{ __html: message }}
           />
@@ -66,7 +75,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white/60 border border-gray-300/50 hover:bg-white/80 transition-colors"
+              className={`px-6 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'text-gray-300 bg-white/10 border border-white/10 hover:bg-white/20' : 'text-gray-700 bg-white/60 border border-gray-300/50 hover:bg-white/80'}`}
             >
               {cancelText}
             </button>
