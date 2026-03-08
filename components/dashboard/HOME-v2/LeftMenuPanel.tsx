@@ -159,12 +159,10 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
       </div>
 
       {/* 쿠비아 링크 */}
-      <a
-        href="/cuvia-link"
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        onClick={() => handleMenuClick('broadcast')}
         className="flex flex-col items-center justify-center w-full group"
-        aria-label="CUVIA 웹사이트"
+        aria-label="CUVIA Link"
         tabIndex={0}
       >
         <svg 
@@ -182,7 +180,7 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
         <span className="text-[10px] font-medium mt-1.5 transition-all duration-200 text-gray-400 group-hover:text-white">
           CUVIA Link
         </span>
-      </a>
+      </button>
     </div>
   );
 };

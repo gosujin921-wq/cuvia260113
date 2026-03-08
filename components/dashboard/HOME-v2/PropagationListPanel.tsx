@@ -20,6 +20,7 @@ interface PropagationListPanelProps {
   onBackToInitial?: () => void;
   captureItems?: CaptureItem[];
   openReportPopupSignal?: number;
+  onSimulationEnd?: () => void;
 }
 
 interface PropagationThread {
@@ -175,6 +176,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   onBackToInitial,
   captureItems = [],
   openReportPopupSignal = 0,
+  onSimulationEnd,
 }) => {
   const hasAddedDiscoveryRef = useRef(false);
   const [showReportDownloadPopup, setShowReportDownloadPopup] = useState(false);
@@ -694,6 +696,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
       <ReportDownloadPopup
         isOpen={showReportDownloadPopup}
         onClose={() => setShowReportDownloadPopup(false)}
+        onSimulationEnd={onSimulationEnd}
       />
     </>
   );

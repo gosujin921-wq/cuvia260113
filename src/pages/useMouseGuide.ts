@@ -26,7 +26,8 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     id: 'review-candidates',
-    message: 'CUVIA가 탐색한 후보를 확인하세요.<br/>검색 조건을 추가하면 후보를 더 정확하게 좁힐 수 있습니다.',
+    targetId: 'fast-search-candidate-10',
+    message: 'CUVIA가 탐색한 후보를 확인하세요.<br/>검색 조건을 추가하면 후보를 더 정확하게 좁힐 수 있습니다.<br/><br/><span style="opacity:0.6">예시</span><br/><span style="opacity:0.6">• 정형 조건: 검색 반경 또는 시간 범위 조정</span><br/><span style="opacity:0.6">• 비정형 조건: "회색 후드 입은 사람만 보여줘", "우산 쓴 사람은 제외해줘"</span><br/><br/>후보 영상을 확인하고 대상 여부를 선택하세요.',
     type: 'eye',
     delayAfterClick: 0,
   },
@@ -52,6 +53,7 @@ const GUIDE_STEPS: GuideStep[] = [
   },
   {
     id: 'predicted-cctv',
+    targetId: 'predicted-cctv-7',
     message: '예측된 CCTV를 확인하여<br/>대상자의 현재 위치를 탐색하세요.',
     type: 'eye',
     delayAfterClick: 0,
@@ -246,14 +248,21 @@ export const useMouseGuide = () => {
     return () => document.removeEventListener('click', handleGlobalClick, true);
   }, [showMouseGuide, currentStepIndex, guideTarget, advanceToNext]);
 
-  // 타겟 위치 추적 (타겟이 있는 스텝에서만)
+  // 타겟 위치 추적 + 오렌지 스트로크 하이라이트
   useEffect(() => {
     if (!showMouseGuide || !guideTarget) return;
 
+    let highlightedEl: HTMLElement | null = null;
+
     const updateTargetPosition = () => {
-      const targetElement = document.getElementById(guideTarget);
-      if (targetElement) {
-        const rect = targetElement.getBoundingClientRect();
+      const el = document.getElementById(guideTarget);
+      if (el) {
+        if (highlightedEl !== el) {
+          highlightedEl?.classList.remove('guide-target-highlight');
+          el.classList.add('guide-target-highlight');
+          highlightedEl = el;
+        }
+        const rect = el.getBoundingClientRect();
         setMousePosition({
           x: rect.left + rect.width / 2,
           y: rect.top + rect.height / 2,
@@ -263,7 +272,10 @@ export const useMouseGuide = () => {
 
     updateTargetPosition();
     const interval = setInterval(updateTargetPosition, 100);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      highlightedEl?.classList.remove('guide-target-highlight');
+    };
   }, [showMouseGuide, guideTarget]);
 
   const getStepId = useCallback((index: number): string | undefined => {

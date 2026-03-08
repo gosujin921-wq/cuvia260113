@@ -665,6 +665,11 @@ export default function HomeV2() {
     setReSearchResult(null);
     setCaptureDetailCloseCount(0);
     setOpenCandidateId(null);
+    setOpenCCTVId(null);
+    setShowPropagationPackagePopup(false);
+    setCandidateAutoCapture(false);
+    setCCTVAutoCapture(false);
+    setOpenReportPopupSignal(0);
     resetGuide();
   }, [resetGuide]);
 
@@ -809,18 +814,22 @@ export default function HomeV2() {
         setOpenCandidateId('10');
       }
     } else if (PHASE_TRACKING.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
       dispatch({ type: 'START_OBJECT_TRACKING' });
       handleStartTrackingSequence();
     } else if (PHASE_TRACKING_DONE.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
       dispatch({ type: 'START_OBJECT_TRACKING' });
       setShowPredictedCCTVList(true);
       setObjectTrackingCompleted(true);
     } else if (PHASE_CAPTURE.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
       dispatch({ type: 'SHOW_CAPTURE_LIST' });
       setShowPredictedCCTVList(false);
       setVisibleTrackingPins(0);
       setFlyToLocation(null);
     } else if (PHASE_PROPAGATION.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
       dispatch({ type: 'SHOW_PROPAGATION_LIST' });
       setShowPredictedCCTVList(false);
       setVisibleTrackingPins(0);
@@ -871,7 +880,7 @@ export default function HomeV2() {
 
     dispatch({ type: 'SET_MENU', payload: menuId });
 
-    if (menuId === 'net-monitoring') {
+    if (menuId === 'net-monitoring' || menuId === 'broadcast') {
       dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
     } else if (menuId === 'fast-search') {
       setShowPredictedCCTVList(false);
@@ -1210,15 +1219,18 @@ export default function HomeV2() {
         onBackToInitial={handleBackToInitial}
         captureItems={captureItems}
         openReportPopupSignal={openReportPopupSignal}
+        onSimulationEnd={handleBackToInitial}
       />
 
-      {/* 투망감시 안내 다이얼로그 */}
+      {/* 투망감시/CUVIA Link 안내 다이얼로그 */}
       <ConfirmDialog
         isOpen={uiState.showNetMonitoringDialog}
-        title="투망감시"
-        message="현재 객체 추적, 포착목록, 전파, CUVIA Link를 위한 데모 페이지입니다.\n다른 메뉴를 선택해 보세요."
+        title="안내"
+        message="이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요."
         confirmText="확인"
-        cancelText=""
+        hideCancel
+        showDim
+        zIndex={10020}
         onConfirm={() => dispatch({ type: 'HIDE_NET_MONITORING_DIALOG' })}
         onCancel={() => dispatch({ type: 'HIDE_NET_MONITORING_DIALOG' })}
       />
@@ -1321,8 +1333,8 @@ export default function HomeV2() {
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
               setPinOffset({ x: 0, y: 0 });
-              
-              if (showMouseGuide) {
+
+              if (showMouseGuide && currentStepId === 'searching') {
                 jumpToStep('review-candidates');
               }
             }}
@@ -1405,45 +1417,55 @@ export default function HomeV2() {
 
       {/* 시작 메시지창 */}
       {showStartMessage && (
-        <div 
-          className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[9999]"
-        >
-          <div 
-            className="bg-black/80 border border-gray-700 rounded-2xl p-8 text-center"
+        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[9999]">
+          <div
+            className="gradient-border-right-bottom rounded-lg overflow-hidden"
             style={{
-              minWidth: '400px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.15)',
+              minWidth: '420px',
             }}
           >
-            <p className="text-white text-lg mb-6" style={{ lineHeight: '1.8' }}>
-              실종 시뮬레이션을 해보시려면<br />
-              <span className="font-bold text-blue-400">1</span> 또는 <span className="font-bold">시작 버튼</span>을 눌러주세요.
-            </p>
-            {/* 로딩바: 3초 동안 0→100% 애니메이션 */}
-            {isInitialLoading && (
-              <>
-                <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
-                <div className="h-1 w-full bg-gray-700 rounded-full overflow-hidden mb-4">
-                  <div
-                    className="h-full bg-blue-500 rounded-full"
-                    style={{ animation: 'loading-fill 3s linear forwards' }}
-                  />
-                </div>
-              </>
-            )}
-            <button
-              onClick={handleStartSimulation}
-              disabled={isInitialLoading}
-              className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
-                isInitialLoading
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-              aria-label="시작"
-              tabIndex={isInitialLoading ? -1 : 0}
-            >
-              시작
-            </button>
+            <div className="px-6 pt-5 pb-2 text-center">
+              <p className="text-gray-900 text-sm font-medium leading-relaxed">
+                실종 시뮬레이션을 해보시려면<br />
+                <b>시작 버튼</b>을 눌러주세요.
+              </p>
+            </div>
+
+            <div className="px-6 pb-3 flex justify-center">
+              {isInitialLoading && (
+                <>
+                  <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
+                  <div className="h-1 w-full bg-gray-300/50 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{ animation: 'loading-fill 3s linear forwards' }}
+                    />
+                  </div>
+                </>
+              )}
+              {!isInitialLoading && (
+                <button
+                  onClick={handleStartSimulation}
+                  className="px-8 py-2.5 rounded-lg text-sm font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                  aria-label="시작"
+                  tabIndex={0}
+                >
+                  시작
+                </button>
+              )}
+            </div>
+
+            <div className="px-6 pb-4 pt-1">
+              <p className="text-gray-500 text-[11px] leading-relaxed text-center">
+                본 화면은 전시용 시뮬레이션입니다.<br />
+                표시되는 사건, 인물 및 데이터는 실제와 무관한 가상 데이터입니다.
+              </p>
+            </div>
           </div>
         </div>
       )}
