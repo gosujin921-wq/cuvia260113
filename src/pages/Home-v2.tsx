@@ -22,11 +22,14 @@ import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage, parseIncludedAttributesFromMessage, parseShowOnlyAttributesFromMessage, getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
 import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
 
-const EndDialog = ({ onComplete }: { onComplete: () => void }) => {
+const EndDialog = () => {
   useEffect(() => {
-    const timer = setTimeout(onComplete, 3000);
+    const timer = setTimeout(() => {
+      sessionStorage.clear();
+      window.location.reload();
+    }, 3000);
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, []);
 
   return (
     <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[10010]">
@@ -1458,7 +1461,7 @@ export default function HomeV2() {
 
       {/* 시작 메시지창 */}
       {showEndDialog && (
-        <EndDialog onComplete={handleBackToInitial} />
+        <EndDialog />
       )}
 
       {showStartMessage && (

@@ -14,6 +14,7 @@ interface ReportPopupProps {
   onLayout?: (height: number) => void;
   position?: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string };
   width?: number;
+  imageSrc?: string;
 }
 
 const ReportPopup: React.FC<ReportPopupProps> = ({
@@ -24,6 +25,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   onLayout,
   position,
   width = 420,
+  imageSrc,
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -110,7 +112,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                 ) : (
                   <img
                     ref={imgRef}
-                    src={REPORT_POPUP_IMAGE_SRC}
+                    src={imageSrc || REPORT_POPUP_IMAGE_SRC}
                     alt="신고 대상 인물"
                     className={`w-full h-full object-cover object-center transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     fetchPriority="high"

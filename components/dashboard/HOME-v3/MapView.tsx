@@ -55,9 +55,11 @@ interface MapViewProps {
   hideAgentButton?: boolean;
   /** 1키 누르기 전 초기 화면: 과천역 주변 CCTV 클러스터 표시 */
   showInitialCCTVClusters?: boolean;
+  /** 프리로드된 이벤트 영상 blob URL */
+  eventVideoBlobUrl?: string | null;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false, eventVideoBlobUrl = null }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -837,10 +839,72 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       // 새 이벤트 마커 생성 (일반 모드만)
       const markerContainer = document.createElement('div');
       markerContainer.style.cssText = `
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
       `;
+      
+      // 1키 이벤트 카드 - 영상 위에 표시
+      if (!showFastSearchList) {
+        const eventCardWrapper = document.createElement('div');
+        eventCardWrapper.style.cssText = `
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 12px;
+          white-space: nowrap;
+          z-index: 200;
+          pointer-events: auto;
+        `;
+        const eventCardInner = document.createElement('div');
+        eventCardInner.style.cssText = `
+          padding: 12px 16px;
+          border-radius: 8px;
+          background: linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(23,23,23,0.8) 100%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 2px solid rgba(239, 68, 68, 0.9);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          font-family: inherit;
+          line-height: 1.25;
+        `;
+        const line1 = document.createElement('div');
+        line1.style.cssText = 'color: white; font-weight: 600; font-size: 14px;';
+        line1.textContent = '별빛A-444 은하로363번길 48에서 납치(의심) 이벤트가 감지 되었습니다.';
+        eventCardInner.appendChild(line1);
+        eventCardWrapper.appendChild(eventCardInner);
+        markerContainer.appendChild(eventCardWrapper);
+      }
+      
+      // 1키 이벤트 핀 위 영상 (초기화면, 고속검색 모드 아닐 때만)
+      if (!showFastSearchList) {
+        const videoWrapper = document.createElement('div');
+        videoWrapper.style.cssText = `
+          width: 480px;
+          height: 270px;
+          border-radius: 6px;
+          overflow: hidden;
+          background: #0f0f0f;
+          border: 2px solid #ef4444;
+          margin-bottom: 8px;
+          flex-shrink: 0;
+          position: relative;
+          z-index: 145;
+        `;
+        videoWrapper.className = 'video-frame-red-blink';
+        const videoEl = document.createElement('video');
+        videoEl.src = eventVideoBlobUrl || '/hijacking2/hnc_12.mp4';
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+        videoEl.autoplay = true;
+        videoEl.loop = true;
+        videoEl.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+        videoEl.setAttribute('aria-label', '사건 발생 지점 영상');
+        videoWrapper.appendChild(videoEl);
+        markerContainer.appendChild(videoWrapper);
+      }
       
       const centerWrapper = document.createElement('div');
       centerWrapper.style.cssText = `
@@ -940,32 +1004,28 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       markerEl.appendChild(iconEl);
       
       centerWrapper.appendChild(markerEl);
-      markerContainer.appendChild(centerWrapper);
       
-      // 주소 라벨: 1번키 이벤트는 은하로363번길 48 고정, 그 외는 이벤트 주소
-      const isEvent1 = selectedEventId === 'A-20260107-004';
-      const selectedEvent = events.find(e => e.id === selectedEventId || e.eventId === selectedEventId);
-      const labelAddress = isEvent1 ? '은하로363번길 48' : (selectedEvent?.location?.name ?? '사건 발생 지점');
       const labelEl = document.createElement('div');
       labelEl.style.cssText = `
-        margin-top: 8px;
-        padding: 6px 8px;
-        border-radius: 8px;
-        background: rgba(15, 15, 15, 0.95);
-        border: 1px solid #31353a;
+        margin-top: 4px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #1a1a1a;
+        border: 1px solid #ef4444;
+        color: white;
+        font-size: 12px;
         white-space: nowrap;
         z-index: 140;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
       `;
-      labelEl.innerHTML = `
-        <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
-        <div style="font-size: 12px; font-weight: 600; color: white;">${labelAddress}</div>
-      `;
+      labelEl.textContent = '은하로363번길 48';
+      markerContainer.appendChild(centerWrapper);
       markerContainer.appendChild(labelEl);
       
-      // 새 마커 생성 및 추가
       const newMarker = new maplibregl.Marker({
         element: markerContainer,
-        anchor: 'center'
+        anchor: 'bottom',
+        offset: [pinOffset.x, pinOffset.y],
       })
         .setLngLat(flyToLocation as [number, number])
         .addTo(map);
@@ -996,7 +1056,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         });
       }
     }
-  }, [flyToLocation, showFastSearchList, selectedEventId, events]);
+  }, [flyToLocation, showFastSearchList, selectedEventId, events, eventVideoBlobUrl]);
 
   // 초기 화면용 CCTV 클러스터 (1키 누르기 전, 과천역 주변 5개 동)
   useEffect(() => {

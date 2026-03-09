@@ -81,7 +81,8 @@ export const MouseGuide = ({
       {guideMessage && (
         <div
           key={currentStepId}
-          className={`fixed left-1/2 -translate-x-1/2 z-[10010] ${currentStepId === 'intro' ? 'top-6' : 'bottom-8'}`}
+          className="fixed left-1/2 -translate-x-1/2 z-[10010]"
+          style={{ bottom: currentStepId === 'intro' ? '214px' : '32px' }}
           aria-live="polite"
         >
           <div

@@ -35,6 +35,16 @@ interface AIAgentPopupProps {
   onReSearchComplete?: () => void;
   /** 포착 알림 메시지 */
   captureNotificationMessage?: string;
+  /** 2키: 추적 갱신 메시지 표시 (차량 재포착, 번호판 후보) */
+  showFeaturedLayout?: boolean;
+  /** 2키: 예측 CCTV 포착 시퀀스 중 에이전트 팝업 프로그레스 문구 */
+  captureProgressMessage?: string | null;
+  /** "포착된 CCTV 영상 포함해서 전파 초안 생성해줘" 입력 시 호출 - 별빛A-655 캡처 애니메이션 후 포착목록 추가 */
+  onPropagationDraftRequest?: () => void;
+  /** "사건 영상 바로 보기" 버튼 클릭 시 호출 - 고속검색 팝업 표시 */
+  onVideoView?: () => void;
+  /** "전파해줘" 등 타이핑 시 전파 패널 호출 (객체추적 2키 후) */
+  onPropagationPanelRequest?: () => void;
 }
 
 interface ChatMessage {
@@ -73,9 +83,61 @@ interface MessageListProps {
   listCardCount: number;
   cameraCount: number;
   isExpanded: boolean;
+  onObjectTrackingStart?: () => void;
+  onVideoView?: () => void;
+  welcomeMsgContent?: ReturnType<typeof getWelcomeMsgContent>;
+  trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded }) => {
+const getWelcomeMsgContent = () => {
+  const timeStr = new Date().toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  return {
+    title: '[긴급 알림] 납치(의심) 이벤트 감지',
+    camera: '카메라: 별빛A-444 | 은빛 부동산',
+    detectedAt: `감지 시각: ${timeStr} | 사건 위치: 은하로363번길 48`,
+    body: '성인 남성이 성인 여성의 팔을 붙잡고 골목 방향으로 급히 이동하며, 여성의 움직임이 비자발적으로 보입니다.\n\n주변을 살피는 동작과 동선 변경이 반복되어 강제 동행 가능성이 있어 후속 확인이 필요합니다.\n\n골목 진입으로 시야 단절 가능성이 높아 동일인 재식별(RE-ID) 기반 고속검색을 권장합니다.',
+    footer: '※ 자동 분석 결과이며 추가 확인이 필요합니다.',
+    btnVideo: '▶ 사건 영상 바로 보기',
+    btnTracking: '▶ 고속검색 시작',
+  };
+};
+
+const getTrackingUpdateMsgContent = () => {
+  const timeStr = new Date().toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  return {
+    title: '[추적 갱신] 차량 재포착, 번호판 후보 확보',
+    camera: `카메라: 별빛A-655 | 시각: ${timeStr}`,
+    match: '"차종/색상/외형 특징 일치(추정)."',
+    plate: '"부분 번호판 후보: *12 324* **(가시성: 높음)**"',
+    direction: '이동 방향: 달빛동 방향 진행',
+    body: '이동 중인 차량으로 추정되어 골든타임 확보를 위해 112 우선 전파를 권고합니다.',
+    btnPropagate: '▶ 관할 경찰서에 전파하기',
+  };
+};
+
+const MessageList: React.FC<MessageListProps> = ({
+  messages,
+  isResponding,
+  listCardCount,
+  cameraCount,
+  isExpanded,
+  onObjectTrackingStart,
+  onVideoView,
+  welcomeMsgContent,
+  trackingUpdateMsgContent,
+}) => {
+  const welcomeContent = welcomeMsgContent ?? getWelcomeMsgContent();
+  const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
   return (
     <>
       {isExpanded && (
@@ -104,12 +166,35 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
               <div className={isExpanded ? '' : 'min-w-0 flex-1'}>
                 {message.type === 'analyzing' ? (
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
-                      <p className="text-sm text-gray-700 leading-relaxed">
-                        {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
-                      </p>
-                    </div>
+                    {message.id !== 'object-tracking-progress' && (
+                      <div className="mb-3">
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2">{message.id === 'capture-progress' ? '포착 분석 중' : 'AI 분석 중'}</h3>
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
+                        </p>
+                      </div>
+                    )}
+                    {/* 포착분석 단계별 표시 (다른 프로그레스와 동일 스타일) */}
+                    {message.id === 'capture-progress' && message.totalSteps === 4 && (
+                      <div className="space-y-2 mb-3 text-xs">
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
+                          <span>1. 예측 CCTV 분석 중 {(message.currentStep || 0) === 1 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                          <span>2. 포착 가능 구역 산정 중 {(message.currentStep || 0) === 2 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                          <span>3. 포착대상 감지 중 {(message.currentStep || 0) === 3 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
+                          <span>4. 별빛A-655에서 포착 확인 {(message.currentStep || 0) === 4 && '⏳'}</span>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* 재검색 단계별 표시 */}
                     {message.id === 're-search-progress' && message.totalSteps === 3 && (
@@ -163,45 +248,53 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                     )}
                     
                     {/* 객체 추적 단계별 표시 */}
-                    {message.id !== 'fast-search-progress' && message.totalSteps === 5 && (
-                      <div className="space-y-2 mb-3 text-xs">
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
-                          <span>1. 대표 후보 기준점 설정 {(message.currentStep || 0) === 1 && '✅'}</span>
+                    {message.id === 'object-tracking-progress' && message.totalSteps === 4 && (
+                      <div className="space-y-3 mb-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석중</h3>
+                          <p className="text-xs text-gray-600 mb-1">추적 대상: 차량 1대 · 관련 인물 2명(추정)</p>
+                          <p className="text-xs text-gray-600">추적 범위: 반경 2km · CCTV 42대 · 최근 20분</p>
                         </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. 경로 적합도 기반 재탐색 {(message.currentStep || 0) === 2 && '⏳'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 시간순 정렬 및 경로 연결 {(message.currentStep || 0) === 3 && '…'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
-                          <span>4. 이동 방향/시간대 반영 {(message.currentStep || 0) === 4 && '…'}</span>
-                        </div>
-                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
-                          <Icon icon={(message.currentStep || 0) > 5 ? 'mdi:check-circle' : (message.currentStep || 0) === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 5 ? 'animate-spin' : ''}`} />
-                          <span>5. 다음 포착 후보 CCTV 생성 {(message.currentStep || 0) === 5 && '…'}</span>
+                        <div className="space-y-2 text-xs">
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
+                            <span>1. 차량 트랙 생성 및 재포착 감시(실시간)</span>
+                          </div>
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                            <span>2. 번호판 후보 프레임 자동 선별(가시성 높은 프레임 우선)</span>
+                          </div>
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                            <span>3. 예상 이동 경로 계산 및 다음 CCTV 우선순위 갱신</span>
+                          </div>
+                          <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
+                            <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 flex-shrink-0 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
+                            <span>4. 동행자(남/여) 동반 포착 여부 동시 탐색</span>
+                          </div>
                         </div>
                       </div>
                     )}
                     
-                    <div className="mb-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-300"
-                          style={{
-                            width: `${(message.progress || 0) * 100}%`,
-                            background: AGENT_GRADIENT,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      {message.currentStep}/{message.totalSteps}
-                    </div>
+                    {/* 프로그레스바 (포착분석 포함 모든 프로그레스 동일 스타일) */}
+                    {message.totalSteps != null ? (
+                      <>
+                        <div className="mb-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-300"
+                              style={{
+                                width: `${(message.progress || 0) * 100}%`,
+                                background: AGENT_GRADIENT,
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          {message.currentStep}/{message.totalSteps}
+                        </div>
+                      </>
+                    ) : null}
 
                     {/* 분석 결과 표시 (프로그래스 완료 시) */}
                     {message.progress && message.progress >= 1 && message.analysisResult && (
@@ -291,15 +384,92 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                       </div>
                     )}
                     <div className={`${isExpanded ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200' : 'rounded-xl border border-gray-200 bg-gray-50 p-4'}`} style={isExpanded ? { borderWidth: '1px' } : {}}>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
-                        {message.id === 'welcome-msg'
-                          ? `고속검색 결과 ${listCardCount}건이 검색되었습니다.\n조건을 추가해 후보를 좁힐 수 있습니다.`
-                          : (message.isTyping ? message.displayedContent : message.content)}
-                        {message.isTyping && <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse" />}
-                      </p>
-                      <div className={`text-xs text-gray-500 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
-                        {message.timestamp}
-                      </div>
+                      {message.id === 'tracking-update-msg' ? (
+                        <div className="space-y-3">
+                          {message.isTyping ? (
+                            <>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                                {message.displayedContent ?? ''}
+                                <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse align-middle" aria-hidden="true" />
+                              </p>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm font-semibold text-gray-900">{trackingContent.title}</p>
+                              <p className="text-xs text-gray-600">{trackingContent.camera}</p>
+                              <p className="text-xs text-gray-600">{trackingContent.match}</p>
+                              <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: trackingContent.plate.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<strong>$1</strong>') }} />
+                              <p className="text-xs text-gray-600">{trackingContent.direction}</p>
+                              <p className="text-sm leading-relaxed text-gray-700">{trackingContent.body}</p>
+                              <button
+                                type="button"
+                                className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors w-full"
+                                aria-label="관할 경찰서에 전파하기"
+                              >
+                                {trackingContent.btnPropagate}
+                              </button>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          )}
+                        </div>
+                      ) : message.id === 'fast-search-result' ? (
+                        <div className="space-y-2">
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                            {`고속검색 결과 ${listCardCount}건이 검색되었습니다.\n조건을 추가해 후보를 좁힐 수 있습니다.`}
+                          </p>
+                          <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                        </div>
+                      ) : message.id === 'welcome-msg' ? (
+                        <div className="space-y-3">
+                          {message.isTyping ? (
+                            <>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                                {message.displayedContent ?? ''}
+                                <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse align-middle" />
+                              </p>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm font-semibold text-red-500">{welcomeContent.title}</p>
+                              <p className="text-xs text-gray-600">{welcomeContent.camera}</p>
+                              <p className="text-xs text-gray-600">{welcomeContent.detectedAt}</p>
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700" dangerouslySetInnerHTML={{ __html: welcomeContent.body.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                              <p className="text-xs text-gray-500">{welcomeContent.footer}</p>
+                              <div className="flex flex-col gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  onClick={() => onVideoView?.()}
+                                  className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
+                                  aria-label="사건 영상 바로 보기"
+                                >
+                                  {welcomeContent.btnVideo}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onObjectTrackingStart?.()}
+                                  className="px-3 py-2 text-left text-sm font-medium text-blue-600 hover:bg-blue-50 border border-gray-200 rounded-lg transition-colors"
+                                  aria-label="고속검색 시작"
+                                >
+                                  {welcomeContent.btnTracking}
+                                </button>
+                              </div>
+                              <div className="text-xs text-gray-500 pt-1">{message.timestamp}</div>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
+                            {message.isTyping ? message.displayedContent : message.content}
+                            {message.isTyping && <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse" />}
+                          </p>
+                          <div className={`text-xs text-gray-500 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
+                            {message.timestamp}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </>
                 )}
@@ -463,8 +633,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   position: positionOverride, 
   listCardCount = 0, 
   onDeleteLikeRequest, 
-  onAddLikeRequest,
-  onShowOnlyRequest,
   maxHeight: maxHeightProp, 
   reSearchResult, 
   isObjectTracking = false, 
@@ -475,8 +643,67 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onReSearchStart, 
   onReSearchComplete,
   captureNotificationMessage = '',
+  showFeaturedLayout = false,
+  captureProgressMessage = null,
+  onPropagationDraftRequest,
+  onVideoView,
+  onPropagationPanelRequest,
 }) => {
+  const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  const [welcomeMsgContent, setWelcomeMsgContent] = useState<ReturnType<typeof getWelcomeMsgContent> | null>(null);
+  const [trackingUpdateMsgContent, setTrackingUpdateMsgContent] = useState<ReturnType<typeof getTrackingUpdateMsgContent> | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSlideEntered(false);
+      const t = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setSlideEntered(true));
+      });
+      return () => cancelAnimationFrame(t);
+    } else {
+      setSlideEntered(false);
+    }
+  }, [isOpen]);
+
+  // 초기 메시지 타이핑 애니메이션
+  useEffect(() => {
+    if (!isOpen) return;
+    const content = getWelcomeMsgContent();
+    setWelcomeMsgContent(content);
+    const fullText = [
+      content.title,
+      content.camera,
+      content.detectedAt,
+      '',
+      content.body,
+      '',
+      content.footer,
+    ].join('\n');
+    let currentIndex = 0;
+    const typingInterval = setInterval(() => {
+      currentIndex++;
+      if (currentIndex <= fullText.length) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === 'welcome-msg'
+              ? { ...msg, displayedContent: fullText.substring(0, currentIndex) }
+              : msg
+          )
+        );
+      } else {
+        clearInterval(typingInterval);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === 'welcome-msg'
+              ? { ...msg, isTyping: false, displayedContent: fullText }
+              : msg
+          )
+        );
+      }
+    }, 30);
+    return () => clearInterval(typingInterval);
+  }, [isOpen]);
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -488,7 +715,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       // 이미 프로그래스 메시지가 있는지 확인
       setMessages((prev) => {
         const hasObjectTrackingProgress = prev.some(msg => 
-          msg.type === 'analyzing' && msg.totalSteps === 5
+          msg.id === 'object-tracking-progress' && msg.type === 'analyzing'
         );
         
         if (hasObjectTrackingProgress) {
@@ -499,7 +726,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         const progressMessage: ChatMessage = {
           id: 'object-tracking-progress',
           role: 'assistant',
-          content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV를 예측하겠습니다.',
+          content: '',
           timestamp: new Date().toLocaleTimeString('ko-KR', {
             hour: '2-digit',
             minute: '2-digit',
@@ -508,7 +735,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           type: 'analyzing',
           progress: 0,
           currentStep: 1,
-          totalSteps: 5,
+          totalSteps: 4,
         };
         
         return [...prev, progressMessage];
@@ -523,12 +750,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               const newProgress = Math.min((msg.progress || 0) + 0.01, 1);
               let newStep = msg.currentStep || 1;
               
-              // 지도 애니메이션과 동기화된 단계 진행
+              // 4단계 진행 (25%, 50%, 75%, 100%)
               const progressPercent = newProgress * 100;
-              if (progressPercent >= 20 && newStep < 2) newStep = 2;
-              if (progressPercent >= 40 && newStep < 3) newStep = 3;
-              if (progressPercent >= 60 && newStep < 4) newStep = 4;
-              if (progressPercent >= 80 && newStep < 5) newStep = 5;
+              if (progressPercent >= 25 && newStep < 2) newStep = 2;
+              if (progressPercent >= 50 && newStep < 3) newStep = 3;
+              if (progressPercent >= 75 && newStep < 4) newStep = 4;
               
               return { ...msg, progress: newProgress, currentStep: newStep };
             }
@@ -555,6 +781,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         minute: '2-digit',
         second: '2-digit',
       }),
+      isTyping: true,
+      displayedContent: '',
     },
   ]);
   const [isResponding, setIsResponding] = useState(false);
@@ -633,15 +861,24 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (bottomRef.current) {
-      // 프로그래스 메시지 업데이트 시에는 스크롤하지 않음 (화면 튐 방지)
-      const hasProgressUpdate = messages.some(msg => 
-        msg.type === 'analyzing' && (msg.progress || 0) > 0 && (msg.progress || 0) < 1
-      );
-      
-      if (!hasProgressUpdate) {
-        bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // 프로그래스 메시지 업데이트 시에는 스크롤하지 않음 (화면 튐 방지)
+    const hasProgressUpdate = messages.some(msg =>
+      msg.type === 'analyzing' && (msg.progress || 0) > 0 && (msg.progress || 0) < 1
+    );
+
+    if (!hasProgressUpdate) {
+      // requestAnimationFrame으로 DOM 업데이트 후 스크롤 적용
+      const rafId = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        });
+      });
+      return () => cancelAnimationFrame(rafId);
     }
   }, [messages, isResponding]);
 
@@ -788,9 +1025,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   // 프로그래스 메시지 제거
                   const withoutProgress = prev.filter((msg) => msg.id !== 'fast-search-progress');
                   
-                  // welcome 메시지 추가 (고속검색 결과 안내)
-                  const welcomeMessage: ChatMessage = {
-                    id: 'welcome-msg',
+                  const resultMessage: ChatMessage = {
+                    id: 'fast-search-result',
                     role: 'assistant',
                     content: '',
                     timestamp: new Date().toLocaleTimeString('ko-KR', {
@@ -800,7 +1036,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     }),
                   };
                   
-                  return [...withoutProgress, welcomeMessage];
+                  return [...withoutProgress, resultMessage];
                 });
                 
                 const cb = onFastSearchCompleteRef.current;
@@ -825,6 +1061,108 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       if (completeTimeout) clearTimeout(completeTimeout);
     };
   }, [showFastSearchProgress]);
+
+  // 2키: 프로그레스 메시지 노출 (예측 CCTV 포착 시퀀스) - 다른 프로그레스와 동일 totalSteps/currentStep/progress
+  const captureStepMap: Record<string, number> = {
+    '예측 CCTV 분석 중...': 1,
+    '포착 가능 구역 산정 중...': 2,
+    '포착대상 감지 중...': 3,
+    '별빛A-655에서 포착 확인': 4,
+  };
+  useEffect(() => {
+    if (captureProgressMessage) {
+      const currentStep = captureStepMap[captureProgressMessage] ?? 1;
+      const totalSteps = 4;
+      const progress = currentStep / totalSteps;
+      setMessages((prev) => {
+        const without = prev.filter((msg) => msg.id !== 'capture-progress');
+        const progressMsg: ChatMessage = {
+          id: 'capture-progress',
+          role: 'assistant',
+          content: captureProgressMessage,
+          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          type: 'analyzing',
+          totalSteps,
+          currentStep,
+          progress,
+        };
+        return [...without, progressMsg];
+      });
+    } else {
+      setMessages((prev) => prev.filter((msg) => msg.id !== 'capture-progress'));
+    }
+  }, [captureProgressMessage]);
+
+  // 2키: 추적 갱신 메시지 추가 (차량 재포착, 번호판 후보) + 타이핑 애니메이션
+  const lastShowFeaturedLayoutRef = useRef<boolean>(false);
+  const trackingUpdateTypingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    if (showFeaturedLayout && !lastShowFeaturedLayoutRef.current) {
+      lastShowFeaturedLayoutRef.current = true;
+      setMessages((prev) => prev.filter((msg) => msg.id !== 'capture-progress'));
+      const content = getTrackingUpdateMsgContent();
+      setTrackingUpdateMsgContent(content);
+      const fullText = [
+        content.title,
+        content.camera,
+        content.match,
+        '"부분 번호판 후보: 12 324 (가시성: 높음)"',
+        content.direction,
+        content.body,
+      ].join('\n');
+      const trackingUpdateMessage: ChatMessage = {
+        id: 'tracking-update-msg',
+        role: 'assistant',
+        content: fullText,
+        timestamp: new Date().toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        }),
+        type: 'normal',
+        isTyping: true,
+        displayedContent: '',
+      };
+      setMessages((prev) => [...prev, trackingUpdateMessage]);
+
+      let currentIndex = 0;
+      trackingUpdateTypingRef.current = setInterval(() => {
+        currentIndex++;
+
+        if (currentIndex <= fullText.length) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === 'tracking-update-msg'
+                ? { ...msg, displayedContent: fullText.substring(0, currentIndex) }
+                : msg
+            )
+          );
+        } else {
+          if (trackingUpdateTypingRef.current) {
+            clearInterval(trackingUpdateTypingRef.current);
+            trackingUpdateTypingRef.current = null;
+          }
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === 'tracking-update-msg'
+                ? { ...msg, isTyping: false, displayedContent: fullText }
+                : msg
+            )
+          );
+        }
+      }, 25);
+    }
+    if (!showFeaturedLayout) {
+      lastShowFeaturedLayoutRef.current = false;
+    }
+
+    return () => {
+      if (trackingUpdateTypingRef.current) {
+        clearInterval(trackingUpdateTypingRef.current);
+        trackingUpdateTypingRef.current = null;
+      }
+    };
+  }, [showFeaturedLayout]);
 
   // 객체 추적 완료 시 결과 메시지 추가 (지도 2D 전환 완료 시)
   const lastObjectTrackingCompletedRef = useRef<boolean>(false);
@@ -894,16 +1232,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       lastReSearchResultRef.current = reSearchResult;
       const { excludedAttributes, deletedCount } = reSearchResult;
       const isResultReSearchButton = excludedAttributes.some((a) => a.includes('대표 후보'));
-      const isRestore = deletedCount < 0;
-      const isRestoreAttr = excludedAttributes.some((a) => a.includes('복원'));
-      const isShowOnly = excludedAttributes.some((a) => a.endsWith('만 표시'));
       const fullContent = isResultReSearchButton
         ? `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`
-        : isShowOnly
-          ? `${excludedAttributes.map((a) => a.replace(/만 표시$/, '')).join(', ')} 속성의 영상만 표시합니다. ${deletedCount}건이 제외되었습니다.`
-          : (isRestore || isRestoreAttr)
-            ? `${excludedAttributes.join(', ')} 조건이 적용되어 해당 영상이 리스트에 복원되었습니다.`
-            : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
+        : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
       
       const messageId = `assistant-research-${Date.now()}`;
       const resultMessage: ChatMessage = {
@@ -967,17 +1298,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     return deleteKeywords.some(kw => t.includes(kw));
   };
 
-  const isAddLikeMessage = (text: string): boolean => {
-    const addKeywords = ['추가', '복원', '보여줘', '보여주', '다시', '되돌려', '되돌리', '복구', '추가해', '추가해줘', '보여줘요', '복원해', '복원해줘', '되돌려줘', '살려', '살려줘', '포함', '포함해', '포함해줘'];
-    const t = text.trim();
-    return addKeywords.some(kw => t.includes(kw));
-  };
-
-  const isShowOnlyMessage = (text: string): boolean => {
-    const t = text.replace(/\s+/g, '');
-    return /만(보여줘|보여주세요|보여주|보여줘요|보여|표시해줘|표시해|표시|남겨줘|남겨)/.test(t);
-  };
-
   const isObjectTrackingMessage = (text: string): boolean => {
     return text.includes('객체 추적을 시작해 주세요') || text.includes('객체 추적');
   };
@@ -1002,7 +1322,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     return {
       id: `assistant-${Date.now()}`,
       role: 'assistant',
-      content: `"${prompt}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`,
+      content: `"${prompt}"에 대한 응답입니다. Agent Chat에서 다양한 기능을 사용할 수 있습니다.`,
       timestamp: new Date().toLocaleTimeString('ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
@@ -1034,213 +1354,19 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     setInputKey((k) => k + 1);
     ignoreNextChangeRef.current = true;
 
-    if (isShowOnlyMessage(text) && onShowOnlyRequest) {
-      const parsedAttributes = onShowOnlyRequest({ rawMessage: text });
+    const isPropagationDraftMessage = (t: string) =>
+      t.includes('포착된 CCTV 영상 포함해서 전파 초안 생성해줘');
 
-      if (!parsedAttributes || parsedAttributes.length === 0) {
-        setIsResponding(true);
-        setTimeout(() => {
-          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
-          const errorMessage: ChatMessage = {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: fullContent,
-            timestamp: new Date().toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            }),
-            type: 'normal',
-            isTyping: true,
-            displayedContent: '',
-          };
-          setMessages((prev) => [...prev, errorMessage]);
-          setIsResponding(false);
-
-          let currentIndex = 0;
-          const typingInterval = setInterval(() => {
-            currentIndex++;
-            if (currentIndex <= fullContent.length) {
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === errorMessage.id
-                    ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
-                    : msg
-                )
-              );
-            } else {
-              clearInterval(typingInterval);
-              typingIntervalRef.current = null;
-              setIsResponding(false);
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === errorMessage.id
-                    ? { ...msg, isTyping: false, displayedContent: fullContent }
-                    : msg
-                )
-              );
-            }
-          }, 30);
-          typingIntervalRef.current = typingInterval;
-        }, 700);
-      } else {
-        setIsReSearching(true);
-        setIsResponding(true);
-
-        if (onReSearchStart) {
-          onReSearchStart();
-        }
-
-        setTimeout(() => {
-          const progressMessage: ChatMessage = {
-            id: 're-search-progress',
-            role: 'assistant',
-            content: '조건에 맞는 결과를 재검색하고 있습니다.',
-            timestamp: new Date().toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            }),
-            type: 'analyzing',
-            progress: 0,
-            currentStep: 1,
-            totalSteps: 3,
-          };
-          setMessages((prev) => [...prev, progressMessage]);
-
-          let step = 0;
-          const progressInterval = setInterval(() => {
-            step++;
-            const progress = step / 3;
-
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === 're-search-progress'
-                  ? { ...msg, currentStep: step + 1, progress }
-                  : msg
-              )
-            );
-
-            if (step >= 3) {
-              clearInterval(progressInterval);
-              setTimeout(() => {
-                setMessages((prev) => prev.filter((msg) => msg.id !== 're-search-progress'));
-                setIsReSearching(false);
-                setIsResponding(false);
-
-                if (onReSearchComplete) {
-                  onReSearchComplete();
-                }
-              }, 500);
-            }
-          }, 500);
-        }, 700);
-      }
+    if (isPropagationDraftMessage(text) && onPropagationDraftRequest) {
+      onPropagationDraftRequest();
       return;
     }
 
-    if (isAddLikeMessage(text) && !isDeleteLikeMessage(text) && onAddLikeRequest) {
-      const parsedAttributes = onAddLikeRequest({ rawMessage: text });
+    const isPropagationPanelMessage = (t: string) =>
+      (t.includes('전파해줘') || (t.includes('전파') && t.includes('해줘'))) && showFeaturedLayout;
 
-      if (!parsedAttributes || parsedAttributes.length === 0) {
-        setIsResponding(true);
-        setTimeout(() => {
-          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
-          const errorMessage: ChatMessage = {
-            id: `assistant-${Date.now()}`,
-            role: 'assistant',
-            content: fullContent,
-            timestamp: new Date().toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            }),
-            type: 'normal',
-            isTyping: true,
-            displayedContent: '',
-          };
-          setMessages((prev) => [...prev, errorMessage]);
-          setIsResponding(false);
-
-          let currentIndex = 0;
-          const typingInterval = setInterval(() => {
-            currentIndex++;
-            if (currentIndex <= fullContent.length) {
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === errorMessage.id
-                    ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
-                    : msg
-                )
-              );
-            } else {
-              clearInterval(typingInterval);
-              typingIntervalRef.current = null;
-              setIsResponding(false);
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === errorMessage.id
-                    ? { ...msg, isTyping: false, displayedContent: fullContent }
-                    : msg
-                )
-              );
-            }
-          }, 30);
-          typingIntervalRef.current = typingInterval;
-        }, 700);
-      } else {
-        setIsReSearching(true);
-        setIsResponding(true);
-
-        if (onReSearchStart) {
-          onReSearchStart();
-        }
-
-        setTimeout(() => {
-          const progressMessage: ChatMessage = {
-            id: 're-search-progress',
-            role: 'assistant',
-            content: '조건에 맞는 결과를 재검색하고 있습니다.',
-            timestamp: new Date().toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            }),
-            type: 'analyzing',
-            progress: 0,
-            currentStep: 1,
-            totalSteps: 3,
-          };
-          setMessages((prev) => [...prev, progressMessage]);
-
-          let step = 0;
-          const progressInterval = setInterval(() => {
-            step++;
-            const progress = step / 3;
-
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === 're-search-progress'
-                  ? { ...msg, currentStep: step + 1, progress }
-                  : msg
-              )
-            );
-
-            if (step >= 3) {
-              clearInterval(progressInterval);
-              setTimeout(() => {
-                setMessages((prev) => prev.filter((msg) => msg.id !== 're-search-progress'));
-                setIsReSearching(false);
-                setIsResponding(false);
-
-                if (onReSearchComplete) {
-                  onReSearchComplete();
-                }
-              }, 500);
-            }
-          }, 500);
-        }, 700);
-      }
+    if (isPropagationPanelMessage(text) && onPropagationPanelRequest) {
+      onPropagationPanelRequest();
       return;
     }
 
@@ -1253,7 +1379,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         
         // 고민하는 아이콘 표시 (700ms)
         setTimeout(() => {
-          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
+          const fullContent = `"${text}"에 대한 정보가 없습니다. 더 구체적인 속성을 입력해 주세요.`;
           const errorMessage: ChatMessage = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
@@ -1534,9 +1660,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     <>
       {isExpanded ? (
         <div
-          className="fixed inset-y-0 right-0 z-[2000]"
+          className="fixed inset-y-0 right-0 transition-all duration-300 ease-out"
           onClick={(e) => e.stopPropagation()}
-          style={{ zIndex: 2000 }}
+          style={{
+            zIndex: 310,
+            transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+            opacity: slideEntered ? 1 : 0,
+          }}
         >
           <div
             className="flex flex-col bg-white border-l border-[#31353a] h-full w-[30rem] overflow-hidden"
@@ -1561,6 +1691,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   listCardCount={listCardCount}
                   cameraCount={cameraCount}
                   isExpanded={true}
+                  onObjectTrackingStart={onObjectTrackingStart}
+                  onVideoView={onVideoView}
+                  welcomeMsgContent={welcomeMsgContent ?? undefined}
+                  trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                 />
               </div>
 
@@ -1583,19 +1717,30 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         </div>
       ) : (
         <div
-          className="absolute z-[1000]"
+          className="absolute"
           style={
             positionOverride
-              ? { position: 'absolute' as const, ...positionOverride }
+              ? {
+                  position: 'absolute' as const,
+                  ...positionOverride,
+                  zIndex: 90,
+                  transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+                  opacity: slideEntered ? 1 : 0,
+                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out, bottom 0.3s ease-out',
+                }
               : {
                   top: `${padding + mainPopupHeight + gap + (hideControls ? 56 : 0)}px`,
                   right: `${padding}px`,
+                  zIndex: 90,
+                  transform: slideEntered ? 'translateX(0)' : 'translateX(100%)',
+                  opacity: slideEntered ? 1 : 0,
+                  transition: 'transform 0.3s ease-out, opacity 0.3s ease-out, top 0.3s ease-out, right 0.3s ease-out',
                 }
           }
           onClick={(e) => e.stopPropagation()}
         >
           <div
-            className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px]"
+            className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px] transition-[height] duration-300 ease-out"
             style={{ height: maxHeightProp ?? 600 }}
           >
             <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
@@ -1617,6 +1762,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   listCardCount={listCardCount}
                   cameraCount={cameraCount}
                   isExpanded={false}
+                  onObjectTrackingStart={onObjectTrackingStart}
+                  onVideoView={onVideoView}
+                  welcomeMsgContent={welcomeMsgContent ?? undefined}
+                  trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                 />
               </div>
 

@@ -116,13 +116,13 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   autoCapture = false,
   onPopupClose,
 }) => {
-  const [radius, setRadius] = useState<number>(200); // 반경 (m) - 실제 적용된 값
+  const [radius, setRadius] = useState<number>(400); // 반경 (m) - 실제 적용된 값
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
   const [selectedZones, setSelectedZones] = useState<string[]>([]); // 다중 선택 구역 (기본값: 전체)
   const [showRadiusSkeleton, setShowRadiusSkeleton] = useState<boolean>(false); // 반경 변경 시 짧은 스켈레톤
   
   // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
-  const [tempRadius, setTempRadius] = useState<number>(200);
+  const [tempRadius, setTempRadius] = useState<number>(400);
   const [tempTimeRange, setTempTimeRange] = useState<[number, number]>([0, 60]);
   
   // 하늘시 행정구역 데이터 (2depth)
