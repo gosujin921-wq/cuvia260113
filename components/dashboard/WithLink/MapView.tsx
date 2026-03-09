@@ -1493,7 +1493,6 @@ const MapView = ({
             (map as any)._pulseMarker = pulseMarker;
 
             const matchedMarker = streamMapData?.markers?.find((m) => Math.abs(m.lng - targetLng) < 0.0001 && Math.abs(m.lat - targetLat) < 0.0001);
-            console.log(matchedMarker);
             if (matchedMarker && (matchedMarker.title || matchedMarker.description)) {
                 const showPopup = () => {
                     const popupContent = createStreamMarkerPopupContent(matchedMarker);
