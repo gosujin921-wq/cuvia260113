@@ -2342,255 +2342,325 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
        >
          {/* 맵 컨트롤 */}
          <div className="flex flex-col gap-2">
-         <button
-           onClick={(e) => {
-             e.stopPropagation();
-             if (mapRef.current) {
-               const map = mapRef.current;
-               const nextZoom = Math.min(map.getMaxZoom(), map.getZoom() + 1);
-               map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
-             }
-           }}
-           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-           aria-label="확대"
-         >
-           <Icon icon="mdi:plus" className="w-5 h-5" />
-         </button>
-         <button
-           onClick={(e) => {
-             e.stopPropagation();
-             if (mapRef.current) {
-               const map = mapRef.current;
-               const nextZoom = Math.max(map.getMinZoom(), map.getZoom() - 1);
-               map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
-             }
-           }}
-           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-           aria-label="축소"
-         >
-           <Icon icon="mdi:minus" className="w-5 h-5" />
-         </button>
+         <div className="relative group">
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               if (mapRef.current) {
+                 const map = mapRef.current;
+                 const nextZoom = Math.min(map.getMaxZoom(), map.getZoom() + 1);
+                 map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
+               }
+             }}
+             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+             aria-label="확대"
+           >
+             <Icon icon="mdi:plus" className="w-5 h-5" />
+           </button>
+           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+               확대
+             </div>
+           </div>
+         </div>
+         <div className="relative group">
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               if (mapRef.current) {
+                 const map = mapRef.current;
+                 const nextZoom = Math.max(map.getMinZoom(), map.getZoom() - 1);
+                 map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
+               }
+             }}
+             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+             aria-label="축소"
+           >
+             <Icon icon="mdi:minus" className="w-5 h-5" />
+           </button>
+           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+               축소
+             </div>
+           </div>
+         </div>
          <div className="w-full h-px bg-gray-300 my-1" />
-         <button
-           onClick={(e) => {
-             e.stopPropagation();
-             setIs3DMode(false);
-             if (mapRef.current) {
-               mapRef.current.easeTo({
-                 pitch: 0,
-                 duration: 500
-               });
-             }
-           }}
-           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-             !is3DMode
-               ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-               : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-           }`}
-           aria-label="2D"
-         >
-           <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
-         </button>
-         <button
-           onClick={(e) => {
-             e.stopPropagation();
-             setIs3DMode(true);
-             if (mapRef.current) {
-               mapRef.current.easeTo({
-                 pitch: 60,
-                 duration: 500
-               });
-             }
-           }}
-           className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-             is3DMode
-               ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-               : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-           }`}
-           aria-label="3D"
-         >
-           <Icon icon="mdi:cube" className="w-5 h-5" />
-         </button>
+         <div className="relative group">
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               setIs3DMode(false);
+               if (mapRef.current) {
+                 mapRef.current.easeTo({
+                   pitch: 0,
+                   duration: 500
+                 });
+               }
+             }}
+             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+               !is3DMode
+                 ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                 : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+             }`}
+             aria-label="2D"
+           >
+             <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
+           </button>
+           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+               2D 보기
+             </div>
+           </div>
+         </div>
+         <div className="relative group">
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               setIs3DMode(true);
+               if (mapRef.current) {
+                 mapRef.current.easeTo({
+                   pitch: 60,
+                   duration: 500
+                 });
+               }
+             }}
+             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+               is3DMode
+                 ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                 : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+             }`}
+             aria-label="3D"
+           >
+             <Icon icon="mdi:cube" className="w-5 h-5" />
+           </button>
+           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+               3D 보기
+             </div>
+           </div>
+         </div>
          <div className="w-full h-px bg-gray-300 my-1" />
-         <button
-           onClick={(e) => {
-             e.stopPropagation();
-             if (mapRef.current) {
-               const map = mapRef.current;
-               const newBearing = map.getBearing() - 15;
-               setMapBearing(newBearing);
-               map.easeTo({
-                 bearing: newBearing,
-                 duration: 500,
-                 easing: (t) => 1 - Math.pow(1 - t, 3),
-                 essential: true,
-               });
-             }
-           }}
-           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-           aria-label="회전 왼쪽"
-         >
-           <Icon icon="mdi:rotate-left" className="w-5 h-5" />
-         </button>
-         <button
-           onClick={(e) => {
-             e.stopPropagation();
-             if (mapRef.current) {
-               const map = mapRef.current;
-               const newBearing = map.getBearing() + 15;
-               setMapBearing(newBearing);
-               map.easeTo({
-                 bearing: newBearing,
-                 duration: 500,
-                 easing: (t) => 1 - Math.pow(1 - t, 3),
-                 essential: true,
-               });
-             }
-           }}
-           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-           aria-label="회전 오른쪽"
-         >
-           <Icon icon="mdi:rotate-right" className="w-5 h-5" />
-         </button>
+         <div className="relative group">
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               if (mapRef.current) {
+                 const map = mapRef.current;
+                 const newBearing = map.getBearing() - 15;
+                 setMapBearing(newBearing);
+                 map.easeTo({
+                   bearing: newBearing,
+                   duration: 500,
+                   easing: (t) => 1 - Math.pow(1 - t, 3),
+                   essential: true,
+                 });
+               }
+             }}
+             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+             aria-label="회전 왼쪽"
+           >
+             <Icon icon="mdi:rotate-left" className="w-5 h-5" />
+           </button>
+           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+               왼쪽으로 회전
+             </div>
+           </div>
+         </div>
+         <div className="relative group">
+           <button
+             onClick={(e) => {
+               e.stopPropagation();
+               if (mapRef.current) {
+                 const map = mapRef.current;
+                 const newBearing = map.getBearing() + 15;
+                 setMapBearing(newBearing);
+                 map.easeTo({
+                   bearing: newBearing,
+                   duration: 500,
+                   easing: (t) => 1 - Math.pow(1 - t, 3),
+                   essential: true,
+                 });
+               }
+             }}
+             className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+             aria-label="회전 오른쪽"
+           >
+             <Icon icon="mdi:rotate-right" className="w-5 h-5" />
+           </button>
+           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+               오른쪽으로 회전
+             </div>
+           </div>
+         </div>
          </div>
          {/* 맵-CCTV 간격 30px */}
          <div style={{ height: 30 }} />
          {/* CCTV 컨트롤 */}
          <div className="flex flex-col gap-2">
         {/* 도로 버튼 - 초기 화면에서만 표시 (고속검색 시 숨김) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isRoadLayerLoading) return;
-            const now = Date.now();
-            if (now - roadToggleCooldownRef.current < ROAD_TOGGLE_COOLDOWN_MS) return;
-            roadToggleCooldownRef.current = now;
-            setShowRoad((prev) => !prev);
-          }}
-          disabled={isRoadLayerLoading}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            isRoadLayerLoading
-              ? 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed'
-              : showRoad
-                ? 'bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm'
-                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-          }`}
-          style={{
-            visibility: showFastSearchList ? 'hidden' : 'visible',
-            pointerEvents: showFastSearchList ? 'none' : 'auto',
-          }}
-          aria-label="도로"
-          aria-busy={isRoadLayerLoading}
-        >
-          {isRoadLayerLoading ? (
-            <Icon icon="mdi:loading" className="w-5 h-5 animate-spin" />
-          ) : (
-            <Icon icon="mdi:highway" className="w-5 h-5" />
-          )}
-        </button>
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isRoadLayerLoading) return;
+              const now = Date.now();
+              if (now - roadToggleCooldownRef.current < ROAD_TOGGLE_COOLDOWN_MS) return;
+              roadToggleCooldownRef.current = now;
+              setShowRoad((prev) => !prev);
+            }}
+            disabled={isRoadLayerLoading}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              isRoadLayerLoading
+                ? 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed'
+                : showRoad
+                  ? 'bg-[#e85c2a] hover:bg-[#d94a1a] text-white border border-[#d94a1a]/50 shadow-sm'
+                  : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+            }`}
+            style={{
+              visibility: showFastSearchList ? 'hidden' : 'visible',
+              pointerEvents: showFastSearchList ? 'none' : 'auto',
+            }}
+            aria-label="도로"
+            aria-busy={isRoadLayerLoading}
+          >
+            {isRoadLayerLoading ? (
+              <Icon icon="mdi:loading" className="w-5 h-5 animate-spin" />
+            ) : (
+              <Icon icon="mdi:highway" className="w-5 h-5" />
+            )}
+          </button>
+          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+              도로 돌발 상황
+            </div>
+          </div>
+        </div>
         {/* CCTV 아이콘 토글 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const newValue = !showCCTV;
-            console.log('[v2 MapView] CCTV 버튼 클릭', { prev: showCCTV, next: newValue });
-            setShowCCTV(newValue);
-            if (newValue) {
-              setShowCCTVViewAngle(true);
-              setShowCCTVName(true);
-            } else {
-              setShowCCTVViewAngle(false);
-              setShowCCTVName(false);
-            }
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('cctv-show-cctv', newValue.toString());
-              localStorage.setItem('cctv-show-view-angle', newValue.toString());
-              localStorage.setItem('cctv-show-name', newValue.toString());
-            }
-          }}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            showCCTV 
-              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
-              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-          }`}
-          aria-label="CCTV"
-        >
-          <CCTVIcon className="w-5 h-5" />
-        </button>
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              const newValue = !showCCTV;
+              console.log('[v2 MapView] CCTV 버튼 클릭', { prev: showCCTV, next: newValue });
+              setShowCCTV(newValue);
+              if (newValue) {
+                setShowCCTVViewAngle(true);
+                setShowCCTVName(true);
+              } else {
+                setShowCCTVViewAngle(false);
+                setShowCCTVName(false);
+              }
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('cctv-show-cctv', newValue.toString());
+                localStorage.setItem('cctv-show-view-angle', newValue.toString());
+                localStorage.setItem('cctv-show-name', newValue.toString());
+              }
+            }}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              showCCTV 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' 
+                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+            }`}
+            aria-label="CCTV"
+          >
+            <CCTVIcon className="w-5 h-5" />
+          </button>
+          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+              CCTV 표시
+            </div>
+          </div>
+        </div>
         
         {/* CCTV 라벨 토글 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const newValue = !showCCTVName;
-            console.log('[v2 MapView] 라벨 버튼 클릭', { prev: showCCTVName, next: newValue });
-            setShowCCTVName(newValue);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('cctv-show-name', newValue.toString());
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
+        <div className="relative group">
+          <button
+            onClick={(e) => {
               e.stopPropagation();
               const newValue = !showCCTVName;
+              console.log('[v2 MapView] 라벨 버튼 클릭', { prev: showCCTVName, next: newValue });
               setShowCCTVName(newValue);
               if (typeof window !== 'undefined') {
                 localStorage.setItem('cctv-show-name', newValue.toString());
               }
-            }
-          }}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            showCCTVName 
-              ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
-              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-          }`}
-          style={{
-            visibility: showCCTV ? 'visible' : 'hidden',
-            pointerEvents: showCCTV ? 'auto' : 'none',
-          }}
-          aria-label="CCTV 라벨"
-          tabIndex={showCCTV ? 0 : -1}
-        >
-          <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? 'text-blue-600' : 'text-gray-800'}`} />
-        </button>
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                const newValue = !showCCTVName;
+                setShowCCTVName(newValue);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('cctv-show-name', newValue.toString());
+                }
+              }
+            }}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              showCCTVName 
+                ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
+                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+            }`}
+            style={{
+              visibility: showCCTV ? 'visible' : 'hidden',
+              pointerEvents: showCCTV ? 'auto' : 'none',
+            }}
+            aria-label="CCTV 라벨"
+            tabIndex={showCCTV ? 0 : -1}
+          >
+            <Icon icon="mdi:label" className={`w-5 h-5 ${showCCTVName ? 'text-blue-600' : 'text-gray-800'}`} />
+          </button>
+          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+              CCTV 라벨
+            </div>
+          </div>
+        </div>
         
         {/* 시야각 토글 */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            const newValue = !showCCTVViewAngle;
-            console.log('[v2 MapView] 시야각 버튼 클릭', { prev: showCCTVViewAngle, next: newValue });
-            setShowCCTVViewAngle(newValue);
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('cctv-show-view-angle', newValue.toString());
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
+        <div className="relative group">
+          <button
+            onClick={(e) => {
               e.stopPropagation();
               const newValue = !showCCTVViewAngle;
+              console.log('[v2 MapView] 시야각 버튼 클릭', { prev: showCCTVViewAngle, next: newValue });
               setShowCCTVViewAngle(newValue);
               if (typeof window !== 'undefined') {
                 localStorage.setItem('cctv-show-view-angle', newValue.toString());
               }
-            }
-          }}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-            showCCTVViewAngle 
-              ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
-              : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
-          }`}
-          style={{
-            visibility: showCCTV ? 'visible' : 'hidden',
-            pointerEvents: showCCTV ? 'auto' : 'none',
-          }}
-          aria-label="CCTV 시야각"
-          tabIndex={showCCTV ? 0 : -1}
-        >
-          <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
-        </button>
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                const newValue = !showCCTVViewAngle;
+                setShowCCTVViewAngle(newValue);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('cctv-show-view-angle', newValue.toString());
+                }
+              }
+            }}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+              showCCTVViewAngle 
+                ? 'bg-white hover:bg-gray-100 shadow-sm border-2 border-blue-600' 
+                : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm'
+            }`}
+            style={{
+              visibility: showCCTV ? 'visible' : 'hidden',
+              pointerEvents: showCCTV ? 'auto' : 'none',
+            }}
+            aria-label="CCTV 시야각"
+            tabIndex={showCCTV ? 0 : -1}
+          >
+            <Icon icon="mdi:triangle-outline" className={`w-5 h-5 ${showCCTVViewAngle ? 'text-blue-600' : 'text-gray-800'}`} />
+          </button>
+          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+              CCTV 시야각
+            </div>
+          </div>
+        </div>
          </div>
        </div>
        ) : (console.log('[v2 MapView] 컨트롤 패널 숨김', { hideControls, showFastSearchList }), null)}

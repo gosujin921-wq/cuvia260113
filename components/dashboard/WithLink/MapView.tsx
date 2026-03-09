@@ -16,7 +16,7 @@ proj4.defs("EPSG:5181", "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=
 const PIXEL_RATIO = 2;
 const MARKER_SIZE = 28 * PIXEL_RATIO;
 
-const INITIAL_MAP_CENTER: [number, number] = [126.8136, 37.4865];
+const INITIAL_MAP_CENTER: [number, number] = [126.97237991495209, 37.479065249679685];
 const INITIAL_MAP_ZOOM = 15;
 const INITIAL_MAP_PITCH = 45;
 const INITIAL_MAP_BEARING = 0;
@@ -403,7 +403,7 @@ const MapView = ({
         const map = new maplibregl.Map({
             container: mapContainerRef.current,
             style: "https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh",
-            center: [126.8136, 37.4865], // 성운동 좌표
+            center: INITIAL_MAP_CENTER,
             zoom: 15,
             minZoom: 9,
             maxZoom: 22,
@@ -2537,100 +2537,142 @@ const MapView = ({
                             zIndex: 250,
                         }}
                         onClick={(e) => e.stopPropagation()}>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (!mapRef.current) return;
-                                const map = mapRef.current;
-                                const nextZoom = Math.min(map.getZoom() + 1, map.getMaxZoom());
-                                map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
-                            }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                            aria-label="확대">
-                            <Icon icon="mdi:plus" className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (!mapRef.current) return;
-                                const map = mapRef.current;
-                                const nextZoom = Math.max(map.getZoom() - 1, map.getMinZoom());
-                                map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
-                            }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                            aria-label="축소">
-                            <Icon icon="mdi:minus" className="w-5 h-5" />
-                        </button>
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!mapRef.current) return;
+                                    const map = mapRef.current;
+                                    const nextZoom = Math.min(map.getZoom() + 1, map.getMaxZoom());
+                                    map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
+                                }}
+                                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                                aria-label="확대">
+                                <Icon icon="mdi:plus" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    확대
+                                </div>
+                            </div>
+                        </div>
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!mapRef.current) return;
+                                    const map = mapRef.current;
+                                    const nextZoom = Math.max(map.getZoom() - 1, map.getMinZoom());
+                                    map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
+                                }}
+                                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                                aria-label="축소">
+                                <Icon icon="mdi:minus" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    축소
+                                </div>
+                            </div>
+                        </div>
                         <div className="w-full h-px bg-gray-300 my-1" />
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIs3DMode(false);
-                                if (mapRef.current) {
-                                    mapRef.current.easeTo({
-                                        pitch: 0,
-                                        duration: 500,
-                                    });
-                                }
-                            }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${!is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                            aria-label="2D">
-                            <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setIs3DMode(true);
-                                if (mapRef.current) {
-                                    mapRef.current.easeTo({
-                                        pitch: 60,
-                                        duration: 500,
-                                    });
-                                }
-                            }}
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                            aria-label="3D">
-                            <Icon icon="mdi:cube" className="w-5 h-5" />
-                        </button>
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIs3DMode(false);
+                                    if (mapRef.current) {
+                                        mapRef.current.easeTo({
+                                            pitch: 0,
+                                            duration: 500,
+                                        });
+                                    }
+                                }}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${!is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                aria-label="2D">
+                                <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    2D 보기
+                                </div>
+                            </div>
+                        </div>
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIs3DMode(true);
+                                    if (mapRef.current) {
+                                        mapRef.current.easeTo({
+                                            pitch: 60,
+                                            duration: 500,
+                                        });
+                                    }
+                                }}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${is3DMode ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                aria-label="3D">
+                                <Icon icon="mdi:cube" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    3D 보기
+                                </div>
+                            </div>
+                        </div>
                         <div className="w-full h-px bg-gray-300 my-1" />
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                const map = mapRef.current;
-                                if (!map) return;
-                                const currentBearing = map.getBearing();
-                                const newBearing = currentBearing - 15;
-                                setMapBearing(newBearing);
-                                map.easeTo({
-                                    bearing: newBearing,
-                                    duration: 500,
-                                    easing: (t) => 1 - Math.pow(1 - t, 3),
-                                    essential: true,
-                                });
-                            }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                            aria-label="회전 왼쪽">
-                            <Icon icon="mdi:rotate-left" className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                const map = mapRef.current;
-                                if (!map) return;
-                                const currentBearing = map.getBearing();
-                                const newBearing = currentBearing + 15;
-                                setMapBearing(newBearing);
-                                map.easeTo({
-                                    bearing: newBearing,
-                                    duration: 500,
-                                    easing: (t) => 1 - Math.pow(1 - t, 3),
-                                    essential: true,
-                                });
-                            }}
-                            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-                            aria-label="회전 오른쪽">
-                            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
-                        </button>
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const map = mapRef.current;
+                                    if (!map) return;
+                                    const currentBearing = map.getBearing();
+                                    const newBearing = currentBearing - 15;
+                                    setMapBearing(newBearing);
+                                    map.easeTo({
+                                        bearing: newBearing,
+                                        duration: 500,
+                                        easing: (t) => 1 - Math.pow(1 - t, 3),
+                                        essential: true,
+                                    });
+                                }}
+                                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                                aria-label="회전 왼쪽">
+                                <Icon icon="mdi:rotate-left" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    왼쪽으로 회전
+                                </div>
+                            </div>
+                        </div>
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const map = mapRef.current;
+                                    if (!map) return;
+                                    const currentBearing = map.getBearing();
+                                    const newBearing = currentBearing + 15;
+                                    setMapBearing(newBearing);
+                                    map.easeTo({
+                                        bearing: newBearing,
+                                        duration: 500,
+                                        easing: (t) => 1 - Math.pow(1 - t, 3),
+                                        essential: true,
+                                    });
+                                }}
+                                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
+                                aria-label="회전 오른쪽">
+                                <Icon icon="mdi:rotate-right" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    오른쪽으로 회전
+                                </div>
+                            </div>
+                        </div>
                         <div className="w-full h-px bg-gray-300 my-1" />
                         <div className="relative group">
                             <button
@@ -2653,51 +2695,70 @@ const MapView = ({
                                 tabIndex={0}>
                                 {isTrafficLayerLoading ? <Icon icon="mdi:loading" className="w-5 h-5 animate-spin" /> : <Icon icon="mdi:highway" className="w-5 h-5" />}
                             </button>
-                            {isAgentActive && (
-                                <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
-                                    <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
-                                        에이전트 활성화 중이므로 사용할 수 없습니다.
-                                    </div>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    {isAgentActive ? "에이전트 활성화 중이므로 사용할 수 없습니다." : "실시간 교통정보"}
                                 </div>
-                            )}
+                            </div>
                         </div>
                         {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
                         {streamMapData?.markers && streamMapData.markers.length > 0 && (
                             <>
                                 <div className="w-full h-px bg-gray-300 my-1" />
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setStreamMarkerViewType("individual");
-                                    }}
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "individual" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                                    aria-label="개별 마커"
-                                    aria-pressed={streamMarkerViewType === "individual"}
-                                    tabIndex={0}>
-                                    <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setStreamMarkerViewType("cluster");
-                                    }}
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "cluster" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                                    aria-label="클러스터"
-                                    aria-pressed={streamMarkerViewType === "cluster"}
-                                    tabIndex={0}>
-                                    <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setStreamMarkerViewType("heatmap");
-                                    }}
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "heatmap" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
-                                    aria-label="히트맵"
-                                    aria-pressed={streamMarkerViewType === "heatmap"}
-                                    tabIndex={0}>
-                                    <Icon icon="mdi:fire-circle" className="w-5 h-5" />
-                                </button>
+                                <div className="relative group">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setStreamMarkerViewType("individual");
+                                        }}
+                                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "individual" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                        aria-label="개별 마커"
+                                        aria-pressed={streamMarkerViewType === "individual"}
+                                        tabIndex={0}>
+                                        <Icon icon="mdi:map-marker-multiple" className="w-5 h-5" />
+                                    </button>
+                                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                        <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                            개별 마커
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="relative group">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setStreamMarkerViewType("cluster");
+                                        }}
+                                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "cluster" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                        aria-label="클러스터"
+                                        aria-pressed={streamMarkerViewType === "cluster"}
+                                        tabIndex={0}>
+                                        <Icon icon="mdi:circle-multiple" className="w-5 h-5" />
+                                    </button>
+                                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                        <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                            클러스터
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="relative group">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setStreamMarkerViewType("heatmap");
+                                        }}
+                                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${streamMarkerViewType === "heatmap" ? "bg-red-600 hover:bg-red-700 text-white shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                        aria-label="히트맵"
+                                        aria-pressed={streamMarkerViewType === "heatmap"}
+                                        tabIndex={0}>
+                                        <Icon icon="mdi:fire-circle" className="w-5 h-5" />
+                                    </button>
+                                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                        <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                            히트맵
+                                        </div>
+                                    </div>
+                                </div>
                             </>
                         )}
                     </div>
