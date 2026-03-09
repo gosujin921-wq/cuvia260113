@@ -81,7 +81,7 @@ export function ChartMessage({ message, onMapLocationRequest, flyToLocation, isM
                         backdropFilter: "blur(4px)",
                         border: "1px solid rgba(255,255,255,0.08)",
                     }}>
-                    {message.title}
+                    {message.chartData?.title || message.title || ""}
                 </div>
             )}
             {message.title && message.rationale && <br />}

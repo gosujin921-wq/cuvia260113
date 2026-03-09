@@ -50,7 +50,7 @@ export function TableMessage({ message, onMapLocationRequest, flyToLocation, isM
                             backdropFilter: "blur(4px)",
                             border: "1px solid rgba(255,255,255,0.08)",
                         }}>
-                        {message.title}
+                        {message.tableData?.title || message.title || ""}
                     </div>
                 )}
                 {message.title && message.rationale && <br />}
