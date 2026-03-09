@@ -163,7 +163,6 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         ...state,
         showCaptureList: true,
         showFastSearchList: false,
-        showObjectTracking: false,
         showPropagationList: false,
         panelsSlidOut: true,
         showCCTV: false,
@@ -510,6 +509,7 @@ export default function HomeV2() {
       // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
       dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
     } else if (menuId === 'capture-list') {
+      setShowPredictedCCTVList(false);
       dispatch({ type: 'SHOW_CAPTURE_LIST' });
     } else if (menuId === 'propagation') {
       dispatch({ type: 'SHOW_PROPAGATION_LIST' });
