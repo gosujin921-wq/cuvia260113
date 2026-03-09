@@ -27,6 +27,63 @@ const escapeHtml = (text: string): string => {
     return div.innerHTML.replace(/\n/g, "<br>");
 };
 
+const createStreamMarkerPopupContent = (title: string, description: string): string => {
+    const hasTitle = title.trim().length > 0;
+    const hasDesc = description.trim().length > 0;
+    if (!hasTitle && !hasDesc) return "";
+
+    return `
+        <div style="
+            font-family: 'Pretendard', sans-serif;
+            min-width: 280px;
+            max-width: 320px;
+            padding: 0;
+            background: rgba(15, 15, 15, 0.98);
+            border: 1px solid #31353a;
+            border-radius: 8px;
+        ">
+            <div style="
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 14px;
+                background: rgba(40, 40, 48, 0.95);
+                border-radius: 8px 8px 0 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            ">
+                <span style="color: #ffffff; font-weight: 600; font-size: 14px;">위치 정보</span>
+            </div>
+            <div style="padding: 12px 14px;">
+                <div style="
+                    background: rgba(35, 35, 42, 0.8);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 6px;
+                    padding: 10px 12px;
+                    margin-bottom: ${hasDesc ? "10px" : "0"};
+                ">
+                    <div style="font-size: 13px; font-weight: 600; color: #ffffff; line-height: 1.4;">
+                        ${escapeHtml(hasTitle ? title : "정보 없음")}
+                    </div>
+                </div>
+                ${
+                    hasDesc
+                        ? `
+                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                    <div style="display: flex; justify-content: space-between; gap: 8px;">
+                        <span style="color: #9ca3af;">설명</span>
+                        <span style="font-weight: 500; color: rgb(197, 206, 221); text-align: right; max-width: 180px; line-height: 1.4;">
+                            ${escapeHtml(description)}
+                        </span>
+                    </div>
+                </div>
+                `
+                        : ""
+                }
+            </div>
+        </div>
+    `;
+};
+
 const createStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
     const canvas = document.createElement("canvas");
     canvas.width = MARKER_SIZE;
@@ -1257,13 +1314,14 @@ const MapView = ({
                 existingPopup.remove();
             }
 
-            const popupContent = ['<div class="stream-marker-popup__inner">', title ? `<div class="stream-marker-popup__title">${escapeHtml(title)}</div>` : "", description ? `<div class="stream-marker-popup__desc">${escapeHtml(description)}</div>` : "", "</div>"].filter(Boolean).join("");
-
-            if (!title && !description) return;
+            const popupContent = createStreamMarkerPopupContent(title, description);
+            if (!popupContent) return;
 
             const popup = new maplibregl.Popup({
+                offset: 20,
                 closeButton: true,
                 closeOnClick: true,
+                maxWidth: "340px",
                 className: "stream-marker-popup",
             })
                 .setLngLat(coords)
@@ -1393,13 +1451,15 @@ const MapView = ({
 
             if (matchedMarker && (matchedMarker.title || matchedMarker.description)) {
                 const showPopup = () => {
-                    const popupContent = ['<div class="stream-marker-popup__inner">', matchedMarker.title ? `<div class="stream-marker-popup__title">${escapeHtml(matchedMarker.title)}</div>` : "", matchedMarker.description ? `<div class="stream-marker-popup__desc">${escapeHtml(matchedMarker.description)}</div>` : "", "</div>"].filter(Boolean).join("");
+                    const popupContent = createStreamMarkerPopupContent(matchedMarker.title ?? "", matchedMarker.description ?? "");
+                    if (!popupContent) return;
 
                     const popup = new maplibregl.Popup({
                         closeButton: true,
                         closeOnClick: true,
                         className: "stream-marker-popup",
                         offset: [0, -16],
+                        maxWidth: "340px",
                     })
                         .setLngLat([matchedMarker.lng, matchedMarker.lat])
                         .setHTML(popupContent)
@@ -2485,7 +2545,7 @@ const MapView = ({
                 }
                 .stream-marker-popup .maplibregl-popup-close-button {
                     font-size: 18px;
-                    padding: 4px 8px;
+                    padding: 10px 12px;
                     color: #9ca3af;
                     right: 2px;
                     top: 2px;
