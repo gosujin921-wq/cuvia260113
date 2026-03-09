@@ -7,7 +7,6 @@
 | `/` | → redirect | `/home`으로 리다이렉트 |
 | `/home` | Home.tsx | 기본 대시보드 |
 | `/v2` | Home-v2.tsx | v2 대시보드 |
-| `/v3` | Home-v3.tsx | v3 대시보드 |
 | `/v4` | Home-v4.tsx | v4 대시보드 (최신) |
 | `/event/:eventId` | event-detail.tsx | 이벤트 상세 (**사실상 미사용**) |
 | `/components-style` | components-style.tsx | 스타일 가이드 페이지 |
@@ -76,26 +75,6 @@ Home-v2
 └── useMouseGuide
 ```
 
-### Home-v3.tsx
-```
-Home-v3
-├── HOME-v3/EventList
-├── HOME/MapView
-├── HOME/unity/UnityMapView
-├── HOME-v3/ObjectTrackingMapView
-├── HOME-v3/LeftPanel
-├── HOME-v3/LeftMenuPanel
-├── HOME-v3/HeatmapPanel
-├── HOME-v3/BottomPanel
-├── HOME-v3/ReportPopup
-├── HOME-v3/FastSearchListPanel (→ HOME-v2/FastSearchProgress, FastSearchCandidateDetailPopup)
-├── HOME-v3/PredictedCCTVListPanel, PredictedCCTVDetailPopup
-├── HOME-v3/CaptureListPanel
-├── HOME-v3/PropagationListPanel, PropagationPackagePopup
-├── HOME-v3/AIAgentPopup, ConfirmDialog
-└── lib: events-data, fast-search-attribute-utils
-```
-
 ### cuvia-link.tsx
 ```
 cuvia-link
@@ -148,16 +127,15 @@ event-detail
 
 | 컴포넌트 | 사용처 |
 |----------|--------|
-| **shared/styles** | MapView(v2,v3,v4,HOME), event-detail 전부, components-style |
+| **shared/styles** | MapView(v2,v4,HOME), event-detail 전부, components-style |
 | **shared/BasePopup** | cuvia-link, agent-chat, components-style, event-detail 팝업들 |
 | **shared/NotificationPopup** | components-style, event-detail (AdditionalData, EventCompletion) |
 | **common/CCTVIcon** | MapView, agent-chat, components-style, event-detail |
 | **layouts/ScaledLayout** | cuvia-link, agent-chat, event-detail |
 | **common/BroadcastControls** | event-detail/EventLeftPanel 만 사용 |
 | **HeatmapPanel** | Home, Home-v2, Home-v4 |
-| **BottomPanel** | Home-v2, Home-v4 (Home-v3는 HOME-v3/BottomPanel) |
+| **BottomPanel** | Home-v2, Home-v4 |
 | **HOME/EventList** | Home, Home-v2, Home-v4 |
-| **HOME-v3/EventList** | Home-v3 |
 
 ---
 
@@ -165,14 +143,14 @@ event-detail
 
 | lib | 사용처 |
 |-----|--------|
-| **events-data** | Home*, event-detail, HOME/EventList, HOME-v3/EventList |
+| **events-data** | Home*, event-detail, HOME/EventList |
 | **cctv-video-utils** | LeftPanel, BottomPanel, PredictedCCTVDetailPopup, FastSearchCandidateDetailPopup, event-detail 팝업들 |
-| **cctv-view-angle-utils** | MapView (HOME, v2, v3, v4) |
-| **dashboard-cctv-layout** | MapView (v2, v3, v4) |
-| **fast-search-image-attributes** | FastSearchListPanel (v2, v3, v4) |
-| **fast-search-candidate-detail** | FastSearchCandidateDetailPopup (v2, v3, v4) |
+| **cctv-view-angle-utils** | MapView (HOME, v2, v4) |
+| **dashboard-cctv-layout** | MapView (v2, v4) |
+| **fast-search-image-attributes** | FastSearchListPanel (v2, v4) |
+| **fast-search-candidate-detail** | FastSearchCandidateDetailPopup (v2, v4) |
 | **fast-search-attribute-utils** | Home-v4 |
-| **predicted-cctv-details** | PredictedCCTVDetailPopup (v2, v3, v4) |
+| **predicted-cctv-details** | PredictedCCTVDetailPopup (v2, v4) |
 | **unity/unityBridge, types** | Home (Unity 모드) |
 | **weather/hooks** | HOME/LeftPanel |
 

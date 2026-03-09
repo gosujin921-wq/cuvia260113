@@ -11,6 +11,10 @@ interface AIAgentPopupProps {
   listCardCount?: number;
   /** 삭제/제거 등 delete류 문장 전송 시 호출. rawMessage로 속성 파싱 후 리스트 숨김에 사용. 파싱된 속성 배열 반환 */
   onDeleteLikeRequest?: (payload: { rawMessage: string }) => string[];
+  /** 추가/복원 등 add류 문장 전송 시 호출. rawMessage로 속성 파싱 후 리스트 복원에 사용. 파싱된 속성 배열 반환 */
+  onAddLikeRequest?: (payload: { rawMessage: string }) => string[];
+  /** "{{속성}}만 보여줘" 문장 전송 시 호출. 해당 속성만 남기고 나머지 제외. 파싱된 속성 배열 반환 */
+  onShowOnlyRequest?: (payload: { rawMessage: string }) => string[];
   /** 축소 모드일 때 최대 높이(px). 플로팅 버튼을 넘지 않도록 부모에서 계산해 전달 */
   maxHeight?: number;
   /** 재검색 완료 후 삭제 결과 정보 (요구조건, 삭제 건수) */
@@ -347,6 +351,7 @@ interface ChatInputFormProps {
   setChatInput: (value: string) => void;
   handleSendMessage: () => void;
   isResponding: boolean;
+  onSkipResponse: () => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   inputKey: number;
   ignoreNextChangeRef: React.MutableRefObject<boolean>;
@@ -359,6 +364,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   setChatInput,
   handleSendMessage,
   isResponding,
+  onSkipResponse,
   textareaRef,
   inputKey,
   ignoreNextChangeRef,
@@ -381,6 +387,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             </button>
           )}
           <textarea
+            id="agent-chat-input"
             ref={textareaRef}
             key={inputKey}
             value={chatInput}
@@ -408,23 +415,38 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
             }}
             rows={1}
           />
-          <button
-            type="button"
-            onClick={handleSendMessage}
-            disabled={!chatInput.trim() || isResponding}
-            className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${
-              isExpanded ? 'self-center' : ''
-            }`}
-            style={{ background: AGENT_GRADIENT }}
-            aria-label="전송"
-          >
-            <img
-              src="/simbol.svg"
-              alt="전송"
-              className="w-5 h-5"
-              style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
-            />
-          </button>
+          {isResponding ? (
+            <button
+              type="button"
+              onClick={onSkipResponse}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all hover:scale-105 active:scale-95 ${
+                isExpanded ? 'self-center' : ''
+              }`}
+              style={{ background: AGENT_GRADIENT }}
+              aria-label="답변 취소"
+            >
+              <Icon icon="mdi:close" className="w-5 h-5 text-white" />
+            </button>
+          ) : (
+            <button
+              id="agent-chat-send-button"
+              type="button"
+              onClick={handleSendMessage}
+              disabled={!chatInput.trim()}
+              className={`flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 ${
+                isExpanded ? 'self-center' : ''
+              }`}
+              style={{ background: AGENT_GRADIENT }}
+              aria-label="전송"
+            >
+              <img
+                src="/simbol.svg"
+                alt="전송"
+                className="w-5 h-5"
+                style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
+              />
+            </button>
+          )}
         </div>
         <p className="text-xs text-gray-500 mt-2 text-center">
           <span className="font-semibold">{isExpanded ? 'CUVIA Agent' : 'CUVIA Link'}</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
@@ -441,6 +463,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   position: positionOverride, 
   listCardCount = 0, 
   onDeleteLikeRequest, 
+  onAddLikeRequest,
+  onShowOnlyRequest,
   maxHeight: maxHeightProp, 
   reSearchResult, 
   isObjectTracking = false, 
@@ -538,6 +562,14 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const ignoreNextChangeRef = useRef(false);
   const lastReSearchResultRef = useRef<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
+  const lastCaptureNotificationRef = useRef<string>('');
+  const onFastSearchCompleteRef = useRef(onFastSearchComplete);
+  onFastSearchCompleteRef.current = onFastSearchComplete;
+  
+  // 애니메이션 interval refs
+  const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // 고속검색 프로그래스 상태
   const [fastSearchStep, setFastSearchStep] = useState<number>(0);
@@ -546,6 +578,47 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   
   // 재검색 프로그래스 상태
   const [isReSearching, setIsReSearching] = useState<boolean>(false);
+
+  // 답변 스킵 핸들러 (답변 취소)
+  const handleSkipResponse = () => {
+    // 모든 interval/timeout 정리
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    if (progressTimeoutRef.current) {
+      clearTimeout(progressTimeoutRef.current);
+      progressTimeoutRef.current = null;
+    }
+    
+    // 타이핑 중이거나 프로그래스바 표시 중인 메시지 제거
+    setMessages((prev) =>
+      prev.filter((msg) => {
+        // 타이핑 중인 메시지 제거
+        if (msg.isTyping) return false;
+        // 프로그래스바 메시지 제거
+        if (msg.type === 'analyzing') return false;
+        // 응답 대기 중인 메시지 제거 (마지막 assistant 메시지가 아직 완료되지 않은 경우)
+        if (msg.role === 'assistant' && msg.content === '') return false;
+        return true;
+      })
+    );
+    
+    setIsResponding(false);
+  };
+
+  // 컴포넌트 언마운트 시 모든 interval 정리
+  useEffect(() => {
+    return () => {
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (progressTimeoutRef.current) clearTimeout(progressTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -580,7 +653,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
   // 포착 알림 메시지 처리
   useEffect(() => {
-    if (!captureNotificationMessage) return;
+    if (!captureNotificationMessage) {
+      lastCaptureNotificationRef.current = '';
+      return;
+    }
+    if (captureNotificationMessage === lastCaptureNotificationRef.current) return;
+    lastCaptureNotificationRef.current = captureNotificationMessage;
     
     const captureMessage: ChatMessage = {
       id: `capture-notification-${Date.now()}`,
@@ -639,7 +717,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     // 이미 프로그래스 메시지가 있으면 추가하지 않음
     setMessages((prev) => {
       const hasProgress = prev.some(msg => msg.id === 'fast-search-progress');
-      if (hasProgress) return prev;
+      if (hasProgress) {
+        return prev;
+      }
       
       // 고속검색 프로그래스 메시지 추가
       const progressMessage: ChatMessage = {
@@ -667,8 +747,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       }
     });
 
-    // 단계별 진행 (각 단계 650ms)
-    const stepDuration = 650;
+    // 단계별 진행 (각 단계 400ms)
+    const stepDuration = 400;
     let currentStepIndex = 0;
     let stepInterval: ReturnType<typeof setInterval> | null = null;
     let countInterval: ReturnType<typeof setInterval> | null = null;
@@ -696,13 +776,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         countTimeout = setTimeout(() => {
           let count = 0;
           countInterval = setInterval(() => {
-            count += Math.floor(Math.random() * 3) + 1;
-            if (count >= 37) {
-              count = 37;
+            count += Math.floor(Math.random() * 2) + 1;
+            if (count >= 10) {
+              count = 10;
               if (countInterval) clearInterval(countInterval);
               setCameraCount(count);
               
-              // 완료 후 1초 대기 후 메시지 제거 및 완료 메시지 추가
+              // 완료 후 0.5초 대기 후 메시지 제거 및 완료 메시지 추가
               completeTimeout = setTimeout(() => {
                 setMessages((prev) => {
                   // 프로그래스 메시지 제거
@@ -723,15 +803,18 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   return [...withoutProgress, welcomeMessage];
                 });
                 
-                if (onFastSearchComplete) {
-                  onFastSearchComplete();
+                const cb = onFastSearchCompleteRef.current;
+                if (cb) {
+                  cb();
+                } else {
+                  console.warn('[AIAgentPopup] onFastSearchComplete가 없음!');
                 }
-              }, 1000);
+              }, 500);
             } else {
               setCameraCount(count);
             }
-          }, 80);
-        }, 280);
+          }, 60);
+        }, 150);
       }
     }, stepDuration);
 
@@ -741,15 +824,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       if (countTimeout) clearTimeout(countTimeout);
       if (completeTimeout) clearTimeout(completeTimeout);
     };
-  }, [showFastSearchProgress, onFastSearchComplete]);
+  }, [showFastSearchProgress]);
 
   // 객체 추적 완료 시 결과 메시지 추가 (지도 2D 전환 완료 시)
   const lastObjectTrackingCompletedRef = useRef<boolean>(false);
   useEffect(() => {
     if (objectTrackingCompleted && !lastObjectTrackingCompletedRef.current) {
       lastObjectTrackingCompletedRef.current = true;
-      
-      console.log('[AIAgentPopup] 객체 추적 완료 - 결과 메시지 추가');
       
       // 프로그래스 메시지 제거하고 완료 메시지 추가 (타이핑 애니메이션)
       setMessages((prev) => {
@@ -809,17 +890,24 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
   // 재검색 완료 후 결과 메시지 자동 추가 (타이핑 애니메이션)
   useEffect(() => {
-    console.log('[AIAgentPopup] reSearchResult 변경:', reSearchResult);
-    
     if (reSearchResult && reSearchResult !== lastReSearchResultRef.current) {
       lastReSearchResultRef.current = reSearchResult;
-      
       const { excludedAttributes, deletedCount } = reSearchResult;
-      const attributesText = excludedAttributes.join(', ');
-      const fullContent = `${attributesText}이(가) ${deletedCount}건 삭제되어 결과를 재검색했습니다.`;
+      const isResultReSearchButton = excludedAttributes.some((a) => a.includes('대표 후보'));
+      const isRestore = deletedCount < 0;
+      const isRestoreAttr = excludedAttributes.some((a) => a.includes('복원'));
+      const isShowOnly = excludedAttributes.some((a) => a.endsWith('만 표시'));
+      const fullContent = isResultReSearchButton
+        ? `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`
+        : isShowOnly
+          ? `${excludedAttributes.map((a) => a.replace(/만 표시$/, '')).join(', ')} 속성의 영상만 표시합니다. ${deletedCount}건이 제외되었습니다.`
+          : (isRestore || isRestoreAttr)
+            ? `${excludedAttributes.join(', ')} 조건이 적용되어 해당 영상이 리스트에 복원되었습니다.`
+            : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
       
+      const messageId = `assistant-research-${Date.now()}`;
       const resultMessage: ChatMessage = {
-        id: `assistant-research-${Date.now()}`,
+        id: messageId,
         role: 'assistant',
         content: fullContent,
         timestamp: new Date().toLocaleTimeString('ko-KR', {
@@ -832,7 +920,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         displayedContent: '',
       };
       
-      console.log('[AIAgentPopup] 결과 메시지 추가:', resultMessage);
       setMessages((prev) => [...prev, resultMessage]);
       
       // 타이핑 애니메이션
@@ -844,7 +931,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         if (currentIndex <= fullContent.length) {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id.startsWith('assistant-research-')
+              msg.id === messageId
                 ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
                 : msg
             )
@@ -854,7 +941,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
           clearInterval(typingInterval);
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id.startsWith('assistant-research-')
+              msg.id === messageId
                 ? { ...msg, isTyping: false, displayedContent: fullContent }
                 : msg
             )
@@ -878,6 +965,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     const deleteKeywords = ['숨김', '숨겨', '삭제', '빼줘', '빼주', '제거', '없애', '지워', '삭제해', '제거해', '제외', '빼줘요', '삭제해줘', '제거해줘', '지워줘', '없애줘'];
     const t = text.trim();
     return deleteKeywords.some(kw => t.includes(kw));
+  };
+
+  const isAddLikeMessage = (text: string): boolean => {
+    const addKeywords = ['추가', '복원', '보여줘', '보여주', '다시', '되돌려', '되돌리', '복구', '추가해', '추가해줘', '보여줘요', '복원해', '복원해줘', '되돌려줘', '살려', '살려줘', '포함', '포함해', '포함해줘'];
+    const t = text.trim();
+    return addKeywords.some(kw => t.includes(kw));
+  };
+
+  const isShowOnlyMessage = (text: string): boolean => {
+    const t = text.replace(/\s+/g, '');
+    return /만(보여줘|보여주세요|보여주|보여줘요|보여|표시해줘|표시해|표시|남겨줘|남겨)/.test(t);
   };
 
   const isObjectTrackingMessage = (text: string): boolean => {
@@ -904,7 +1002,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     return {
       id: `assistant-${Date.now()}`,
       role: 'assistant',
-      content: `"${prompt}"에 대한 응답입니다. Agent Chat에서 다양한 기능을 사용할 수 있습니다.`,
+      content: `"${prompt}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`,
       timestamp: new Date().toLocaleTimeString('ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
@@ -936,6 +1034,216 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     setInputKey((k) => k + 1);
     ignoreNextChangeRef.current = true;
 
+    if (isShowOnlyMessage(text) && onShowOnlyRequest) {
+      const parsedAttributes = onShowOnlyRequest({ rawMessage: text });
+
+      if (!parsedAttributes || parsedAttributes.length === 0) {
+        setIsResponding(true);
+        setTimeout(() => {
+          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
+          const errorMessage: ChatMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: fullContent,
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'normal',
+            isTyping: true,
+            displayedContent: '',
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsResponding(false);
+
+          let currentIndex = 0;
+          const typingInterval = setInterval(() => {
+            currentIndex++;
+            if (currentIndex <= fullContent.length) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
+                    : msg
+                )
+              );
+            } else {
+              clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, isTyping: false, displayedContent: fullContent }
+                    : msg
+                )
+              );
+            }
+          }, 30);
+          typingIntervalRef.current = typingInterval;
+        }, 700);
+      } else {
+        setIsReSearching(true);
+        setIsResponding(true);
+
+        if (onReSearchStart) {
+          onReSearchStart();
+        }
+
+        setTimeout(() => {
+          const progressMessage: ChatMessage = {
+            id: 're-search-progress',
+            role: 'assistant',
+            content: '조건에 맞는 결과를 재검색하고 있습니다.',
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'analyzing',
+            progress: 0,
+            currentStep: 1,
+            totalSteps: 3,
+          };
+          setMessages((prev) => [...prev, progressMessage]);
+
+          let step = 0;
+          const progressInterval = setInterval(() => {
+            step++;
+            const progress = step / 3;
+
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === 're-search-progress'
+                  ? { ...msg, currentStep: step + 1, progress }
+                  : msg
+              )
+            );
+
+            if (step >= 3) {
+              clearInterval(progressInterval);
+              setTimeout(() => {
+                setMessages((prev) => prev.filter((msg) => msg.id !== 're-search-progress'));
+                setIsReSearching(false);
+                setIsResponding(false);
+
+                if (onReSearchComplete) {
+                  onReSearchComplete();
+                }
+              }, 500);
+            }
+          }, 500);
+        }, 700);
+      }
+      return;
+    }
+
+    if (isAddLikeMessage(text) && !isDeleteLikeMessage(text) && onAddLikeRequest) {
+      const parsedAttributes = onAddLikeRequest({ rawMessage: text });
+
+      if (!parsedAttributes || parsedAttributes.length === 0) {
+        setIsResponding(true);
+        setTimeout(() => {
+          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
+          const errorMessage: ChatMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: fullContent,
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'normal',
+            isTyping: true,
+            displayedContent: '',
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsResponding(false);
+
+          let currentIndex = 0;
+          const typingInterval = setInterval(() => {
+            currentIndex++;
+            if (currentIndex <= fullContent.length) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
+                    : msg
+                )
+              );
+            } else {
+              clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, isTyping: false, displayedContent: fullContent }
+                    : msg
+                )
+              );
+            }
+          }, 30);
+          typingIntervalRef.current = typingInterval;
+        }, 700);
+      } else {
+        setIsReSearching(true);
+        setIsResponding(true);
+
+        if (onReSearchStart) {
+          onReSearchStart();
+        }
+
+        setTimeout(() => {
+          const progressMessage: ChatMessage = {
+            id: 're-search-progress',
+            role: 'assistant',
+            content: '조건에 맞는 결과를 재검색하고 있습니다.',
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'analyzing',
+            progress: 0,
+            currentStep: 1,
+            totalSteps: 3,
+          };
+          setMessages((prev) => [...prev, progressMessage]);
+
+          let step = 0;
+          const progressInterval = setInterval(() => {
+            step++;
+            const progress = step / 3;
+
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === 're-search-progress'
+                  ? { ...msg, currentStep: step + 1, progress }
+                  : msg
+              )
+            );
+
+            if (step >= 3) {
+              clearInterval(progressInterval);
+              setTimeout(() => {
+                setMessages((prev) => prev.filter((msg) => msg.id !== 're-search-progress'));
+                setIsReSearching(false);
+                setIsResponding(false);
+
+                if (onReSearchComplete) {
+                  onReSearchComplete();
+                }
+              }, 500);
+            }
+          }, 500);
+        }, 700);
+      }
+      return;
+    }
+
     if (isDeleteLikeMessage(text) && onDeleteLikeRequest) {
       const parsedAttributes = onDeleteLikeRequest({ rawMessage: text });
       
@@ -945,7 +1253,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         
         // 고민하는 아이콘 표시 (700ms)
         setTimeout(() => {
-          const fullContent = `"${text}"에 대한 정보가 없습니다. 더 구체적인 속성을 입력해 주세요.`;
+          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
           const errorMessage: ChatMessage = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
@@ -979,6 +1287,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             } else {
               // 타이핑 완료
               clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === errorMessage.id
@@ -988,6 +1298,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               );
             }
           }, 30);
+          typingIntervalRef.current = typingInterval;
         }, 700);
       } else {
         // 파싱된 속성이 있으면 재검색 프로그래스 표시
@@ -1095,9 +1406,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             return updated;
           });
         }, 100);
+        progressIntervalRef.current = progressInterval;
 
-        setTimeout(() => {
+        const progressTimeout = setTimeout(() => {
           clearInterval(progressInterval);
+          progressIntervalRef.current = null;
           
           // 객체 추적 완료 시 프로그래스바 제거하고 완료 메시지 추가 (타이핑 애니메이션)
           if (isObjectTracking) {
@@ -1142,6 +1455,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 } else {
                   // 타이핑 완료
                   clearInterval(typingInterval);
+                  typingIntervalRef.current = null;
+                  setIsResponding(false);
                   setMessages((prev) =>
                     prev.map((msg) =>
                       msg.id.startsWith('assistant-complete-')
@@ -1151,9 +1466,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                   );
                 }
               }, 30);
+              typingIntervalRef.current = typingInterval;
             }, 500);
           }
         }, totalDuration);
+        progressTimeoutRef.current = progressTimeout;
       } else {
         // 프로그래스바가 없는 일반 답변: 로딩 후 타이핑 애니메이션
         setTimeout(() => {
@@ -1186,6 +1503,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             } else {
               // 타이핑 완료
               clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg.id === assistantMessage.id
@@ -1195,6 +1514,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               );
             }
           }, 30); // 30ms마다 한 글자씩
+          typingIntervalRef.current = typingInterval;
         }, 800); // 800ms 로딩 시간
       }
     }, 300); // 초기 딜레이 300ms
@@ -1252,6 +1572,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               setChatInput={setChatInput}
               handleSendMessage={handleSendMessage}
               isResponding={isResponding}
+              onSkipResponse={handleSkipResponse}
               textareaRef={textareaRef}
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
@@ -1307,6 +1628,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               setChatInput={setChatInput}
               handleSendMessage={handleSendMessage}
               isResponding={isResponding}
+              onSkipResponse={handleSkipResponse}
               textareaRef={textareaRef}
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}

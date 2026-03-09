@@ -5,11 +5,23 @@ import PredictedCCTVDetailPopup from './PredictedCCTVDetailPopup';
 interface PredictedCCTVListPanelProps {
   isVisible: boolean;
   width?: number;
-  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string) => void;
   hoveredCCTVId?: string | null;
   onCCTVHover?: (cctvId: string | null) => void;
   /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
   onRadiusChange?: (radius: number) => void;
+  /** CCTV 카드 선택(상세 팝업 오픈) 시 호출 */
+  onCCTVSelect?: () => void;
+  /** CCTV 상세 팝업 닫힘 시 호출 */
+  onCCTVDetailClose?: () => void;
+  /** 외부에서 열 CCTV ID */
+  openCCTVId?: string | null;
+  /** CCTV가 열렸을 때 호출 */
+  onCCTVOpened?: () => void;
+  /** 외부에서 팝업 닫기 신호 */
+  closeCCTVPopupSignal?: number;
+  /** 팝업 열릴 때 자동 포착 실행 여부 */
+  autoCapture?: boolean;
 }
 
 export interface PredictedCCTVItem {
@@ -21,123 +33,146 @@ export interface PredictedCCTVItem {
   confidence: number; // 0-100
   direction: string; // 예: "북동쪽", "남쪽"
   thumbnailUrl: string;
+  posterUrl?: string;
 }
 
-// CCTV 비디오 파일 목록
-const CCTV_VIDEOS = [
-  '/cctv_img/cctv1.mov',
-  '/cctv_img/cctv3.mov',
-  '/cctv_img/cctv4.mov',
-];
-
-// 무작위 비디오 URL 가져오기
-const getRandomVideoUrl = () => {
-  return CCTV_VIDEOS[Math.floor(Math.random() * CCTV_VIDEOS.length)];
-};
-
-// Mock 데이터 - 4번 핀(춘의동 125-32) 근처 CCTV 10개
+// Mock 데이터 - 4번 핀(달빛로301번길 28) 근처 CCTV 10개
 const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '1',
-    cctvName: '원미A-583',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-583',
+    location: '달빛로301번길 28',
     distance: 15,
     predictedTime: '09:35:15',
     confidence: 92,
     direction: '북동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_05_n.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_05_n.mp4',
+    posterUrl: '/fastsearch_img/qs_img_05_n.png',
   },
   {
     id: '2',
-    cctvName: '원미A-604',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-604',
+    location: '달빛로301번길 28',
     distance: 20,
     predictedTime: '09:35:30',
     confidence: 88,
     direction: '북서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_11_n.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_11_n.mp4',
+    posterUrl: '/fastsearch_img/qs_img_11_n.png',
   },
   {
     id: '3',
-    cctvName: '원미A-621',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-621',
+    location: '달빛로301번길 28',
     distance: 18,
     predictedTime: '09:35:45',
     confidence: 85,
     direction: '동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_15_n.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_15_n.mp4',
+    posterUrl: '/fastsearch_img/qs_img_15_n.png',
   },
   {
     id: '4',
-    cctvName: '원미A-638',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-638',
+    location: '달빛로301번길 28',
     distance: 22,
     predictedTime: '09:36:00',
     confidence: 83,
     direction: '남서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_21_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_21_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_21_y.png',
   },
   {
     id: '5',
-    cctvName: '원미A-655',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-655',
+    location: '달빛로301번길 28',
     distance: 25,
     predictedTime: '09:36:15',
     confidence: 80,
     direction: '남동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_25_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_25_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_25_y.png',
   },
   {
     id: '6',
-    cctvName: '원미A-672',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-672',
+    location: '달빛로301번길 28',
     distance: 25,
     predictedTime: '09:36:30',
     confidence: 78,
     direction: '서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_30_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_30_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_30_y.png',
   },
   {
     id: '7',
-    cctvName: '원미A-689',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-689',
+    location: '달빛로301번길 28',
     distance: 28,
     predictedTime: '09:36:45',
     confidence: 75,
     direction: '동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_40_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_40_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_40_y.png',
   },
   {
     id: '8',
-    cctvName: '원미A-706',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-706',
+    location: '달빛로301번길 28',
     distance: 30,
     predictedTime: '09:37:00',
     confidence: 73,
     direction: '북쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_47_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_47_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_47_y.png',
   },
   {
     id: '9',
-    cctvName: '원미A-723',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-723',
+    location: '달빛로301번길 28',
     distance: 32,
     predictedTime: '09:37:15',
     confidence: 70,
     direction: '남서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_51_y.mov',
+    thumbnailUrl: '/fastsearch_img/qs_img_51_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_51_y.png',
   },
   {
     id: '10',
-    cctvName: '원미A-740',
-    location: '원미구 춘의동 125-32',
+    cctvName: '별빛A-740',
+    location: '달빛로301번길 28',
     distance: 30,
     predictedTime: '09:37:30',
     confidence: 68,
     direction: '남동쪽',
     thumbnailUrl: '/fastsearch_img/qs_img_59_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_59_y.png',
   },
 ];
+
+/** 팝업 열리면 비디오 일시정지, poster로 대역폭 절약 */
+const ListVideo: React.FC<{ src: string; posterUrl?: string; isPaused: boolean }> = ({ src, posterUrl, isPaused }) => {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  React.useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (isPaused) v.pause();
+    else v.play().catch(() => {});
+  }, [isPaused]);
+  if (!src?.trim()) return <div className="absolute inset-0 bg-black" aria-hidden />;
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      poster={posterUrl}
+      loop
+      muted
+      playsInline
+      preload="none"
+      className="absolute top-0 left-0 w-full h-full object-cover"
+    />
+  );
+};
 
 const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   isVisible,
@@ -146,6 +181,12 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   hoveredCCTVId: externalHoveredCCTVId,
   onCCTVHover,
   onRadiusChange,
+  onCCTVSelect,
+  onCCTVDetailClose,
+  openCCTVId,
+  onCCTVOpened,
+  closeCCTVPopupSignal,
+  autoCapture = false,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
@@ -153,7 +194,6 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   const sortPopoverRef = React.useRef<HTMLDivElement>(null);
   const radiusPopoverRef = React.useRef<HTMLDivElement>(null);
   const cctvMarkersRef = React.useRef<Map<string, HTMLElement>>(new Map());
-  
   // 반경 필터 상태
   const [radius, setRadius] = React.useState<number>(100); // 반경 (m) - 실제 적용된 값
   
@@ -192,6 +232,22 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
 
+  React.useEffect(() => {
+    if (closeCCTVPopupSignal && closeCCTVPopupSignal > 0) {
+      setSelectedCCTV(null);
+    }
+  }, [closeCCTVPopupSignal]);
+
+  React.useEffect(() => {
+    if (!openCCTVId || !isVisible) return;
+    const cctv = PREDICTED_CCTV_DATA.find(item => item.id === openCCTVId);
+    if (cctv) {
+      setSelectedCCTV(cctv);
+      if (onCCTVOpened) onCCTVOpened();
+    }
+  }, [openCCTVId, isVisible, onCCTVOpened]);
+
+  const isPopupOpen = selectedCCTV !== null;
 
   return (
     <>
@@ -368,52 +424,37 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                 {PREDICTED_CCTV_DATA.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => setSelectedCCTV(item)}
+                    id={item.id === '4' ? 'predicted-cctv-7' : undefined}
+                    onClick={() => {
+                      setSelectedCCTV(item);
+                      onCCTVSelect?.();
+                    }}
                     onMouseEnter={() => onCCTVHover?.(item.id)}
                     onMouseLeave={() => onCCTVHover?.(null)}
                     className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group ${
                       hoveredCCTVId === item.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-105' : ''
                     }`}
                   >
-                    {/* 썸네일 - CCTV 영상 */}
-                    <div className="relative w-full bg-black" style={{ paddingTop: '56.25%' }}>
-                      <video
-                        src={item.thumbnailUrl}
-                        autoPlay
-                        loop
-                        muted
-                        playsInline
-                        className="absolute top-0 left-0 w-full h-full object-cover"
-                      />
+                    {/* 썸네일 */}
+                    <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
+                      <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={isPopupOpen} />
                       
-                      {/* 호버 시 정보 오버레이 */}
-                      <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-center p-3 space-y-2">
-                        {/* CCTV명 */}
-                        <div className="text-xs text-white font-semibold truncate" title={item.cctvName}>
-                          {item.cctvName}
-                        </div>
-                        
-                        {/* 주소 */}
-                        <div className="text-xs text-gray-300 truncate" title={item.location}>
+                      {/* 호버 시 주소 아래→위 슬라이드 */}
+                      <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
+                        <div className="text-[10px] text-gray-200 truncate" title={item.location}>
                           {item.location}
-                        </div>
-
-                        {/* 경로 적합도 */}
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-[10px] text-gray-400">경로 적합도</span>
-                          <span className="text-[10px] text-gray-500">|</span>
-                          <span className="text-xs text-blue-400 font-semibold">
-                            {item.confidence}점
-                          </span>
                         </div>
                       </div>
                     </div>
                     
-                    {/* CCTV명 */}
-                    <div className="px-3 py-2 flex items-center">
+                    {/* CCTV명 + 경로 적합도 */}
+                    <div className="px-3 py-2 flex items-center justify-between gap-2">
                       <div className="text-xs text-gray-300 font-semibold truncate" title={item.cctvName}>
                         {item.cctvName}
                       </div>
+                      <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] text-blue-400 font-semibold leading-none">
+                        {item.confidence}점
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -426,9 +467,13 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
       {/* CCTV 상세 팝업 */}
       <PredictedCCTVDetailPopup
         isOpen={selectedCCTV !== null}
-        onClose={() => setSelectedCCTV(null)}
+        onClose={() => {
+          setSelectedCCTV(null);
+          onCCTVDetailClose?.();
+        }}
         cctv={selectedCCTV}
         onAddCapture={onAddCapture}
+        autoCapture={autoCapture}
       />
     </>
   );

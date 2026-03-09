@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import {
@@ -9,6 +10,7 @@ import {
   type TimelineEntry,
 } from '@/lib/fast-search-candidate-detail';
 import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes';
+import SharedVideoPlayer from './SharedVideoPlayer';
 
 export interface CandidateCard {
   id: string;
@@ -23,7 +25,8 @@ interface FastSearchCandidateDetailPopupProps {
   isOpen: boolean;
   onClose: () => void;
   candidate: CandidateCard | null;
-  onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string, options?: { hideOverlayWithPopup?: boolean }) => void;
+  autoCapture?: boolean;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
@@ -31,10 +34,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   onClose,
   candidate,
   onAddCapture,
+  autoCapture = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [metaOpen, setMetaOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'timeline' | 'detail'>('timeline');
   const playCountRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -53,34 +56,15 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const [showGreenBox, setShowGreenBox] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [isSimilarityOpen, setIsSimilarityOpen] = useState(false);
+  const [isCaptureAnimating, setIsCaptureAnimating] = useState(false);
+  const [flyingThumbnail, setFlyingThumbnail] = useState<{
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    imageData: string;
+  } | null>(null);
   
-  const moveGreenBox = (direction: 'up' | 'down' | 'left' | 'right') => {
-    setIsAutoMode(false);
-    const step = 10;
-    setGreenBoxPosition(prev => {
-      switch (direction) {
-        case 'up': return { ...prev, y: prev.y - step };
-        case 'down': return { ...prev, y: prev.y + step };
-        case 'left': return { ...prev, x: prev.x - step };
-        case 'right': return { ...prev, x: prev.x + step };
-        default: return prev;
-      }
-    });
-  };
-  
-  const resizeGreenBox = (type: 'width' | 'height', delta: number) => {
-    setIsAutoMode(false);
-    setGreenBoxSize(prev => {
-      const newSize = { ...prev };
-      if (type === 'width') {
-        newSize.width = Math.max(10, prev.width + delta);
-      } else {
-        newSize.height = Math.max(10, prev.height + delta);
-      }
-      return newSize;
-    });
-  };
-
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -418,18 +402,58 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   };
 
   const handleCaptureTarget = () => {
-    if (!candidate) return;
+    if (!candidate || !videoRef.current || !containerRef.current) return;
     
-    // 썸네일 URL 가져오기
-    const thumbnailUrl = getPathForCaptureItem(candidate);
+    const video = videoRef.current;
+    const rect = containerRef.current.getBoundingClientRect();
     
-    // 이미지 ID 가져오기
+    let imageData: string;
+    try {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          imageData = canvas.toDataURL('image/jpeg', 0.8);
+        } else {
+          imageData = getPathForCaptureItem(candidate);
+        }
+      } else {
+        imageData = getPathForCaptureItem(candidate);
+      }
+    } catch {
+      imageData = getPathForCaptureItem(candidate);
+    }
+    
+    setIsCaptureAnimating(true);
+    
+    const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
+    let endX = 40;
+    let endY = 250;
+    if (captureMenuButton) {
+      const menuRect = captureMenuButton.getBoundingClientRect();
+      endX = menuRect.left + menuRect.width / 2;
+      endY = menuRect.top + menuRect.height / 2;
+    }
+    
+    const flyingData = {
+      startX: rect.left + rect.width / 2,
+      startY: rect.top + rect.height / 2,
+      endX,
+      endY,
+      imageData,
+    };
+    
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyingThumbnail(flyingData);
+      });
+    });
+    
     const imageId = getImageIdFromCaptureItem(candidate);
-    
-    // 비디오 URL 가져오기 (있는 경우)
     const videoUrl = getVideoPathForImageId(imageId);
-    
-    // 마크다운 분석결과 생성
     const analysisResult = generateMarkdownAnalysis(
       imageId,
       candidate.cctvName,
@@ -438,14 +462,36 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
       candidate.confidence
     );
     
-    // 포착 목록에 바로 추가 (비디오 URL도 함께 전달)
-    if (onAddCapture) {
-      onAddCapture(candidate.cctvName, candidate.location, candidate.confidence, thumbnailUrl, analysisResult, videoUrl);
-    }
+    setTimeout(() => {
+      if (onAddCapture) {
+        onAddCapture(candidate.cctvName, candidate.location, candidate.confidence, imageData, analysisResult, videoUrl, { hideOverlayWithPopup: true });
+      }
+    }, 300);
     
-    // 팝업 닫기
-    onClose();
+    setTimeout(() => setFlyingThumbnail(null), 600);
+    setTimeout(() => {
+      setIsCaptureAnimating(false);
+      onClose();
+    }, 700);
   };
+
+  const handleCaptureTargetRef = useRef(handleCaptureTarget);
+  handleCaptureTargetRef.current = handleCaptureTarget;
+
+  const autoCaptureTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!autoCapture || !isOpen || !candidate) {
+      autoCaptureTriggeredRef.current = false;
+      return;
+    }
+    if (autoCaptureTriggeredRef.current) return;
+    autoCaptureTriggeredRef.current = true;
+
+    const timer = setTimeout(() => {
+      handleCaptureTargetRef.current();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [autoCapture, isOpen, candidate]);
 
   if (!isOpen || !candidate) return null;
 
@@ -535,14 +581,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               className="bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
               style={{ aspectRatio: '16/9', width: '100%', maxHeight: '100%' }}
             >
-              <video
-                ref={videoRef}
+              <SharedVideoPlayer
                 src={videoSrc}
-                className="w-full h-full object-contain"
-                muted
-                playsInline
-                autoPlay
-                aria-label="캡처 구간 클립"
+                videoRef={videoRef}
+                ariaLabel="캡처 구간 클립"
                 onEnded={() => {
                   const v = videoRef.current;
                   if (!v) return;
@@ -553,6 +595,19 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                   }
                 }}
               />
+              
+              {/* 캡처 애니메이션 오버레이 */}
+              {isCaptureAnimating && (
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }}>
+                  <div className="absolute inset-0 bg-white animate-capture-flash" />
+                  <div className="absolute inset-0 border-4 border-blue-500 animate-capture-frame" />
+                  <div className="absolute inset-0 flex items-center justify-center animate-capture-check">
+                    <div className="bg-blue-500 rounded-full p-4">
+                      <Icon icon="mdi:check" className="w-12 h-12 text-white" />
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* 초록색 박스 오버레이 */}
               {showGreenBox && (() => {
@@ -736,6 +791,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                   시간 기반 관찰 기록
                 </button>
                 <button
+                  id="detail-tab-button"
                   type="button"
                   onClick={() => setActiveTab('detail')}
                   className={`relative flex-1 px-4 py-2.5 text-sm font-semibold rounded-full transition-colors duration-300 z-10 ${
@@ -820,7 +876,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                     { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
                     { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
                   ].map((item, idx) => (
-                    <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
+                    <div key={idx} id={idx === 0 ? 'candidate-meta-info' : undefined} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
                       <div className="flex items-start gap-3">
                         <Icon icon={item.icon} className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -832,7 +888,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                   ))}
                   
                   {/* 유사도 카드 - 토글 가능 */}
-                  <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
+                  <div id="similarity-dropdown" className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
                     <button
                       type="button"
                       onClick={() => setIsSimilarityOpen(!isSimilarityOpen)}
@@ -913,6 +969,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         {/* 푸터 - 고정 */}
         <div className="flex items-center justify-end px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
           <button
+            id="capture-target-button"
             type="button"
             onClick={handleCaptureTarget}
             className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-1.5"
@@ -927,6 +984,32 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         </div>
       </div>
     </div>
+    
+    {/* 날아가는 썸네일 애니메이션 */}
+    {flyingThumbnail &&
+      createPortal(
+        <div
+          className="fixed pointer-events-none z-[10001]"
+          style={{
+            left: `${flyingThumbnail.startX}px`,
+            top: `${flyingThumbnail.startY}px`,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <img
+            src={flyingThumbnail.imageData}
+            alt="캡처 썸네일"
+            className="w-32 h-20 object-cover rounded-lg shadow-2xl"
+            style={{
+              boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',
+              animation: 'fly-to-menu-dynamic 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+              ['--end-x']: `${flyingThumbnail.endX - flyingThumbnail.startX}px`,
+              ['--end-y']: `${flyingThumbnail.endY - flyingThumbnail.startY}px`,
+            } as React.CSSProperties}
+          />
+        </div>,
+        document.body
+      )}
     </>
   );
 };
