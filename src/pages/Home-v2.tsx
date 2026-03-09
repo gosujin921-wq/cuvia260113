@@ -22,15 +22,7 @@ import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage, parseIncludedAttributesFromMessage, parseShowOnlyAttributesFromMessage, getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
 import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
 
-const EndDialog = () => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      sessionStorage.clear();
-      window.location.reload();
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
+const EndDialog = ({ onConfirm }: { onConfirm: () => void }) => {
   return (
     <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[10010]">
       <div
@@ -44,14 +36,24 @@ const EndDialog = () => {
           minWidth: '420px',
         }}
       >
-        <div className="px-6 pt-5 pb-5 text-left">
+        <div className="px-6 pt-5 pb-3 text-left">
           <p className="text-gray-900 font-bold leading-relaxed" style={{ fontSize: '18px' }}>
             CUVIA 튜토리얼이 종료되었습니다.
           </p>
           <p className="text-gray-700 text-sm leading-relaxed mt-2">
             체험해주셔서 감사합니다.<br />
-            잠시 후 초기 화면으로 돌아갑니다.
+            확인 버튼을 누르면 초기 화면으로 돌아갑니다.
           </p>
+        </div>
+        <div className="px-6 pb-4 flex justify-end">
+          <button
+            onClick={onConfirm}
+            className="px-8 py-2.5 rounded-lg text-sm font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+            aria-label="확인"
+            tabIndex={0}
+          >
+            확인
+          </button>
         </div>
       </div>
     </div>
@@ -1461,7 +1463,7 @@ export default function HomeV2() {
 
       {/* 시작 메시지창 */}
       {showEndDialog && (
-        <EndDialog />
+        <EndDialog onConfirm={() => { sessionStorage.clear(); window.location.reload(); }} />
       )}
 
       {showStartMessage && (
