@@ -63,12 +63,19 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
       )}
       {/* 로고 영역 */}
       <div className="mb-4 pb-4 border-b border-gray-700/50 w-full flex justify-center">
-        <img
-          src="/logo.svg"
-          alt="CUVIA"
-          className="h-8 w-auto object-contain"
-          style={{ filter: 'brightness(0) invert(1)' }}
-        />
+        <button
+          onClick={() => { sessionStorage.clear(); window.location.reload(); }}
+          className="cursor-pointer hover:opacity-80 transition-opacity"
+          aria-label="홈으로 이동"
+          tabIndex={0}
+        >
+          <img
+            src="/logo.svg"
+            alt="CUVIA"
+            className="h-8 w-auto object-contain"
+            style={{ filter: 'brightness(0) invert(1)' }}
+          />
+        </button>
       </div>
 
       {/* 메뉴 아이템들 */}

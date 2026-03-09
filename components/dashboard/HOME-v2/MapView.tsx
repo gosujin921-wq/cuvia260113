@@ -55,9 +55,10 @@ interface MapViewProps {
   hideAgentButton?: boolean;
   /** 1키 누르기 전 초기 화면: 과천역 주변 CCTV 클러스터 표시 */
   showInitialCCTVClusters?: boolean;
+  onAgentHubClick?: () => void;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false, onAgentHubClick }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -2749,10 +2750,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
               transition: 'bottom 0.3s ease-in-out, right 0.3s ease-in-out',
             }}
           >
-            <a
-              href="/cuvia-link"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={onAgentHubClick}
               className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
               style={{
                 background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',
@@ -2765,6 +2764,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)';
               }}
               aria-label="Agent Hub"
+              tabIndex={0}
             >
               <img 
                 src="/simbol.svg" 
@@ -2772,7 +2772,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                 className="w-6 h-6"
                 style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
               />
-            </a>
+            </button>
             {/* 툴팁 */}
             <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">
               Agent Hub 이동

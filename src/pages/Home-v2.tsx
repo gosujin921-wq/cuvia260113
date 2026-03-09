@@ -1070,6 +1070,10 @@ export default function HomeV2() {
             onMapStateChange={setLastMapState}
             hideAgentButton={uiState.showAIAgentOnly}
             showInitialCCTVClusters={showStartMessage}
+            onAgentHubClick={() => {
+              setDialogSource('broadcast');
+              dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
+            }}
           />
         )}
       </div>
@@ -1270,7 +1274,7 @@ export default function HomeV2() {
         isOpen={uiState.showNetMonitoringDialog}
         title="안내"
         message={dialogSource === 'broadcast'
-          ? '<b>쿠비아 링크는 별도 체험존에서 제공됩니다.</b><br/>쿠비아 링크 체험존에서 이용해주세요.'
+          ? '<b>CUVIA Link는 별도 체험존에서 제공됩니다.</b><br/>CUVIA Link 체험존에서 이용해주세요.'
           : '이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요.'}
         confirmText="확인"
         hideCancel
@@ -1485,7 +1489,7 @@ export default function HomeV2() {
               </p>
               <p className="text-gray-700 text-sm leading-relaxed mt-2">
                 실종 사건 접수 상황을 바탕으로<br />
-                쿠비아의 전체 대응 흐름을 직접 체험하실 수 있습니다.
+                CUVIA의 전체 대응 흐름을 직접 체험하실 수 있습니다.
               </p>
               <div className="mt-3 px-3 py-2.5 rounded-md border border-gray-300/60 bg-white/40">
                 <p className="text-gray-800 text-xs font-semibold leading-relaxed">
