@@ -182,6 +182,19 @@ body {
     animation: guide-circle-pulse 1.2s ease-in-out infinite;
 }
 
+@keyframes guide-target-stroke {
+    0%, 100% {
+        box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.9), 0 0 8px rgba(255, 140, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.3), 0 0 2px rgba(255, 140, 0, 0.1);
+    }
+}
+
+.guide-target-highlight {
+    animation: guide-target-stroke 1.4s ease-in-out infinite;
+}
+
 .flowing-opacity {
     overflow: hidden;
 }

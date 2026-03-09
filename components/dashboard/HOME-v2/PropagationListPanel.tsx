@@ -19,6 +19,8 @@ interface PropagationListPanelProps {
   onClose?: () => void;
   onBackToInitial?: () => void;
   captureItems?: CaptureItem[];
+  openReportPopupSignal?: number;
+  onSimulationEnd?: () => void;
 }
 
 interface PropagationThread {
@@ -173,9 +175,17 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   onClose,
   onBackToInitial,
   captureItems = [],
+  openReportPopupSignal = 0,
+  onSimulationEnd,
 }) => {
   const hasAddedDiscoveryRef = useRef(false);
   const [showReportDownloadPopup, setShowReportDownloadPopup] = useState(false);
+
+  useEffect(() => {
+    if (openReportPopupSignal > 0) {
+      setShowReportDownloadPopup(true);
+    }
+  }, [openReportPopupSignal]);
 
   const handleClose = () => {
     onBackToInitial?.();
@@ -263,10 +273,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
   // 전파 패널 열림 시 2초 후 경찰관(112 회신) 답신 메시지 추가
   useEffect(() => {
-    if (!isVisible) {
-      hasAddedDiscoveryRef.current = false;
-      return;
-    }
+    if (!isVisible) return;
     if (hasAddedDiscoveryRef.current) return;
     hasAddedDiscoveryRef.current = true;
 
@@ -488,6 +495,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                   </p>
                 </div>
                 <button
+                  id="report-download-button"
                   type="button"
                   onClick={() => setShowReportDownloadPopup(true)}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors flex items-center gap-1.5"
@@ -688,6 +696,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
       <ReportDownloadPopup
         isOpen={showReportDownloadPopup}
         onClose={() => setShowReportDownloadPopup(false)}
+        onSimulationEnd={onSimulationEnd}
       />
     </>
   );

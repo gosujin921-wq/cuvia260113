@@ -42,7 +42,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedCapture, setSelectedCapture] = useState<CaptureItem | null>(null);
   const [showPropagationPopup, setShowPropagationPopup] = useState(false);
-  
+
   // 비디오 플레이어 상태
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
