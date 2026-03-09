@@ -785,11 +785,11 @@ export default function HomeV3() {
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     const isInputFocused = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
     if (isInputFocused) return;
-    
-    const missingEvent = allConvertedEvents.find(event => 
+
+    const missingEvent = allConvertedEvents.find(event =>
       event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
     );
-    
+
     if (e.key === '1' && missingEvent) {
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
@@ -1014,8 +1014,7 @@ export default function HomeV3() {
             });
           }, 500);
           
-          // 05, 11, 15번 이미지 제외 (item.id: 1, 2, 3)
-          setExcludedImageIds(['1', '2', '3']);
+          setExcludedImageIds(['3', '5', '7', '8', '9']);
         }}
         excludedAttributes={excludedAttributes}
         excludedImageIds={excludedImageIds}

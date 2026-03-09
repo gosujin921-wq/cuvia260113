@@ -1479,7 +1479,7 @@ export default function HomeV2() {
           >
             <div className="px-6 pt-5 pb-3 text-left">
               <p className="text-gray-900 font-bold leading-relaxed" style={{ fontSize: '18px' }}>
-                쿠비아 튜토리얼을 시작해보세요
+                CUVIA 튜토리얼을 시작해보세요
               </p>
               <p className="text-gray-700 text-sm leading-relaxed mt-2">
                 실종 사건 접수 상황을 바탕으로<br />
@@ -1494,7 +1494,7 @@ export default function HomeV2() {
                 </p>
               </div>
               <p className="text-gray-700 text-sm leading-relaxed mt-3">
-                시작 버튼을 누르면 시뮬레이션이 바로 시작됩니다.
+                시작 버튼을 누르면 튜토리얼이 바로 시작됩니다.
               </p>
               <p className="text-gray-700 text-[11px] leading-relaxed mt-2">
                 화면에 표시되는 사건, 인물 및 데이터는 실제와 무관한 가상 데이터입니다.

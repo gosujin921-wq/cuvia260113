@@ -10,6 +10,14 @@ import {
   type TimelineEntry,
 } from '@/lib/fast-search-candidate-detail';
 import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes';
+
+const getV3ThumbnailPath = (itemId: string): string => {
+  const idx = parseInt(itemId, 10);
+  if (idx >= 1 && idx <= 9) {
+    return `/hijacking2/hjk_${String(idx).padStart(2, '0')}.png`;
+  }
+  return getPathForCaptureItem({ id: itemId });
+};
 import SharedVideoPlayer from './SharedVideoPlayer';
 
 export interface CandidateCard {
@@ -418,13 +426,13 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           imageData = canvas.toDataURL('image/jpeg', 0.8);
         } else {
-          imageData = getPathForCaptureItem(candidate);
+          imageData = getV3ThumbnailPath(candidate.id);
         }
       } else {
-        imageData = getPathForCaptureItem(candidate);
+        imageData = getV3ThumbnailPath(candidate.id);
       }
     } catch {
-      imageData = getPathForCaptureItem(candidate);
+      imageData = getV3ThumbnailPath(candidate.id);
     }
     
     setIsCaptureAnimating(true);

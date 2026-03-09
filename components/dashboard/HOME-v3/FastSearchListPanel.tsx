@@ -65,26 +65,54 @@ const getDistanceFromReportLocation = (location: string): number => {
 /** 정렬 옵션 타입 */
 type SortOption = 'confidence-desc' | 'confidence-asc' | 'distance-asc' | 'distance-desc';
 
-/** 10개 카드용 베이스 데이터 생성 (이미지별 CCTV명, 위치, 유사도) */
+/** v3 전용 썸네일 경로 (hijacking2/hjk_01~09) */
+const getV3ThumbnailPath = (itemId: string): string => {
+  const idx = parseInt(itemId, 10);
+  if (idx >= 1 && idx <= 9) {
+    return `/hijacking2/hjk_${String(idx).padStart(2, '0')}.png`;
+  }
+  return getPathForCaptureItem({ id: itemId });
+};
+
+/** v3 전용 CCTV명 오버라이드 (ID 9: 별빛A-583 → 별빛A-604) */
+const getV3CctvName = (itemId: string): string => {
+  if (itemId === '9') return '별빛A-604';
+  return getCctvNameForCaptureItem({ id: itemId });
+};
+
+/** v3 전용 유사도 오버라이드 */
+const V3_CONFIDENCE_OVERRIDE: Record<string, number> = {
+  '1': 95,
+  '2': 93,
+  '4': 92,
+  '5': 83,
+  '6': 91,
+  '8': 43,
+  '9': 37,
+};
+const getV3Confidence = (itemId: string): number => {
+  return V3_CONFIDENCE_OVERRIDE[itemId] ?? getConfidenceForCaptureItem({ id: itemId });
+};
+
+/** 9개 카드용 베이스 데이터 생성 */
 const buildBaseItems = (): Omit<CaptureItem, 'id'>[] => {
   const timestamps = [
-    '10:30:10', // ID 1 (05)
-    '10:31:05', // ID 2 (11)
-    '10:32:01', // ID 3 (15)
-    '10:33:05', // ID 4 (21)
-    '10:33:40', // ID 5 (25)
-    '10:34:20', // ID 6 (30)
-    '10:35:10', // ID 7 (40)
-    '10:35:10', // ID 8 (47)
-    '10:36:20', // ID 9 (51)
-    '10:37:39', // ID 10 (59)
+    '10:30:10', // ID 1
+    '10:31:05', // ID 2
+    '10:32:01', // ID 3
+    '10:33:05', // ID 4
+    '10:33:40', // ID 5
+    '10:34:20', // ID 6
+    '10:35:10', // ID 7
+    '10:35:10', // ID 8
+    '10:36:20', // ID 9
   ];
   
-  return Array.from({ length: 10 }, (_, i) => {
+  return Array.from({ length: 9 }, (_, i) => {
     const id = String(i + 1);
-    const cctvName = getCctvNameForCaptureItem({ id });
+    const cctvName = getV3CctvName(id);
     const location = getLocationForCaptureItem({ id });
-    const confidence = getConfidenceForCaptureItem({ id });
+    const confidence = getV3Confidence(id);
     return {
       cctvId: cctvName,
       cctvName,
@@ -343,13 +371,13 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   };
 
   const captureList = useMemo<CaptureItem[]>(() => {
-    return Array.from({ length: 10 }, (_, i) => {
+    return Array.from({ length: 9 }, (_, i) => {
       const base = BASE_ITEMS[i];
       return { id: String(i + 1), ...base };
     });
   }, []);
 
-  const PINNED_CANDIDATE_ID = '10';
+  const PINNED_CANDIDATE_ID = '9';
 
   const visibleCaptureList = useMemo(() => {
     let list = excludedAttributes.length
@@ -360,11 +388,11 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       list = list.filter((item) => item.id === PINNED_CANDIDATE_ID || !excludedImageIds.includes(item.id));
     }
     
-    // ID 매핑: 1-3(별빛A-230), 4-5(별빛A-444), 6(별빛A-481), 7(별빛A-498), 8-9(별빛A-583), 10(별빛A-604)
+    // ID 매핑: 1-3(별빛A-230), 4-5(별빛A-444), 6(별빛A-481), 7(별빛A-498), 8-9(별빛A-583)
     list = list.filter((item) => {
       if (item.id === PINNED_CANDIDATE_ID) return true;
 
-      const cctvName = getCctvNameForCaptureItem(item);
+      const cctvName = getV3CctvName(item.id);
       
       if (radius <= 200) {
         return ['별빛A-498', '별빛A-583'].includes(cctvName);
@@ -835,14 +863,6 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               >
                 {/* 썸네일 */}
                 <div className="relative w-full bg-black" style={{ height: '160px' }}>
-                  {item.id === '10' && (
-                    <div
-                      className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-blue-500/90 text-white"
-                      aria-label="유사 후보"
-                    >
-                      유사 후보
-                    </div>
-                  )}
                   {isMatched && (
                     <div
                       className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-green-500/90 text-white"
@@ -852,7 +872,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     </div>
                   )}
                   <img
-                    src={getPathForCaptureItem(item)}
+                    src={getV3ThumbnailPath(item.id)}
                     alt={item.cctvName}
                     className={`w-full h-full object-cover transition-all duration-300 ${isWrong ? 'opacity-30 grayscale' : ''}`}
                     onError={(e) => {
@@ -905,7 +925,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     틀림
                   </button>
                   <button
-                    id={item.id === '10' ? 'match-button-10' : undefined}
+                    id={item.id === '9' ? 'match-button-9' : undefined}
                     type="button"
                     aria-pressed={isMatched}
                     data-pressed={isMatched}

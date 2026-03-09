@@ -1,4 +1,5 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import { Icon } from '@iconify/react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -23,6 +24,7 @@ const ObjectTrackingMapView = ({
   showCCTVLabel = false,
   pulseRadius = 100
 }: ObjectTrackingMapViewProps) => {
+  const [is3DMode, setIs3DMode] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const zoomOutTriggeredRef = useRef<boolean>(false);
@@ -843,6 +845,12 @@ const ObjectTrackingMapView = ({
     }
   }, [pulseRadius, visibleTrackingPins]);
 
+  const tooltipCls = "absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50";
+  const tooltipInnerStyle = { background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' } as const;
+  const btnBase = "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300";
+  const btnDefault = `${btnBase} bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm`;
+  const btnActive = `${btnBase} bg-blue-600 hover:bg-blue-700 text-white shadow-sm`;
+
   return (
     <div 
       className="relative bg-[#0f0f0f] overflow-hidden" 
@@ -861,6 +869,139 @@ const ObjectTrackingMapView = ({
         className="absolute inset-0 bg-black/5 pointer-events-none" 
         style={{ zIndex: 2 }}
       />
+
+      {/* 맵 컨트롤 버튼 */}
+      <div
+        className="absolute top-4 flex flex-col gap-2"
+        style={{ left: '90px', zIndex: 250 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 확대 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ zoom: Math.min(map.getMaxZoom(), map.getZoom() + 1), duration: 300, essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="확대"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:plus" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>확대</div>
+          </div>
+        </div>
+
+        {/* 축소 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ zoom: Math.max(map.getMinZoom(), map.getZoom() - 1), duration: 300, essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="축소"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:minus" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>축소</div>
+          </div>
+        </div>
+
+        <div className="w-full h-px bg-gray-300 my-1" />
+
+        {/* 2D */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIs3DMode(false);
+              mapRef.current?.easeTo({ pitch: 0, duration: 500 });
+            }}
+            className={!is3DMode ? btnActive : btnDefault}
+            aria-label="2D"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>2D 보기</div>
+          </div>
+        </div>
+
+        {/* 3D */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIs3DMode(true);
+              mapRef.current?.easeTo({ pitch: 60, duration: 500 });
+            }}
+            className={is3DMode ? btnActive : btnDefault}
+            aria-label="3D"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:cube" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>3D 보기</div>
+          </div>
+        </div>
+
+        <div className="w-full h-px bg-gray-300 my-1" />
+
+        {/* 왼쪽 회전 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ bearing: map.getBearing() - 15, duration: 500, easing: (t) => 1 - Math.pow(1 - t, 3), essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="회전 왼쪽"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:rotate-left" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>왼쪽으로 회전</div>
+          </div>
+        </div>
+
+        {/* 오른쪽 회전 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ bearing: map.getBearing() + 15, duration: 500, easing: (t) => 1 - Math.pow(1 - t, 3), essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="회전 오른쪽"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>오른쪽으로 회전</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
