@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
-import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import { getPredictedCCTVDetail } from '@/lib/predicted-cctv-details';
 
 export interface PredictedCCTVItem {
@@ -18,7 +18,8 @@ interface PredictedCCTVDetailPopupProps {
   isOpen: boolean;
   onClose: () => void;
   cctv: PredictedCCTVItem | null;
-  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string) => void;
+  autoCapture?: boolean;
 }
 
 const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
@@ -26,6 +27,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   onClose,
   cctv,
   onAddCapture,
+  autoCapture = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -73,8 +75,17 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     setVideoSrc(cctv.thumbnailUrl); // 리스트에서 할당된 비디오 사용
     setCurrentTime(0);
     setDuration(0);
-    setIsPlaying(true);
   }, [cctv?.id, cctv?.thumbnailUrl]);
+
+  // 팝업 열릴 때 비디오 자동 재생
+  useEffect(() => {
+    if (!isOpen || !cctv) return;
+    const video = videoRef.current;
+    if (video) {
+      video.play().catch(() => {});
+      setIsPlaying(true);
+    }
+  }, [isOpen, cctv?.id]);
 
   // 비디오 이벤트 핸들러
   useEffect(() => {
@@ -149,20 +160,6 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     }
   };
 
-  if (!isOpen || !cctv) return null;
-
-  const liveTimeString = currentLiveTime.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return;
-    onClose();
-  };
-
-  // 마크다운 분석결과 생성 함수
   const generateAnalysisMarkdown = (cctvItem: PredictedCCTVItem): string => {
     return `# 객체 추적 분석 결과
 
@@ -198,68 +195,99 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
 
   const handleCaptureTarget = () => {
     if (!cctv || !videoRef.current || !videoContainerRef.current) return;
-    
-    setIsCaptureAnimating(true);
-    
-    // 비디오에서 썸네일 캡처
-    const canvas = document.createElement('canvas');
+
+    let imageData: string;
     const video = videoRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      
-      // 비디오 컨테이너의 위치 가져오기
-      const rect = videoContainerRef.current.getBoundingClientRect();
-      
-      // 포착 목록 메뉴 위치 찾기 (원래 메뉴 또는 오버레이에서)
-      const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
-      let endX = 40;
-      let endY = 250;
-      
-      if (captureMenuButton) {
-        const menuRect = captureMenuButton.getBoundingClientRect();
-        endX = menuRect.left + menuRect.width / 2;
-        endY = menuRect.top + menuRect.height / 2;
-      }
-      
-      // 날아가는 썸네일 시작
-      setFlyingThumbnail({
-        startX: rect.left + rect.width / 2,
-        startY: rect.top + rect.height / 2,
-        endX,
-        endY,
-        imageData,
-      });
-      
-      // 원미A-638인 경우 마크다운 분석결과 생성
-      const analysisResult = cctv.cctvName === '원미A-638' ? generateAnalysisMarkdown(cctv) : undefined;
-      
-      // 포착 목록에 추가 (썸네일 애니메이션 시작 후)
-      setTimeout(() => {
-        if (onAddCapture) {
-          // imageData(썸네일), analysisResult(분석결과) 전달
-          if (analysisResult) {
-            // 원미A-638: 썸네일 + 분석결과
-            onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData, analysisResult);
-          } else {
-            // 다른 CCTV: 썸네일만
-            onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData);
-          }
+    const rect = videoContainerRef.current.getBoundingClientRect();
+
+    try {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          imageData = canvas.toDataURL('image/jpeg', 0.8);
+        } else {
+          imageData = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="320" height="180"%3E%3Crect fill="%231a1a1a" width="320" height="180"/%3E%3C/svg%3E';
         }
-      }, 300);
-      
-      // 썸네일 애니메이션 종료
-      setTimeout(() => {
-        setFlyingThumbnail(null);
-      }, 600);
+      } else {
+        imageData = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="320" height="180"%3E%3Crect fill="%231a1a1a" width="320" height="180"/%3E%3C/svg%3E';
+      }
+    } catch {
+      imageData = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="320" height="180"%3E%3Crect fill="%231a1a1a" width="320" height="180"/%3E%3C/svg%3E';
     }
-    
+
+    setIsCaptureAnimating(true);
+
+    const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
+    let endX = 40;
+    let endY = 250;
+    if (captureMenuButton) {
+      const menuRect = captureMenuButton.getBoundingClientRect();
+      endX = menuRect.left + menuRect.width / 2;
+      endY = menuRect.top + menuRect.height / 2;
+    }
+
+    const flyingData = {
+      startX: rect.left + rect.width / 2,
+      startY: rect.top + rect.height / 2,
+      endX,
+      endY,
+      imageData,
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyingThumbnail(flyingData);
+      });
+    });
+
+    const analysisResult = (cctv.cctvName === '별빛A-638' || cctv.cctvName === '원미A-638') ? generateAnalysisMarkdown(cctv) : undefined;
+
+    setTimeout(() => {
+      if (onAddCapture) {
+        onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData, analysisResult, cctv.thumbnailUrl);
+      }
+    }, 300);
+
+    setTimeout(() => setFlyingThumbnail(null), 600);
     setTimeout(() => {
       setIsCaptureAnimating(false);
+      onClose();
     }, 1000);
+  };
+
+  const handleCaptureTargetRef = useRef(handleCaptureTarget);
+  handleCaptureTargetRef.current = handleCaptureTarget;
+
+  const autoCaptureTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (!autoCapture || !isOpen || !cctv) {
+      autoCaptureTriggeredRef.current = false;
+      return;
+    }
+    if (autoCaptureTriggeredRef.current) return;
+    autoCaptureTriggeredRef.current = true;
+
+    const timer = setTimeout(() => {
+      handleCaptureTargetRef.current();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [autoCapture, isOpen, cctv]);
+
+  if (!isOpen || !cctv) return null;
+
+  const liveTimeString = currentLiveTime.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    onClose();
   };
 
   return (
@@ -314,6 +342,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
             </div>
           </div>
           <button
+            id="predicted-cctv-close-button"
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
@@ -460,6 +489,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                 {/* 경로 예측 상세 근거 - 토글 가능 */}
                 <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
                   <button
+                    id="route-prediction-dropdown"
                     type="button"
                     onClick={() => setIsRouteScoreOpen(!isRouteScoreOpen)}
                     className="w-full p-3 flex items-start gap-3 text-left"
@@ -523,6 +553,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
         {/* 푸터 - 고정 */}
         <div className="flex items-center justify-end px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
           <button
+            id="predicted-target-found-button"
             type="button"
             onClick={handleCaptureTarget}
             className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-400/50 flex items-center gap-1.5"
@@ -538,29 +569,31 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
       </div>
     </div>
 
-    {/* 날아가는 썸네일 애니메이션 */}
-    {flyingThumbnail && (
-      <div
-        className="fixed pointer-events-none z-[10001]"
-        style={{
-          left: `${flyingThumbnail.startX}px`,
-          top: `${flyingThumbnail.startY}px`,
-          transform: 'translate(-50%, -50%)',
-        }}
-      >
-        <img
-          src={flyingThumbnail.imageData}
-          alt="캡처 썸네일"
-          className="w-32 h-20 object-cover rounded-lg shadow-2xl"
+    {/* 날아가는 썸네일 애니메이션 (body에 포탈하여 정확한 위치/스택 보장) */}
+    {flyingThumbnail &&
+      createPortal(
+        <div
+          className="fixed pointer-events-none z-[10001]"
           style={{
-            boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',
-            animation: `fly-to-menu-dynamic 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`,
-            '--end-x': `${flyingThumbnail.endX - flyingThumbnail.startX}px`,
-            '--end-y': `${flyingThumbnail.endY - flyingThumbnail.startY}px`,
-          } as React.CSSProperties}
-        />
-      </div>
-    )}
+            left: `${flyingThumbnail.startX}px`,
+            top: `${flyingThumbnail.startY}px`,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <img
+            src={flyingThumbnail.imageData}
+            alt="캡처 썸네일"
+            className="w-32 h-20 object-cover rounded-lg shadow-2xl"
+            style={{
+              boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',
+              animation: 'fly-to-menu-dynamic 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+              '--end-x': `${flyingThumbnail.endX - flyingThumbnail.startX}px`,
+              '--end-y': `${flyingThumbnail.endY - flyingThumbnail.startY}px`,
+            } as React.CSSProperties}
+          />
+        </div>,
+        document.body
+      )}
   </>
   );
 };

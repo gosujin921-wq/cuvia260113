@@ -560,10 +560,10 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
             style={{
               background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             }}
-            aria-label="대상 발견"
+            aria-label="대상 포착"
           >
             <Icon icon="mdi:account-check" className="w-3.5 h-3.5" />
-            대상 발견
+            대상 포착
           </button>
         </div>
       </div>

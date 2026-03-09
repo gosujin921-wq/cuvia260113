@@ -21,6 +21,7 @@ interface PropagationListPanelProps {
   captureItems?: CaptureItem[];
   openReportPopupSignal?: number;
   onSimulationEnd?: () => void;
+  resetSignal?: number;
 }
 
 interface PropagationThread {
@@ -177,9 +178,11 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   captureItems = [],
   openReportPopupSignal = 0,
   onSimulationEnd,
+  resetSignal = 0,
 }) => {
   const hasAddedDiscoveryRef = useRef(false);
   const [showReportDownloadPopup, setShowReportDownloadPopup] = useState(false);
+  const prevResetSignal = useRef(resetSignal);
 
   useEffect(() => {
     if (openReportPopupSignal > 0) {
@@ -226,11 +229,10 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isVisible, onClose, onBackToInitial]);
 
-  const [threads, setThreads] = useState<PropagationThread[]>(() => {
+  const createInitialThreads = (): PropagationThread[] => {
     const now = new Date();
-    const reportTime = new Date(now.getTime() - 3 * 60 * 60 * 1000); // 3시간 전
-    const propagationTime = new Date(now.getTime() - 10 * 60 * 1000); // 10분 전
-    
+    const reportTime = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+    const propagationTime = new Date(now.getTime() - 10 * 60 * 1000);
     return [
       {
         id: 'thread-1',
@@ -238,7 +240,6 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
         status: 'pending',
         createdAt: reportTime.toISOString(),
         messages: [
-          // 1. 신고 접수 메시지 (하늘별빛경찰서)
           {
             id: 'msg-report',
             role: 'agency',
@@ -251,7 +252,6 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
             author: '하늘별빛경찰서',
             status: 'read',
           },
-          // 2. 전파 전송 메시지 (내가 보낸 전파)
           {
             id: 'msg-propagation',
             role: 'system',
@@ -265,7 +265,19 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
         ],
       },
     ];
-  });
+  };
+
+  const [threads, setThreads] = useState<PropagationThread[]>(createInitialThreads);
+
+  useEffect(() => {
+    if (resetSignal !== prevResetSignal.current) {
+      prevResetSignal.current = resetSignal;
+      setThreads(createInitialThreads());
+      hasAddedDiscoveryRef.current = false;
+      setShowReportDownloadPopup(false);
+      setMessageInput('');
+    }
+  }, [resetSignal]);
   
   const [currentThreadId, setCurrentThreadId] = useState('thread-1');
   const [messageInput, setMessageInput] = useState('');

@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
-import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v2/FastSearchCandidateDetailPopup';
+import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v3/FastSearchCandidateDetailPopup';
 import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
 
 interface FastSearchListPanelProps {
@@ -8,12 +8,16 @@ interface FastSearchListPanelProps {
   width?: number;
   /** 리스트 카드 개수 변경 시 부모에 전달 (에이전트 첫 대화 문구용) */
   onListCardCountChange?: (count: number) => void;
-  /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
+  /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동 - 실시간 미리보기) */
   onRadiusChange?: (radius: number) => void;
+  /** 반경(m) 확정 시 부모에 전달 (CCTV 필터링용) */
+  onAppliedRadiusChange?: (radius: number) => void;
   /** 결과 재검색 버튼 클릭 시 호출 */
   onReSearchClick?: () => void;
   /** 에이전트 "속성 삭제"로 제외할 속성 목록. 해당 속성 이미지 카드는 리스트에서 숨김 */
   excludedAttributes?: string[];
+  /** 결과 재검색으로 직접 제외할 이미지 ID 목록 (예: ['1', '2', '3']) */
+  excludedImageIds?: string[];
   /** 외부에서 열 후보 ID (예: '42' = qs_img_57_y) */
   openCandidateId?: string | null;
   /** 후보가 열렸을 때 호출 */
@@ -22,6 +26,16 @@ interface FastSearchListPanelProps {
   showSkeleton?: boolean;
   /** 대상 포착 시 호출 */
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string) => void;
+  /** 이 값이 'wrong-button-1'일 때 리스트를 맨 아래로 스크롤 (틀림 시퀀스 유도용) */
+  scrollToBottomTrigger?: string | null;
+  /** 후보 카드 선택(상세 팝업 오픈) 시 호출 */
+  onCandidateSelect?: () => void;
+  /** 외부에서 팝업 닫기 신호 (값 변경 시 팝업 닫힘) */
+  closePopupSignal?: number;
+  /** 팝업 열릴 때 자동 포착 실행 여부 */
+  autoCapture?: boolean;
+  /** 팝업 닫힐 때 호출 */
+  onPopupClose?: () => void;
 }
 
 interface CaptureItem {
@@ -35,8 +49,8 @@ interface CaptureItem {
 
 /** 신고 위치로부터의 거리(m) 계산 (mock) - 위치별 가상 거리 */
 const LOCATION_DISTANCE_MAP: Record<string, number> = {
-  '원미구 춘의동 125-46': 0,
-  '원미구 부천로 245번길 41': 30,
+  '은하로363번길 48': 0,
+  '별빛구 하늘로 245번길 41': 30,
   '길주로363번길 48': 150,
   '길주로391번길 29': 280,
   '길주로395번길 12': 310,
@@ -88,34 +102,42 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   width = 700,
   onListCardCountChange,
   onRadiusChange,
+  onAppliedRadiusChange,
   onReSearchClick,
   excludedAttributes = [],
+  excludedImageIds = [],
   openCandidateId,
   onCandidateOpened,
   showSkeleton = false,
   onAddCapture,
+  scrollToBottomTrigger = null,
+  onCandidateSelect,
+  closePopupSignal,
+  autoCapture = false,
+  onPopupClose,
 }) => {
-  const [radius, setRadius] = useState<number>(300); // 반경 (m) - 실제 적용된 값
+  const [radius, setRadius] = useState<number>(400); // 반경 (m) - 실제 적용된 값
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
   const [selectedZones, setSelectedZones] = useState<string[]>([]); // 다중 선택 구역 (기본값: 전체)
+  const [showRadiusSkeleton, setShowRadiusSkeleton] = useState<boolean>(false); // 반경 변경 시 짧은 스켈레톤
   
   // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
-  const [tempRadius, setTempRadius] = useState<number>(300);
+  const [tempRadius, setTempRadius] = useState<number>(400);
   const [tempTimeRange, setTempTimeRange] = useState<[number, number]>([0, 60]);
   
-  // 부천시 행정구역 데이터 (2depth)
+  // 하늘시 행정구역 데이터 (2depth)
   const zoneData = {
-    '원미구': [
-      '심곡1동', '심곡2동', '심곡3동', '원미1동', '원미2동', '소사동', 
-      '역곡1동', '역곡2동', '춘의동', '도당동', '약대동', '중동', 
-      '중1동', '중2동', '중3동', '중4동', '상동', '상1동', '상2동', '상3동'
+    '별빛구': [
+      '바람1동', '바람2동', '바람3동', '별빛1동', '별빛2동', '무지개동', 
+      '성운1동', '성운2동', '은하동', '구름동', '하늘동', '달빛동', 
+      '달빛1동', '달빛2동', '달빛3동', '달빛4동', '해빛동', '해빛1동', '해빛2동', '해빛3동'
     ],
-    '소사구': [
-      '송내1동', '송내2동', '심곡본1동', '심곡본동', '소사본동', '소사본1동', 
-      '괴안동', '역곡3동', '범박동', '옥길동'
+    '무지개구': [
+      '구름1동', '구름2동', '바람본1동', '바람본동', '무지개본동', '무지개본1동', 
+      '노을동', '성운3동', '이슬동', '물결동'
     ],
-    '오정구': [
-      '오정동', '신흥동', '원종1동', '원종2동', '고강1동', '고강본동', '성곡동'
+    '햇살구': [
+      '햇살동', '새벽동', '여명1동', '여명2동', '빛나1동', '빛나본동', '반짝동'
     ]
   };
   
@@ -130,6 +152,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   const timePopoverRef = useRef<HTMLDivElement>(null);
   const zonePopoverRef = useRef<HTMLDivElement>(null);
   const sortPopoverRef = useRef<HTMLDivElement>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
   
   // 듀얼 슬라이더 드래그 상태
   const sliderTrackRef = useRef<HTMLDivElement>(null);
@@ -326,10 +349,31 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     });
   }, []);
 
+  const PINNED_CANDIDATE_ID = '10';
+
   const visibleCaptureList = useMemo(() => {
-    const list = excludedAttributes.length
-      ? captureList.filter((item) => !shouldHideCaptureItem(item, excludedAttributes))
+    let list = excludedAttributes.length
+      ? captureList.filter((item) => item.id === PINNED_CANDIDATE_ID || !shouldHideCaptureItem(item, excludedAttributes))
       : captureList;
+    
+    if (excludedImageIds.length > 0) {
+      list = list.filter((item) => item.id === PINNED_CANDIDATE_ID || !excludedImageIds.includes(item.id));
+    }
+    
+    // ID 매핑: 1-3(별빛A-230), 4-5(별빛A-444), 6(별빛A-481), 7(별빛A-498), 8-9(별빛A-583), 10(별빛A-604)
+    list = list.filter((item) => {
+      if (item.id === PINNED_CANDIDATE_ID) return true;
+
+      const cctvName = getCctvNameForCaptureItem(item);
+      
+      if (radius <= 200) {
+        return ['별빛A-498', '별빛A-583'].includes(cctvName);
+      } else if (radius < 400) {
+        return ['별빛A-498', '별빛A-583', '별빛A-444', '별빛A-481'].includes(cctvName);
+      } else {
+        return true;
+      }
+    });
     
     return [...list].sort((a, b) => {
       switch (sortOption) {
@@ -345,7 +389,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           return 0;
       }
     });
-  }, [captureList, excludedAttributes, sortOption]);
+  }, [captureList, excludedAttributes, excludedImageIds, sortOption, radius]);
 
   useLayoutEffect(() => {
     if (!isVisible || !onListCardCountChange) return;
@@ -353,15 +397,21 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   }, [isVisible, onListCardCountChange, visibleCaptureList.length]);
 
   useLayoutEffect(() => {
-    if (!onRadiusChange) return;
-    onRadiusChange(radius);
-  }, [onRadiusChange, radius]);
+    if (!onAppliedRadiusChange) return;
+    onAppliedRadiusChange(radius);
+  }, [onAppliedRadiusChange, radius]);
   
   // 임시 반경 변경 시 부모에 전달 (실시간 미리보기)
   useLayoutEffect(() => {
     if (!onRadiusChange) return;
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
+
+  useEffect(() => {
+    if (closePopupSignal && closePopupSignal > 0) {
+      setSelectedCandidate(null);
+    }
+  }, [closePopupSignal]);
 
   // 외부에서 특정 후보 열기
   useEffect(() => {
@@ -375,6 +425,15 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       }
     }
   }, [openCandidateId, isVisible, captureList, onCandidateOpened]);
+
+  // 틀림 시퀀스 시 리스트 맨 아래로 스크롤
+  useEffect(() => {
+    if (scrollToBottomTrigger !== 'wrong-button-1' || !listScrollRef.current) return;
+    const el = listScrollRef.current;
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
+  }, [scrollToBottomTrigger]);
 
   return (
     <>
@@ -405,6 +464,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             {/* 반경 칩 */}
             <div className="relative">
               <button
+                id="radius-chip-button"
                 onClick={() => {
                   if (openPopover === 'radius') {
                     setOpenPopover(null);
@@ -429,10 +489,17 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-white text-sm font-semibold">검색 반경 설정</div>
                     <button
+                      id="radius-confirm-button"
                       type="button"
                       onClick={() => {
                         setRadius(tempRadius);
                         setOpenPopover(null);
+                        
+                        // 짧은 스켈레톤 애니메이션 (0.5초)
+                        setShowRadiusSkeleton(true);
+                        setTimeout(() => {
+                          setShowRadiusSkeleton(false);
+                        }, 500);
                       }}
                       className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
                     >
@@ -442,6 +509,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   <div className="space-y-3">
                     <div className="relative">
                       <input
+                        id="radius-slider"
                         type="range"
                         min="100"
                         max="3000"
@@ -498,6 +566,11 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                       onClick={() => {
                         setTimeRange([tempTimeRange[0], tempTimeRange[1]]);
                         setOpenPopover(null);
+
+                        setShowRadiusSkeleton(true);
+                        setTimeout(() => {
+                          setShowRadiusSkeleton(false);
+                        }, 500);
                       }}
                       className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
                     >
@@ -673,6 +746,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           >
             {/* 결과 재검색 */}
             <button
+              id="re-search-button"
               type="button"
               onClick={() => {
                 if (onReSearchClick) onReSearchClick();
@@ -684,6 +758,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             </button>
           </div>
           <div
+            ref={listScrollRef}
             className="flex-1 overflow-y-auto"
             style={{
               padding: '16px',
@@ -691,7 +766,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
             }}
           >
             <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
-            {showSkeleton ? (
+            {(showSkeleton || showRadiusSkeleton) ? (
               // 스켈레톤 로딩 (9개 카드)
               Array.from({ length: 9 }).map((_, idx) => (
                 <div
@@ -751,11 +826,23 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               return (
               <div
                 key={item.id}
-                onClick={() => setSelectedCandidate(item)}
+                id={`fast-search-candidate-${item.id}`}
+                onClick={() => {
+                  setSelectedCandidate(item);
+                  onCandidateSelect?.();
+                }}
                 className="bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-colors flex flex-col hover:bg-[#40424a]"
               >
                 {/* 썸네일 */}
                 <div className="relative w-full bg-black" style={{ height: '160px' }}>
+                  {item.id === '10' && (
+                    <div
+                      className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-blue-500/90 text-white"
+                      aria-label="유사 후보"
+                    >
+                      유사 후보
+                    </div>
+                  )}
                   {isMatched && (
                     <div
                       className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-green-500/90 text-white"
@@ -767,7 +854,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   <img
                     src={getPathForCaptureItem(item)}
                     alt={item.cctvName}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover transition-all duration-300 ${isWrong ? 'opacity-30 grayscale' : ''}`}
                     onError={(e) => {
                       // 이미지 로드 실패 시 플레이스홀더
                       (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect width="100" height="100" fill="%231a1a1a"/%3E%3Ctext x="50" y="50" text-anchor="middle" dy=".3em" fill="%23666" font-size="12"%3ENo Image%3C/text%3E%3C/svg%3E';
@@ -775,11 +862,22 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   />
                 </div>
 
-                <div className="flex-1 min-w-0"></div>
+                {/* 카드 정보 */}
+                <div className="flex-1 min-w-0 px-3 pt-2 space-y-1">
+                  <div className="text-xs text-white font-semibold truncate">{item.cctvName}</div>
+                  <div className="text-[11px] text-gray-400 truncate">{item.location}</div>
+                  <div className="text-[11px] text-gray-500">{item.timestamp}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-gray-500">유사도</span>
+                    <span className="text-[11px] text-gray-600">|</span>
+                    <span className="text-xs text-white font-semibold">{item.confidence}%</span>
+                  </div>
+                </div>
 
                 {/* 틀림/맞음 버튼 */}
                 <div className="px-3 pb-3 pt-2 flex gap-1.5">
                   <button
+                    id={item.id === '1' ? 'wrong-button-1' : undefined}
                     type="button"
                     aria-pressed={isWrong}
                     data-pressed={isWrong}
@@ -807,6 +905,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     틀림
                   </button>
                   <button
+                    id={item.id === '10' ? 'match-button-10' : undefined}
                     type="button"
                     aria-pressed={isMatched}
                     data-pressed={isMatched}
@@ -846,9 +945,13 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
 
       <FastSearchCandidateDetailPopup
         isOpen={!!selectedCandidate}
-        onClose={() => setSelectedCandidate(null)}
+        onClose={() => {
+          setSelectedCandidate(null);
+          onPopupClose?.();
+        }}
         candidate={selectedCandidate}
         onAddCapture={onAddCapture}
+        autoCapture={autoCapture}
       />
     </>
   );

@@ -22,6 +22,42 @@ import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
 import { parseExcludedAttributesFromMessage, parseIncludedAttributesFromMessage, parseShowOnlyAttributesFromMessage, getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
 import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
 
+const EndDialog = () => {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      sessionStorage.clear();
+      window.location.reload();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[10010]">
+      <div
+        className="gradient-border-right-bottom rounded-lg overflow-hidden"
+        style={{
+          background: 'rgba(255, 255, 255, 0.6)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.25)',
+          boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.15)',
+          minWidth: '420px',
+        }}
+      >
+        <div className="px-6 pt-5 pb-5 text-left">
+          <p className="text-gray-900 font-bold leading-relaxed" style={{ fontSize: '18px' }}>
+            CUVIA 튜토리얼이 종료되었습니다.
+          </p>
+          <p className="text-gray-700 text-sm leading-relaxed mt-2">
+            체험해주셔서 감사합니다.<br />
+            잠시 후 초기 화면으로 돌아갑니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // UI 상태 관리를 위한 reducer
 type UIState = {
   selectedEventId: string | null;
@@ -305,6 +341,9 @@ export default function HomeV2() {
   const [closePopupSignal, setClosePopupSignal] = useState(0);
   const [showPropagationPackagePopup, setShowPropagationPackagePopup] = useState(false);
   const [openReportPopupSignal, setOpenReportPopupSignal] = useState(0);
+  const [propagationResetSignal, setPropagationResetSignal] = useState(0);
+  const [showEndDialog, setShowEndDialog] = useState(false);
+  const [dialogSource, setDialogSource] = useState<'net-monitoring' | 'broadcast'>('net-monitoring');
   const [candidateAutoCapture, setCandidateAutoCapture] = useState(false);
   const [cctvAutoCapture, setCCTVAutoCapture] = useState(false);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
@@ -604,7 +643,11 @@ export default function HomeV2() {
 
     if (showMouseGuide && optionsParam?.hideOverlayWithPopup && currentStepId !== 'candidate-detail') {
       setTimeout(() => {
-        jumpToStep('capture-complete');
+        dispatch({ type: 'SHOW_CAPTURE_LIST' });
+        setShowPredictedCCTVList(false);
+        setVisibleTrackingPins(0);
+        setFlyToLocation(null);
+        jumpToStep('capture-list-review');
       }, 500);
     }
   }, [showMouseGuide, jumpToStep, currentStepId]);
@@ -668,6 +711,8 @@ export default function HomeV2() {
     setCandidateAutoCapture(false);
     setCCTVAutoCapture(false);
     setOpenReportPopupSignal(0);
+    setPropagationResetSignal(prev => prev + 1);
+    setShowEndDialog(false);
     resetGuide();
   }, [resetGuide]);
 
@@ -766,20 +811,19 @@ export default function HomeV2() {
     if (targetStepId !== 'candidate-detail') {
       setOpenCandidateId(null);
     }
-    if (targetStepId === 'review-candidates' || targetStepId === 'capture-complete') {
+    if (targetStepId === 'review-candidates') {
       setClosePopupSignal(prev => prev + 1);
     }
     if (targetStepId === 'predicted-cctv-detail') {
       setOpenCCTVId('4');
-    } else if (targetStepId === 'predicted-cctv' || targetStepId === 'capture-list-guide') {
+    } else if (targetStepId === 'predicted-cctv' || targetStepId === 'capture-list-review') {
       setCloseCCTVPopupSignal(prev => prev + 1);
     }
 
     const PHASE_INTRO = ['intro'];
-    const PHASE_SEARCH_PROGRESS = ['searching'];
-    const PHASE_SEARCH_LIST = ['review-candidates', 'candidate-detail', 'capture-complete'];
+    const PHASE_SEARCH_LIST = ['review-candidates', 'candidate-detail'];
     const PHASE_TRACKING = ['route-analysis'];
-    const PHASE_TRACKING_DONE = ['predicted-cctv', 'predicted-cctv-detail', 'capture-list-guide'];
+    const PHASE_TRACKING_DONE = ['predicted-cctv', 'predicted-cctv-detail'];
     const PHASE_CAPTURE = ['capture-list-review', 'propagation'];
     const PHASE_PROPAGATION = ['report-download', 'report-result'];
 
@@ -799,12 +843,8 @@ export default function HomeV2() {
         setVisibleEventIds(new Set([missingEvent.id]));
         setFlyToLocation([126.99656, 37.43527]);
       }
-    } else if (PHASE_SEARCH_PROGRESS.includes(targetStepId)) {
-      dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
-      setShowPredictedCCTVList(false);
-      setObjectTrackingCompleted(false);
     } else if (PHASE_SEARCH_LIST.includes(targetStepId)) {
-      dispatch({ type: 'START_FAST_SEARCH' });
+      dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
       setPinOffset({ x: 0, y: 0 });
       setShowPredictedCCTVList(false);
       setObjectTrackingCompleted(false);
@@ -847,7 +887,11 @@ export default function HomeV2() {
   }, [currentStepIndex, getStepId, handleGuideNavigate]);
 
   const handleGuideNext = useCallback(() => {
-    if (currentStepIndex >= totalSteps - 1) return;
+    if (currentStepIndex >= totalSteps - 1) {
+      setShowMouseGuide(false);
+      setShowEndDialog(true);
+      return;
+    }
     if (currentStepId === 'candidate-detail') {
       setCandidateAutoCapture(true);
       return;
@@ -864,7 +908,7 @@ export default function HomeV2() {
   const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
     if (showMouseGuide) {
       const menuToStep: Record<string, string> = {
-        'fast-search': 'searching',
+        'fast-search': 'review-candidates',
         'object-tracking': 'route-analysis',
         'capture-list': 'capture-list-review',
         'propagation': 'report-download',
@@ -879,6 +923,7 @@ export default function HomeV2() {
     dispatch({ type: 'SET_MENU', payload: menuId });
 
     if (menuId === 'net-monitoring' || menuId === 'broadcast') {
+      setDialogSource(menuId);
       dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
     } else if (menuId === 'fast-search') {
       setShowPredictedCCTVList(false);
@@ -1146,7 +1191,9 @@ export default function HomeV2() {
         autoCapture={candidateAutoCapture}
         onPopupClose={() => {
           if (showMouseGuide && currentStepId === 'candidate-detail') {
-            jumpToStep('capture-complete');
+            jumpToStep('route-analysis');
+            dispatch({ type: 'START_OBJECT_TRACKING' });
+            handleStartTrackingSequence();
           }
         }}
       />
@@ -1168,7 +1215,11 @@ export default function HomeV2() {
         }}
         onCCTVDetailClose={() => {
           if (showMouseGuide) {
-            jumpToStep('capture-list-guide');
+            dispatch({ type: 'SHOW_CAPTURE_LIST' });
+            setShowPredictedCCTVList(false);
+            setVisibleTrackingPins(0);
+            setFlyToLocation(null);
+            jumpToStep('capture-list-review');
           }
         }}
         openCCTVId={openCCTVId}
@@ -1205,14 +1256,20 @@ export default function HomeV2() {
         onBackToInitial={handleBackToInitial}
         captureItems={captureItems}
         openReportPopupSignal={openReportPopupSignal}
-        onSimulationEnd={handleBackToInitial}
+        onSimulationEnd={() => {
+          setShowMouseGuide(false);
+          setShowEndDialog(true);
+        }}
+        resetSignal={propagationResetSignal}
       />
 
       {/* 투망감시/CUVIA Link 안내 다이얼로그 */}
       <ConfirmDialog
         isOpen={uiState.showNetMonitoringDialog}
         title="안내"
-        message="이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요."
+        message={dialogSource === 'broadcast'
+          ? '<b>쿠비아 링크는 별도 체험존에서 제공됩니다.</b><br/>쿠비아 링크 체험존에서 이용해주세요.'
+          : '이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요.'}
         confirmText="확인"
         hideCancel
         showDim
@@ -1321,7 +1378,7 @@ export default function HomeV2() {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
               setPinOffset({ x: 0, y: 0 });
 
-              if (showMouseGuide && currentStepId === 'searching') {
+              if (showMouseGuide && currentStepId === 'intro') {
                 jumpToStep('review-candidates');
               }
             }}
@@ -1403,6 +1460,10 @@ export default function HomeV2() {
       )}
 
       {/* 시작 메시지창 */}
+      {showEndDialog && (
+        <EndDialog />
+      )}
+
       {showStartMessage && (
         <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[9999]">
           <div
@@ -1416,14 +1477,31 @@ export default function HomeV2() {
               minWidth: '420px',
             }}
           >
-            <div className="px-6 pt-5 pb-2 text-center">
-              <p className="text-gray-900 text-sm font-medium leading-relaxed">
-                실종 시뮬레이션을 해보시려면<br />
-                <b>시작 버튼</b>을 눌러주세요.
+            <div className="px-6 pt-5 pb-3 text-left">
+              <p className="text-gray-900 font-bold leading-relaxed" style={{ fontSize: '18px' }}>
+                쿠비아 튜토리얼을 시작해보세요
+              </p>
+              <p className="text-gray-700 text-sm leading-relaxed mt-2">
+                실종 사건 접수 상황을 바탕으로<br />
+                쿠비아의 전체 대응 흐름을 직접 체험하실 수 있습니다.
+              </p>
+              <div className="mt-3 px-3 py-2.5 rounded-md border border-gray-300/60 bg-white/40">
+                <p className="text-gray-800 text-xs font-semibold leading-relaxed">
+                  사건 접수 → 고속검색 → 객체추적 → 전파 → 보고서 자동작성
+                </p>
+                <p className="text-gray-600 text-[11px] leading-relaxed mt-1">
+                  체험 시간: 약 3~5분
+                </p>
+              </div>
+              <p className="text-gray-700 text-sm leading-relaxed mt-3">
+                시작 버튼을 누르면 시뮬레이션이 바로 시작됩니다.
+              </p>
+              <p className="text-gray-700 text-[11px] leading-relaxed mt-2">
+                화면에 표시되는 사건, 인물 및 데이터는 실제와 무관한 가상 데이터입니다.
               </p>
             </div>
 
-            <div className="px-6 pb-3 flex justify-center">
+            <div className="px-6 pb-4 flex justify-end">
               {isInitialLoading && (
                 <>
                   <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
@@ -1445,13 +1523,6 @@ export default function HomeV2() {
                   시작
                 </button>
               )}
-            </div>
-
-            <div className="px-6 pb-4 pt-1">
-              <p className="text-gray-500 text-[11px] leading-relaxed text-center">
-                본 화면은 전시용 시뮬레이션입니다.<br />
-                표시되는 사건, 인물 및 데이터는 실제와 무관한 가상 데이터입니다.
-              </p>
             </div>
           </div>
         </div>

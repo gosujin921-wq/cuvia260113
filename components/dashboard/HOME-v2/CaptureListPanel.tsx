@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Icon } from '@iconify/react';
 import PropagationPackagePopup from './PropagationPackagePopup';
 
@@ -43,12 +43,6 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
   const [selectedCapture, setSelectedCapture] = useState<CaptureItem | null>(null);
   const [showPropagationPopup, setShowPropagationPopup] = useState(false);
 
-  // 비디오 플레이어 상태
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleToggleSelect = (id: string) => {
@@ -70,126 +64,6 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
       setSelectedIds(new Set(captureItems.map((item) => item.id)));
     }
   };
-
-  // 비디오 플레이어 핸들러
-  const togglePlayPause = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isPlaying) {
-      video.pause();
-    } else {
-      video.play();
-    }
-  };
-
-  const skipBackward = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = Math.max(0, video.currentTime - 10);
-  };
-
-  const skipForward = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = Math.min(video.duration, video.currentTime + 10);
-  };
-
-  const toggleFullscreen = () => {
-    const container = containerRef.current;
-    if (!container) return;
-    
-    if (!document.fullscreenElement) {
-      container.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const video = videoRef.current;
-    if (!video) return;
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = x / rect.width;
-    video.currentTime = percentage * video.duration;
-  };
-
-  const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = moveEvent.clientX - rect.left;
-      const percentage = Math.max(0, Math.min(1, x / rect.width));
-      video.currentTime = percentage * video.duration;
-    };
-
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  const formatTime = (seconds: number) => {
-    if (!isFinite(seconds)) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // 비디오 이벤트 핸들러
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handleLoadedMetadata = () => {
-      setDuration(video.duration);
-    };
-
-    const handleTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
-    };
-
-    const handlePlay = () => {
-      setIsPlaying(true);
-    };
-
-    const handlePause = () => {
-      setIsPlaying(false);
-    };
-
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-    return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, [selectedCapture]);
-
-  // 팝업이 닫힐 때 비디오 초기화
-  useEffect(() => {
-    if (!selectedCapture) {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setDuration(0);
-    }
-  }, [selectedCapture]);
 
   // 선택된 아이템들 가져오기 (선택이 없으면 모든 아이템)
   const selectedItems = selectedIds.size > 0 
@@ -263,101 +137,11 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                   className="bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
                   style={{ aspectRatio: '16/9', width: '100%' }}
                 >
-                  {selectedCapture.videoUrl && selectedCapture.videoUrl.trim() !== '' ? (
-                    <>
-                      <video
-                        ref={videoRef}
-                        src={selectedCapture.videoUrl}
-                        className="w-full h-full object-contain"
-                        poster={selectedCapture.thumbnailUrl && selectedCapture.thumbnailUrl.trim() !== '' ? selectedCapture.thumbnailUrl : undefined}
-                        muted
-                        playsInline
-                        autoPlay
-                        aria-label="포착 영상"
-                      />
-                      
-                      {/* 비디오 컨트롤 오버레이 - 객체 추적 이미지가 아닐 때만 표시 */}
-                      {!selectedCapture.analysisResult?.includes('객체 추적') && (
-                        <div 
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ zIndex: 10 }}
-                        >
-                        <div 
-                          className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pointer-events-auto"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* 프로그레스 바 */}
-                          <div 
-                            className="w-full h-1 bg-gray-600 rounded-full cursor-pointer mb-3 relative"
-                            onClick={handleProgressClick}
-                            onMouseDown={handleProgressMouseDown}
-                          >
-                            <div 
-                              className="h-full bg-blue-500 rounded-full"
-                              style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
-                            />
-                          </div>
-                          
-                          {/* 컨트롤 버튼들 */}
-                          <div className="flex items-center justify-between text-white">
-                            <div className="flex items-center gap-2">
-                              {/* 재생/일시정지 */}
-                              <button
-                                type="button"
-                                onClick={togglePlayPause}
-                                className="hover:text-blue-400 transition-colors"
-                                aria-label={isPlaying ? '일시정지' : '재생'}
-                              >
-                                <Icon icon={isPlaying ? 'mdi:pause' : 'mdi:play'} className="w-6 h-6" />
-                              </button>
-                              
-                              {/* 10초 뒤로 */}
-                              <button
-                                type="button"
-                                onClick={skipBackward}
-                                className="hover:text-blue-400 transition-colors"
-                                aria-label="10초 뒤로"
-                              >
-                                <Icon icon="mdi:rewind-10" className="w-5 h-5" />
-                              </button>
-                              
-                              {/* 10초 앞으로 */}
-                              <button
-                                type="button"
-                                onClick={skipForward}
-                                className="hover:text-blue-400 transition-colors"
-                                aria-label="10초 앞으로"
-                              >
-                                <Icon icon="mdi:fast-forward-10" className="w-5 h-5" />
-                              </button>
-                              
-                              {/* 시간 표시 */}
-                              <span className="text-xs text-gray-300 ml-2">
-                                {formatTime(currentTime)} / {formatTime(duration)}
-                              </span>
-                            </div>
-                            
-                            {/* 전체화면 */}
-                            <button
-                              type="button"
-                              onClick={toggleFullscreen}
-                              className="hover:text-blue-400 transition-colors"
-                              aria-label={isFullscreen ? '전체화면 종료' : '전체화면'}
-                            >
-                              <Icon icon={isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'} className="w-5 h-5" />
-                            </button>
-                          </div>
-                        </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <img
-                      src={selectedCapture.thumbnailUrl && selectedCapture.thumbnailUrl.trim() !== '' ? selectedCapture.thumbnailUrl : '/images/cctv-placeholder.jpg'}
-                      alt={selectedCapture.cctvName}
-                      className="w-full h-full object-contain"
-                    />
-                  )}
+                  <img
+                    src={selectedCapture.thumbnailUrl && selectedCapture.thumbnailUrl.trim() !== '' ? selectedCapture.thumbnailUrl : '/images/cctv-placeholder.jpg'}
+                    alt={selectedCapture.cctvName}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
               </div>
 
@@ -671,14 +455,6 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                             }}
                           />
                           
-                          {/* 재생 아이콘 오버레이 - 객체 추적 이미지가 아닐 때만 표시 */}
-                          {!item.analysisResult?.includes('객체 추적') && (
-                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                              <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                                <Icon icon="mdi:play" className="w-8 h-8 text-white" />
-                              </div>
-                            </div>
-                          )}
                         </div>
 
                         {/* 기본정보 */}

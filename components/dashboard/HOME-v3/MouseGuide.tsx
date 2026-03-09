@@ -81,8 +81,7 @@ export const MouseGuide = ({
       {guideMessage && (
         <div
           key={currentStepId}
-          className="fixed left-1/2 -translate-x-1/2 z-[10010]"
-          style={{ bottom: currentStepId === 'intro' ? '214px' : '32px' }}
+          className={`fixed left-1/2 -translate-x-1/2 z-[10010] ${currentStepId === 'intro' ? 'top-6' : 'bottom-8'}`}
           aria-live="polite"
         >
           <div
@@ -103,7 +102,7 @@ export const MouseGuide = ({
                 )}
                 <span className="text-xs font-bold text-gray-700 tracking-wide">
                   STEP {stepNumber}
-                  <span className="font-normal text-gray-600 ml-1">/ {totalSteps}</span>
+                  <span className="font-normal text-gray-400 ml-1">/ {totalSteps}</span>
                 </span>
               </div>
 
@@ -121,7 +120,8 @@ export const MouseGuide = ({
                 <button
                   type="button"
                   onClick={onNext}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors"
+                  disabled={isLast}
+                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   aria-label="다음 단계"
                   tabIndex={0}
                 >
