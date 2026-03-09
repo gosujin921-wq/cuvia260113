@@ -2,221 +2,103 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 export type GuideType = 'mouse' | 'eye' | 'keyboard';
 
-export type BubblePosition = 'above-center' | 'above-left' | 'above-right' | 'below-center' | 'below-left' | 'below-right';
-
 export type GuideStep = {
   id: string;
-  targetId: string;
+  targetId?: string;
   message: string;
   type: GuideType;
   delayAfterClick: number;
-  autoAdvanceDelay?: number;
-  pauseAfterClick?: boolean;
-  bubble?: BubblePosition;
 };
 
 const GUIDE_STEPS: GuideStep[] = [
   {
-    id: 'fast-search-start',
+    id: 'intro',
     targetId: 'fast-search-start-button',
-    message: '고속검색 시작 버튼을 클릭하세요',
-    type: 'mouse',
-    delayAfterClick: 0,
-    pauseAfterClick: true,
-  },
-  {
-    id: 'radius-chip',
-    targetId: 'radius-chip-button',
-    message: '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.',
+    message: '실종 신고가 접수되었습니다.<br/>마지막 목격 위치와 대상자 정보를 확인한 뒤<br/><b>\'고속 검색 시작\'</b>을 선택하세요.',
     type: 'mouse',
     delayAfterClick: 500,
-    bubble: 'below-left',
   },
   {
-    id: 'radius-confirm',
-    targetId: 'radius-confirm-button',
-    message: '400m 이상으로 설정 후 확인 버튼을 클릭하세요.',
-    type: 'mouse',
-    delayAfterClick: 300,
-    bubble: 'above-right',
-  },
-  {
-    id: 'agent-chat-input',
-    targetId: 'agent-chat-input',
-    message: '검색된 결과 확인 후 비정형 검색 조건을 자연어로 입력하여 후보를 좁힐 수 있습니다.<br>(예 : 우산 쓴 사람 빼줘, 우산 삭제 등)',
-    type: 'keyboard',
+    id: 'searching',
+    message: 'CUVIA가 주변 CCTV를 분석하여<br/>대상자를 탐색합니다.',
+    type: 'eye',
     delayAfterClick: 0,
   },
   {
-    id: 'agent-chat-send',
-    targetId: 'agent-chat-send-button',
-    message: '전송 버튼을 클릭하세요',
-    type: 'mouse',
-    delayAfterClick: 0,
-    bubble: 'above-right',
-  },
-  {
-    id: 'fast-search-candidate-10',
+    id: 'review-candidates',
     targetId: 'fast-search-candidate-10',
-    message: '디테일한 고속 검색 결과를 확인해 보세요.',
-    type: 'mouse',
-    delayAfterClick: 500,
+    message: 'CUVIA가 탐색한 후보를 확인하세요.<br/>검색 조건을 추가하면 후보를 더 정확하게 좁힐 수 있습니다.<br/><br/><span style="opacity:0.6">예시</span><br/><span style="opacity:0.6">• 정형 조건: 검색 반경 또는 시간 범위 조정</span><br/><span style="opacity:0.6">• 비정형 조건: "회색 후드 입은 사람만 보여줘", "우산 쓴 사람은 제외해줘"</span><br/><br/>후보 영상을 확인하고 대상 여부를 선택하세요.',
+    type: 'eye',
+    delayAfterClick: 0,
   },
   {
-    id: 'detail-tab',
-    targetId: 'detail-tab-button',
-    message: '후보 메타정보 탭을 클릭하세요.',
-    type: 'mouse',
-    delayAfterClick: 500,
-  },
-  {
-    id: 'similarity-dropdown',
-    targetId: 'similarity-dropdown',
-    message: '유사도 상세 정보를 확인하세요.',
-    type: 'mouse',
-    delayAfterClick: 2000,
-  },
-  {
-    id: 'capture-target',
+    id: 'candidate-detail',
     targetId: 'capture-target-button',
-    message: '대상을 포착 시 대상 포착 버튼을 눌러주세요.',
+    message: '후보 정보를 확인하세요.<br/>대상으로 판단되면 <b>\'대상 포착\'</b>을 선택하세요.',
     type: 'mouse',
-    delayAfterClick: 1000,
+    delayAfterClick: 500,
   },
   {
-    id: 'match-button-10',
-    targetId: 'match-button-10',
-    message: '고속 검색 후보군 중 확정 후보는 맞음을 선택하여 후보군에 추가하세요.',
-    type: 'mouse',
-    delayAfterClick: 1000,
-  },
-  {
-    id: 'wrong-button-1',
-    targetId: 'wrong-button-1',
-    message: '고속 검색 후보군 중 맞지 않는 후보는 틀림으로 체크하세요.',
-    type: 'mouse',
-    delayAfterClick: 1000,
-  },
-  {
-    id: 're-search',
-    targetId: 're-search-button',
-    message: '추가한 조건 및 대표 후보를 기반으로 재검색을 시작합니다.',
-    type: 'mouse',
-    delayAfterClick: 1000,
-  },
-  {
-    id: 'object-tracking-menu',
+    id: 'capture-complete',
     targetId: 'object-tracking-menu',
-    message: '객체 추적 메뉴를 클릭하세요.',
+    message: '대상을 포착했습니다.<br/>다음 단계로 이동하려면<br/>\'객체 추적\' 메뉴를 선택하세요.',
     type: 'mouse',
     delayAfterClick: 500,
-    bubble: 'above-left',
   },
   {
-    id: 'object-tracking-confirm',
-    targetId: 'object-tracking-confirm-button',
-    message: '시작 버튼을 클릭하세요.',
-    type: 'mouse',
+    id: 'route-analysis',
+    message: '확정된 후보를 기반으로<br/>CUVIA가 이동 경로를 분석합니다.',
+    type: 'eye',
     delayAfterClick: 0,
   },
   {
-    id: 'predicted-cctv-7',
+    id: 'predicted-cctv',
     targetId: 'predicted-cctv-7',
-    message: '객체추적 결과를 통해 지도에서 이동 경로를 확인하고,<br/>마지막 확인 지점 이후 포착 예측 주변 CCTV 리스트를 확인합니다.',
-    type: 'mouse',
-    delayAfterClick: 500,
-  },
-  {
-    id: 'route-prediction-dropdown',
-    targetId: 'route-prediction-dropdown',
-    message: '경로 예측 상세 근거를 확인하세요.',
-    type: 'mouse',
-    delayAfterClick: 2000,
-  },
-  {
-    id: 'predicted-target-found',
-    targetId: 'predicted-target-found-button',
-    message: '대상을 포착 시 대상 포착 버튼을 눌러주세요.',
-    type: 'mouse',
-    delayAfterClick: 1000,
-  },
-  {
-    id: 'predicted-cctv-close',
-    targetId: 'predicted-cctv-close-button',
-    message: '대상 포착을 완료한 뒤 닫기를 눌러 팝업을 닫아주세요.',
-    type: 'mouse',
-    delayAfterClick: 500,
-  },
-  {
-    id: 'capture-list-menu-click',
-    targetId: 'capture-list-menu',
-    message: '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.',
-    type: 'mouse',
-    delayAfterClick: 500,
-    bubble: 'above-left',
-  },
-  {
-    id: 'capture-item-0',
-    targetId: 'capture-item-0',
-    message: '객체 추적 시 포착한 대상의 전파 근거 정보를 확인합니다.',
-    type: 'mouse',
-    delayAfterClick: 500,
-  },
-  {
-    id: 'capture-detail-close-1',
-    targetId: 'capture-detail-close-button',
-    message: '전파 근거 내용을 확인 후 팝업을 닫아주세요.',
-    type: 'mouse',
-    delayAfterClick: 500,
-  },
-  {
-    id: 'capture-item-1',
-    targetId: 'capture-item-1',
-    message: '고속 검색 시 포착한 대상의 전파 근거 정보를 확인합니다.',
-    type: 'mouse',
-    delayAfterClick: 500,
-  },
-  {
-    id: 'capture-detail-close-2',
-    targetId: 'capture-detail-close-button',
-    message: '전파 근거 내용을 확인 후 팝업을 닫아주세요.',
-    type: 'mouse',
-    delayAfterClick: 500,
-  },
-  {
-    id: 'capture-checkbox-0',
-    targetId: 'capture-checkbox-0',
-    message: '객체추적 썸네일을 선택하세요.',
-    type: 'mouse',
-    delayAfterClick: 1000,
-  },
-  {
-    id: 'capture-checkbox-1',
-    targetId: 'capture-checkbox-1',
-    message: '고속검색 클립을 선택하세요.',
-    type: 'mouse',
-    delayAfterClick: 1000,
-  },
-  {
-    id: 'create-propagation-package',
-    targetId: 'create-propagation-package-button',
-    message: '포착한 정보를 토대로 전파의 초안을 AI가 생성합니다.',
-    type: 'mouse',
-    delayAfterClick: 1000,
-  },
-  {
-    id: 'propagation-detail-tab',
-    targetId: 'propagation-detail-tab',
-    message: '상세 보기 탭을 클릭하세요.',
-    type: 'mouse',
-    delayAfterClick: 3000,
-  },
-  {
-    id: 'send-propagation-package',
-    targetId: 'send-propagation-package-button',
-    message: '전파 패키지를 전송하세요.',
-    type: 'mouse',
+    message: '예측된 CCTV를 확인하여<br/>대상자의 현재 위치를 탐색하세요.',
+    type: 'eye',
     delayAfterClick: 0,
+  },
+  {
+    id: 'predicted-cctv-detail',
+    targetId: 'predicted-target-found-button',
+    message: '예측된 CCTV와 분석 근거를 확인하세요.<br/>대상이 발견되면 <b>\'대상 포착\'</b>을 선택하세요.',
+    type: 'mouse',
+    delayAfterClick: 500,
+  },
+  {
+    id: 'capture-list-guide',
+    targetId: 'capture-list-menu',
+    message: '확보된 포착 정보를 바탕으로<br/>현장 및 타기관에 공유할 수 있습니다.<br/>\'포착 목록\' 메뉴를 선택하세요.',
+    type: 'mouse',
+    delayAfterClick: 500,
+  },
+  {
+    id: 'capture-list-review',
+    targetId: 'create-propagation-package-button',
+    message: '포착 정보를 확인하고 공유할 항목을 선택하세요.<br/>선택 후 <b>\'전파 패키지 생성\'</b>을 눌러주세요.',
+    type: 'mouse',
+    delayAfterClick: 500,
+  },
+  {
+    id: 'propagation',
+    targetId: 'send-propagation-package-button',
+    message: '선택한 근거를 기반으로 전파 패키지를 생성합니다.<br/>\'전파\' 버튼을 눌러 공유하세요.',
+    type: 'mouse',
+    delayAfterClick: 500,
+  },
+  {
+    id: 'report-download',
+    targetId: 'report-download-button',
+    message: '사건 처리가 완료되었습니다.<br/>결과 보고서를 생성하려면<br/><b>\'사건 처리 결과 보고서 다운로드\'</b>를 선택하세요.',
+    type: 'mouse',
+    delayAfterClick: 500,
+  },
+  {
+    id: 'report-result',
+    targetId: 'report-pdf-button',
+    message: '사건 처리 결과 보고서를 다운로드하세요.',
+    type: 'mouse',
+    delayAfterClick: 500,
   },
 ];
 
@@ -233,17 +115,9 @@ type AppStateForSync = {
   fastSearchStarted: boolean;
   fastSearchProgressDone: boolean;
   reSearchInProgress: boolean;
-  radiusConfirmed: boolean;
-  agentChatHasUsan: boolean;
-  agentChatSent: boolean;
-  reSearchResult: boolean;
-  reSearchExcludedAttributes: string[];
-  reSearchProgressDone: boolean;
-  objectTrackingStarted: boolean;
   objectTrackingCompleted: boolean;
   showPredictedCCTVList: boolean;
   showCaptureList: boolean;
-  showPropagationList: boolean;
 };
 
 export const useMouseGuide = () => {
@@ -255,16 +129,11 @@ export const useMouseGuide = () => {
   const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1);
 
   const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const autoAdvanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearTimers = useCallback(() => {
     if (pendingTimerRef.current) {
       clearTimeout(pendingTimerRef.current);
       pendingTimerRef.current = null;
-    }
-    if (autoAdvanceTimerRef.current) {
-      clearTimeout(autoAdvanceTimerRef.current);
-      autoAdvanceTimerRef.current = null;
     }
   }, []);
 
@@ -281,15 +150,9 @@ export const useMouseGuide = () => {
 
     const step = GUIDE_STEPS[index];
     setCurrentStepIndex(index);
-    setGuideTarget(step.targetId);
+    setGuideTarget(step.targetId ?? null);
     setGuideMessage(step.message);
     setGuideType(step.type);
-
-    if (step.autoAdvanceDelay && step.autoAdvanceDelay > 0) {
-      autoAdvanceTimerRef.current = setTimeout(() => {
-        applyStep(index + 1);
-      }, step.autoAdvanceDelay);
-    }
   }, [clearTimers]);
 
   const advanceToNext = useCallback(() => {
@@ -298,11 +161,6 @@ export const useMouseGuide = () => {
     setGuideTarget(null);
     setGuideMessage('');
     clearTimers();
-
-    if (currentStep?.pauseAfterClick) {
-      setCurrentStepIndex(currentStepIndex);
-      return;
-    }
 
     const nextIndex = currentStepIndex + 1;
     if (nextIndex >= GUIDE_STEPS.length) {
@@ -337,173 +195,93 @@ export const useMouseGuide = () => {
     }
   }, [applyStep, clearTimers]);
 
-  const jumpToStepByTarget = useCallback((targetId: string, delay = 0) => {
-    const index = currentStepIndex >= 0
-      ? GUIDE_STEPS.findIndex((s, i) => i > currentStepIndex && s.targetId === targetId)
-      : GUIDE_STEPS.findIndex(s => s.targetId === targetId);
-
-    const resolvedIndex = index === -1
-      ? GUIDE_STEPS.findIndex(s => s.targetId === targetId)
-      : index;
-
-    if (resolvedIndex === -1) return;
-
-    clearTimers();
-    setGuideTarget(null);
-    setGuideMessage('');
-
-    if (delay > 0) {
-      pendingTimerRef.current = setTimeout(() => {
-        applyStep(resolvedIndex);
-      }, delay);
-    } else {
-      applyStep(resolvedIndex);
-    }
-  }, [currentStepIndex, applyStep, clearTimers]);
-
   const syncToAppState = useCallback((appState: AppStateForSync) => {
     if (!showMouseGuide || currentStepIndex < 0) return;
 
     const currentStep = GUIDE_STEPS[currentStepIndex];
     if (!currentStep) return;
 
-    const targetEl = document.getElementById(currentStep.targetId);
-    if (targetEl) return;
-
-    if (appState.showPropagationList) {
-      jumpToStep('propagation-detail-tab');
-      return;
+    // 타겟이 있는 스텝은 타겟이 DOM에 존재하면 동기화 스킵
+    if (currentStep.targetId && guideTarget) {
+      const targetEl = document.getElementById(currentStep.targetId);
+      if (targetEl) return;
     }
+
+    // 앱 상태 기반으로 올바른 마일스톤 결정 (가장 진행된 상태부터 체크)
+    let targetStepId: string | null = null;
+
     if (appState.showCaptureList) {
-      jumpToStep('capture-item-0');
-      return;
+      targetStepId = 'capture-list-review';
+    } else if (appState.objectTrackingCompleted && appState.showPredictedCCTVList) {
+      targetStepId = 'predicted-cctv';
+    } else if (appState.fastSearchStarted && appState.fastSearchProgressDone && !appState.reSearchInProgress) {
+      // searching 단계를 거치지 않았으면 searching 먼저 표시
+      targetStepId = currentStepIndex < 1 ? 'searching' : 'review-candidates';
+    } else if (appState.fastSearchStarted) {
+      targetStepId = 'searching';
     }
-    if (appState.objectTrackingCompleted && appState.showPredictedCCTVList) {
-      jumpToStep('predicted-cctv-7');
-      return;
-    }
-    if (appState.objectTrackingStarted) {
-      jumpToStep('object-tracking-confirm');
-      return;
-    }
-    if (appState.reSearchResult && appState.reSearchProgressDone) {
-      const isResultReSearchButton = appState.reSearchExcludedAttributes.some((a) => a.includes('대표 후보'));
-      jumpToStep(isResultReSearchButton ? 'object-tracking-menu' : 'fast-search-candidate-10');
-      return;
-    }
-    if (appState.agentChatSent) {
-      return;
-    }
-    if (appState.agentChatHasUsan) {
-      jumpToStep('agent-chat-send');
-      return;
-    }
-    if (appState.radiusConfirmed) {
-      jumpToStep('agent-chat-input');
-      return;
-    }
-    if (appState.fastSearchProgressDone && !appState.reSearchInProgress) {
-      jumpToStep('radius-chip');
-      return;
-    }
-    if (appState.fastSearchStarted) {
-      jumpToStep('fast-search-start');
-      return;
-    }
-  }, [showMouseGuide, currentStepIndex, jumpToStep]);
 
+    if (targetStepId) {
+      const targetIdx = GUIDE_STEPS.findIndex(s => s.id === targetStepId);
+      if (targetIdx > currentStepIndex) {
+        jumpToStep(targetStepId);
+      }
+    }
+  }, [showMouseGuide, currentStepIndex, guideTarget, jumpToStep]);
+
+  // 타겟 클릭 감지 (intro)
   useEffect(() => {
     if (!showMouseGuide || currentStepIndex < 0) return;
 
     const currentStep = GUIDE_STEPS[currentStepIndex];
-    if (!currentStep) return;
-
-    const isPaused = currentStep.pauseAfterClick && !guideTarget;
-
-    if (!isPaused && currentStep.id === 'agent-chat-input') {
-      const checkInput = () => {
-        const inputEl = document.getElementById('agent-chat-input') as HTMLTextAreaElement;
-        if (inputEl && inputEl.value.includes('우산')) {
-          advanceToNext();
-        }
-      };
-      const interval = setInterval(checkInput, 200);
-      return () => clearInterval(interval);
-    }
+    if (!currentStep?.targetId) return;
 
     const handleGlobalClick = (e: MouseEvent) => {
       const clickedEl = e.target as HTMLElement;
-
-      if (!isPaused) {
-        const currentTargetEl = document.getElementById(currentStep.targetId);
-        if (currentTargetEl && (currentTargetEl === clickedEl || currentTargetEl.contains(clickedEl))) {
-          advanceToNext();
-          return;
-        }
-      }
-
-      for (let i = currentStepIndex + 1; i < GUIDE_STEPS.length; i++) {
-        const futureStep = GUIDE_STEPS[i];
-        const futureEl = document.getElementById(futureStep.targetId);
-        if (futureEl && (futureEl === clickedEl || futureEl.contains(clickedEl))) {
-          clearTimers();
-          setGuideTarget(null);
-          setGuideMessage('');
-
-          if (futureStep.pauseAfterClick) {
-            setCurrentStepIndex(i);
-            return;
-          }
-
-          const delay = futureStep.delayAfterClick ?? 500;
-          const nextIdx = i + 1;
-          if (nextIdx >= GUIDE_STEPS.length) {
-            setCurrentStepIndex(nextIdx);
-            return;
-          }
-          if (delay > 0) {
-            pendingTimerRef.current = setTimeout(() => {
-              applyStep(nextIdx);
-            }, delay);
-          } else {
-            applyStep(nextIdx);
-          }
-          return;
-        }
+      const currentTargetEl = document.getElementById(currentStep.targetId!);
+      if (currentTargetEl && (currentTargetEl === clickedEl || currentTargetEl.contains(clickedEl))) {
+        advanceToNext();
       }
     };
 
     document.addEventListener('click', handleGlobalClick, true);
     return () => document.removeEventListener('click', handleGlobalClick, true);
-  }, [showMouseGuide, currentStepIndex, guideTarget, advanceToNext, applyStep, clearTimers]);
+  }, [showMouseGuide, currentStepIndex, guideTarget, advanceToNext]);
 
-  // 마우스 위치 추적
+  // 타겟 위치 추적 + 오렌지 스트로크 하이라이트
   useEffect(() => {
-    if (!showMouseGuide) return;
+    if (!showMouseGuide || !guideTarget) return;
 
-    if (guideTarget) {
-      const updateTargetPosition = () => {
-        const targetElement = document.getElementById(guideTarget);
-        if (targetElement) {
-          const rect = targetElement.getBoundingClientRect();
-          setMousePosition({
-            x: rect.left + rect.width / 2,
-            y: rect.top + rect.height / 2,
-          });
+    let highlightedEl: HTMLElement | null = null;
+
+    const updateTargetPosition = () => {
+      const el = document.getElementById(guideTarget);
+      if (el) {
+        if (highlightedEl !== el) {
+          highlightedEl?.classList.remove('guide-target-highlight');
+          el.classList.add('guide-target-highlight');
+          highlightedEl = el;
         }
-      };
-
-      updateTargetPosition();
-      const interval = setInterval(updateTargetPosition, 100);
-      return () => clearInterval(interval);
-    }
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
+        const rect = el.getBoundingClientRect();
+        setMousePosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        });
+      }
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+
+    updateTargetPosition();
+    const interval = setInterval(updateTargetPosition, 100);
+    return () => {
+      clearInterval(interval);
+      highlightedEl?.classList.remove('guide-target-highlight');
+    };
   }, [showMouseGuide, guideTarget]);
+
+  const getStepId = useCallback((index: number): string | undefined => {
+    if (index < 0 || index >= GUIDE_STEPS.length) return undefined;
+    return GUIDE_STEPS[index].id;
+  }, []);
 
   const resetGuide = useCallback(() => {
     clearTimers();
@@ -517,9 +295,9 @@ export const useMouseGuide = () => {
     setShowMouseGuide(prev => !prev);
   }, []);
 
-  const currentBubble: BubblePosition | undefined =
+  const currentStepId =
     currentStepIndex >= 0 && currentStepIndex < GUIDE_STEPS.length
-      ? GUIDE_STEPS[currentStepIndex].bubble
+      ? GUIDE_STEPS[currentStepIndex].id
       : undefined;
 
   return {
@@ -530,14 +308,14 @@ export const useMouseGuide = () => {
     guideMessage,
     guideType,
     currentStepIndex,
-    currentBubble,
+    currentStepId,
     setGuideTarget,
     setGuideMessage,
     setGuideType,
     applyStep,
     advanceToNext,
     jumpToStep,
-    jumpToStepByTarget,
+    getStepId,
     syncToAppState,
     resetGuide,
     toggleGuide,

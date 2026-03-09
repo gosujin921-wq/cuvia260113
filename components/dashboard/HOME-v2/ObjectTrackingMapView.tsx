@@ -133,6 +133,14 @@ const ObjectTrackingMapView = ({
         policeMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
         (map as any)._policeStationMarkers = null;
       }
+
+      // CCTV 마커 제거
+      const cctvMarkers = (map as any)._nearbyCCTVMarkers;
+      if (cctvMarkers) {
+        cctvMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
+        (map as any)._nearbyCCTVMarkers = null;
+      }
+      cctvMarkersRef.current.clear();
       
       zoomOutTriggeredRef.current = false; // 리셋
       return;

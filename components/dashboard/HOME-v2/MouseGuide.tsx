@@ -1,194 +1,145 @@
+import { Icon } from '@iconify/react';
+
 export type GuideType = 'mouse' | 'eye' | 'keyboard';
 
 export type MouseGuideProps = {
   show: boolean;
-  hideDuringProgress?: boolean;
   guideTarget: string | null;
   guideMessage: string;
   guideType: GuideType;
   mousePosition: { x: number; y: number };
+  currentStepIndex: number;
+  totalSteps: number;
+  currentStepId?: string;
+  onPrev?: () => void;
+  onNext?: () => void;
 };
 
-const overlapPx = 3;
-
-const getBoxTransform = (guideMessage: string) => {
-  const isBelowLeft = guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.';
-  const isAboveLeft =
-    guideMessage === '전송 버튼을 클릭하세요';
-  const isAboveRight =
-    guideMessage === '객체 추적 메뉴를 클릭하세요.' ||
-    guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.';
-  const isLeftAligned = isBelowLeft;
-
-  if (isAboveLeft) return 'translateX(-100%)';
-  if (isAboveRight || isLeftAligned) return 'translateX(0)';
-  return 'translateX(-50%)';
+const STEP_ICONS: Record<string, string> = {
+  intro: 'mdi:cursor-default-click',
+  searching: 'mdi:radar',
+  'review-candidates': 'mdi:account-search-outline',
+  'candidate-detail': 'mdi:account-check-outline',
+  'capture-complete': 'mdi:check-circle-outline',
+  'route-analysis': 'mdi:map-marker-path',
+  'predicted-cctv': 'mdi:cctv',
+  'predicted-cctv-detail': 'mdi:clipboard-text-search-outline',
+  'capture-list-guide': 'mdi:format-list-checks',
+  'capture-list-review': 'mdi:package-variant-closed',
+  propagation: 'mdi:broadcast',
 };
-
-const getTriangleStyle = (guideMessage: string) => {
-  const isAlignRight = guideMessage === '전송 버튼을 클릭하세요';
-  const isAlignLeft =
-    guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.' ||
-    guideMessage === '객체 추적 메뉴를 클릭하세요.' ||
-    guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.';
-
-  if (isAlignRight) return { right: 0, left: 'auto' as const, transform: 'translateX(50%)' };
-  if (isAlignLeft) return { left: 0, transform: 'translateX(-50%)' };
-  return { left: '50%' as const, transform: 'translateX(-50%)' };
-};
-
-const triangleBase = {
-  width: 0,
-  height: 0,
-  borderLeft: '12px solid transparent',
-  borderRight: '12px solid transparent',
-} as const;
-
-const triangleInnerBase = {
-  width: 0,
-  height: 0,
-  borderLeft: '10px solid transparent',
-  borderRight: '10px solid transparent',
-} as const;
 
 export const MouseGuide = ({
   show,
-  hideDuringProgress = false,
   guideTarget,
   guideMessage,
   guideType,
   mousePosition,
+  currentStepIndex,
+  totalSteps,
+  currentStepId,
+  onPrev,
+  onNext,
 }: MouseGuideProps) => {
-  if (!show || hideDuringProgress || !guideTarget) return null;
+  if (!show || (!guideTarget && !guideMessage)) return null;
 
-  const isBelowLeft = guideMessage === '검색된 결과 확인 후 정형 검색 조건을 추가 입력하여 후보를 좁히거나 늘려보세요.';
-  const isAboveLeft = guideMessage === '전송 버튼을 클릭하세요';
-  const isAboveRight =
-    guideMessage === '객체 추적 메뉴를 클릭하세요.' ||
-    guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.';
-
-  const isLeftShifted = guideMessage === '객체 추적 메뉴를 클릭하세요.' ||
-    guideMessage === '포착한 대상의 정보를 확인하고 AI로 생성된 전파문 초안을 확인, 전파 패키지를 생성 및 전송합니다.';
-  const boxMargin = (() => {
-    if (isBelowLeft) return { marginLeft: -20, marginRight: 20 };
-    if (isAboveLeft) return { marginLeft: -20, marginRight: -20 };
-    if (isLeftShifted) return { marginLeft: -20, marginRight: 20 };
-    if (isAboveRight) return { marginLeft: 20, marginRight: 20 };
-    return { marginLeft: 0, marginRight: 0 };
-  })();
-
-  const triangleStyle = getTriangleStyle(guideMessage);
+  const iconName = currentStepId ? STEP_ICONS[currentStepId] : undefined;
+  const stepNumber = currentStepIndex + 1;
+  const isFirst = currentStepIndex <= 0;
+  const isLast = currentStepIndex >= totalSteps - 1;
 
   return (
-    <div
-      className="fixed pointer-events-none z-[10010]"
-      style={{
-        left: `${mousePosition.x}px`,
-        top: `${mousePosition.y}px`,
-      }}
-    >
-      {guideType !== 'eye' && (
+    <>
+      {/* 타겟 위치를 따라가는 펄스 원 */}
+      {guideTarget && guideType !== 'eye' && (
         <div
-          className="absolute"
+          className="fixed pointer-events-none z-[10010]"
           style={{
-            left: '0',
-            top: '0',
-            transform: 'translate(-50%, -50%)',
+            left: `${mousePosition.x}px`,
+            top: `${mousePosition.y}px`,
           }}
         >
           <div
-            className={`w-7 h-7 rounded-full animate-guide-circle-pulse ${guideTarget === 'agent-chat-input' ? 'bg-[#ff00ff]/80' : 'bg-white/80'}`}
+            className="absolute"
             style={{
-              boxShadow:
-                guideTarget === 'agent-chat-input'
-                  ? '0 0 15px rgba(255, 0, 255, 0.9), 0 0 30px rgba(255, 0, 255, 0.6)'
-                  : '0 0 15px rgba(255, 255, 255, 0.9), 0 0 30px rgba(255, 255, 255, 0.6)',
+              left: '0',
+              top: '0',
+              transform: 'translate(-50%, -50%)',
             }}
-          />
+          >
+            <div
+              className="w-7 h-7 rounded-full animate-guide-circle-pulse bg-white/80"
+              style={{
+                boxShadow: '0 0 15px rgba(255, 255, 255, 0.9), 0 0 30px rgba(255, 255, 255, 0.6)',
+              }}
+            />
+          </div>
         </div>
       )}
 
+      {/* 메시지 박스 */}
       {guideMessage && (
         <div
-          key={guideMessage}
-          className="absolute animate-fade-in"
-          style={{
-            left: '0',
-            bottom: isBelowLeft ? undefined : '20px',
-            top: isBelowLeft ? '20px' : undefined,
-            transform: getBoxTransform(guideMessage),
-          }}
+          key={currentStepId}
+          className={`fixed left-1/2 -translate-x-1/2 z-[10010] ${currentStepId === 'intro' ? 'top-6' : 'bottom-8'}`}
+          aria-live="polite"
         >
-          <div className="relative">
-            {isBelowLeft ? (
-              <>
-                <div
-                  className="absolute"
-                  style={{
-                    ...triangleStyle,
-                    bottom: '100%',
-                    marginBottom: `-${overlapPx}px`,
-                    ...triangleBase,
-                    borderBottom: '12px solid rgb(217 70 239)',
-                  }}
-                  aria-hidden
-                />
-                <div
-                  className="absolute"
-                  style={{
-                    ...triangleStyle,
-                    bottom: '100%',
-                    marginBottom: `-${overlapPx - 1}px`,
-                    ...triangleInnerBase,
-                    borderBottom: '10px solid white',
-                  }}
-                  aria-hidden
-                />
-              </>
-            ) : (
-              <>
-                <div
-                  className="absolute"
-                  style={{
-                    ...triangleStyle,
-                    top: '100%',
-                    marginTop: `-${overlapPx}px`,
-                    ...triangleBase,
-                    borderTop: '12px solid rgb(217 70 239)',
-                  }}
-                  aria-hidden
-                />
-                <div
-                  className="absolute"
-                  style={{
-                    ...triangleStyle,
-                    top: '100%',
-                    marginTop: `-${overlapPx - 1}px`,
-                    ...triangleInnerBase,
-                    borderTop: '10px solid white',
-                  }}
-                  aria-hidden
-                />
-              </>
-            )}
-            <div
-              className="bg-white border-2 border-fuchsia-500 rounded-xl px-4 py-2 relative z-10"
-              style={{
-                boxShadow: '0 0 12px rgba(217, 70, 239, 0.4)',
-                marginLeft: `${boxMargin.marginLeft}px`,
-                marginRight: `${boxMargin.marginRight}px`,
-              }}
-            >
-              <div className="text-gray-700 text-sm font-bold flex items-center gap-2 whitespace-nowrap">
-                <span className="text-xl flex-shrink-0">
-                  {guideType === 'mouse' ? '👆' : guideType === 'eye' ? '👀' : '⌨️'}
+          <div
+            className="gradient-border-right-bottom rounded-lg overflow-hidden"
+            style={{
+              background: 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.15)',
+            }}
+          >
+            {/* 헤더: STEP + 이전/다음 */}
+            <div className="flex items-center justify-between px-4 pt-3 pb-1">
+              <div className="flex items-center gap-2">
+                {iconName && (
+                  <Icon icon={iconName} className="w-4 h-4 text-gray-700" />
+                )}
+                <span className="text-xs font-bold text-gray-700 tracking-wide">
+                  STEP {stepNumber}
+                  <span className="font-normal text-gray-400 ml-1">/ {totalSteps}</span>
                 </span>
-                <span dangerouslySetInnerHTML={{ __html: guideMessage }} />
               </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={onPrev}
+                  disabled={isFirst}
+                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  aria-label="이전 단계"
+                  tabIndex={0}
+                >
+                  <Icon icon="mdi:chevron-left" className="w-4 h-4 text-gray-700" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onNext}
+                  disabled={isLast}
+                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  aria-label="다음 단계"
+                  tabIndex={0}
+                >
+                  <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-700" />
+                </button>
+              </div>
+            </div>
+
+            {/* 메시지 본문 */}
+            <div className="px-5 pb-3.5 pt-1">
+              <span
+                className="text-gray-900 text-sm font-medium leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: guideMessage }}
+              />
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };

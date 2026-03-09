@@ -8,6 +8,7 @@ import { Icon } from '@iconify/react';
 interface ReportDownloadPopupProps {
   isOpen: boolean;
   onClose: () => void;
+  onSimulationEnd?: () => void;
 }
 
 type FormatType = 'hwp' | 'jpg' | 'docx' | 'pdf';
@@ -22,8 +23,10 @@ const FORMAT_BUTTONS: { type: FormatType; label: string }[] = [
 const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
   isOpen,
   onClose,
+  onSimulationEnd,
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
   const totalPages = 3; // 추후 실제 PDF 페이지 수로 대체 예정
 
   const handlePrevPage = () => {
@@ -40,8 +43,8 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
       link.href = '/report.pdf';
       link.download = '사건처리결과보고서.pdf';
       link.click();
+      setShowEndConfirm(true);
     }
-    // 기타 형식(hwp, jpg, docx) 추후 구현 예정
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -137,9 +140,12 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
               {FORMAT_BUTTONS.map(({ type, label }) => (
                 <button
                   key={type}
+                  id={type === 'pdf' ? 'report-pdf-button' : undefined}
                   type="button"
                   onClick={() => handleFormatClick(type)}
-                  className="w-full px-4 py-3 rounded-lg text-sm font-medium text-gray-200 bg-[#1f1f1f] border border-[#31353a] hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300 transition-colors text-left"
+                  className={`w-full px-4 py-3 rounded-lg text-sm font-medium text-gray-200 bg-[#1f1f1f] border border-[#31353a] hover:border-blue-500/50 hover:bg-blue-500/10 hover:text-blue-300 transition-colors text-left ${
+                    type !== 'pdf' ? 'pointer-events-none' : ''
+                  }`}
                   aria-label={label}
                 >
                   {label}
@@ -149,6 +155,57 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
           </div>
         </div>
       </div>
+      {/* 시뮬레이션 종료 확인 팝업 */}
+      {showEndConfirm && (
+        <div
+          className="fixed inset-0 flex items-center justify-center"
+          style={{ zIndex: 10010 }}
+          onClick={() => setShowEndConfirm(false)}
+        >
+          <div
+            className="gradient-border-right-bottom rounded-lg overflow-hidden"
+            style={{
+              background: 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.15)',
+              minWidth: '360px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 pt-5 pb-4 text-center">
+              <p className="text-gray-900 text-sm font-medium leading-relaxed">
+                해당 시뮬레이션을 종료하시겠습니까?
+              </p>
+            </div>
+            <div className="px-6 pb-5 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowEndConfirm(false)}
+                className="px-6 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white/60 border border-gray-300/50 hover:bg-white/80 transition-colors"
+                aria-label="취소"
+                tabIndex={0}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowEndConfirm(false);
+                  onClose();
+                  onSimulationEnd?.();
+                }}
+                className="px-6 py-2 rounded-lg text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+                aria-label="종료"
+                tabIndex={0}
+              >
+                종료
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

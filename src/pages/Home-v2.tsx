@@ -12,13 +12,15 @@ import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPa
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
 import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/CaptureListPanel';
 import PropagationListPanel from '@/components/dashboard/HOME-v2/PropagationListPanel';
+import PropagationPackagePopup from '@/components/dashboard/HOME-v2/PropagationPackagePopup';
 import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
 import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
 import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
 import { useMouseGuide } from '@/src/pages/useMouseGuide';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
-import { parseExcludedAttributesFromMessage } from '@/lib/fast-search-attribute-utils';
+import { parseExcludedAttributesFromMessage, parseIncludedAttributesFromMessage, parseShowOnlyAttributesFromMessage, getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
+import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
 
 // UI 상태 관리를 위한 reducer
 type UIState = {
@@ -298,6 +300,13 @@ export default function HomeV2() {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
   const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
+  const [openCCTVId, setOpenCCTVId] = useState<string | null>(null);
+  const [closeCCTVPopupSignal, setCloseCCTVPopupSignal] = useState(0);
+  const [closePopupSignal, setClosePopupSignal] = useState(0);
+  const [showPropagationPackagePopup, setShowPropagationPackagePopup] = useState(false);
+  const [openReportPopupSignal, setOpenReportPopupSignal] = useState(0);
+  const [candidateAutoCapture, setCandidateAutoCapture] = useState(false);
+  const [cctvAutoCapture, setCCTVAutoCapture] = useState(false);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
   const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
   const [showReSearchSkeleton, setShowReSearchSkeleton] = useState<boolean>(false); // 재검색 스켈레톤 표시 여부
@@ -323,12 +332,15 @@ export default function HomeV2() {
     guideTarget,
     guideMessage,
     guideType,
+    currentStepIndex,
+    currentStepId,
     jumpToStep,
+    getStepId,
     resetGuide,
     toggleGuide,
     syncToAppState,
+    totalSteps,
   } = useMouseGuide();
-  const [captureDetailCloseCount, setCaptureDetailCloseCount] = useState<number>(0); // 포착 디테일 팝업 닫기 횟수
   
   // Refs
   const previousListCardCountRef = useRef<number>(0);
@@ -513,50 +525,6 @@ export default function HomeV2() {
   // 고속검색 리스트 패널이 열릴 때, 지도를 "조금만" 우측으로 이동시키기 위한 포커스 위치
   const fastSearchFocusXPercent = uiState.showFastSearchList ? 52 : 50;
 
-  // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
-  const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
-    dispatch({ type: 'SET_MENU', payload: menuId });
-
-    if (showMouseGuide) {
-      if (menuId === 'fast-search') {
-        jumpToStep('radius-chip');
-      } else if (menuId === 'object-tracking') {
-        jumpToStep('object-tracking-confirm');
-      } else if (menuId === 'capture-list') {
-        jumpToStep('capture-item-0');
-      }
-    }
-
-    if (menuId === 'net-monitoring') {
-      dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
-    } else if (menuId === 'fast-search') {
-      // 예측 CCTV 리스트 패널 닫기
-      setShowPredictedCCTVList(false);
-      setObjectTrackingCompleted(false);
-      setVisibleTrackingPins(0);
-      // 고속검색 시작 시 신고 팝업을 위한 이벤트 선택
-      const missingEvent = allConvertedEvents.find(event =>
-        event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
-      );
-      if (missingEvent) {
-        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
-        // 이벤트 핀을 지도에 표시하기 위해 visibleEventIds에 추가
-        setVisibleEventIds(new Set([missingEvent.id]));
-        // 이벤트 위치로 지도 이동
-        setFlyToLocation([126.99656, 37.43527]);
-      }
-      dispatch({ type: 'START_FAST_SEARCH' });
-    } else if (menuId === 'object-tracking') {
-      // 객체 추적 메뉴 선택 시 - 에이전트 팝업과 동일한 로직
-      // 고속검색 리스트가 있으면 확인 다이얼로그만 표시
-      dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
-    } else if (menuId === 'capture-list') {
-      dispatch({ type: 'SHOW_CAPTURE_LIST' });
-    } else if (menuId === 'propagation') {
-      dispatch({ type: 'SHOW_PROPAGATION_LIST' });
-    }
-  }, [allConvertedEvents, showMouseGuide, jumpToStep]);
-
   // 포착 아이템 추가 핸들러
   const handleAddCaptureItem = useCallback((
     cctvName: string, 
@@ -633,7 +601,13 @@ export default function HomeV2() {
     setTimeout(() => {
       setShowCaptureNotification(false);
     }, overlayDuration);
-  }, []);
+
+    if (showMouseGuide && optionsParam?.hideOverlayWithPopup && currentStepId !== 'candidate-detail') {
+      setTimeout(() => {
+        jumpToStep('capture-complete');
+      }, 500);
+    }
+  }, [showMouseGuide, jumpToStep, currentStepId]);
 
   // 이벤트 액션 핸들러 (useCallback으로 메모이제이션)
   const handleEventAction = useCallback((eventId: string) => {
@@ -688,8 +662,12 @@ export default function HomeV2() {
     setObjectTrackingCompleted(false);
     setVisibleTrackingPins(0);
     setReSearchResult(null);
-    setCaptureDetailCloseCount(0);
     setOpenCandidateId(null);
+    setOpenCCTVId(null);
+    setShowPropagationPackagePopup(false);
+    setCandidateAutoCapture(false);
+    setCCTVAutoCapture(false);
+    setOpenReportPopupSignal(0);
     resetGuide();
   }, [resetGuide]);
 
@@ -698,8 +676,7 @@ export default function HomeV2() {
   // - 결과재검색 버튼: 객체 추적 메뉴 가이드
   useEffect(() => {
     if (!showMouseGuide || !reSearchResult || uiState.showReSearchProgress) return;
-    const isResultReSearchButton = reSearchResult.excludedAttributes.some((a) => a.includes('대표 후보'));
-    jumpToStep(isResultReSearchButton ? 'object-tracking-menu' : 'fast-search-candidate-10');
+    jumpToStep('review-candidates');
   }, [showMouseGuide, reSearchResult, uiState.showReSearchProgress, jumpToStep]);
 
   // 객체 추적 애니메이션 완료 핸들러
@@ -708,40 +685,26 @@ export default function HomeV2() {
     setObjectTrackingCompleted(true);
 
     if (showMouseGuide) {
-      jumpToStep('predicted-cctv-7');
+      jumpToStep('predicted-cctv');
     }
   }, [showMouseGuide, jumpToStep]);
 
-  // syncToAppState: 타겟 요소가 없을 때 앱 상태에 맞춰 가이드 단계 동기화
+  // syncToAppState: 앱 상태에 맞춰 가이드 마일스톤 동기화
   useEffect(() => {
-    const inputEl = document.getElementById('agent-chat-input') as HTMLTextAreaElement | null;
-    const agentChatHasUsan = !!inputEl?.value?.includes('우산');
-
     syncToAppState({
       fastSearchStarted: uiState.showFastSearchList,
       fastSearchProgressDone: !uiState.showFastSearchProgress,
       reSearchInProgress: uiState.showReSearchProgress,
-      radiusConfirmed: false,
-      agentChatHasUsan,
-      agentChatSent: false,
-      reSearchResult: !!reSearchResult,
-      reSearchExcludedAttributes: reSearchResult?.excludedAttributes ?? [],
-      reSearchProgressDone: !uiState.showReSearchProgress,
-      objectTrackingStarted: uiState.showObjectTracking,
       objectTrackingCompleted,
       showPredictedCCTVList,
       showCaptureList: uiState.showCaptureList,
-      showPropagationList: uiState.showPropagationList,
     });
   }, [
     syncToAppState,
     uiState.showFastSearchList,
     uiState.showFastSearchProgress,
     uiState.showReSearchProgress,
-    uiState.showObjectTracking,
     uiState.showCaptureList,
-    uiState.showPropagationList,
-    reSearchResult,
     objectTrackingCompleted,
     showPredictedCCTVList,
   ]);
@@ -793,6 +756,152 @@ export default function HomeV2() {
     }, 6100);
   }, []);
 
+  // 가이드 스텝 네비게이션: 이전/다음 버튼으로 앱 상태까지 전환
+  const handleGuideNavigate = useCallback((targetStepId: string) => {
+    setCandidateAutoCapture(false);
+    setCCTVAutoCapture(false);
+    // 전파 패키지 팝업: propagation step에서만 열고 나머지는 항상 닫기
+    setShowPropagationPackagePopup(targetStepId === 'propagation');
+
+    if (targetStepId !== 'candidate-detail') {
+      setOpenCandidateId(null);
+    }
+    if (targetStepId === 'review-candidates' || targetStepId === 'capture-complete') {
+      setClosePopupSignal(prev => prev + 1);
+    }
+    if (targetStepId === 'predicted-cctv-detail') {
+      setOpenCCTVId('4');
+    } else if (targetStepId === 'predicted-cctv' || targetStepId === 'capture-list-guide') {
+      setCloseCCTVPopupSignal(prev => prev + 1);
+    }
+
+    const PHASE_INTRO = ['intro'];
+    const PHASE_SEARCH_PROGRESS = ['searching'];
+    const PHASE_SEARCH_LIST = ['review-candidates', 'candidate-detail', 'capture-complete'];
+    const PHASE_TRACKING = ['route-analysis'];
+    const PHASE_TRACKING_DONE = ['predicted-cctv', 'predicted-cctv-detail', 'capture-list-guide'];
+    const PHASE_CAPTURE = ['capture-list-review', 'propagation'];
+    const PHASE_PROPAGATION = ['report-download', 'report-result'];
+
+    const missingEvent = allConvertedEvents.find(
+      e => e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'
+    );
+
+    if (PHASE_INTRO.includes(targetStepId)) {
+      dispatch({ type: 'CLEAR_ALL' });
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      setVisibleTrackingPins(0);
+      setPinOffset({ x: 0, y: 0 });
+      if (missingEvent) {
+        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+        dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
+        setVisibleEventIds(new Set([missingEvent.id]));
+        setFlyToLocation([126.99656, 37.43527]);
+      }
+    } else if (PHASE_SEARCH_PROGRESS.includes(targetStepId)) {
+      dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+    } else if (PHASE_SEARCH_LIST.includes(targetStepId)) {
+      dispatch({ type: 'START_FAST_SEARCH' });
+      setPinOffset({ x: 0, y: 0 });
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      if (targetStepId === 'candidate-detail') {
+        setOpenCandidateId('10');
+      }
+    } else if (PHASE_TRACKING.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
+      dispatch({ type: 'START_OBJECT_TRACKING' });
+      handleStartTrackingSequence();
+    } else if (PHASE_TRACKING_DONE.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
+      dispatch({ type: 'START_OBJECT_TRACKING' });
+      setShowPredictedCCTVList(true);
+      setObjectTrackingCompleted(true);
+    } else if (PHASE_CAPTURE.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
+      dispatch({ type: 'SHOW_CAPTURE_LIST' });
+      setShowPredictedCCTVList(false);
+      setVisibleTrackingPins(0);
+      setFlyToLocation(null);
+    } else if (PHASE_PROPAGATION.includes(targetStepId)) {
+      dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
+      dispatch({ type: 'SHOW_PROPAGATION_LIST' });
+      setShowPredictedCCTVList(false);
+      setVisibleTrackingPins(0);
+      setFlyToLocation(null);
+      if (targetStepId === 'report-result') {
+        setOpenReportPopupSignal(prev => prev + 1);
+      }
+    }
+
+    jumpToStep(targetStepId);
+  }, [allConvertedEvents, jumpToStep, handleStartTrackingSequence]);
+
+  const handleGuidePrev = useCallback(() => {
+    if (currentStepIndex <= 0) return;
+    const prevId = getStepId(currentStepIndex - 1);
+    if (prevId) handleGuideNavigate(prevId);
+  }, [currentStepIndex, getStepId, handleGuideNavigate]);
+
+  const handleGuideNext = useCallback(() => {
+    if (currentStepIndex >= totalSteps - 1) return;
+    if (currentStepId === 'candidate-detail') {
+      setCandidateAutoCapture(true);
+      return;
+    }
+    if (currentStepId === 'predicted-cctv-detail') {
+      setCCTVAutoCapture(true);
+      return;
+    }
+    const nextId = getStepId(currentStepIndex + 1);
+    if (nextId) handleGuideNavigate(nextId);
+  }, [currentStepIndex, totalSteps, currentStepId, getStepId, handleGuideNavigate]);
+
+  // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
+  const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
+    if (showMouseGuide) {
+      const menuToStep: Record<string, string> = {
+        'fast-search': 'searching',
+        'object-tracking': 'route-analysis',
+        'capture-list': 'capture-list-review',
+        'propagation': 'report-download',
+      };
+      const targetStep = menuToStep[menuId];
+      if (targetStep) {
+        handleGuideNavigate(targetStep);
+        return;
+      }
+    }
+
+    dispatch({ type: 'SET_MENU', payload: menuId });
+
+    if (menuId === 'net-monitoring' || menuId === 'broadcast') {
+      dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
+    } else if (menuId === 'fast-search') {
+      setShowPredictedCCTVList(false);
+      setObjectTrackingCompleted(false);
+      setVisibleTrackingPins(0);
+      const missingEvent = allConvertedEvents.find(event =>
+        event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+      );
+      if (missingEvent) {
+        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+        setVisibleEventIds(new Set([missingEvent.id]));
+        setFlyToLocation([126.99656, 37.43527]);
+      }
+      dispatch({ type: 'START_FAST_SEARCH' });
+    } else if (menuId === 'object-tracking') {
+      dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+    } else if (menuId === 'capture-list') {
+      dispatch({ type: 'SHOW_CAPTURE_LIST' });
+    } else if (menuId === 'propagation') {
+      dispatch({ type: 'SHOW_PROPAGATION_LIST' });
+    }
+  }, [allConvertedEvents, showMouseGuide, handleGuideNavigate]);
+
   /** 에이전트 팝업 maxHeight 및 windowWidth 업데이트 */
   useEffect(() => {
     const handleResize = () => {
@@ -835,7 +944,7 @@ export default function HomeV2() {
       setFlyToLocation([126.99656, 37.43527]);
       
       if (showMouseGuide) {
-        jumpToStep('fast-search-start', 500);
+        jumpToStep('intro', 500);
       }
     }
   }, [allConvertedEvents, showMouseGuide, jumpToStep]);
@@ -852,30 +961,18 @@ export default function HomeV2() {
     
     if (e.key === '0') {
       toggleGuide();
-      setShowStartMessage(prev => !prev);
     } else if (e.key === '1' && missingEvent && !isInitialLoading) {
       setShowStartMessage(false);
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setFlyToLocation([126.99656, 37.43527]);
-      
+
       if (showMouseGuide) {
-        jumpToStep('fast-search-start', 500);
+        jumpToStep('intro', 500);
       }
-    } else if (e.key === '2') {
-      setShowPredictedCCTVList(true);
-      setObjectTrackingCompleted(true);
-    } else if (e.key === '3') {
-      handleStartTrackingSequence();
-    } else if (e.key === '4') {
-      dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
-      setPinOffset({ x: 0, y: 0 });
-      setOpenCandidateId('43');
-    } else if (e.key === 'l' || e.key === 'L') {
-      dispatch({ type: 'SHOW_AI_AGENT_ONLY' });
     }
-  }, [allConvertedEvents, handleStartTrackingSequence, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading]);
+  }, [allConvertedEvents, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -1040,6 +1137,18 @@ export default function HomeV2() {
         showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress || showReSearchSkeleton}
         onAddCapture={handleAddCaptureItem}
         scrollToBottomTrigger={guideTarget}
+        onCandidateSelect={() => {
+          if (showMouseGuide) {
+            jumpToStep('candidate-detail');
+          }
+        }}
+        closePopupSignal={closePopupSignal}
+        autoCapture={candidateAutoCapture}
+        onPopupClose={() => {
+          if (showMouseGuide && currentStepId === 'candidate-detail') {
+            jumpToStep('capture-complete');
+          }
+        }}
       />
 
       {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}
@@ -1052,6 +1161,20 @@ export default function HomeV2() {
           setShowCCTVLabel(false); // 썸네일 호버 시 라벨 표시 안함
         }}
         onRadiusChange={setCaptureListRadius}
+        onCCTVSelect={() => {
+          if (showMouseGuide) {
+            jumpToStep('predicted-cctv-detail');
+          }
+        }}
+        onCCTVDetailClose={() => {
+          if (showMouseGuide) {
+            jumpToStep('capture-list-guide');
+          }
+        }}
+        openCCTVId={openCCTVId}
+        onCCTVOpened={() => setOpenCCTVId(null)}
+        closeCCTVPopupSignal={closeCCTVPopupSignal}
+        autoCapture={cctvAutoCapture}
       />
 
       {/* CaptureListPanel - 포착 목록 */}
@@ -1063,21 +1186,37 @@ export default function HomeV2() {
         }}
       />
 
+      {showPropagationPackagePopup && (
+        <PropagationPackagePopup
+          isOpen={showPropagationPackagePopup}
+          onClose={() => setShowPropagationPackagePopup(false)}
+          selectedItems={captureItems}
+          onSendPropagation={() => {
+            setShowPropagationPackagePopup(false);
+            dispatch({ type: 'SHOW_PROPAGATION_LIST' });
+          }}
+        />
+      )}
+
       {/* PropagationListPanel - 전파 */}
       <PropagationListPanel
         isVisible={uiState.showPropagationList}
         onClose={() => dispatch({ type: 'HIDE_PROPAGATION_LIST' })}
         onBackToInitial={handleBackToInitial}
         captureItems={captureItems}
+        openReportPopupSignal={openReportPopupSignal}
+        onSimulationEnd={handleBackToInitial}
       />
 
-      {/* 투망감시 안내 다이얼로그 */}
+      {/* 투망감시/CUVIA Link 안내 다이얼로그 */}
       <ConfirmDialog
         isOpen={uiState.showNetMonitoringDialog}
-        title="투망감시"
-        message="현재 객체 추적, 포착목록, 전파, CUVIA Link를 위한 데모 페이지입니다.\n다른 메뉴를 선택해 보세요."
+        title="안내"
+        message="이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요."
         confirmText="확인"
-        cancelText=""
+        hideCancel
+        showDim
+        zIndex={10020}
         onConfirm={() => dispatch({ type: 'HIDE_NET_MONITORING_DIALOG' })}
         onCancel={() => dispatch({ type: 'HIDE_NET_MONITORING_DIALOG' })}
       />
@@ -1086,13 +1225,17 @@ export default function HomeV2() {
       <ConfirmDialog
         isOpen={uiState.showObjectTrackingConfirm}
         title="객체 추적 검사"
-        message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.\n객체 추적 검사를 시작하시겠습니까?`}
+        message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.<br/>객체 추적 검사를 시작하시겠습니까?`}
+        variant="dark"
         confirmText="시작"
         cancelText="취소"
         onConfirm={() => {
           dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' });
           dispatch({ type: 'START_OBJECT_TRACKING' });
           handleStartTrackingSequence();
+          if (showMouseGuide) {
+            jumpToStep('route-analysis');
+          }
         }}
         onCancel={() => dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' })}
       />
@@ -1120,6 +1263,44 @@ export default function HomeV2() {
               
               return parsed;
             }}
+            onShowOnlyRequest={({ rawMessage }) => {
+              const parsed = parseShowOnlyAttributesFromMessage(rawMessage);
+              if (!parsed.length) return [];
+
+              const { excludeAttrs, hiddenCount } = computeExcludeForShowOnly(parsed);
+              previousListCardCountRef.current = listCardCount;
+              currentExcludedAttributesRef.current = excludeAttrs;
+              setExcludedImageIds([]);
+              setExcludedAttributes(excludeAttrs);
+
+              const displayAttrs = getCanonicalDisplayNames(parsed);
+              setReSearchResult({
+                excludedAttributes: displayAttrs.map((a) => `${a}만 표시`),
+                deletedCount: hiddenCount,
+              });
+
+              return parsed;
+            }}
+            onAddLikeRequest={({ rawMessage }) => {
+              const parsed = parseIncludedAttributesFromMessage(rawMessage);
+
+              if (parsed.length) {
+                previousListCardCountRef.current = listCardCount;
+                currentExcludedAttributesRef.current = parsed;
+                const prevExcluded = excludedAttributes;
+                const actuallyRestored = parsed.filter((attr) => prevExcluded.includes(attr));
+                setExcludedAttributes((prev) => prev.filter((attr) => !parsed.includes(attr)));
+
+                if (actuallyRestored.length > 0) {
+                  setReSearchResult({
+                    excludedAttributes: actuallyRestored.map((a) => `${a} 복원`),
+                    deletedCount: -actuallyRestored.length,
+                  });
+                }
+              }
+
+              return parsed;
+            }}
             maxHeight={agentPopupMaxHeight}
             reSearchResult={reSearchResult}
             isObjectTracking={uiState.showObjectTracking}
@@ -1139,9 +1320,9 @@ export default function HomeV2() {
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
               setPinOffset({ x: 0, y: 0 });
-              
-              if (showMouseGuide) {
-                jumpToStep('radius-chip');
+
+              if (showMouseGuide && currentStepId === 'searching') {
+                jumpToStep('review-candidates');
               }
             }}
             onReSearchStart={() => {
@@ -1157,7 +1338,7 @@ export default function HomeV2() {
               dispatch({ type: 'COMPLETE_RE_SEARCH' });
               isReSearchingRef.current = true;
               if (showMouseGuide) {
-                jumpToStep('fast-search-candidate-10');
+                jumpToStep('review-candidates');
               }
             }}
           />
@@ -1223,56 +1404,70 @@ export default function HomeV2() {
 
       {/* 시작 메시지창 */}
       {showStartMessage && (
-        <div 
-          className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[9999]"
-        >
-          <div 
-            className="bg-black/80 border border-gray-700 rounded-2xl p-8 text-center"
+        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[9999]">
+          <div
+            className="gradient-border-right-bottom rounded-lg overflow-hidden"
             style={{
-              minWidth: '400px',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+              background: 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.15)',
+              minWidth: '420px',
             }}
           >
-            <p className="text-white text-lg mb-6" style={{ lineHeight: '1.8' }}>
-              실종 시뮬레이션을 해보시려면<br />
-              <span className="font-bold text-blue-400">1</span> 또는 <span className="font-bold">시작 버튼</span>을 눌러주세요.
-            </p>
-            {/* 로딩바: 3초 동안 0→100% 애니메이션 */}
-            {isInitialLoading && (
-              <>
-                <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
-                <div className="h-1 w-full bg-gray-700 rounded-full overflow-hidden mb-4">
-                  <div
-                    className="h-full bg-blue-500 rounded-full"
-                    style={{ animation: 'loading-fill 3s linear forwards' }}
-                  />
-                </div>
-              </>
-            )}
-            <button
-              onClick={handleStartSimulation}
-              disabled={isInitialLoading}
-              className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
-                isInitialLoading
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-              aria-label="시작"
-              tabIndex={isInitialLoading ? -1 : 0}
-            >
-              시작
-            </button>
+            <div className="px-6 pt-5 pb-2 text-center">
+              <p className="text-gray-900 text-sm font-medium leading-relaxed">
+                실종 시뮬레이션을 해보시려면<br />
+                <b>시작 버튼</b>을 눌러주세요.
+              </p>
+            </div>
+
+            <div className="px-6 pb-3 flex justify-center">
+              {isInitialLoading && (
+                <>
+                  <style>{`@keyframes loading-fill { from { width: 0%; } to { width: 100%; } }`}</style>
+                  <div className="h-1 w-full bg-gray-300/50 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full"
+                      style={{ animation: 'loading-fill 3s linear forwards' }}
+                    />
+                  </div>
+                </>
+              )}
+              {!isInitialLoading && (
+                <button
+                  onClick={handleStartSimulation}
+                  className="px-8 py-2.5 rounded-lg text-sm font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                  aria-label="시작"
+                  tabIndex={0}
+                >
+                  시작
+                </button>
+              )}
+            </div>
+
+            <div className="px-6 pb-4 pt-1">
+              <p className="text-gray-500 text-[11px] leading-relaxed text-center">
+                본 화면은 전시용 시뮬레이션입니다.<br />
+                표시되는 사건, 인물 및 데이터는 실제와 무관한 가상 데이터입니다.
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       <MouseGuide
         show={showMouseGuide}
-        hideDuringProgress={uiState.showFastSearchProgress || uiState.showReSearchProgress}
         guideTarget={guideTarget}
         guideMessage={guideMessage}
         guideType={guideType}
         mousePosition={mousePosition}
+        currentStepIndex={currentStepIndex}
+        totalSteps={totalSteps}
+        currentStepId={currentStepId}
+        onPrev={handleGuidePrev}
+        onNext={handleGuideNext}
       />
 
     </div>

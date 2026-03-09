@@ -11,6 +11,10 @@ interface AIAgentPopupProps {
   listCardCount?: number;
   /** 삭제/제거 등 delete류 문장 전송 시 호출. rawMessage로 속성 파싱 후 리스트 숨김에 사용. 파싱된 속성 배열 반환 */
   onDeleteLikeRequest?: (payload: { rawMessage: string }) => string[];
+  /** 추가/복원 등 add류 문장 전송 시 호출. rawMessage로 속성 파싱 후 리스트 복원에 사용. 파싱된 속성 배열 반환 */
+  onAddLikeRequest?: (payload: { rawMessage: string }) => string[];
+  /** "{{속성}}만 보여줘" 문장 전송 시 호출. 해당 속성만 남기고 나머지 제외. 파싱된 속성 배열 반환 */
+  onShowOnlyRequest?: (payload: { rawMessage: string }) => string[];
   /** 축소 모드일 때 최대 높이(px). 플로팅 버튼을 넘지 않도록 부모에서 계산해 전달 */
   maxHeight?: number;
   /** 재검색 완료 후 삭제 결과 정보 (요구조건, 삭제 건수) */
@@ -459,6 +463,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   position: positionOverride, 
   listCardCount = 0, 
   onDeleteLikeRequest, 
+  onAddLikeRequest,
+  onShowOnlyRequest,
   maxHeight: maxHeightProp, 
   reSearchResult, 
   isObjectTracking = false, 
@@ -888,9 +894,16 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       lastReSearchResultRef.current = reSearchResult;
       const { excludedAttributes, deletedCount } = reSearchResult;
       const isResultReSearchButton = excludedAttributes.some((a) => a.includes('대표 후보'));
+      const isRestore = deletedCount < 0;
+      const isRestoreAttr = excludedAttributes.some((a) => a.includes('복원'));
+      const isShowOnly = excludedAttributes.some((a) => a.endsWith('만 표시'));
       const fullContent = isResultReSearchButton
         ? `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`
-        : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
+        : isShowOnly
+          ? `${excludedAttributes.map((a) => a.replace(/만 표시$/, '')).join(', ')} 속성의 영상만 표시합니다. ${deletedCount}건이 제외되었습니다.`
+          : (isRestore || isRestoreAttr)
+            ? `${excludedAttributes.join(', ')} 조건이 적용되어 해당 영상이 리스트에 복원되었습니다.`
+            : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
       
       const messageId = `assistant-research-${Date.now()}`;
       const resultMessage: ChatMessage = {
@@ -954,6 +967,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     return deleteKeywords.some(kw => t.includes(kw));
   };
 
+  const isAddLikeMessage = (text: string): boolean => {
+    const addKeywords = ['추가', '복원', '보여줘', '보여주', '다시', '되돌려', '되돌리', '복구', '추가해', '추가해줘', '보여줘요', '복원해', '복원해줘', '되돌려줘', '살려', '살려줘', '포함', '포함해', '포함해줘'];
+    const t = text.trim();
+    return addKeywords.some(kw => t.includes(kw));
+  };
+
+  const isShowOnlyMessage = (text: string): boolean => {
+    const t = text.replace(/\s+/g, '');
+    return /만(보여줘|보여주세요|보여주|보여줘요|보여|표시해줘|표시해|표시|남겨줘|남겨)/.test(t);
+  };
+
   const isObjectTrackingMessage = (text: string): boolean => {
     return text.includes('객체 추적을 시작해 주세요') || text.includes('객체 추적');
   };
@@ -978,7 +1002,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     return {
       id: `assistant-${Date.now()}`,
       role: 'assistant',
-      content: `"${prompt}"에 대한 응답입니다. Agent Chat에서 다양한 기능을 사용할 수 있습니다.`,
+      content: `"${prompt}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`,
       timestamp: new Date().toLocaleTimeString('ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
@@ -1010,6 +1034,216 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     setInputKey((k) => k + 1);
     ignoreNextChangeRef.current = true;
 
+    if (isShowOnlyMessage(text) && onShowOnlyRequest) {
+      const parsedAttributes = onShowOnlyRequest({ rawMessage: text });
+
+      if (!parsedAttributes || parsedAttributes.length === 0) {
+        setIsResponding(true);
+        setTimeout(() => {
+          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
+          const errorMessage: ChatMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: fullContent,
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'normal',
+            isTyping: true,
+            displayedContent: '',
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsResponding(false);
+
+          let currentIndex = 0;
+          const typingInterval = setInterval(() => {
+            currentIndex++;
+            if (currentIndex <= fullContent.length) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
+                    : msg
+                )
+              );
+            } else {
+              clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, isTyping: false, displayedContent: fullContent }
+                    : msg
+                )
+              );
+            }
+          }, 30);
+          typingIntervalRef.current = typingInterval;
+        }, 700);
+      } else {
+        setIsReSearching(true);
+        setIsResponding(true);
+
+        if (onReSearchStart) {
+          onReSearchStart();
+        }
+
+        setTimeout(() => {
+          const progressMessage: ChatMessage = {
+            id: 're-search-progress',
+            role: 'assistant',
+            content: '조건에 맞는 결과를 재검색하고 있습니다.',
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'analyzing',
+            progress: 0,
+            currentStep: 1,
+            totalSteps: 3,
+          };
+          setMessages((prev) => [...prev, progressMessage]);
+
+          let step = 0;
+          const progressInterval = setInterval(() => {
+            step++;
+            const progress = step / 3;
+
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === 're-search-progress'
+                  ? { ...msg, currentStep: step + 1, progress }
+                  : msg
+              )
+            );
+
+            if (step >= 3) {
+              clearInterval(progressInterval);
+              setTimeout(() => {
+                setMessages((prev) => prev.filter((msg) => msg.id !== 're-search-progress'));
+                setIsReSearching(false);
+                setIsResponding(false);
+
+                if (onReSearchComplete) {
+                  onReSearchComplete();
+                }
+              }, 500);
+            }
+          }, 500);
+        }, 700);
+      }
+      return;
+    }
+
+    if (isAddLikeMessage(text) && !isDeleteLikeMessage(text) && onAddLikeRequest) {
+      const parsedAttributes = onAddLikeRequest({ rawMessage: text });
+
+      if (!parsedAttributes || parsedAttributes.length === 0) {
+        setIsResponding(true);
+        setTimeout(() => {
+          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
+          const errorMessage: ChatMessage = {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            content: fullContent,
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'normal',
+            isTyping: true,
+            displayedContent: '',
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+          setIsResponding(false);
+
+          let currentIndex = 0;
+          const typingInterval = setInterval(() => {
+            currentIndex++;
+            if (currentIndex <= fullContent.length) {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, displayedContent: fullContent.substring(0, currentIndex) }
+                    : msg
+                )
+              );
+            } else {
+              clearInterval(typingInterval);
+              typingIntervalRef.current = null;
+              setIsResponding(false);
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === errorMessage.id
+                    ? { ...msg, isTyping: false, displayedContent: fullContent }
+                    : msg
+                )
+              );
+            }
+          }, 30);
+          typingIntervalRef.current = typingInterval;
+        }, 700);
+      } else {
+        setIsReSearching(true);
+        setIsResponding(true);
+
+        if (onReSearchStart) {
+          onReSearchStart();
+        }
+
+        setTimeout(() => {
+          const progressMessage: ChatMessage = {
+            id: 're-search-progress',
+            role: 'assistant',
+            content: '조건에 맞는 결과를 재검색하고 있습니다.',
+            timestamp: new Date().toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            }),
+            type: 'analyzing',
+            progress: 0,
+            currentStep: 1,
+            totalSteps: 3,
+          };
+          setMessages((prev) => [...prev, progressMessage]);
+
+          let step = 0;
+          const progressInterval = setInterval(() => {
+            step++;
+            const progress = step / 3;
+
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === 're-search-progress'
+                  ? { ...msg, currentStep: step + 1, progress }
+                  : msg
+              )
+            );
+
+            if (step >= 3) {
+              clearInterval(progressInterval);
+              setTimeout(() => {
+                setMessages((prev) => prev.filter((msg) => msg.id !== 're-search-progress'));
+                setIsReSearching(false);
+                setIsResponding(false);
+
+                if (onReSearchComplete) {
+                  onReSearchComplete();
+                }
+              }, 500);
+            }
+          }, 500);
+        }, 700);
+      }
+      return;
+    }
+
     if (isDeleteLikeMessage(text) && onDeleteLikeRequest) {
       const parsedAttributes = onDeleteLikeRequest({ rawMessage: text });
       
@@ -1019,7 +1253,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         
         // 고민하는 아이콘 표시 (700ms)
         setTimeout(() => {
-          const fullContent = `"${text}"에 대한 정보가 없습니다. 더 구체적인 속성을 입력해 주세요.`;
+          const fullContent = `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
           const errorMessage: ChatMessage = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',

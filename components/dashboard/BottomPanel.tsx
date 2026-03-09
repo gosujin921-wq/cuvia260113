@@ -167,7 +167,7 @@ const BottomPanel = ({
             }
           }}
         >
-          {[...cctvList, ...cctvList, ...cctvList].map((cctvId, index) => {
+          {[...cctvList, ...cctvList].map((cctvId, index) => {
             const media = CCTV_ALL_MEDIA[index % CCTV_ALL_MEDIA.length];
             return (
               <div

@@ -21,6 +21,7 @@ import {
 } from '@/components/shared/styles';
 import { BasePopup } from '@/components/shared/BasePopup';
 import CCTVIcon from '@/components/common/CCTVIcon';
+import TopControlPanel from '@/components/dashboard/HOME/TopControlPanel';
 
 export default function ComponentsStylePage() {
   const [activeSection, setActiveSection] = useState<string>('popups');
@@ -32,6 +33,7 @@ export default function ComponentsStylePage() {
   };
 
   const sections = [
+    { id: 'top-control', name: '상단 제어 패널', icon: 'mdi:monitor-dashboard' },
     { id: 'popups', name: '팝업', icon: 'mdi:window-open' },
     { id: 'buttons', name: '버튼', icon: 'mdi:button-cursor' },
     { id: 'ptz-buttons', name: 'PTZ 버튼', icon: 'mdi:arrow-all' },
@@ -65,6 +67,54 @@ export default function ComponentsStylePage() {
             </button>
           ))}
         </div>
+
+        {/* 상단 제어 패널 섹션 */}
+        {activeSection === 'top-control' && (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-xl font-semibold mb-4">TopControlPanel (상단 제어 패널)</h2>
+              <p className="text-gray-400 text-sm mb-6">투망 감시 모드 진입 시 상단에 표시되는 제어 패널입니다. currentStep prop으로 현재 상태를 표시합니다.</p>
+
+              {([
+                { step: 'start' as const, title: '시작', desc: '이벤트 감지 후 투망감시 진입 직후' },
+                { step: 'progress' as const, title: '진행중', desc: 'VLM 분석 준비 완료 (isReadyToAnalyze = true)' },
+                { step: 'end' as const, title: '종료', desc: 'VLM 분석 결과 도출 완료 (vlmAnalysisResult 존재)' },
+              ]).map(({ step, title, desc }) => (
+                <div key={step} className="mb-6">
+                  <h3 className="text-sm font-semibold mb-1 text-gray-300">{title} <code className="text-xs text-blue-400 ml-1">currentStep="{step}"</code></h3>
+                  <p className="text-xs text-gray-500 mb-3">{desc}</p>
+                  <div className="relative rounded-lg overflow-hidden" style={{ height: 56, background: '#0a0e14' }}>
+                    <TopControlPanel isVisible={true} onStop={() => {}} cctvCount={8} currentStep={step} />
+                  </div>
+                </div>
+              ))}
+
+              <div className={getCardClassName()}>
+                <h3 className="text-sm font-semibold mb-4 text-gray-400">사용 예시</h3>
+                <pre className="text-xs text-gray-300 overflow-x-auto">
+                  <code>{`import TopControlPanel from '@/components/dashboard/HOME/TopControlPanel';
+
+<TopControlPanel
+  isVisible={hideControls}
+  onStop={clearSelection}
+  cctvCount={openedCCTVCount}
+  currentStep={
+    vlmAnalysisResult ? "end"
+    : isReadyToAnalyze ? "progress"
+    : "start"
+  }
+/>`}</code>
+                </pre>
+                <button
+                  onClick={() => copyToClipboard(`import TopControlPanel from '@/components/dashboard/HOME/TopControlPanel';\n\n<TopControlPanel\n  isVisible={hideControls}\n  onStop={clearSelection}\n  cctvCount={openedCCTVCount}\n  currentStep={\n    vlmAnalysisResult ? "end"\n    : isReadyToAnalyze ? "progress"\n    : "start"\n  }\n/>`)}
+                  className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded"
+                >
+                  코드 복사
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 팝업 섹션 */}
         {activeSection === 'popups' && (

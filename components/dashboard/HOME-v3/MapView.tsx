@@ -60,7 +60,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const [showCCTVViewAngle, setShowCCTVViewAngle] = useState(true);
   const [showCCTVName, setShowCCTVName] = useState(true);
   const [is3DMode, setIs3DMode] = useState(true);
-  const [mapBearing, setMapBearing] = useState(-17.6);
+  const [mapBearing, setMapBearing] = useState(0);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
 
   useEffect(() => {
@@ -404,8 +404,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     map.on('moveend', updateMapState);
 
+    const syncBearing = () => setMapBearing(map.getBearing());
+    map.on('moveend', syncBearing);
+
     return () => {
       map.off('moveend', updateMapState);
+      map.off('moveend', syncBearing);
       map.remove();
       mapRef.current = null;
     };
@@ -1606,9 +1610,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            onClick={(e) => {
              e.stopPropagation();
              if (mapRef.current) {
-               mapRef.current.zoomIn({ duration: 300 });
+               const map = mapRef.current;
+               const nextZoom = Math.min(map.getMaxZoom(), map.getZoom() + 1);
+               map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
              }
-             setZoomLevel(prev => Math.min(prev + 1, 1));
            }}
            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
            aria-label="확대"
@@ -1619,9 +1624,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
            onClick={(e) => {
              e.stopPropagation();
              if (mapRef.current) {
-               mapRef.current.zoomOut({ duration: 300 });
+               const map = mapRef.current;
+               const nextZoom = Math.max(map.getMinZoom(), map.getZoom() - 1);
+               map.easeTo({ zoom: nextZoom, duration: 300, essential: true });
              }
-             setZoomLevel(prev => Math.max(prev - 1, 0));
            }}
            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
            aria-label="축소"
@@ -1673,12 +1679,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
-             const newBearing = mapBearing - 15;
-             setMapBearing(newBearing);
              if (mapRef.current) {
-               mapRef.current.easeTo({
+               const map = mapRef.current;
+               const newBearing = map.getBearing() - 15;
+               setMapBearing(newBearing);
+               map.easeTo({
                  bearing: newBearing,
-                 duration: 300
+                 duration: 500,
+                 easing: (t) => 1 - Math.pow(1 - t, 3),
+                 essential: true,
                });
              }
            }}
@@ -1690,12 +1699,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
          <button
            onClick={(e) => {
              e.stopPropagation();
-             const newBearing = mapBearing + 15;
-             setMapBearing(newBearing);
              if (mapRef.current) {
-               mapRef.current.easeTo({
+               const map = mapRef.current;
+               const newBearing = map.getBearing() + 15;
+               setMapBearing(newBearing);
+               map.easeTo({
                  bearing: newBearing,
-                 duration: 300
+                 duration: 500,
+                 easing: (t) => 1 - Math.pow(1 - t, 3),
+                 essential: true,
                });
              }
            }}

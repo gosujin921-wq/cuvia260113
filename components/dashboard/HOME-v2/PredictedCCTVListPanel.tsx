@@ -10,6 +10,18 @@ interface PredictedCCTVListPanelProps {
   onCCTVHover?: (cctvId: string | null) => void;
   /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
   onRadiusChange?: (radius: number) => void;
+  /** CCTV 카드 선택(상세 팝업 오픈) 시 호출 */
+  onCCTVSelect?: () => void;
+  /** CCTV 상세 팝업 닫힘 시 호출 */
+  onCCTVDetailClose?: () => void;
+  /** 외부에서 열 CCTV ID */
+  openCCTVId?: string | null;
+  /** CCTV가 열렸을 때 호출 */
+  onCCTVOpened?: () => void;
+  /** 외부에서 팝업 닫기 신호 */
+  closeCCTVPopupSignal?: number;
+  /** 팝업 열릴 때 자동 포착 실행 여부 */
+  autoCapture?: boolean;
 }
 
 export interface PredictedCCTVItem {
@@ -169,6 +181,12 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   hoveredCCTVId: externalHoveredCCTVId,
   onCCTVHover,
   onRadiusChange,
+  onCCTVSelect,
+  onCCTVDetailClose,
+  openCCTVId,
+  onCCTVOpened,
+  closeCCTVPopupSignal,
+  autoCapture = false,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
@@ -213,6 +231,21 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
     if (!onRadiusChange) return;
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
+
+  React.useEffect(() => {
+    if (closeCCTVPopupSignal && closeCCTVPopupSignal > 0) {
+      setSelectedCCTV(null);
+    }
+  }, [closeCCTVPopupSignal]);
+
+  React.useEffect(() => {
+    if (!openCCTVId || !isVisible) return;
+    const cctv = PREDICTED_CCTV_DATA.find(item => item.id === openCCTVId);
+    if (cctv) {
+      setSelectedCCTV(cctv);
+      if (onCCTVOpened) onCCTVOpened();
+    }
+  }, [openCCTVId, isVisible, onCCTVOpened]);
 
   const isPopupOpen = selectedCCTV !== null;
 
@@ -392,7 +425,10 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                   <div
                     key={item.id}
                     id={item.id === '4' ? 'predicted-cctv-7' : undefined}
-                    onClick={() => setSelectedCCTV(item)}
+                    onClick={() => {
+                      setSelectedCCTV(item);
+                      onCCTVSelect?.();
+                    }}
                     onMouseEnter={() => onCCTVHover?.(item.id)}
                     onMouseLeave={() => onCCTVHover?.(null)}
                     className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group ${
@@ -431,9 +467,13 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
       {/* CCTV 상세 팝업 */}
       <PredictedCCTVDetailPopup
         isOpen={selectedCCTV !== null}
-        onClose={() => setSelectedCCTV(null)}
+        onClose={() => {
+          setSelectedCCTV(null);
+          onCCTVDetailClose?.();
+        }}
         cctv={selectedCCTV}
         onAddCapture={onAddCapture}
+        autoCapture={autoCapture}
       />
     </>
   );
