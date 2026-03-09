@@ -220,13 +220,13 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         const getMsUntilNextHour10 = (): number => {
             const now = new Date();
             const nextTarget = new Date(now);
-            
+
             if (now.getMinutes() >= 10) {
                 nextTarget.setHours(now.getHours() + 1, 10, 0, 0);
             } else {
                 nextTarget.setMinutes(10, 0, 0);
             }
-            
+
             return nextTarget.getTime() - now.getTime();
         };
 
@@ -1166,9 +1166,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                     </div>
 
                     {/* 에너지 게이지 - 1,2 전시장만 */}
-                    {[
-                        { idA: 1, idB: 2, labelA: "1전시장", labelB: "2전시장", valueA: 60.5, valueB: 60.8, ratioA: 0.60, ratioB: 0.35 },
-                    ].map((block) => (
+                    {[{ idA: 1, idB: 2, labelA: "1전시장", labelB: "2전시장", valueA: 60.5, valueB: 60.8, ratioA: 0.6, ratioB: 0.35 }].map((block) => (
                         <div key={`energy-gauge-${block.idA}-${block.idB}`} className="bg-[#2a2d35] rounded-lg px-3 py-2.5 mb-3">
                             <div className="flex items-center">
                                 {/* 전시장 A */}
