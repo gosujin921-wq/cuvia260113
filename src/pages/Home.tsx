@@ -544,7 +544,12 @@ export default function Home() {
             {/* 메인 영역: 상단 바 + 맵 + 우측 패널 (전파 메뉴 노출 시 왼쪽이 메뉴 너비만큼 줄어듦) */}
             <div className="absolute top-0 right-0 bottom-0 transition-all duration-300 ease-out" style={{ left: panelsSlidOut ? propagationMenuWidth : 0 }}>
                 {/* 상단 제어 패널 - hideControls가 true일 때 표시 */}
-                <TopControlPanel isVisible={hideControls} onStop={clearSelection} cctvCount={openedCCTVCount} />
+                <TopControlPanel
+                    isVisible={hideControls}
+                    onStop={clearSelection}
+                    cctvCount={openedCCTVCount}
+                    currentStep={vlmAnalysisResult ? "end" : isReadyToAnalyze ? "progress" : "start"}
+                />
 
                 {/* 플로팅 알림 - 화면 중앙 하단 (BottomPanel 펼침 시 패널 위, 접힘 시 조금 아래로) */}
                 {floatingNotificationMessage && (
