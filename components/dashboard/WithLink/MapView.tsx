@@ -4,7 +4,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
-import type { MapStreamData, MapStreamWmsLayer } from "@/types/streamJson.types";
+import type { MapStreamData, MapStreamMarker, MapStreamWmsLayer } from "@/types/streamJson.types";
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
 import { useGetIncidentList } from "@/src/apis/agent/hooks";
 import proj4 from "proj4";
@@ -27,9 +27,14 @@ const escapeHtml = (text: string): string => {
     return div.innerHTML.replace(/\n/g, "<br>");
 };
 
-const createStreamMarkerPopupContent = (title: string, description: string): string => {
+const createStreamMarkerPopupContent = (marker: MapStreamMarker): string => {
+    const title = marker.title ?? "";
+    const description = marker.description ?? "";
+    const type = marker.type ?? "";
+    const location = marker.location ?? "";
     const hasTitle = title.trim().length > 0;
     const hasDesc = description.trim().length > 0;
+    const isTrafficIncident = type === "traffic_incident";
     if (!hasTitle && !hasDesc) return "";
 
     return `
@@ -51,7 +56,7 @@ const createStreamMarkerPopupContent = (title: string, description: string): str
                 border-radius: 8px 8px 0 0;
                 border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             ">
-                <span style="color: #ffffff; font-weight: 600; font-size: 14px;">위치 정보</span>
+                <span style="color: #ffffff; font-weight: 600; font-size: 14px;">${isTrafficIncident ? "도로 돌발 상황" : "위치 정보"}</span>
             </div>
             <div style="padding: 12px 14px;">
                 <div style="
@@ -62,7 +67,7 @@ const createStreamMarkerPopupContent = (title: string, description: string): str
                     margin-bottom: ${hasDesc ? "10px" : "0"};
                 ">
                     <div style="font-size: 13px; font-weight: 600; color: #ffffff; line-height: 1.4;">
-                        ${escapeHtml(hasTitle ? title : "정보 없음")}
+                        ${isTrafficIncident ? `${escapeHtml(title)} (${escapeHtml(description)})` : escapeHtml(hasTitle ? title : "정보 없음")}
                     </div>
                 </div>
                 ${
@@ -70,12 +75,52 @@ const createStreamMarkerPopupContent = (title: string, description: string): str
                         ? `
                 <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span style="color: #9ca3af;">설명</span>
+                        <span style="color: #9ca3af;">${isTrafficIncident ? "위치" : "설명"}</span>
                         <span style="font-weight: 500; color: rgb(197, 206, 221); text-align: right; max-width: 180px; line-height: 1.4;">
-                            ${escapeHtml(description)}
+                            ${isTrafficIncident ? `${escapeHtml(location ?? "")}` : escapeHtml(description)}
                         </span>
                     </div>
                 </div>
+                `
+                        : ""
+                }
+                ${
+                    isTrafficIncident
+                        ? `
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #888;">통제 유형</span>
+                            <span style="font-weight: 500; color: #e85c2a;">${escapeHtml(marker.restrict_type ?? "")}</span>
+                        </div>
+                    </div>
+                `
+                        : ""
+                }
+                ${
+                    isTrafficIncident
+                        ? `
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #888;">발생 시간</span>
+                            <span style="font-weight: 500; color: rgb(197, 206, 221); text-align: right; max-width: 180px; line-height: 1.4;">
+                            ${escapeHtml(marker.start_time ?? "")}
+                            </span>
+                        </div>
+                    </div>
+                `
+                        : ""
+                }
+                ${
+                    isTrafficIncident
+                        ? `
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #888;">예상 종료</span>
+                            <span style="font-weight: 500; color: rgb(197, 206, 221); text-align: right; max-width: 180px; line-height: 1.4;">
+                            ${escapeHtml(marker.est_end_time ?? "")}
+                            </span>
+                        </div>
+                    </div>
                 `
                         : ""
                 }
@@ -1308,16 +1353,13 @@ const MapView = ({
                 return;
             }
 
-            const props = feature.properties as Record<string, string | null> | undefined;
-            const title = props?.title ?? "";
-            const description = props?.description ?? "";
-
+            const props = feature.properties as MapStreamMarker;
             const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
             if (existingPopup) {
                 existingPopup.remove();
             }
 
-            const popupContent = createStreamMarkerPopupContent(title, description);
+            const popupContent = createStreamMarkerPopupContent(props);
             if (!popupContent) return;
 
             const popup = new maplibregl.Popup({
@@ -1451,10 +1493,10 @@ const MapView = ({
             (map as any)._pulseMarker = pulseMarker;
 
             const matchedMarker = streamMapData?.markers?.find((m) => Math.abs(m.lng - targetLng) < 0.0001 && Math.abs(m.lat - targetLat) < 0.0001);
-
+            console.log(matchedMarker);
             if (matchedMarker && (matchedMarker.title || matchedMarker.description)) {
                 const showPopup = () => {
-                    const popupContent = createStreamMarkerPopupContent(matchedMarker.title ?? "", matchedMarker.description ?? "");
+                    const popupContent = createStreamMarkerPopupContent(matchedMarker);
                     if (!popupContent) return;
 
                     const popup = new maplibregl.Popup({

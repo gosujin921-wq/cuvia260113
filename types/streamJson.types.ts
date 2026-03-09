@@ -93,6 +93,10 @@ export interface MapStreamMarker {
     type: string; // e.g. "event"
     category: string | null;
     dong: string | null;
+    location?: string;
+    restrict_type?: string;
+    start_time?: string;
+    est_end_time?: string;
 }
 
 export interface MapStreamCenter {
@@ -202,6 +206,10 @@ export interface GeoJsonFeatureProperties {
     markerType: string;
     category: string | null;
     dong: string | null;
+    location?: string;
+    restrict_type?: string;
+    start_time?: string;
+    est_end_time?: string;
 }
 
 export interface GeoJsonFeature {
