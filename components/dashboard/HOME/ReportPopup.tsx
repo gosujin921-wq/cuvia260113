@@ -15,6 +15,7 @@ interface ReportPopupProps {
   position?: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string };
   width?: number;
   imageSrc?: string;
+  infoContent?: React.ReactNode;
 }
 
 const ReportPopup: React.FC<ReportPopupProps> = ({
@@ -26,6 +27,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   position,
   width = 420,
   imageSrc,
+  infoContent,
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -124,28 +126,34 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
             </div>
 
             {/* 우측: 정보 영역 (레이블-값 구조) */}
-            <div className="flex-1 text-gray-200 min-w-0 space-y-3">
-              <div>
-                <div className="text-xs text-gray-400 mb-1">이름/나이</div>
-                <div className="text-base font-semibold text-white">김도연 / 22세 (남)</div>
+            {infoContent ? (
+              <div className="flex-1 text-gray-200 min-w-0">{infoContent}</div>
+            ) : (
+              <div className="flex-1 text-gray-200 min-w-0 space-y-3">
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">이름/나이</div>
+                  <div className="text-base font-semibold text-white">김도연 / 22세 (남)</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">인상착의</div>
+                  <div className="text-sm text-gray-200 leading-relaxed">회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg.</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-400 mb-1">실종 장소/시간</div>
+                  <div className="text-sm text-gray-200">은하로363번길 48, 09:30경</div>
+                </div>
               </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">인상착의</div>
-                <div className="text-sm text-gray-200 leading-relaxed">회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg.</div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-400 mb-1">실종 장소/시간</div>
-                <div className="text-sm text-gray-200">은하로363번길 48, 09:30경</div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* 레드 박스: 장애 있음, 긴급 수색 요망 */}
-          <div className="mb-3 rounded-lg p-3 bg-red-500/20 border border-red-500/60">
-            <div className="text-sm font-semibold text-red-400">
-              장애 있음. 긴급 수색 요망.
+          {!infoContent && (
+            <div className="mb-3 rounded-lg p-3 bg-red-500/20 border border-red-500/60">
+              <div className="text-sm font-semibold text-red-400">
+                장애 있음. 긴급 수색 요망.
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 고속검색 시작 버튼: 초기 화면에서만 표시, 고속검색 화면에서는 숨김 */}
           {showFastSearchStartButton && (

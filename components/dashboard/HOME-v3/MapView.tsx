@@ -1056,7 +1056,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         });
       }
     }
-  }, [flyToLocation, showFastSearchList, selectedEventId, events, eventVideoBlobUrl]);
+  }, [flyToLocation, showFastSearchList, selectedEventId, events, eventVideoBlobUrl, pinOffset]);
 
   // 초기 화면용 CCTV 클러스터 (1키 누르기 전, 과천역 주변 5개 동)
   useEffect(() => {
@@ -1300,7 +1300,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     });
   }, [showInitialCCTVClusters, showCCTVName, showCCTVViewAngle]);
 
-  // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
+  // 고속검색 리스트 표시 시 지도 이동 (우측으로 100px)
   useEffect(() => {
     if (!mapRef.current) return;
     
@@ -1320,7 +1320,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const currentZoom = map.getZoom();
       
       // 130px을 경도로 변환 (줌 레벨에 따라 다름)
-      const pixelOffset = 130;
+      const pixelOffset = 100;
       const metersPerPixel = 156543.03392 * Math.cos(currentCenter.lat * Math.PI / 180) / Math.pow(2, currentZoom);
       const lngOffset = (pixelOffset * metersPerPixel) / 111320; // 경도 1도 = 약 111.32km
       

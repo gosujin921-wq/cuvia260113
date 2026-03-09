@@ -316,6 +316,7 @@ export default function HomeV3() {
   const [objectTrackingCompleted, setObjectTrackingCompleted] = useState<boolean>(false); // 객체 추적 애니메이션 완료 여부
   const [showFastSearchPopupOverlay, setShowFastSearchPopupOverlay] = useState<boolean>(false);
   const [captureProgressMessage, setCaptureProgressMessage] = useState<string | null>(null);
+  const [eventDetectedTime, setEventDetectedTime] = useState<string>('');
   const [triggerCaptureForCctvId, setTriggerCaptureForCctvId] = useState<string | null>(null);
   const [captureItems, setCaptureItems] = useState<CaptureItem[]>([]); // 포착 목록
   const [showCaptureNotification, setShowCaptureNotification] = useState<boolean>(false); // 포착 알림 애니메이션
@@ -791,6 +792,9 @@ export default function HomeV3() {
     );
 
     if (e.key === '1' && missingEvent) {
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+      setEventDetectedTime(timeStr);
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
       dispatch({ type: 'SHOW_AGENT_POPUP' });
@@ -921,6 +925,34 @@ export default function HomeV3() {
         <ReportPopup
           event={allConvertedEvents.find(e => e.id === uiState.selectedEventId) || null}
           imageSrc="/hijacking2/people01.png"
+          infoContent={
+            <div className="space-y-2 text-sm">
+              <div>
+                <span className="text-gray-400">최초 포착: </span>
+                <span className="text-white">별빛A-444 {eventDetectedTime}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">대상: </span>
+                <span className="text-gray-200">성인 남성 1명 + 성인 여성 1명</span>
+              </div>
+              <div>
+                <span className="text-gray-400">의심 정황: </span>
+                <span className="text-gray-200">여성이 비자발적으로 끌려가듯 이동, 주변 경계 동작 반복</span>
+              </div>
+              <div>
+                <span className="text-gray-400">현재 이동 방향: </span>
+                <span className="text-gray-200">은하초교 방향 골목 진입</span>
+              </div>
+              <div>
+                <span className="text-gray-400">최근 포착: </span>
+                <span className="text-white">별빛A-230 {(() => { const t = eventDetectedTime.split(':').map(Number); const d = new Date(); d.setHours(t[0], t[1] - 2, t[2]); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; })()}</span>
+              </div>
+              <div>
+                <span className="text-gray-400">추천 대응: </span>
+                <span className="text-white font-bold">112 전파</span>
+              </div>
+            </div>
+          }
           onClose={() => {
             if (uiState.showObjectTracking) {
               dispatch({ type: 'SET_SELECTED_EVENT', payload: null });
@@ -929,6 +961,7 @@ export default function HomeV3() {
             }
           }}
           onFastSearchStart={() => {
+            setPinOffset({ x: 0, y: 0 });
             dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
           }}
           showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
@@ -989,6 +1022,7 @@ export default function HomeV3() {
         onAddCapture={handleAddCaptureItem}
         onObjectTracking={() => {
           setShowFastSearchPopupOverlay(false);
+          setPinOffset({ x: 0, y: 0 });
           dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
         }}
       />

@@ -18,6 +18,13 @@ const getV3ThumbnailPath = (itemId: string): string => {
   }
   return getPathForCaptureItem({ id: itemId });
 };
+
+const V3_VIDEO_OVERRIDE: Record<string, string> = {
+  '1': '/hijacking2/dnc_00.mp4',
+};
+const getV3VideoPath = (itemId: string, imageId: string): string | undefined => {
+  return V3_VIDEO_OVERRIDE[itemId] ?? getVideoPathForImageId(imageId as any);
+};
 import SharedVideoPlayer from './SharedVideoPlayer';
 
 export interface CandidateCard {
@@ -54,6 +61,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const [isDragging, setIsDragging] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [matchState, setMatchState] = useState<'none' | 'wrong' | 'matched'>('matched');
   
   // ========== 초록색 박스 관련 (프레임 추적용) - 1920x1080 기준 좌표 ==========
   const ORIGINAL_VIDEO_WIDTH = 1920;
@@ -461,7 +469,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     });
     
     const imageId = getImageIdFromCaptureItem(candidate);
-    const videoUrl = getVideoPathForImageId(imageId);
+    const videoUrl = getV3VideoPath(candidate.id, imageId);
     const analysisResult = generateMarkdownAnalysis(
       imageId,
       candidate.cctvName,
@@ -511,7 +519,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const timeEnd = addMinutesToTime(candidate.timestamp, 6);
   const timeRange = `${candidate.timestamp} ~ ${timeEnd}`;
   
-  const videoPath = getVideoPathForImageId(imageId);
+  const videoPath = getV3VideoPath(candidate.id, imageId);
   const videoSrc = videoPath || getRandomCCTVVideo(candidate.cctvId);
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -762,14 +770,78 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               </div>
             </div>
             
-            {/* 관찰 요약 - 영상 아래 */}
-            <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-              <div className="flex items-center gap-2 mb-2">
-                <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
+            {candidate.id === '1' ? (
+              <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon icon="mdi:link-variant" className="w-4 h-4 text-blue-400" />
+                  <h3 className="text-sm font-bold text-white">매칭 근거</h3>
+                </div>
+                <p className="text-xs text-gray-400 mb-3">기준과 후보를 임베딩 유사도로 매칭한 결과입니다.</p>
+                <div className="flex gap-3 items-start">
+                  <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] text-gray-500 font-medium">기준</span>
+                      <div className="w-[72px] h-[90px] rounded overflow-hidden border border-[#31353a]">
+                        <img src="/hijacking2/people01.png" alt="기준 이미지" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-[10px] text-gray-400">별빛A-444</span>
+                      <span className="text-[10px] text-gray-500">{(() => { const now = new Date(); return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`; })()}</span>
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] text-gray-500 font-medium">후보</span>
+                      <div className="w-[72px] h-[90px] rounded overflow-hidden border border-[#31353a]">
+                        <img src="/hijacking2/hjk_01.png" alt="후보 이미지" className="w-full h-full object-cover" />
+                      </div>
+                      <span className="text-[10px] text-gray-400">별빛A-230</span>
+                      <span className="text-[10px] text-gray-500">{(() => { const now = new Date(); now.setMinutes(now.getMinutes() - 2); return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`; })()}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-sm text-gray-300 pt-5">
+                    <span>동일인 가능성 : <span className="text-green-400 font-semibold">높음</span></span>
+                    <span>Re-ID 유사도 : <span className="text-white font-semibold">0.78</span></span>
+                    <span>Top-K : <span className="text-white font-semibold">1위/7건</span></span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setMatchState(matchState === 'wrong' ? 'none' : 'wrong')}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
+                      matchState === 'wrong'
+                        ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                        : 'bg-transparent border-[#31353a] text-gray-400 hover:border-gray-500'
+                    }`}
+                    aria-label="틀림"
+                    aria-pressed={matchState === 'wrong'}
+                  >
+                    {matchState === 'wrong' && <Icon icon="mdi:close-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
+                    틀림
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMatchState(matchState === 'matched' ? 'none' : 'matched')}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
+                      matchState === 'matched'
+                        ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                        : 'bg-transparent border-[#31353a] text-gray-400 hover:border-gray-500'
+                    }`}
+                    aria-label="맞음"
+                    aria-pressed={matchState === 'matched'}
+                  >
+                    {matchState === 'matched' && <Icon icon="mdi:check-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
+                    맞음
+                  </button>
+                </div>
               </div>
-              <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
-            </div>
+            ) : (
+              <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
+                </div>
+                <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
+              </div>
+            )}
           </div>
 
           {/* 우측: 정보 영역 - 탭 + 스크롤 가능 */}
@@ -820,6 +892,15 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             }}>
               {activeTab === 'timeline' && (
                 <div>
+                  {candidate.id === '1' && (
+                    <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3 mb-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
+                      </div>
+                      <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
+                    </div>
+                  )}
                   {/* 타임라인 - 박스 없이 */}
                   <ul className="relative">
                 {/* 전체 세로 연결선 - 첫 원 중심부터 마지막에서 두번째 원 중심까지만 */}

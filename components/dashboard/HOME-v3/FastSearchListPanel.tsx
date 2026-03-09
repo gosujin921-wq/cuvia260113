@@ -377,20 +377,17 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
     });
   }, []);
 
-  const PINNED_CANDIDATE_ID = '9';
-
   const visibleCaptureList = useMemo(() => {
     let list = excludedAttributes.length
-      ? captureList.filter((item) => item.id === PINNED_CANDIDATE_ID || !shouldHideCaptureItem(item, excludedAttributes))
+      ? captureList.filter((item) => !shouldHideCaptureItem(item, excludedAttributes))
       : captureList;
-    
+
     if (excludedImageIds.length > 0) {
-      list = list.filter((item) => item.id === PINNED_CANDIDATE_ID || !excludedImageIds.includes(item.id));
+      list = list.filter((item) => !excludedImageIds.includes(item.id));
     }
-    
+
     // ID 매핑: 1-3(별빛A-230), 4-5(별빛A-444), 6(별빛A-481), 7(별빛A-498), 8-9(별빛A-583)
     list = list.filter((item) => {
-      if (item.id === PINNED_CANDIDATE_ID) return true;
 
       const cctvName = getV3CctvName(item.id);
       
