@@ -2775,7 +2775,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             </button>
             {/* 툴팁 */}
             <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]">
-              Agent Hub 이동
+              CUVIA Link로 이동
               <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-[#1a1a1a]"></div>
             </div>
           </div>
