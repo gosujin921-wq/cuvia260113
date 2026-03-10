@@ -146,6 +146,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
     const [airQualitySlideIndex, setAirQualitySlideIndex] = useState<number>(0);
     const [floodRiskZoneIndex, setFloodRiskZoneIndex] = useState<number>(0);
     const [facilityRiskZoneIndex, setFacilityRiskZoneIndex] = useState<number>(0);
+    const [showAttributionPopup, setShowAttributionPopup] = useState(false);
 
     const sensorLocations = useMemo(() => ["물결동", "무지개본동", "은하초교", "햇살동", "노을동"], []);
 
@@ -871,8 +872,114 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                             </div>
                         </div>
                         <div className="text-white text-sm font-medium whitespace-nowrap min-w-[90px] text-right">{clockTime || "--:--:--"}</div>
+                        <div className="relative group">
+                            <button
+                                onClick={() => setShowAttributionPopup(prev => !prev)}
+                                className="w-4 h-4 flex items-center justify-center flex-shrink-0"
+                                aria-label="정보 제공처"
+                                tabIndex={0}
+                            >
+                                <Icon icon="mdi:information-outline" className="w-4 h-4 text-gray-400 hover:text-white transition-colors cursor-pointer" />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 bg-black/90 text-white text-[10px] rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity">
+                                정보 제공처
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {showAttributionPopup && (
+                    <div
+                        className="fixed inset-0"
+                        style={{ zIndex: 9999 }}
+                        onClick={() => setShowAttributionPopup(false)}
+                        onKeyDown={(e) => { if (e.key === 'Escape') setShowAttributionPopup(false); }}
+                        role="presentation"
+                    >
+                        <div
+                            className="absolute rounded-lg border border-gray-700/50 overflow-hidden"
+                            style={{
+                                top: '80px',
+                                left: '1rem',
+                                width: 'calc(26rem - 1rem - 1.25rem)',
+                                background: 'linear-gradient(135deg, rgba(15,15,20,0.97) 0%, rgba(25,25,30,0.97) 100%)',
+                                backdropFilter: 'blur(12px)',
+                                WebkitBackdropFilter: 'blur(12px)',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
+                                <h3 className="text-white font-semibold text-sm">정보 제공처</h3>
+                                <button
+                                    onClick={() => setShowAttributionPopup(false)}
+                                    className="text-gray-400 hover:text-white transition-colors"
+                                    aria-label="닫기"
+                                    tabIndex={0}
+                                >
+                                    <Icon icon="mdi:close" className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div className="px-4 py-3 max-h-[70vh] overflow-y-auto custom-scrollbar space-y-2.5 text-xs leading-relaxed">
+                                <div>
+                                    <span className="text-gray-300 font-medium">지도</span>
+                                    <span className="text-gray-500 ml-1.5">Map data ©</span>
+                                    <p className="text-gray-400 mt-0.5">NAVER Corp., OpenStreetMap contributors</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">위성/항공</span>
+                                    <span className="text-gray-500 ml-1.5">Imagery data ©</span>
+                                    <p className="text-gray-400 mt-0.5">국토지리정보원, OpenMapTiles</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">교통정보</span>
+                                    <span className="text-gray-500 ml-1.5">Traffic data ©</span>
+                                    <p className="text-gray-400 mt-0.5">국토교통부, 경찰청 도시교통정보센터, 경기도 교통정보센터, TBS, 서울지방경찰청, 전남자치경찰위원회, 부산지방경찰청, 인천지방경찰청, 광주지방경찰청, 서울국토청, 서울시설공단, 부산시설공단</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">대중교통정보</span>
+                                    <span className="text-gray-500 ml-1.5">Pubtrans info ©</span>
+                                    <p className="text-gray-400 mt-0.5">국토교통부, 서울시 교통정보과, 경기도 버스종합상황실, 부산광역시 버스정보관리시스템, 대전시 교통정보센터, 인천광역시 버스정보센터, 아로정보기술, 티머니, 한국교통안전공단, 이동의즐거움</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">전기차 충전소</span>
+                                    <span className="text-gray-500 ml-1.5">Electric car charging station data ©</span>
+                                    <p className="text-gray-400 mt-0.5">환경부, 한국환경공단, 한국전력공사</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">도시생활정보</span>
+                                    <span className="text-gray-500 ml-1.5">City life information ©</span>
+                                    <p className="text-gray-400 mt-0.5">서울특별시, 인천광역시</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">기차 조회예매</span>
+                                    <span className="text-gray-500 ml-1.5">Book train tickets ©</span>
+                                    <p className="text-gray-400 mt-0.5">코레일, SR</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">연안여객선 교통정보</span>
+                                    <span className="text-gray-500 ml-1.5">Passenger Ship Transportation Info ©</span>
+                                    <p className="text-gray-400 mt-0.5">해양수산부, 한국해양교통안전공단, 한국해운조합</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">실시간 기차정보</span>
+                                    <span className="text-gray-500 ml-1.5">Realtime train info ©</span>
+                                    <p className="text-gray-400 mt-0.5">코레일, SR</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">항공 운항 정보</span>
+                                    <span className="text-gray-500 ml-1.5">Aviation information ©</span>
+                                    <p className="text-gray-400 mt-0.5">한국공항공사</p>
+                                </div>
+                                <div>
+                                    <span className="text-gray-300 font-medium">실내지도</span>
+                                    <span className="text-gray-500 ml-1.5">Indoor map ©</span>
+                                    <p className="text-gray-400 mt-0.5">네이버랩스, 다비오, 다울지오인포</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* 실시간 대기질 모니터링 - 3x1 롤링 */}
                 <div className="rounded-lg px-4 pt-4 pb-3 gradient-border-left-top" style={{ flexShrink: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
