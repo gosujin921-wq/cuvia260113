@@ -951,7 +951,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                         <span className="text-gray-400 text-xs truncate">강수량</span>
                                     </div>
                                     <div className="text-white text-sm font-semibold transition-all duration-300">
-                                        {sensorData.rainfall.value.toFixed(1)}
+                                        {weatherData1?.precipitation}
                                         <span className="text-gray-400 text-[10px] ml-0.5">mm</span>
                                         <span className="text-gray-400 text-[10px] ml-1">(누적량)</span>
                                     </div>
@@ -963,7 +963,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                         <span className="text-gray-400 text-xs truncate">풍속</span>
                                     </div>
                                     <div className="text-white text-base font-semibold transition-all duration-300">
-                                        {sensorData.windSpeed.value.toFixed(1)}
+                                        {weatherData1?.wind_speed}
                                         <span className="text-gray-400 text-xs ml-0.5">m/s</span>
                                     </div>
                                 </div>
