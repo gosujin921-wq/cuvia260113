@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
-import { getPredictedCCTVDetail } from '@/lib/predicted-cctv-details';
+import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
+import { getPredictedCCTVDetail, type PredictedCCTVDetail } from '@/lib/predicted-cctv-details';
 
 export interface PredictedCCTVItem {
   id: string;
@@ -12,22 +13,25 @@ export interface PredictedCCTVItem {
   confidence: number;
   direction: string;
   thumbnailUrl: string;
+  /** 2키 눌렀을 때 크게 나오는 영상 (리스트 썸네일과 별도) */
+  featuredThumbnailUrl?: string;
 }
 
 interface PredictedCCTVDetailPopupProps {
   isOpen: boolean;
   onClose: () => void;
   cctv: PredictedCCTVItem | null;
+  /** 2키 눌렀을 때 별빛A-655 상단 1x1 레이아웃 상태면 featured 영상 사용 */
+  showFeaturedLayout?: boolean;
   onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string) => void;
-  autoCapture?: boolean;
 }
 
 const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   isOpen,
   onClose,
   cctv,
+  showFeaturedLayout = false,
   onAddCapture,
-  autoCapture = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
@@ -39,6 +43,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   const [currentLiveTime, setCurrentLiveTime] = useState(new Date());
   const [videoSrc, setVideoSrc] = useState<string>('');
   const [isRouteScoreOpen, setIsRouteScoreOpen] = useState(false);
+  const [isAiSimilarityOpen, setIsAiSimilarityOpen] = useState(false);
   const [isCaptureAnimating, setIsCaptureAnimating] = useState(false);
   const [flyingThumbnail, setFlyingThumbnail] = useState<{
     startX: number;
@@ -69,13 +74,16 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정
+  // CCTV 변경 시 비디오 초기화 및 비디오 소스 설정 (2키 featured 시 featuredThumbnailUrl 사용)
   useEffect(() => {
     if (!cctv) return;
-    setVideoSrc(cctv.thumbnailUrl); // 리스트에서 할당된 비디오 사용
+    const src = showFeaturedLayout && cctv.featuredThumbnailUrl
+      ? cctv.featuredThumbnailUrl
+      : cctv.thumbnailUrl;
+    setVideoSrc(src);
     setCurrentTime(0);
     setDuration(0);
-  }, [cctv?.id, cctv?.thumbnailUrl]);
+  }, [cctv?.id, cctv?.thumbnailUrl, cctv?.featuredThumbnailUrl, showFeaturedLayout]);
 
   // 팝업 열릴 때 비디오 자동 재생
   useEffect(() => {
@@ -160,6 +168,20 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     }
   };
 
+  if (!isOpen || !cctv) return null;
+
+  const liveTimeString = currentLiveTime.toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget) return;
+    onClose();
+  };
+
+  // 마크다운 분석결과 생성 함수
   const generateAnalysisMarkdown = (cctvItem: PredictedCCTVItem): string => {
     return `# 객체 추적 분석 결과
 
@@ -191,6 +213,66 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
 
 ### 유사 사례
 해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.`;
+  };
+
+  const generateAnalysisMarkdownFor655 = (cctvItem: PredictedCCTVItem, detail: PredictedCCTVDetail): string => {
+    const da = detail.detailedAnalysis;
+    const ai = detail.aiSimilarityAnalysis;
+    let md = `# 객체 추적 분석 결과 (별빛A-655)
+
+## 1. 예측 정보
+
+**객체 속성**
+${detail.objectAttributes}
+
+**예상 이동 거리**: ${detail.expectedDistance}
+
+**이동 추세**: ${detail.movementTrend}
+
+**예상 도달 시각**: ${detail.expectedArrivalTime}
+
+**경로 적합도**: ${detail.routeFitScoreText ?? `${detail.routeFitScore}점`}
+
+---
+
+## 2. 경로 예측 상세 근거
+
+### 이동 방향
+${da.movementDirection}
+
+### 이동 속도
+${da.movementSpeed}
+
+### 보행로 구조
+${da.pathStructure}
+
+### CCTV 연계
+${da.cctvLinkage}
+`;
+    if (da.previousPath) {
+      md += `
+### 이전 경로
+${da.previousPath}
+`;
+    }
+    md += `
+### 유사 사례
+${da.similarCases}
+`;
+    if (ai) {
+      md += `
+---
+
+## 3. AI 유사사유 판독
+
+**차량 정체성**: ${ai.vehicleIdentity}
+
+**행동 메커니즘**: ${ai.behaviorMechanism}
+
+**지리적 특이성**: ${ai.geographicSpecificity}
+`;
+    }
+    return md;
   };
 
   const handleCaptureTarget = () => {
@@ -244,50 +326,25 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
       });
     });
 
-    const analysisResult = (cctv.cctvName === '별빛A-638' || cctv.cctvName === '원미A-638') ? generateAnalysisMarkdown(cctv) : undefined;
+    let analysisResult: string | undefined;
+    if (cctv.cctvName === '별빛A-638' || cctv.cctvName === '원미A-638') {
+      analysisResult = generateAnalysisMarkdown(cctv);
+    } else if (cctv.cctvName === '별빛A-655' && showFeaturedLayout) {
+      const detail = getPredictedCCTVDetail(cctv.featuredThumbnailUrl ?? cctv.thumbnailUrl);
+      analysisResult = detail ? generateAnalysisMarkdownFor655(cctv, detail) : undefined;
+    }
 
+    const videoUrlForCapture = showFeaturedLayout && cctv.featuredThumbnailUrl
+      ? cctv.featuredThumbnailUrl
+      : cctv.thumbnailUrl;
     setTimeout(() => {
       if (onAddCapture) {
-        onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData, analysisResult, cctv.thumbnailUrl);
+        onAddCapture(cctv.cctvName, cctv.location, cctv.confidence, imageData, analysisResult, videoUrlForCapture);
       }
     }, 300);
 
     setTimeout(() => setFlyingThumbnail(null), 600);
-    setTimeout(() => {
-      setIsCaptureAnimating(false);
-      onClose();
-    }, 1000);
-  };
-
-  const handleCaptureTargetRef = useRef(handleCaptureTarget);
-  handleCaptureTargetRef.current = handleCaptureTarget;
-
-  const autoCaptureTriggeredRef = useRef(false);
-  useEffect(() => {
-    if (!autoCapture || !isOpen || !cctv) {
-      autoCaptureTriggeredRef.current = false;
-      return;
-    }
-    if (autoCaptureTriggeredRef.current) return;
-    autoCaptureTriggeredRef.current = true;
-
-    const timer = setTimeout(() => {
-      handleCaptureTargetRef.current();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [autoCapture, isOpen, cctv]);
-
-  if (!isOpen || !cctv) return null;
-
-  const liveTimeString = currentLiveTime.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return;
-    onClose();
+    setTimeout(() => setIsCaptureAnimating(false), 1000);
   };
 
   return (
@@ -316,10 +373,17 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
         <div className="flex flex-wrap items-start justify-between gap-3 p-4 flex-shrink-0 border-b border-[#31353a]">
           <div className="flex flex-col gap-1.5 min-w-0">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <div className="px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
-                <span className="text-xs text-red-300 font-medium">LIVE</span>
-              </div>
+              {showFeaturedLayout && cctv.cctvName === '별빛A-655' ? (
+                <span className="px-2 py-0.5 bg-blue-500/90 text-white text-xs font-semibold rounded flex items-center gap-1">
+                  <Icon icon="mdi:paperclip" className="w-3 h-3" />
+                  Clip
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 bg-red-500/90 text-white text-xs font-semibold rounded flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                  LIVE
+                </span>
+              )}
               <span className="text-white font-semibold text-sm">{cctv.cctvName}</span>
               <span className="text-gray-400 text-sm">·</span>
               <span className="text-gray-300 text-sm truncate">{cctv.location}</span>
@@ -466,13 +530,13 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                 
                 {/* 예측 정보 카드들 */}
                 {(() => {
-                  const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
+                  const detail = getPredictedCCTVDetail(showFeaturedLayout && cctv.featuredThumbnailUrl ? cctv.featuredThumbnailUrl : cctv.thumbnailUrl);
                   return [
                     { icon: 'mdi:account-details', label: '객체 속성', value: detail?.objectAttributes || '정보 없음' },
                     { icon: 'mdi:map-marker-distance', label: '예상 이동 거리', value: detail?.expectedDistance || `약 ${cctv.distance}m (이전 위치 기준)` },
                     { icon: 'mdi:navigation', label: '이동 추세', value: detail?.movementTrend || `${cctv.direction} (최근 3프레임 평균)` },
                     { icon: 'mdi:clock-outline', label: '예상 도달 시각', value: detail?.expectedArrivalTime || `${cctv.predictedTime} (현재 시각 +30초)` },
-                    { icon: 'mdi:chart-timeline-variant', label: '경로 적합도(유사도)', value: `${detail?.routeFitScore || cctv.confidence}점` },
+                    { icon: 'mdi:chart-timeline-variant', label: '경로 적합도(유사도)', value: detail?.routeFitScoreText ?? `${detail?.routeFitScore ?? cctv.confidence}점` },
                   ];
                 })().map((item, idx) => (
                   <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
@@ -480,70 +544,118 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                       <Icon icon={item.icon} className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-gray-400 mb-1">{item.label}</div>
-                        <div className="text-sm text-white">{item.value}</div>
+                        <div className={`text-sm text-white ${item.label === '객체 속성' ? 'whitespace-pre-line' : ''}`}>{item.value}</div>
                       </div>
                     </div>
                   </div>
                 ))}
                 
                 {/* 경로 예측 상세 근거 - 토글 가능 */}
-                <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
-                  <button
-                    id="route-prediction-dropdown"
-                    type="button"
-                    onClick={() => setIsRouteScoreOpen(!isRouteScoreOpen)}
-                    className="w-full p-3 flex items-start gap-3 text-left"
-                  >
-                    <Icon icon="mdi:map-marker-path" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-gray-400 mb-1">경로 예측 상세 근거</div>
-                      <div className="text-sm text-white">6개 항목 분석 완료</div>
+                {(() => {
+                  const detail = getPredictedCCTVDetail(showFeaturedLayout && cctv.featuredThumbnailUrl ? cctv.featuredThumbnailUrl : cctv.thumbnailUrl);
+                  const analysisItems = !detail?.detailedAnalysis
+                    ? [
+                        { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향을 유지하며 이동 중임.' },
+                        { category: '이동 속도', analysis: '정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.' },
+                        { category: '보행로 구조', analysis: '하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.' },
+                        { category: 'CCTV 연계', analysis: '인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.' },
+                        { category: '유사 사례', analysis: '해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.' },
+                      ]
+                    : [
+                        { category: '이동 방향', analysis: detail.detailedAnalysis.movementDirection },
+                        { category: '이동 속도', analysis: detail.detailedAnalysis.movementSpeed },
+                        { category: '보행로 구조', analysis: detail.detailedAnalysis.pathStructure },
+                        { category: 'CCTV 연계', analysis: detail.detailedAnalysis.cctvLinkage },
+                        ...(detail.detailedAnalysis.previousPath
+                          ? [{ category: '이전 경로', analysis: detail.detailedAnalysis.previousPath }]
+                          : []),
+                        { category: '유사 사례', analysis: detail.detailedAnalysis.similarCases },
+                      ];
+                  const itemCount = analysisItems.length;
+                  return (
+                    <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
+                      <button
+                        id="route-prediction-dropdown"
+                        type="button"
+                        onClick={() => setIsRouteScoreOpen(!isRouteScoreOpen)}
+                        className="w-full p-3 flex items-start gap-3 text-left"
+                      >
+                        <Icon icon="mdi:map-marker-path" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-gray-400 mb-1">경로 예측 상세 근거</div>
+                          <div className="text-sm text-white">{itemCount}개 항목 분석 완료</div>
+                        </div>
+                        <Icon
+                          icon={isRouteScoreOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                          className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0 transition-transform"
+                        />
+                      </button>
+
+                      {isRouteScoreOpen && (
+                        <>
+                          <div className="border-t border-[#3a3a3a]" />
+                          <div className="p-3 space-y-2">
+                            {analysisItems.map((item, idx) => (
+                              <div key={idx} className="bg-[#1a1a1a]/50 rounded p-3 space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-300 font-medium">{item.category}</span>
+                                </div>
+                                <div className="text-sm text-gray-400 leading-relaxed">{item.analysis}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <Icon 
-                      icon={isRouteScoreOpen ? "mdi:chevron-up" : "mdi:chevron-down"} 
-                      className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0 transition-transform" 
-                    />
-                  </button>
-                  
-                  {isRouteScoreOpen && (
-                    <>
-                      {/* 디바이더 */}
-                      <div className="border-t border-[#3a3a3a]"></div>
-                      
-                      {/* 각 분석 항목 */}
-                      <div className="p-3 space-y-2">
-                        {(() => {
-                          const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
-                          if (!detail?.detailedAnalysis) {
-                            return [
-                              { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향을 유지하며 이동 중임.' },
-                              { category: '이동 속도', analysis: '정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.' },
-                              { category: '보행로 구조', analysis: '하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.' },
-                              { category: 'CCTV 연계', analysis: '인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.' },
-                              { category: '유사 사례', analysis: '해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.' },
-                            ];
-                          }
-                          return [
-                            { category: '이동 방향', analysis: detail.detailedAnalysis.movementDirection },
-                            { category: '이동 속도', analysis: detail.detailedAnalysis.movementSpeed },
-                            { category: '보행로 구조', analysis: detail.detailedAnalysis.pathStructure },
-                            { category: 'CCTV 연계', analysis: detail.detailedAnalysis.cctvLinkage },
-                            { category: '유사 사례', analysis: detail.detailedAnalysis.similarCases },
-                          ];
-                        })().map((item, idx) => (
-                          <div key={idx} className="bg-[#1a1a1a]/50 rounded p-3 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-300 font-medium">{item.category}</span>
+                  );
+                })()}
+
+                {/* AI 유사사유 판독 - cnc_04_1(별빛A-655) 전용 */}
+                {(() => {
+                  const detail = getPredictedCCTVDetail(showFeaturedLayout && cctv.featuredThumbnailUrl ? cctv.featuredThumbnailUrl : cctv.thumbnailUrl);
+                  const aiAnalysis = detail?.aiSimilarityAnalysis;
+                  if (!aiAnalysis) return null;
+                  return (
+                    <div className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg overflow-hidden hover:bg-[#323232] transition-colors">
+                      <button
+                        id="ai-similarity-dropdown"
+                        type="button"
+                        onClick={() => setIsAiSimilarityOpen(!isAiSimilarityOpen)}
+                        className="w-full p-3 flex items-start gap-3 text-left"
+                      >
+                        <Icon icon="mdi:robot-outline" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-gray-400 mb-1">AI 유사사유 판독</div>
+                          <div className="text-sm text-white">3개 항목 분석 완료</div>
+                        </div>
+                        <Icon
+                          icon={isAiSimilarityOpen ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                          className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0 transition-transform"
+                        />
+                      </button>
+
+                      {isAiSimilarityOpen && (
+                        <>
+                          <div className="border-t border-[#3a3a3a]" />
+                          <div className="p-3 space-y-2">
+                            <div className="bg-[#1a1a1a]/50 rounded p-3">
+                              <div className="text-xs text-gray-300 font-medium mb-1.5">차량 정체성 (Identity)</div>
+                              <div className="text-sm text-gray-400 leading-relaxed">{aiAnalysis.vehicleIdentity}</div>
                             </div>
-                            <div className="text-sm text-gray-400 leading-relaxed">
-                              {item.analysis}
+                            <div className="bg-[#1a1a1a]/50 rounded p-3">
+                              <div className="text-xs text-gray-300 font-medium mb-1.5">행동 메커니즘</div>
+                              <div className="text-sm text-gray-400 leading-relaxed">{aiAnalysis.behaviorMechanism}</div>
+                            </div>
+                            <div className="bg-[#1a1a1a]/50 rounded p-3">
+                              <div className="text-xs text-gray-300 font-medium mb-1.5">지리적 특이성</div>
+                              <div className="text-sm text-gray-400 leading-relaxed">{aiAnalysis.geographicSpecificity}</div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

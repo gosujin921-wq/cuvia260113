@@ -1,27 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import PredictedCCTVDetailPopup from './PredictedCCTVDetailPopup';
 
 interface PredictedCCTVListPanelProps {
   isVisible: boolean;
   width?: number;
-  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string) => void;
+  onAddCapture?: (cctvName: string, location: string, confidence: number, capturedImage?: string, analysisResult?: string, videoUrl?: string, options?: { trackingPinNumber?: number }) => void;
   hoveredCCTVId?: string | null;
   onCCTVHover?: (cctvId: string | null) => void;
   /** 반경(m) 변경 시 부모에 전달 (지도 대시 원 연동) */
   onRadiusChange?: (radius: number) => void;
-  /** CCTV 카드 선택(상세 팝업 오픈) 시 호출 */
-  onCCTVSelect?: () => void;
-  /** CCTV 상세 팝업 닫힘 시 호출 */
-  onCCTVDetailClose?: () => void;
-  /** 외부에서 열 CCTV ID */
-  openCCTVId?: string | null;
-  /** CCTV가 열렸을 때 호출 */
-  onCCTVOpened?: () => void;
-  /** 외부에서 팝업 닫기 신호 */
-  closeCCTVPopupSignal?: number;
-  /** 팝업 열릴 때 자동 포착 실행 여부 */
-  autoCapture?: boolean;
+  /** true면 별빛A-655 상단 1x1, 나머지 3열 (2키 눌렀을 때) */
+  showFeaturedLayout?: boolean;
+  /** '5'일 때 별빛A-655 카드에 캡처 애니메이션 후 포착목록 추가 (전파 초안 요청 시) */
+  triggerCaptureForCctvId?: string | null;
 }
 
 export interface PredictedCCTVItem {
@@ -34,6 +27,9 @@ export interface PredictedCCTVItem {
   direction: string; // 예: "북동쪽", "남쪽"
   thumbnailUrl: string;
   posterUrl?: string;
+  /** 2키 눌렀을 때 크게 나오는 영상 (리스트 썸네일과 별도) */
+  featuredThumbnailUrl?: string;
+  featuredPosterUrl?: string;
 }
 
 // Mock 데이터 - 4번 핀(달빛로301번길 28) 근처 CCTV 10개
@@ -90,8 +86,10 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:15',
     confidence: 80,
     direction: '남동쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_25_y.mp4',
-    posterUrl: '/fastsearch_img/qs_img_25_y.png',
+    thumbnailUrl: '/fastsearch_img/qs_img_59_y.mp4',
+    posterUrl: '/fastsearch_img/qs_img_59_y.png',
+    featuredThumbnailUrl: '/hijacking/cnc_04_1.mp4',
+    featuredPosterUrl: '/hijacking/cnc_04.png',
   },
   {
     id: '6',
@@ -156,9 +154,20 @@ const ListVideo: React.FC<{ src: string; posterUrl?: string; isPaused: boolean }
   React.useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    if (isPaused) v.pause();
-    else v.play().catch(() => {});
-  }, [isPaused]);
+    if (isPaused) {
+      v.pause();
+      return;
+    }
+    const play = () => v.play().catch(() => {});
+    if (v.readyState >= 2) {
+      play();
+      return;
+    }
+    v.load();
+    const onLoaded = () => play();
+    v.addEventListener('loadeddata', onLoaded, { once: true });
+    return () => v.removeEventListener('loadeddata', onLoaded);
+  }, [isPaused, src]);
   if (!src?.trim()) return <div className="absolute inset-0 bg-black" aria-hidden />;
   return (
     <video
@@ -174,6 +183,9 @@ const ListVideo: React.FC<{ src: string; posterUrl?: string; isPaused: boolean }
   );
 };
 
+const FEATURED_CCTV_ID = '5'; // 별빛A-655
+const FEATURED_ANALYSIS = '차종/색상/외형 특징 일치(추정). 부분 번호판 후보: 12 324 (가시성: 높음). 동 방향 진행.';
+
 const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   isVisible,
   width = 700,
@@ -181,27 +193,35 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   hoveredCCTVId: externalHoveredCCTVId,
   onCCTVHover,
   onRadiusChange,
-  onCCTVSelect,
-  onCCTVDetailClose,
-  openCCTVId,
-  onCCTVOpened,
-  closeCCTVPopupSignal,
-  autoCapture = false,
+  showFeaturedLayout = false,
+  triggerCaptureForCctvId = null,
 }) => {
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const [sortOption, setSortOption] = useState<'confidence' | 'distance' | 'time'>('confidence');
+  const [isCapturingCctvId, setIsCapturingCctvId] = useState<string | null>(null);
+  const [flyingThumbnail, setFlyingThumbnail] = useState<{
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number;
+    imageData: string;
+  } | null>(null);
+  const cardRefMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const [openPopover, setOpenPopover] = useState<'sort' | 'radius' | null>(null);
   const sortPopoverRef = React.useRef<HTMLDivElement>(null);
   const radiusPopoverRef = React.useRef<HTMLDivElement>(null);
   const cctvMarkersRef = React.useRef<Map<string, HTMLElement>>(new Map());
+  /** 2키 눌렀을 때 스켈레톤 표시 후 레이아웃 전환 */
+  const [showSkeleton, setShowSkeleton] = useState<boolean>(true);
+  const skeletonTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 반경 필터 상태
   const [radius, setRadius] = React.useState<number>(100); // 반경 (m) - 실제 적용된 값
   
   // 임시 값 (팝오버에서 선택 중인 값) - 실시간 미리보기를 위해 이 값을 바로 전달
   const [tempRadius, setTempRadius] = React.useState<number>(100);
   
-  // 외부에서 받은 hoveredCCTVId 사용
-  const hoveredCCTVId = externalHoveredCCTVId;
+  const hoveredCCTVId = externalHoveredCCTVId ?? null;
   
   // 팝오버 외부 클릭 감지
   React.useEffect(() => {
@@ -232,22 +252,83 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
     onRadiusChange(tempRadius);
   }, [onRadiusChange, tempRadius]);
 
+  // 2키로 패널 표시 시 스켈레톤 → 일정 시간 후 실제 레이아웃
   React.useEffect(() => {
-    if (closeCCTVPopupSignal && closeCCTVPopupSignal > 0) {
-      setSelectedCCTV(null);
+    if (!isVisible) {
+      setShowSkeleton(true);
+      if (skeletonTimeoutRef.current) {
+        clearTimeout(skeletonTimeoutRef.current);
+        skeletonTimeoutRef.current = null;
+      }
+      return;
     }
-  }, [closeCCTVPopupSignal]);
-
-  React.useEffect(() => {
-    if (!openCCTVId || !isVisible) return;
-    const cctv = PREDICTED_CCTV_DATA.find(item => item.id === openCCTVId);
-    if (cctv) {
-      setSelectedCCTV(cctv);
-      if (onCCTVOpened) onCCTVOpened();
-    }
-  }, [openCCTVId, isVisible, onCCTVOpened]);
+    setShowSkeleton(true);
+    if (skeletonTimeoutRef.current) clearTimeout(skeletonTimeoutRef.current);
+    skeletonTimeoutRef.current = setTimeout(() => {
+      setShowSkeleton(false);
+      skeletonTimeoutRef.current = null;
+    }, 1800);
+    return () => {
+      if (skeletonTimeoutRef.current) {
+        clearTimeout(skeletonTimeoutRef.current);
+        skeletonTimeoutRef.current = null;
+      }
+    };
+  }, [isVisible]);
 
   const isPopupOpen = selectedCCTV !== null;
+  /** 2키 눌렀을 때 featured 별빛A-655(cnc_04_1.mp4)만 자동 재생 */
+  const shouldPlayFeaturedVideo = isVisible && !isPopupOpen && showFeaturedLayout && !showSkeleton;
+  /** 리스트 그리드 영상들: 패널 보일 때 재생 (featured 제외) */
+  const shouldPlayListVideo = isVisible && !isPopupOpen;
+
+  // 전파 초안 요청 시 별빛A-655 캡처 애니메이션 실행
+  useEffect(() => {
+    if (triggerCaptureForCctvId !== FEATURED_CCTV_ID || !onAddCapture) return;
+
+    const featuredItem = PREDICTED_CCTV_DATA.find((item) => item.id === FEATURED_CCTV_ID);
+    if (!featuredItem) return;
+
+    const cardEl = cardRefMap.current.get(FEATURED_CCTV_ID);
+    if (!cardEl) return;
+
+    const rect = cardEl.getBoundingClientRect();
+    const startX = rect.left + rect.width / 2;
+    const startY = rect.top + rect.height / 2;
+
+    const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
+    let endX = 40;
+    let endY = 250;
+    if (captureMenuButton) {
+      const menuRect = captureMenuButton.getBoundingClientRect();
+      endX = menuRect.left + menuRect.width / 2;
+      endY = menuRect.top + menuRect.height / 2;
+    }
+
+    const imageData = featuredItem.featuredPosterUrl ?? featuredItem.posterUrl ?? featuredItem.featuredThumbnailUrl ?? featuredItem.thumbnailUrl ?? '';
+
+    setIsCapturingCctvId(FEATURED_CCTV_ID);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setFlyingThumbnail({ startX, startY, endX, endY, imageData });
+      });
+    });
+
+    setTimeout(() => {
+      onAddCapture(
+        featuredItem.cctvName,
+        featuredItem.location,
+        featuredItem.confidence,
+        imageData,
+        FEATURED_ANALYSIS,
+        featuredItem.featuredThumbnailUrl ?? featuredItem.thumbnailUrl,
+        { trackingPinNumber: 4 }
+      );
+    }, 300);
+
+    setTimeout(() => setFlyingThumbnail(null), 600);
+    setTimeout(() => setIsCapturingCctvId(null), 1000);
+  }, [triggerCaptureForCctvId, onAddCapture]);
 
   return (
     <>
@@ -266,6 +347,40 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
         }}
       >
         <div className="flex flex-col gap-3 h-full" style={{ paddingTop: isVisible ? '0.5rem' : '16px', minHeight: 0 }}>
+          {showSkeleton ? (
+            <>
+              {/* 스켈레톤 헤더 (고속검색 리스트와 동일) */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="h-9 w-24 rounded-full bg-[#2a2b32]" style={{ animation: 'skeleton-width-0 1.5s ease-in-out infinite' }} />
+                <div className="h-9 w-28 rounded-full bg-[#2a2b32]" style={{ animation: 'skeleton-width-1 1.5s ease-in-out infinite' }} />
+              </div>
+              {/* 스켈레톤 리스트 영역 */}
+              <div
+                className="rounded-lg flex-1 border border-[#31353a] overflow-hidden flex flex-col min-h-0"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)',
+                }}
+              >
+                <div className="p-4 grid grid-cols-3 gap-3 overflow-y-auto flex-1 min-h-0" style={{ minHeight: 'min-content', alignContent: 'start' }}>
+                  {Array.from({ length: 9 }).map((_, idx) => (
+                    <div key={`skeleton-${idx}`} className="bg-[#393a42] rounded-lg overflow-hidden flex flex-col">
+                      <div className="relative w-full bg-[#2a2b32]" style={{ paddingTop: '56.25%' }}>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Icon icon="mdi:image-outline" className="w-10 h-10 text-gray-600" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 p-3 space-y-2">
+                        <div className="h-3 bg-[#2a2b32] rounded" style={{ animation: `skeleton-width-${idx % 3} 1.5s ease-in-out infinite`, animationDelay: `${idx * 0.1}s` }} />
+                        <div className="h-3 bg-[#2a2b32] rounded" style={{ animation: `skeleton-width-${(idx + 1) % 3} 1.5s ease-in-out infinite`, animationDelay: `${idx * 0.1 + 0.2}s` }} />
+                        <div className="h-5 w-14 bg-[#2a2b32] rounded mt-1" style={{ animation: `skeleton-width-${(idx + 2) % 3} 1.5s ease-in-out infinite`, animationDelay: `${idx * 0.1 + 0.4}s` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
           {/* 헤더 */}
           <div
             className="rounded-lg flex-shrink-0"
@@ -420,61 +535,182 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                 minHeight: 0,
               }}
             >
-              <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
-                {PREDICTED_CCTV_DATA.map((item) => (
-                  <div
-                    key={item.id}
-                    id={item.id === '4' ? 'predicted-cctv-7' : undefined}
-                    onClick={() => {
-                      setSelectedCCTV(item);
-                      onCCTVSelect?.();
-                    }}
-                    onMouseEnter={() => onCCTVHover?.(item.id)}
-                    onMouseLeave={() => onCCTVHover?.(null)}
-                    className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group ${
-                      hoveredCCTVId === item.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-105' : ''
-                    }`}
-                  >
-                    {/* 썸네일 */}
-                    <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
-                      <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={isPopupOpen} />
-                      
-                      {/* 호버 시 주소 아래→위 슬라이드 */}
-                      <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
-                        <div className="text-[10px] text-gray-200 truncate" title={item.location}>
-                          {item.location}
+              {showFeaturedLayout ? (
+                <div className="flex flex-col gap-3" style={{ minHeight: 'min-content' }}>
+                  {/* 별빛A-655 상단 1x1 (2키 눌렀을 때) */}
+                  {(() => {
+                    const featuredItem = PREDICTED_CCTV_DATA.find((item) => item.cctvName === '별빛A-655');
+                    const restItems = PREDICTED_CCTV_DATA.filter((item) => item.cctvName !== '별빛A-655');
+                    return (
+                      <>
+                        {featuredItem && (
+                          <div
+                            key={featuredItem.id}
+                            ref={(el) => { if (el) cardRefMap.current.set(featuredItem.id, el); }}
+                            onClick={() => setSelectedCCTV(featuredItem)}
+                            onMouseEnter={() => onCCTVHover?.(featuredItem.id)}
+                            onMouseLeave={() => onCCTVHover?.(null)}
+                            className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group animate-featured-fade-slide border-2 border-red-500 ${
+                              hoveredCCTVId === featuredItem.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-[1.02]' : ''
+                            }`}
+                          >
+                            <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
+                              <div className="absolute top-2 left-2 z-10">
+                                <span className="px-2 py-0.5 bg-blue-500/90 text-white text-xs font-semibold rounded flex items-center gap-1">
+                                  <Icon icon="mdi:paperclip" className="w-3 h-3" />
+                                  Clip
+                                </span>
+                              </div>
+                              <ListVideo src={featuredItem.featuredThumbnailUrl ?? featuredItem.thumbnailUrl} posterUrl={featuredItem.featuredPosterUrl ?? featuredItem.posterUrl} isPaused={!shouldPlayFeaturedVideo} />
+                              {isCapturingCctvId === featuredItem.id && (
+                                <div className="absolute inset-0 pointer-events-none z-20">
+                                  <div className="absolute inset-0 bg-white animate-capture-flash" />
+                                  <div className="absolute inset-0 border-4 border-blue-500 animate-capture-frame" />
+                                  <div className="absolute inset-0 flex items-center justify-center animate-capture-check">
+                                    <div className="bg-blue-500 rounded-full p-2">
+                                      <Icon icon="mdi:check" className="w-6 h-6 text-white" />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
+                                <div className="text-[10px] text-gray-200 truncate" title={featuredItem.location}>
+                                  {featuredItem.location}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="px-3 py-2 flex items-center justify-between gap-2">
+                              <div className="text-xs text-gray-300 font-semibold truncate" title={featuredItem.cctvName}>
+                                {featuredItem.cctvName}
+                              </div>
+                              <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] text-blue-400 font-semibold leading-none">
+                                {featuredItem.confidence}점
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-3 gap-3 animate-featured-grid-fade">
+                          {restItems.map((item) => (
+                            <div
+                              key={item.id}
+                              ref={(el) => { if (el) cardRefMap.current.set(item.id, el); }}
+                              id={item.id === '4' ? 'predicted-cctv-7' : undefined}
+                              onClick={() => setSelectedCCTV(item)}
+                              onMouseEnter={() => onCCTVHover?.(item.id)}
+                              onMouseLeave={() => onCCTVHover?.(null)}
+                              className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group ${
+                                hoveredCCTVId === item.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-105' : ''
+                              }`}
+                            >
+                              <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
+                                <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={!shouldPlayListVideo} />
+                                <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
+                                  <div className="text-[10px] text-gray-200 truncate" title={item.location}>
+                                    {item.location}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="px-3 py-2 flex items-center justify-between gap-2">
+                                <div className="text-xs text-gray-300 font-semibold truncate" title={item.cctvName}>
+                                  {item.cctvName}
+                                </div>
+                                <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] text-blue-400 font-semibold leading-none">
+                                  {item.confidence}점
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-3 animate-fade-in" style={{ minHeight: 'min-content' }}>
+                  {PREDICTED_CCTV_DATA.map((item) => (
+                    <div
+                      key={item.id}
+                      ref={(el) => { if (el) cardRefMap.current.set(item.id, el); }}
+                      id={item.id === '4' ? 'predicted-cctv-7' : undefined}
+                      onClick={() => setSelectedCCTV(item)}
+                      onMouseEnter={() => onCCTVHover?.(item.id)}
+                      onMouseLeave={() => onCCTVHover?.(null)}
+                      className={`relative bg-[#393a42] rounded-lg overflow-hidden cursor-pointer transition-all group ${
+                        hoveredCCTVId === item.id ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#0a0e14] scale-105' : ''
+                      }`}
+                    >
+                      <div className="relative w-full bg-black overflow-hidden" style={{ paddingTop: '56.25%' }}>
+                        <ListVideo src={item.thumbnailUrl} posterUrl={item.posterUrl} isPaused={!shouldPlayListVideo} />
+                        {isCapturingCctvId === item.id && (
+                          <div className="absolute inset-0 pointer-events-none z-20">
+                            <div className="absolute inset-0 bg-white animate-capture-flash" />
+                            <div className="absolute inset-0 border-4 border-blue-500 animate-capture-frame" />
+                            <div className="absolute inset-0 flex items-center justify-center animate-capture-check">
+                              <div className="bg-blue-500 rounded-full p-2">
+                                <Icon icon="mdi:check" className="w-6 h-6 text-white" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute bottom-0 left-0 right-0 translate-y-full group-hover:translate-y-0 transition-transform duration-200 ease-out bg-black/70 px-2 py-1">
+                          <div className="text-[10px] text-gray-200 truncate" title={item.location}>
+                            {item.location}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* CCTV명 + 경로 적합도 */}
-                    <div className="px-3 py-2 flex items-center justify-between gap-2">
-                      <div className="text-xs text-gray-300 font-semibold truncate" title={item.cctvName}>
-                        {item.cctvName}
+                      <div className="px-3 py-2 flex items-center justify-between gap-2">
+                        <div className="text-xs text-gray-300 font-semibold truncate" title={item.cctvName}>
+                          {item.cctvName}
+                        </div>
+                        <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] text-blue-400 font-semibold leading-none">
+                          {item.confidence}점
+                        </span>
                       </div>
-                      <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] text-blue-400 font-semibold leading-none">
-                        {item.confidence}점
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
 
       {/* CCTV 상세 팝업 */}
       <PredictedCCTVDetailPopup
         isOpen={selectedCCTV !== null}
-        onClose={() => {
-          setSelectedCCTV(null);
-          onCCTVDetailClose?.();
-        }}
+        onClose={() => setSelectedCCTV(null)}
         cctv={selectedCCTV}
+        showFeaturedLayout={showFeaturedLayout}
         onAddCapture={onAddCapture}
-        autoCapture={autoCapture}
       />
+
+      {/* 날아가는 썸네일 애니메이션 (전파 초안 요청 시) */}
+      {flyingThumbnail &&
+        createPortal(
+          <div
+            className="fixed pointer-events-none z-[10001]"
+            style={{
+              left: `${flyingThumbnail.startX}px`,
+              top: `${flyingThumbnail.startY}px`,
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <img
+              src={flyingThumbnail.imageData}
+              alt="캡처 썸네일"
+              className="w-32 h-20 object-cover rounded-lg shadow-2xl"
+              style={{
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',
+                animation: 'fly-to-menu-dynamic 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
+                ['--end-x' as string]: `${flyingThumbnail.endX - flyingThumbnail.startX}px`,
+                ['--end-y' as string]: `${flyingThumbnail.endY - flyingThumbnail.startY}px`,
+              }}
+            />
+          </div>,
+          document.body
+        )}
     </>
   );
 };

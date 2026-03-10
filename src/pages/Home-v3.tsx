@@ -7,7 +7,7 @@ import LeftPanel from '@/components/dashboard/LeftPanel';
 import LeftMenuPanel from '@/components/dashboard/HOME-v3/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
-import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
+import ReportPopup from '@/components/dashboard/HOME-v3/ReportPopup';
 import FastSearchListPanel from '@/components/dashboard/HOME-v3/FastSearchListPanel';
 import PredictedCCTVListPanel from '@/components/dashboard/HOME-v3/PredictedCCTVListPanel';
 import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v3/CaptureListPanel';
@@ -632,6 +632,7 @@ export default function HomeV3() {
     setExcludedAttributes([]);
     setFlyToLocation(null);
     setShowPredictedCCTVList(false);
+    setShowFeaturedLayout(false);
     setObjectTrackingCompleted(false);
     setVisibleTrackingPins(0);
   }, []);
@@ -645,6 +646,7 @@ export default function HomeV3() {
     setExcludedImageIds([]);
     setFlyToLocation(null);
     setShowPredictedCCTVList(false);
+    setShowFeaturedLayout(false);
     setObjectTrackingCompleted(false);
     setVisibleTrackingPins(0);
     setReSearchResult(null);
@@ -670,16 +672,17 @@ export default function HomeV3() {
     
     // 예측 CCTV 리스트 숨기기
     setShowPredictedCCTVList(false);
+    setShowFeaturedLayout(false);
     
     // 객체 추적 완료 플래그 리셋
     setObjectTrackingCompleted(false);
     
-    // 추적 경로 좌표 (과천역 근처)
+    // 추적 경로 좌표 (v2 동일)
     const trackingSequence = [
-      [126.99656, 37.43527],                // 1번: 초기 목격 지점
-      [126.997050219665, 37.434564088524],  // 2번: 목격 지점
-      [126.995526419665, 37.435305588524],  // 3번: 목격 지점
-      [126.995523619665, 37.434353188524],  // 4번: 목격 지점
+      [126.99656, 37.43527],                // 1번: 초기 목격 지점 (과천역)
+      [126.997050219665, 37.434564088524],  // 2번: 목격 지점 (은하로363번길 46)
+      [126.995526419665, 37.435305588524],  // 3번: 목격 지점 (은하로361번길 48)
+      [126.995523619665, 37.434353188524],  // 4번: 목격 지점 (달빛로301번길 28)
     ];
     
     // 1단계: 1번 핀 표시 및 줌인 (초기화 후 약간의 딜레이)
@@ -715,6 +718,7 @@ export default function HomeV3() {
       dispatch({ type: 'SHOW_NET_MONITORING_DIALOG' });
     } else if (menuId === 'fast-search') {
       setShowPredictedCCTVList(false);
+      setShowFeaturedLayout(false);
       setObjectTrackingCompleted(false);
       setVisibleTrackingPins(0);
       const missingEvent = allConvertedEvents.find(event =>
@@ -740,7 +744,7 @@ export default function HomeV3() {
   const AGENT_BOTTOM_GAP = 16;
   const REPORT_POPUP_GAP = 24;
   const AGENT_FLOATING_BUTTON_RESERVE = 198 + 30 + 56 + 8;
-  const reportPopupVisible = !!(uiState.selectedEventId && !uiState.showPropagationList && (uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || isObjectTrackingTransitioning));
+  const reportPopupVisible = !!(uiState.selectedEventId && !uiState.showPropagationList && (uiState.showObjectTracking || isObjectTrackingTransitioning));
   const reportHeightForAgent = reportPopupHeight > 0 ? reportPopupHeight : 180;
   const agentTopPx = reportPopupVisible ? 20 + reportHeightForAgent + REPORT_POPUP_GAP : AGENT_TOP_GAP;
 
@@ -785,7 +789,7 @@ export default function HomeV3() {
   // 키보드 단축키 핸들러 (시나리오 프로토타입용)
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
     const isInputFocused = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
-    if (isInputFocused) return;
+    if (isInputFocused && e.key !== '2') return;
 
     const missingEvent = allConvertedEvents.find(event =>
       event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
@@ -801,8 +805,26 @@ export default function HomeV3() {
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setPinOffset({ x: -100, y: 0 });
       setFlyToLocation(missingEvent.location.coordinates as [number, number]);
+    } else if (e.key === '2') {
+      setCaptureProgressMessage('예측 CCTV 분석 중...');
+      setTimeout(() => setCaptureProgressMessage('포착 가능 구역 산정 중...'), 600);
+      setTimeout(() => setCaptureProgressMessage('포착대상 감지 중...'), 1400);
+      setTimeout(() => setCaptureProgressMessage('별빛A-655에서 포착 확인'), 2200);
+      setTimeout(() => {
+        setCaptureProgressMessage(null);
+        setShowFeaturedLayout(true);
+        setObjectTrackingCompleted(true);
+        setVisibleTrackingPins(5);
+        setShowPredictedCCTVList(true);
+      }, 3000);
+    } else if (e.key === '3') {
+      handleStartTrackingSequence();
+    } else if (e.key === '4') {
+      dispatch({ type: 'SHOW_FAST_SEARCH_LIST' });
+      setPinOffset({ x: 0, y: 0 });
+      setOpenCandidateId('43');
     }
-  }, [allConvertedEvents]);
+  }, [allConvertedEvents, handleStartTrackingSequence]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -828,6 +850,8 @@ export default function HomeV3() {
               hoveredCCTVId={hoveredCCTVId}
               showCCTVLabel={showCCTVLabel}
               pulseRadius={captureListRadius}
+              showPredictedCCTVList={showPredictedCCTVList && !uiState.showCaptureList && !uiState.showPropagationList}
+              showFeaturedLayout={showFeaturedLayout}
             />
         ) : (
             <MapView
@@ -914,45 +938,17 @@ export default function HomeV3() {
         autoScrollIntervalRef={autoScrollIntervalRef}
       />
 
-      {/* ReportPopup - 고속검색, 객체추적, 포착목록 모드일 때 우측 상단에 표시 (전파 모드일 때는 숨김) */}
-      {uiState.selectedEventId && !uiState.showPropagationList && (uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || isObjectTrackingTransitioning) && (
+      {/* ReportPopup - 객체추적 모드일 때 우측 상단에 표시 (전파 모드일 때는 숨김) */}
+      {uiState.selectedEventId && !uiState.showPropagationList && (uiState.showObjectTracking || isObjectTrackingTransitioning) && (
         <div
           style={{
-            opacity: uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || reportFadeIn ? 1 : 0,
+            opacity: uiState.showObjectTracking || reportFadeIn ? 1 : 0,
             transition: 'opacity 0.3s ease-out',
           }}
         >
         <ReportPopup
           event={allConvertedEvents.find(e => e.id === uiState.selectedEventId) || null}
-          imageSrc="/hijacking2/people01.png"
-          infoContent={
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="text-gray-400">최초 포착: </span>
-                <span className="text-white">별빛A-444 {eventDetectedTime}</span>
-              </div>
-              <div>
-                <span className="text-gray-400">대상: </span>
-                <span className="text-gray-200">성인 남성 1명 + 성인 여성 1명</span>
-              </div>
-              <div>
-                <span className="text-gray-400">의심 정황: </span>
-                <span className="text-gray-200">여성이 비자발적으로 끌려가듯 이동, 주변 경계 동작 반복</span>
-              </div>
-              <div>
-                <span className="text-gray-400">현재 이동 방향: </span>
-                <span className="text-gray-200">은하초교 방향 골목 진입</span>
-              </div>
-              <div>
-                <span className="text-gray-400">최근 포착: </span>
-                <span className="text-white">별빛A-230 {(() => { const t = eventDetectedTime.split(':').map(Number); const d = new Date(); d.setHours(t[0], t[1] - 2, t[2]); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`; })()}</span>
-              </div>
-              <div>
-                <span className="text-gray-400">추천 대응: </span>
-                <span className="text-white font-bold">112 전파</span>
-              </div>
-            </div>
-          }
+          eventDetectedTime={eventDetectedTime}
           onClose={() => {
             if (uiState.showObjectTracking) {
               dispatch({ type: 'SET_SELECTED_EVENT', payload: null });
@@ -1021,9 +1017,17 @@ export default function HomeV3() {
         } : null}
         onAddCapture={handleAddCaptureItem}
         onObjectTracking={() => {
-          setShowFastSearchPopupOverlay(false);
-          setPinOffset({ x: 0, y: 0 });
-          dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
+          if (uiState.showFastSearchList) {
+            dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
+          } else {
+            setIsObjectTrackingTransitioning(true);
+            setTimeout(() => {
+              dispatch({ type: 'START_OBJECT_TRACKING' });
+              handleStartTrackingSequence();
+              setIsObjectTrackingTransitioning(false);
+              setReportFadeIn(false);
+            }, 350);
+          }
         }}
       />
 
@@ -1066,12 +1070,11 @@ export default function HomeV3() {
         hoveredCCTVId={hoveredCCTVId}
         onCCTVHover={(cctvId) => {
           setHoveredCCTVId(cctvId);
-          setShowCCTVLabel(false); // 썸네일 호버 시 라벨 표시 안함
+          setShowCCTVLabel(false);
         }}
         onRadiusChange={setCaptureListRadius}
-        openCCTVId={openCCTVId}
-        onCCTVOpened={() => setOpenCCTVId(null)}
-        closeCCTVPopupSignal={closeCCTVPopupSignal}
+        showFeaturedLayout={showFeaturedLayout}
+        triggerCaptureForCctvId={triggerCaptureForCctvId}
       />
 
       {/* CaptureListPanel - 포착 목록 */}

@@ -42,6 +42,8 @@ interface FastSearchCandidateDetailPopupProps {
   candidate: CandidateCard | null;
   onAddCapture?: (cctvName: string, location: string, confidence: number, thumbnailUrl: string, analysisResult?: string, videoUrl?: string, options?: { hideOverlayWithPopup?: boolean }) => void;
   autoCapture?: boolean;
+  matchState?: 'none' | 'wrong' | 'matched';
+  onMatchStateChange?: (state: 'none' | 'wrong' | 'matched') => void;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
@@ -50,6 +52,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   candidate,
   onAddCapture,
   autoCapture = false,
+  matchState: externalMatchState,
+  onMatchStateChange,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,7 +65,22 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const [isDragging, setIsDragging] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [matchState, setMatchState] = useState<'none' | 'wrong' | 'matched'>('matched');
+  const [pendingMatchState, setPendingMatchState] = useState<'none' | 'wrong' | 'matched'>('none');
+  const matchState = pendingMatchState;
+  const setMatchState = (next: 'none' | 'wrong' | 'matched') => {
+    setPendingMatchState(next);
+  };
+
+  const handleConfirm = () => {
+    onMatchStateChange?.(pendingMatchState);
+    onClose();
+  };
+
+  useEffect(() => {
+    if (externalMatchState !== undefined) {
+      setPendingMatchState(externalMatchState);
+    }
+  }, [externalMatchState]);
   
   // ========== 초록색 박스 관련 (프레임 추적용) - 1920x1080 기준 좌표 ==========
   const ORIGINAL_VIDEO_WIDTH = 1920;
@@ -588,10 +607,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
           </button>
         </div>
 
-        {/* 2컬럼 레이아웃: 좌측 영상, 우측 정보 */}
+        {/* 2컬럼 레이아웃: 좌측 영상+매칭근거, 우측 탭 */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* 좌측: 영상 + 관찰요약 영역 */}
-          <div className="flex-shrink-0 p-4 border-r border-[#31353a]/50 flex flex-col gap-3" style={{ width: '65%' }}>
+          {/* 좌측: 영상 + 매칭근거 */}
+          <div className="flex-shrink-0 p-4 border-r border-[#31353a]/50 flex flex-col gap-3 overflow-y-auto" style={{ width: '65%', scrollbarWidth: 'thin', scrollbarColor: '#31353a #0f0f0f' }}>
             <div 
               ref={containerRef}
               className="bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" 
@@ -772,65 +791,76 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             
             {candidate.id === '1' ? (
               <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-                <div className="flex items-center gap-2 mb-1">
-                  <Icon icon="mdi:link-variant" className="w-4 h-4 text-blue-400" />
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon icon="mdi:link-variant" className="w-4 h-4 text-blue-400 flex-shrink-0" />
                   <h3 className="text-sm font-bold text-white">매칭 근거</h3>
+                  <span className="text-sm text-gray-400">기준과 후보를 임베딩 유사도로 매칭한 결과입니다.</span>
                 </div>
-                <p className="text-xs text-gray-400 mb-3">기준과 후보를 임베딩 유사도로 매칭한 결과입니다.</p>
-                <div className="flex gap-3 items-start">
-                  <div className="flex gap-2 flex-shrink-0">
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] text-gray-500 font-medium">기준</span>
-                      <div className="w-[72px] h-[90px] rounded overflow-hidden border border-[#31353a]">
-                        <img src="/hijacking2/people01.png" alt="기준 이미지" className="w-full h-full object-cover" />
+                <div className="flex gap-4 items-start">
+                  <div className="flex gap-3 flex-shrink-0">
+                    <div className="relative w-[130px] h-[170px] rounded-md overflow-hidden border border-[#31353a]">
+                      <img src="/hijacking2/people01.png" alt="기준 이미지" className="w-full h-full object-cover" />
+                      <span className="absolute top-1 left-1.5 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,0,0,0.6)' }}>기준</span>
+                      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pb-1.5 pt-5" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
+                        <span className="text-[11px] text-white font-medium leading-tight">별빛A-444</span>
+                        <span className="text-[10px] text-gray-300">{(() => { const now = new Date(); return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`; })()}</span>
                       </div>
-                      <span className="text-[10px] text-gray-400">별빛A-444</span>
-                      <span className="text-[10px] text-gray-500">{(() => { const now = new Date(); return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`; })()}</span>
                     </div>
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] text-gray-500 font-medium">후보</span>
-                      <div className="w-[72px] h-[90px] rounded overflow-hidden border border-[#31353a]">
-                        <img src="/hijacking2/hjk_01.png" alt="후보 이미지" className="w-full h-full object-cover" />
+                    <div className="relative w-[130px] h-[170px] rounded-md overflow-hidden border border-[#31353a]">
+                      <img src="/hijacking2/hjk_01.png" alt="후보 이미지" className="w-full h-full object-cover" />
+                      <span className="absolute top-1 left-1.5 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded" style={{ background: 'rgba(0,0,0,0.6)' }}>후보</span>
+                      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pb-1.5 pt-5" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }}>
+                        <span className="text-[11px] text-white font-medium leading-tight">별빛A-230</span>
+                        <span className="text-[10px] text-gray-300">{(() => { const now = new Date(); now.setMinutes(now.getMinutes() - 2); return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`; })()}</span>
                       </div>
-                      <span className="text-[10px] text-gray-400">별빛A-230</span>
-                      <span className="text-[10px] text-gray-500">{(() => { const now = new Date(); now.setMinutes(now.getMinutes() - 2); return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`; })()}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1.5 text-sm text-gray-300 pt-5">
-                    <span>동일인 가능성 : <span className="text-green-400 font-semibold">높음</span></span>
-                    <span>Re-ID 유사도 : <span className="text-white font-semibold">0.78</span></span>
-                    <span>Top-K : <span className="text-white font-semibold">1위/7건</span></span>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-[#1a1a1a] border border-[#31353a] rounded-lg p-3 flex flex-col items-center gap-1.5">
+                        <span className="text-[11px] text-gray-500 font-medium">동일인 가능성</span>
+                        <span className="text-lg font-bold text-green-400">높음</span>
+                      </div>
+                      <div className="bg-[#1a1a1a] border border-[#31353a] rounded-lg p-3 flex flex-col items-center gap-1.5">
+                        <span className="text-[11px] text-gray-500 font-medium">Re-ID 유사도</span>
+                        <span className="text-lg font-bold text-white">0.78</span>
+                      </div>
+                      <div className="bg-[#1a1a1a] border border-[#31353a] rounded-lg p-3 flex flex-col items-center gap-1.5">
+                        <span className="text-[11px] text-gray-500 font-medium">Top-K</span>
+                        <span className="text-lg font-bold text-white">1위<span className="text-sm font-normal text-gray-400">/7건</span></span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMatchState(matchState === 'wrong' ? 'none' : 'wrong')}
+                        className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
+                          matchState === 'wrong'
+                            ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                            : 'bg-transparent border-[#31353a] text-gray-400 hover:border-gray-500'
+                        }`}
+                        aria-label="틀림"
+                        aria-pressed={matchState === 'wrong'}
+                      >
+                        {matchState === 'wrong' && <Icon icon="mdi:close-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
+                        틀림
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMatchState(matchState === 'matched' ? 'none' : 'matched')}
+                        className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
+                          matchState === 'matched'
+                            ? 'bg-green-500/20 border-green-500/50 text-green-400'
+                            : 'bg-transparent border-[#31353a] text-gray-400 hover:border-gray-500'
+                        }`}
+                        aria-label="맞음"
+                        aria-pressed={matchState === 'matched'}
+                      >
+                        {matchState === 'matched' && <Icon icon="mdi:check-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
+                        맞음
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <button
-                    type="button"
-                    onClick={() => setMatchState(matchState === 'wrong' ? 'none' : 'wrong')}
-                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
-                      matchState === 'wrong'
-                        ? 'bg-red-500/20 border-red-500/50 text-red-400'
-                        : 'bg-transparent border-[#31353a] text-gray-400 hover:border-gray-500'
-                    }`}
-                    aria-label="틀림"
-                    aria-pressed={matchState === 'wrong'}
-                  >
-                    {matchState === 'wrong' && <Icon icon="mdi:close-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
-                    틀림
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMatchState(matchState === 'matched' ? 'none' : 'matched')}
-                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors border flex items-center justify-center gap-1 ${
-                      matchState === 'matched'
-                        ? 'bg-green-500/20 border-green-500/50 text-green-400'
-                        : 'bg-transparent border-[#31353a] text-gray-400 hover:border-gray-500'
-                    }`}
-                    aria-label="맞음"
-                    aria-pressed={matchState === 'matched'}
-                  >
-                    {matchState === 'matched' && <Icon icon="mdi:check-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
-                    맞음
-                  </button>
                 </div>
               </div>
             ) : (
@@ -844,7 +874,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             )}
           </div>
 
-          {/* 우측: 정보 영역 - 탭 + 스크롤 가능 */}
+          {/* 우측: 탭 */}
           <div className="flex-1 flex flex-col min-h-0">
             {/* 탭 헤더 - 캡슐 안에 캡슐 스타일 */}
             <div className="p-3 bg-[#0a0a0a]/50 flex-shrink-0">
@@ -1005,7 +1035,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                             {/* 테이블 헤더 */}
                             <div className="grid grid-cols-4 gap-2 bg-[#0f0f0f] p-3 border-b border-[#3a3a3a]">
                               <div className="text-xs text-gray-400 font-medium">항목</div>
-                              <div className="text-xs text-gray-400 font-medium">실종자 정보</div>
+                              <div className="text-xs text-gray-400 font-medium">기준 인물 정보</div>
                               <div className="text-xs text-gray-400 font-medium">포착 인물 정보</div>
                               <div className="text-xs text-gray-400 font-medium text-center">일치 여부</div>
                             </div>
@@ -1056,7 +1086,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         </div>
 
         {/* 푸터 - 고정 */}
-        <div className="flex items-center justify-end px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
+        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-t border-[#31353a]" style={{ background: 'transparent' }}>
           <button
             id="capture-target-button"
             type="button"
@@ -1069,6 +1099,14 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
           >
             <Icon icon="mdi:account-check" className="w-3.5 h-3.5" />
             대상 포착
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirm}
+            className="px-5 py-2 rounded-lg text-xs font-medium text-white bg-[#2a2a2a] border border-[#31353a] hover:bg-[#363636] transition-colors focus:outline-none"
+            aria-label="확인"
+          >
+            확인
           </button>
         </div>
       </div>

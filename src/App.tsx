@@ -15,8 +15,8 @@ function App() {
             <Route path="/" element={<Navigate to="/tutorial" replace />} />
             <Route path="/live" element={<Home />} />
             <Route path="/tutorial" element={<HomeV2 />} />
-            <Route path="/v3" element={<HomeV3 />} />
-            <Route path="/v4" element={<HomeV4 />} />
+            <Route path="/demo-v2" element={<HomeV3 />} />
+            <Route path="/demo-v1" element={<HomeV4 />} />
             <Route path="/agent" element={<HomeAgent />} />
             <Route path="/link" element={<HomeWithLink />} />
             <Route path="/components-style" element={<ComponentsStylePage />} />

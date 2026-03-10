@@ -53,7 +53,7 @@ const MOCK_SUMMARIES: Partial<Record<ImageId, string>> = {
   '02': '어두운색 아우터 착용자가 우산을 들고 편의점 입구 부근에 등장하여 잠시 체류한 뒤 입·퇴장을 반복하고, 상단 중앙 방향으로 이동하여 화면을 이탈함.',
   '03': '회색 패딩·검정 바지 착용자가 우산을 들고 편의점 앞에 등장한 뒤 체류하며 출입을 반복하고, 이후 우측 상단 방향으로 이동하여 화면을 이탈함.',
   '04': '회색 후드티 착용 남성이 편의점 앞에 체류한 뒤 입·퇴장을 반복하고, 이후 상단 중앙 방향으로 이동하여 화면을 이탈함.',
-  '05': '밝은 아이보리/베이지색 패딩(이미지) 또는 어두운색 외투(영상)와 검은색 하의를 착용한 인물이 파란색 장우산을 쓰고 사랑교회 앞 붉은색 보행자 우선도로를 따라 이동하며, \'일방통행\' 표지판 옆 지점에서 약 5초간 정지하여 휴대폰을 조작한 후 화면 상단 방향(교회 입구 방면)으로 이동하여 화면을 이탈함.',
+  '05': '이면도로 교차로 지점에서 빨간색 후드 상의와 검은색 하의를 착용한 성인 남성이 포착되었습니다. 해당 인물은 화면 우하단에서 나타나 횡단보도를 지나 화면 상단(골목 안쪽) 방향으로 일정하게 보행하였으며, 주변을 살피거나 멈추는 동작 없이 목적지를 향해 이동하는 패턴을 보였습니다.',
   '06': '밝은색 상의 착용자가 흰색 운동화를 신고 인도에 등장한 뒤 체류하였고, 이후 화면을 이탈함.',
   '07': '회색 패딩·검정 바지 착용자가 우산을 들고 편의점 앞에 등장한 뒤 체류하였고, 이후 화면을 이탈함.',
   '08': '회색 패딩·검정 바지 착용자가 우산과 백팩을 메고 편의점 앞에 등장한 뒤 체류하였고, 이후 화면을 이탈함.',
@@ -93,10 +93,10 @@ const MOCK_TIMELINES: Partial<Record<ImageId, Omit<TimelineEntry, 'seconds'>[]>>
     { time: '06:02', label: '상단 중앙 방향으로 이동 후 화면 이탈' },
   ],
   '05': [
-    { time: '00:00', label: '사랑교회 앞 붉은색 보행자 우선도로 진입 확인' },
-    { time: '00:05', label: '파란색 우산을 지탱하며 화면 상단 방향(교회 입구 방면)으로 보행' },
-    { time: '00:22', label: '\'일방통행\' 표지판 옆 지점에서 약 5초간 정지하여 휴대폰 조작' },
-    { time: '00:27', label: '화면 상단 방향으로 이동 후 화면 이탈' },
+    { time: '00:00', label: '인물이 화면 우측 하단 노란색 안전지대 부근에서 보행을 시작하며 등장함' },
+    { time: '00:02', label: '횡단보도를 가로질러 도로 우측 가장자리(보도 경계)로 이동함' },
+    { time: '00:04', label: "'천천히 30' 노면 표시가 있는 도로 우측을 따라 화면 상단 방향으로 직진함" },
+    { time: '00:07', label: '건물 사이 골목길로 멀어지며 화면에서 점차 작아짐' },
   ],
   '11': [
     { time: '00:00', label: '사랑교회 인근 이면도로 화각 진입 (추정)' },
@@ -157,7 +157,7 @@ const MOCK_EXIT_DIRECTIONS: Partial<Record<ImageId, string>> = {
   '02': '상단 중앙',
   '03': '우측 상단',
   '04': '상단 중앙',
-  '05': '상단 방향',
+  '05': '화면 상단 방향 (북쪽 골목 안쪽)',
   '11': '화면 상단',
   '15': '남서 방향 (화면 하단 좌측)',
   '21': '북동 방향 (화면 상단)',
@@ -175,7 +175,7 @@ const MOCK_BEHAVIORS: Partial<Record<ImageId, string>> = {
   '02': '체류 후 반복 출입',
   '03': '체류 후 반복 출입',
   '04': '체류 후 반복 출입',
-  '05': '우산을 쓰고 붉은색 보행로를 따라 이동하거나, 표지판 옆에서 멈춰 휴대폰을 확인하는 자세',
+  '05': '화면 우측 하단에서 상단 방향으로 일정한 속도로 보행함. 중간에 멈추거나 타인과 접촉하는 행동은 관찰되지 않음',
   '11': '우산을 쓴 상태로 일정한 속도를 유지하며 보행',
   '15': '횡단보도를 건너며 지속적으로 휴대폰 화면을 응시하는 보행 패턴',
   '21': '양손으로 휴대폰을 들고 조작하며 걷는 보행 패턴',
@@ -188,6 +188,10 @@ const MOCK_BEHAVIORS: Partial<Record<ImageId, string>> = {
   '59': '편의점 입구 근처 체류, 전화, 입구 이동',
 };
 
+const MOCK_MAIN_ATTRIBUTES: Partial<Record<ImageId, string>> = {
+  '05': '짧은 검은 머리, 빨간색 후드 티셔츠, 검은색 긴바지, 검은색 신발',
+};
+
 export interface SimilarityTableRow {
   category: string;
   missing: string;
@@ -197,10 +201,10 @@ export interface SimilarityTableRow {
 
 const SIMILARITY_TABLES: Partial<Record<ImageId, SimilarityTableRow[]>> = {
   '05': [
-    { category: '의류(상의)', missing: '회색 후드', captured: '밝은색 패딩/어두운색 외투', match: false },
-    { category: '의류(하의)', missing: '청바지', captured: '검은색 하의', match: false },
-    { category: '소지품', missing: '-', captured: '파란색 장우산', match: 'special' },
-    { category: '행동 특징', missing: '-', captured: '표지판 옆 정지 약 5초', match: 'special' },
+    { category: '의류(상의)', missing: '빨간색 후드 상의', captured: '빨간색 후드 상의', match: true },
+    { category: '의류(하의)', missing: '검은색 긴바지', captured: '검은색 긴바지', match: true },
+    { category: '신발/소지품', missing: '검은색 신발', captured: '검은색 신발', match: true },
+    { category: '행동 특징', missing: '후면 보행 상태', captured: '우하단에서 상단으로 보행', match: 'special' },
   ],
   '11': [
     { category: '의류(상의)', missing: '회색 후드', captured: '밝은 회색/흰색 상의', match: true },
@@ -293,7 +297,7 @@ export const getCandidateDetailData = (
   overrides: { cameraId: string; score: number } | null
 ): CandidateDetailData => {
   const attrs = getAttributesForImageId(imageId);
-  const mainAttributes = attrs.length ? attrs.slice(0, 3).join(', ') : '-';
+  const mainAttributes = MOCK_MAIN_ATTRIBUTES[imageId] ?? (attrs.length ? attrs.slice(0, 3).join(', ') : '-');
   const timelineData = MOCK_TIMELINES[imageId] ?? DEFAULT_TIMELINE;
   const timeline = timelineData.map((t) => ({
     ...t,
@@ -360,10 +364,16 @@ export const generateMarkdownAnalysis = (
   markdown += `- **이탈 방향**: ${detail.meta.exitDirection}\n`;
   markdown += `- **유사도 점수**: ${detail.meta.score}점\n\n`;
   
-  // 05번 후보인 경우 유사도 근거 추가
+  // 05번 후보인 경우 인물 매칭 상세 정보 추가
   if (imageId === '05') {
-    markdown += `## 후보 근거\n\n`;
-    markdown += `실종자 김도연은 회색 후드티와 청바지를 착용 중이나, 본 지점의 객체는 밝은색 패딩 및 우산을 쓴 어두운 점퍼를 착용하고 있어 의복 속성 불일치도가 매우 높음. 이에 따라 하위 후보군으로 분류됨.\n\n`;
+    markdown += `## 인물 매칭 상세 정보\n\n`;
+    markdown += `| 항목 | 기준 인물 정보 | 포착 인물 정보 | 일치 여부 |\n`;
+    markdown += `|------|------------|---------------|----------|\n`;
+    markdown += `| 의류(상의) | 빨간색 후드 상의 | 빨간색 후드 상의 | ✅ 일치 |\n`;
+    markdown += `| 의류(하의) | 검은색 긴바지 | 검은색 긴바지 | ✅ 일치 |\n`;
+    markdown += `| 신발/소지품 | 검은색 신발 | 검은색 신발 | ✅ 일치 |\n`;
+    markdown += `| 행동 특징 | 후면 보행 상태 | 우하단에서 상단으로 보행 | ⚠️ 특이점 없음 |\n\n`;
+    markdown += `**최종 유사도**: ${confidence}점 — 매칭 성공\n\n`;
   }
   
   // 11번 후보인 경우 유사도 근거 추가

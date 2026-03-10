@@ -2,18 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import { Event } from '@/types';
 
-const REPORT_POPUP_IMAGE_SRC = '/hijacking/car.png';
+const REPORT_POPUP_IMAGE_SRC = '/hijacking2/people01.png';
 
 interface ReportPopupProps {
   event: Event | null;
   onClose: () => void;
   onFastSearchStart?: () => void;
-  /** 초기 화면일 때만 true. 고속검색 화면에서는 false → 고속검색 시작 버튼 숨김 */
   showFastSearchStartButton?: boolean;
-  /** 팝업 높이 변경 시 호출 (에이전트 팝업 위치 계산용) */
   onLayout?: (height: number) => void;
   position?: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string };
   width?: number;
+  eventDetectedTime?: string;
 }
 
 const ReportPopup: React.FC<ReportPopupProps> = ({
@@ -24,6 +23,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   onLayout,
   position,
   width = 420,
+  eventDetectedTime = '',
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -35,7 +35,6 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
     setImageLoaded(false);
   }, [event?.id]);
 
-  // 선로드된 이미지(캐시)가 있으면 즉시 표시
   useEffect(() => {
     if (!event?.id || imageError) return;
     const img = imgRef.current;
@@ -56,12 +55,10 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
     return () => ro.disconnect();
   }, [onLayout]);
 
-  if (!event) {
-    return null;
-  }
+  if (!event) return null;
 
   const defaultPosition: { top: string; right: string } = { top: '1.25rem', right: '1.25rem' };
-  const finalPosition: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string } = position || defaultPosition;
+  const finalPosition = position || defaultPosition;
 
   const positionStyle: React.CSSProperties = {
     position: 'absolute',
@@ -71,6 +68,14 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
     ...(finalPosition.right !== undefined && { right: typeof finalPosition.right === 'number' ? `${finalPosition.right}px` : finalPosition.right }),
     ...(finalPosition.bottom !== undefined && { bottom: typeof finalPosition.bottom === 'number' ? `${finalPosition.bottom}px` : finalPosition.bottom }),
   };
+
+  const recentTime = (() => {
+    if (!eventDetectedTime) return '';
+    const t = eventDetectedTime.split(':').map(Number);
+    const d = new Date();
+    d.setHours(t[0], t[1] - 2, t[2]);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+  })();
 
   return (
     <div ref={rootRef} style={positionStyle}>
@@ -97,9 +102,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
         </div>
 
         <div className="px-4 pb-4">
-          {/* 상단: 사진과 정보 영역 */}
           <div className="flex gap-3 mb-3">
-            {/* 좌측: 사진 영역 */}
             <div className="flex-shrink-0">
               <div
                 className="w-40 h-48 rounded-lg bg-[#0f0f0f] border border-[#31353a] flex items-center justify-center overflow-hidden"
@@ -111,7 +114,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   <img
                     ref={imgRef}
                     src={REPORT_POPUP_IMAGE_SRC}
-                    alt="신고 대상 차량"
+                    alt="신고 대상 인물"
                     className={`w-full h-full object-cover object-center transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     fetchPriority="high"
                     onLoad={() => setImageLoaded(true)}
@@ -121,43 +124,36 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
               </div>
             </div>
 
-            {/* 우측: 정보 영역 (레이블-값 구조) */}
             <div className="flex-1 text-gray-200 min-w-0 space-y-3">
               <div>
-                <div className="text-xs text-gray-400 mb-1">차량 정보</div>
-                <div className="text-base font-semibold text-white">흰색 SUV 추정</div>
+                <div className="text-xs text-gray-400 mb-1">대상</div>
+                <div className="text-base font-semibold text-white">성인 남성 1명 + 성인 여성 1명</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 mb-1">부분 번호판</div>
-                <div className="text-sm text-gray-200 leading-relaxed">12* 3*** (가시성: 중간)</div>
+                <div className="text-xs text-gray-400 mb-1">의심 정황</div>
+                <div className="text-sm text-gray-200 leading-relaxed">여성이 비자발적으로 끌려가듯 이동, 주변 경계 동작 반복</div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 mb-1">최초 포착 / 최근 포착</div>
-                <div className="text-sm text-gray-200">CCTV-01 14:02:18 · CCTV-08 14:04:08</div>
+                <div className="text-sm text-gray-200">별빛A-444 {eventDetectedTime} · 별빛A-230 {recentTime}</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 mb-1">이동 방향</div>
-                <div className="text-sm text-gray-200">동 (추정)</div>
+                <div className="text-xs text-gray-400 mb-1">현재 이동 방향</div>
+                <div className="text-sm text-gray-200">은하초교 방향 골목 진입</div>
               </div>
             </div>
           </div>
 
-          {/* 추천 대응 */}
           <div className="mb-3 rounded-lg p-3 bg-red-500/20 border border-red-500/60">
             <div className="text-sm font-semibold text-red-400">
               추천 대응 : 112 전파 권고
             </div>
           </div>
 
-          {/* 고속검색 시작 버튼: 초기 화면에서만 표시, 고속검색 화면에서는 숨김 */}
           {showFastSearchStartButton && (
             <button
               id="fast-search-start-button"
-              onClick={() => {
-                if (onFastSearchStart) {
-                  onFastSearchStart();
-                }
-              }}
+              onClick={() => onFastSearchStart?.()}
               className="w-full px-4 py-3 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 focus:outline-none flex items-center justify-center gap-2"
               style={{
                 background: 'linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)',

@@ -366,6 +366,7 @@ export default function HomeV2() {
   });
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
+  const [isMapAnimating, setIsMapAnimating] = useState<boolean>(false);
   const {
     showMouseGuide,
     setShowMouseGuide,
@@ -1121,7 +1122,7 @@ export default function HomeV2() {
           <EventList
             events={visibleEvents}
             selectedEventId={uiState.selectedEventId || undefined}
-            onEventSelect={handleEventAction}
+            onEventSelect={currentStepId === 'intro' ? () => {} : handleEventAction}
             onEventHover={handleEventHover}
           />
         </div>

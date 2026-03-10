@@ -200,6 +200,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   const [wrongIds, setWrongIds] = useState<Set<string>>(new Set());
   // 후보 상세 팝업용 선택 카드
   const [selectedCandidate, setSelectedCandidate] = useState<CaptureItem | null>(null);
+  const autoWrongSequenceRef = useRef(false);
   
   // 외부 클릭 감지
   useEffect(() => {
@@ -963,12 +964,81 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       <FastSearchCandidateDetailPopup
         isOpen={!!selectedCandidate}
         onClose={() => {
+          const shouldRunAutoWrong = autoWrongSequenceRef.current;
+          autoWrongSequenceRef.current = false;
           setSelectedCandidate(null);
           onPopupClose?.();
+
+          if (shouldRunAutoWrong && listScrollRef.current) {
+            const el = listScrollRef.current;
+            requestAnimationFrame(() => {
+              el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+            });
+
+            const autoClickWrong = (itemId: string) => {
+              setWrongIds((prev) => new Set(prev).add(itemId));
+              setMatchedIds((prev) => { const next = new Set(prev); next.delete(itemId); return next; });
+              const card = document.getElementById(`fast-search-candidate-${itemId}`);
+              if (card) {
+                card.style.transition = 'outline 0.3s ease, outline-offset 0.3s ease';
+                card.style.outline = '2px solid rgba(239, 68, 68, 0.6)';
+                card.style.outlineOffset = '2px';
+                setTimeout(() => {
+                  card.style.outline = 'none';
+                  card.style.outlineOffset = '0px';
+                }, 800);
+              }
+            };
+
+            setTimeout(() => autoClickWrong('8'), 800);
+            setTimeout(() => autoClickWrong('9'), 1400);
+
+            setTimeout(() => {
+              const el2 = listScrollRef.current;
+              if (el2) {
+                el2.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }, 2000);
+
+            setTimeout(() => {
+              const btn = document.getElementById('re-search-button');
+              if (btn) {
+                btn.style.transition = 'box-shadow 0.3s ease, background-color 0.3s ease';
+                btn.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.6)';
+                btn.style.backgroundColor = '#3b82f6';
+              }
+            }, 2600);
+          }
         }}
         candidate={selectedCandidate}
         onAddCapture={onAddCapture}
         autoCapture={autoCapture}
+        matchState={
+          selectedCandidate
+            ? matchedIds.has(selectedCandidate.id)
+              ? 'matched'
+              : wrongIds.has(selectedCandidate.id)
+                ? 'wrong'
+                : 'none'
+            : 'none'
+        }
+        onMatchStateChange={(state) => {
+          if (!selectedCandidate) return;
+          const id = selectedCandidate.id;
+          if (state === 'matched') {
+            setMatchedIds((prev) => new Set(prev).add(id));
+            setWrongIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+          } else if (state === 'wrong') {
+            setWrongIds((prev) => new Set(prev).add(id));
+            setMatchedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+          } else {
+            setMatchedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+            setWrongIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+          }
+          if (id === '1') {
+            autoWrongSequenceRef.current = true;
+          }
+        }}
       />
     </>
   );

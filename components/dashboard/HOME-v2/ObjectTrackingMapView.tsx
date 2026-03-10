@@ -13,6 +13,7 @@ interface ObjectTrackingMapViewProps {
   showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
   pulseRadius?: number; // 펄스 반경 (m)
   showMapControls?: boolean; // 맵 컨트롤 버튼 표시 여부 (CCTV 예측 패널과 함께 페이드인)
+  onAnimatingChange?: (animating: boolean) => void;
 }
 
 const ObjectTrackingMapView = ({ 
@@ -24,7 +25,8 @@ const ObjectTrackingMapView = ({
   hoveredCCTVId,
   showCCTVLabel = false,
   pulseRadius = 100,
-  showMapControls = false
+  showMapControls = false,
+  onAnimatingChange,
 }: ObjectTrackingMapViewProps) => {
   const [is3DMode, setIs3DMode] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -140,15 +142,16 @@ const ObjectTrackingMapView = ({
     if (map.loaded()) {
       const currentZoom = map.getZoom();
       
+      onAnimatingChange?.(true);
+      map.once('moveend', () => onAnimatingChange?.(false));
+
       if (currentZoom >= 18) {
-        // 이미 줌인 상태면 줌 유지하며 이동
         map.easeTo({
           center: flyToLocation as [number, number],
           duration: 1000,
           essential: true
         });
       } else {
-        // 첫 줌인 (줌 레벨 18로 증가)
         map.flyTo({
           center: flyToLocation as [number, number],
           zoom: 18,
