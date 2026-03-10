@@ -169,6 +169,8 @@ export type AgentCardData = { type: "chart"; title: string; chartData: ChartStre
 interface AgentCardProps {
     /** 차트 또는 테이블 데이터 */
     data: AgentCardData;
+    /** 가장 최근 메시지 여부 (false이면 hover/click 비활성화) */
+    isLatest?: boolean;
     /** 카드 제거 시 호출 (있으면 X 버튼 표시) */
     onRemove?: () => void;
     /** 카드 루트에 적용할 클래스 */
@@ -181,9 +183,9 @@ interface AgentCardProps {
     isMapMoving?: boolean;
 }
 
-export const AgentCard: React.FC<AgentCardProps> = ({ data, onRemove, className = "", style, onMapLocationRequest, flyToLocation, isMapMoving }) => {
+export const AgentCard: React.FC<AgentCardProps> = ({ data, isLatest = true, onRemove, className = "", style, onMapLocationRequest, flyToLocation, isMapMoving }) => {
     return (
-        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
+        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]${data.type === "table" && !isLatest ? " pointer-events-none select-none" : ""}`} style={{ ...CARD_STYLE, ...style }}>
             {onRemove && (
                 <div className="absolute top-3 right-3 z-10">
                     <button type="button" onClick={onRemove} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none" aria-label="카드 제거">

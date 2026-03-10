@@ -44,13 +44,14 @@ const StreamChart: React.FC<{ data: ChartStreamData }> = ({ data }) => {
 
 interface ChartMessageProps {
     message: ChatMessage;
+    isLatest?: boolean;
     onMapLocationRequest?: (lat: number, lng: number) => void;
     flyToLocation?: [number, number] | null;
     isMapMoving?: boolean;
     onActionClick?: (prompt: string) => void;
 }
 
-export function ChartMessage({ message, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }: ChartMessageProps) {
+export function ChartMessage({ message, isLatest = true, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }: ChartMessageProps) {
     const displayTables = useMemo(() => {
         if (!message.tableData) return null;
         const totalRows = message.tableData.total_count ?? 0;
@@ -74,7 +75,7 @@ export function ChartMessage({ message, onMapLocationRequest, flyToLocation, isM
     };
 
     return (
-        <div className="text-sm leading-relaxed text-gray-200">
+        <div className={`text-sm leading-relaxed text-gray-200${!isLatest ? " pointer-events-none select-none" : ""}`}>
             {message.title && (
                 <div
                     className="rounded-lg px-4 py-2.5 text-center text-white text-sm font-medium"

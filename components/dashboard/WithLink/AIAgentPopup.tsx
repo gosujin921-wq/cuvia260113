@@ -141,6 +141,8 @@ const getTrackingUpdateMsgContent = () => {
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }) => {
     const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
+    const lastTableMsgId = [...messages].reverse().find((m) => m.role === "assistant" && m.tableData)?.id;
+    const lastChartMsgId = [...messages].reverse().find((m) => m.role === "assistant" && m.chartData)?.id;
     return (
         <>
             {isExpanded && (
@@ -412,9 +414,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                     {/* <div className="text-xs text-gray-200 pt-1">{message.timestamp}</div> */}
                                                 </>
                                             ) : message.chartData ? (
-                                                <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
+                                                <ChartMessage message={message} isLatest={message.id === lastChartMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.tableData ? (
-                                                <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
+                                                <TableMessage message={message} isLatest={message.id === lastTableMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.markdownContent ? (
                                                 <NormalMessage message={message} type="markdown" onActionClick={onActionClick} />
                                             ) : message.htmlContent ? (
@@ -698,6 +700,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     // 마지막 스트림 응답의 차트/테이블만 노출 (최대 차트 1개, 테이블 1개)
     const [lastChartData, setLastChartData] = useState<ChartStreamData | null>(null);
     const [lastTableData, setLastTableData] = useState<TableStreamData | null>(null);
+    /** 사이드 패널에 현재 표시 중인 차트/테이블의 원본 메시지 ID */
+    const [lastChartMsgId, setLastChartMsgId] = useState<string | null>(null);
+    const [lastTableMsgId, setLastTableMsgId] = useState<string | null>(null);
 
     // onMapDataReceived ref (의존성 배열에서 제외하기 위함)
     const onMapDataReceivedRef = useRef(onMapDataReceived);
@@ -710,6 +715,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             if (!msgId) return;
             setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal" as const, chartData: data } : msg)));
             setLastChartData(data);
+            setLastChartMsgId(msgId);
         }, []),
         onTableDataReceived: useCallback((data: TableStreamData) => {
             const msgId = streamMessageIdRef.current;
@@ -717,6 +723,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", tableData: data } : msg)));
             if (data.total_count && data.total_count > 5) {
                 setLastTableData(data as TableStreamData);
+                setLastTableMsgId(msgId);
             }
         }, []),
         onDisclaimerReceived: useCallback((data: string) => {
@@ -775,8 +782,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     return next;
                 })
             );
-            if (!payload?.data?.chart_data && !payload?.data?.chart) setLastChartData(null);
-            if (!table || (tableCount && tableCount <= 5)) setLastTableData(null);
+            if (!payload?.data?.chart_data && !payload?.data?.chart) { setLastChartData(null); setLastChartMsgId(null); }
+            if (!table || (tableCount && tableCount <= 5)) { setLastTableData(null); setLastTableMsgId(null); }
             if (!payload?.data?.map_data) onMapDataReceivedRef.current?.(null);
             setIsResponding(false);
             streamMessageIdRef.current = null;
@@ -795,19 +802,25 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         const findMessage = messages.find((msg) => msg.id === messageId);
         if (!findMessage) {
             setLastChartData(null);
+            setLastChartMsgId(null);
             setLastTableData(null);
+            setLastTableMsgId(null);
             return;
         }
         if (findMessage.chartData) {
             setLastChartData(findMessage.chartData);
+            setLastChartMsgId(findMessage.id);
         } else {
             setLastChartData(null);
+            setLastChartMsgId(null);
         }
         if (findMessage.tableData) {
             if (findMessage.tableData.total_count && findMessage.tableData.total_count > 5) {
                 setLastTableData(findMessage.tableData);
+                setLastTableMsgId(findMessage.id);
             } else {
                 setLastTableData(null);
+                setLastTableMsgId(null);
             }
         }
     };
@@ -867,7 +880,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 e.preventDefault();
                 setMessages([]);
                 setLastChartData(null);
+                setLastChartMsgId(null);
                 setLastTableData(null);
+                setLastTableMsgId(null);
                 onClose();
             }
         };
@@ -1541,12 +1556,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         <div className="absolute top-[20px] right-[510px] flex flex-col flex-shrink-0 gap-2 w-[680px]">
                             {lastTableData && (
                                 <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ maxHeight: `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
-                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} onRemove={() => setLastTableData(null)} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
+                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} isLatest={lastTableMsgId === [...messages].reverse().find((m) => m.role === "assistant" && m.tableData)?.id} onRemove={() => { setLastTableData(null); setLastTableMsgId(null); }} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
                                 </div>
                             )}
                             {lastChartData && (
                                 <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ height: lastTableData ? `calc((${maxHeightProp ?? 600}px - 8px) / 2)` : `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
-                                    <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => setLastChartData(null)} onMapLocationRequest={onMapLocationRequest} />
+                                    <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => { setLastChartData(null); setLastChartMsgId(null); }} onMapLocationRequest={onMapLocationRequest} />
                                 </div>
                             )}
                         </div>
@@ -1605,7 +1620,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                     onClick={() => {
                                         setMessages([]);
                                         setLastChartData(null);
+                                        setLastChartMsgId(null);
                                         setLastTableData(null);
+                                        setLastTableMsgId(null);
                                         onClose();
                                     }}
                                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0 focus:outline-none"

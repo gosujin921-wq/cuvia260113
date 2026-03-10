@@ -4,6 +4,7 @@ import { CTAActionButtons } from "./CTAActionButtons";
 
 interface TableMessageProps {
     message: ChatMessage;
+    isLatest?: boolean;
     onMapLocationRequest?: (lat: number, lng: number) => void;
     flyToLocation?: [number, number] | null;
     isMapMoving?: boolean;
@@ -18,7 +19,7 @@ export const stripHtmlTags = (html: string): string => {
 
 export const ROW_LIMIT = 5;
 
-export function TableMessage({ message, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }: TableMessageProps) {
+export function TableMessage({ message, isLatest = true, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }: TableMessageProps) {
     const displayTables = useMemo(() => {
         if (!message.tableData) return null;
         const totalRows = message.tableData.total_count ?? 0;
@@ -42,7 +43,7 @@ export function TableMessage({ message, onMapLocationRequest, flyToLocation, isM
     if (!displayTables) return null;
 
     return (
-        <>
+        <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
             <div className="text-sm leading-relaxed text-gray-200">
                 {message.title && (
                     <div
@@ -135,6 +136,6 @@ export function TableMessage({ message, onMapLocationRequest, flyToLocation, isM
                     <p className="text-xs text-gray-400 text-center">{message.disclaimer}</p>
                 </>
             )}
-        </>
+        </div>
     );
 }
