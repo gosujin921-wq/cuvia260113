@@ -888,12 +888,13 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 setLastChartMsgId(null);
                 setLastTableData(null);
                 setLastTableMsgId(null);
+                chatStream.resetSession();
                 onClose();
             }
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, chatStream]);
 
     useEffect(() => {
         const container = scrollContainerRef.current;
@@ -1647,6 +1648,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                         setLastChartMsgId(null);
                                         setLastTableData(null);
                                         setLastTableMsgId(null);
+                                        chatStream.resetSession();
                                         onClose();
                                     }}
                                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors shrink-0 focus:outline-none"
