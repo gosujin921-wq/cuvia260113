@@ -9,6 +9,7 @@ import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
 import { useGetIncidentList } from "@/src/apis/agent/hooks";
 import proj4 from "proj4";
 import { KOREA_BOUNDS } from "@/src/const/const";
+import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
 
 // EPSG:5181 (한국 중부원점 TM) 좌표계 정의
 proj4.defs("EPSG:5181", "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -263,6 +264,10 @@ interface MapViewProps {
     isAgentActive?: boolean;
     onMarkerLocationRequest?: (lat: number, lng: number) => void;
     onMapMovingChange?: (isMoving: boolean) => void;
+    /** Agent Hub 플로팅 버튼 숨김 */
+    hideAgentButton?: boolean;
+    /** Agent Hub 버튼 클릭 시 (CUVIA Link로 이동) */
+    onAgentHubClick?: () => void;
 }
 
 const MapView = ({
@@ -293,6 +298,8 @@ const MapView = ({
     isAgentActive = false,
     onMarkerLocationRequest,
     onMapMovingChange,
+    hideAgentButton = false,
+    onAgentHubClick,
 }: MapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(0);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
@@ -2902,6 +2909,64 @@ const MapView = ({
                 </div>
 
                 {/* Agent Hub 버튼 - 초기: CCTV 위 30px / 1번: 아래로만 / 고속검색: 우측 하단 */}
+                {!hideAgentButton && !isAgentActive &&
+                    (() => {
+                        const rightPanelWidth = 370;
+                        const panelGap = 16;
+                        const { buttonBottom } = getCCTVPanelLayout();
+                        const cctvPanelRight = rightPanelWidth + panelGap;
+                        const isInitial = !hideControls;
+                        const isFastSearch = showFastSearch || showFastSearchList;
+                        const bottom = isInitial ? buttonBottom : 24;
+                        const right = isInitial ? cctvPanelRight : isFastSearch ? 24 : cctvPanelRight;
+                        return (
+                            <div
+                                className="absolute group"
+                                data-cursor-element-id="cursor-el-1"
+                                style={{
+                                    bottom: `${bottom}px`,
+                                    right: `${right}px`,
+                                    zIndex: 200,
+                                    transition: "bottom 0.3s ease-in-out, right 0.3s ease-in-out",
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={onAgentHubClick}
+                                    className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
+                                    style={{
+                                        background: "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)",
+                                        boxShadow:
+                                            "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.boxShadow =
+                                            "0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.boxShadow =
+                                            "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)";
+                                    }}
+                                    aria-label="CUVIA Link로 이동"
+                                    tabIndex={0}
+                                >
+                                    <img
+                                        src="/simbol.svg"
+                                        alt="AI"
+                                        className="w-6 h-6"
+                                        style={{ filter: "brightness(0) saturate(100%) invert(100%)" }}
+                                    />
+                                </button>
+                                <div
+                                    className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]"
+                                    aria-hidden
+                                >
+                                    CUVIA Link로 이동
+                                    <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-[#1a1a1a]" />
+                                </div>
+                            </div>
+                        );
+                    })()}
             </div>
         </>
     );
