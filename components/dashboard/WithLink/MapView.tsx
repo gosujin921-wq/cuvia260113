@@ -511,7 +511,7 @@ const MapView = ({
         if (!mapContainerRef.current || mapRef.current) return;
         const map = new maplibregl.Map({
             container: mapContainerRef.current,
-            style: "https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh",
+            style: "https://api.maptiler.com/maps/019cd585-7992-7faa-9a87-243ab5ce8247/style.json?key=WPWmpNf4y5nzKDA7mQXe",
             center: INITIAL_MAP_CENTER,
             zoom: 15,
             minZoom: 9,
@@ -531,6 +531,8 @@ const MapView = ({
 
         // 맵 로드 후 3D 건물 활성화 및 라벨 숨기기
         map.on("load", () => {
+            map.setTerrain(null);
+
             const style = map.getStyle();
             if (!style || !style.layers) return;
 
@@ -609,6 +611,48 @@ const MapView = ({
             REGION_LABEL_IDS.forEach((id) => {
                 if (map.getLayer(id)) {
                     map.moveLayer(id);
+                }
+            });
+
+            if (map.getLayer("Construction")) {
+                map.setPaintProperty("Construction", "fill-color", "#514C3E");
+                map.setPaintProperty("Construction", "fill-opacity", 1);
+            }
+            if (map.getLayer("Residential")) {
+                map.setPaintProperty("Residential", "fill-color", "#514C3E");
+            }
+            if (map.getLayer("Heliport")) {
+                map.setPaintProperty("Heliport", "fill-color", "#4C4E56");
+            }
+            if (map.getLayer("Building 3D")) {
+                map.setLayerZoomRange("Building 3D", 12, 24);
+            }
+            if (map.getLayer("Building")) {
+                map.setLayerZoomRange("Building", 12, 24);
+            }
+            if (map.getLayer("Background")) {
+                map.setPaintProperty("Background", "background-color", "#3F3E47");
+            }
+            ["Wood", "Forest"].forEach((layerId) => {
+                if (map.getLayer(layerId)) {
+                    map.setPaintProperty(layerId, "fill-color", "#3C4142");
+                    map.setPaintProperty(layerId, "fill-opacity", 1);
+                }
+            });
+            ["Farmland", "Grass"].forEach((layerId) => {
+                if (map.getLayer(layerId)) {
+                    map.setPaintProperty(layerId, "fill-color", "#444F4A");
+                }
+            });
+            ["Residential", "Construction", "Industrial"].forEach((layerId) => {
+                if (map.getLayer(layerId)) {
+                    map.setPaintProperty(layerId, "fill-color", "#3F3E47");
+                    map.setPaintProperty(layerId, "fill-opacity", 1);
+                }
+            });
+            ["Minor road", "Minor road outline", "Minor road bridge", "Service road", "Service road outline", "Pathway outline"].forEach((layerId) => {
+                if (map.getLayer(layerId)) {
+                    map.setPaintProperty(layerId, "line-color", "#585861");
                 }
             });
 
