@@ -412,9 +412,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                     {/* <div className="text-xs text-gray-200 pt-1">{message.timestamp}</div> */}
                                                 </>
                                             ) : message.chartData ? (
-                                                <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
+                                                <ChartMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.tableData ? (
-                                                <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
+                                                <TableMessage message={message} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.markdownContent ? (
                                                 <NormalMessage message={message} type="markdown" onActionClick={onActionClick} />
                                             ) : message.htmlContent ? (

@@ -1,11 +1,13 @@
 import { ChatMessage } from "./AIAgentPopup";
 import { useMemo } from "react";
+import { CTAActionButtons } from "./CTAActionButtons";
 
 interface TableMessageProps {
     message: ChatMessage;
     onMapLocationRequest?: (lat: number, lng: number) => void;
     flyToLocation?: [number, number] | null;
     isMapMoving?: boolean;
+    onActionClick?: (prompt: string) => void;
 }
 
 export const stripHtmlTags = (html: string): string => {
@@ -16,7 +18,7 @@ export const stripHtmlTags = (html: string): string => {
 
 export const ROW_LIMIT = 5;
 
-export function TableMessage({ message, onMapLocationRequest, flyToLocation, isMapMoving }: TableMessageProps) {
+export function TableMessage({ message, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }: TableMessageProps) {
     const displayTables = useMemo(() => {
         if (!message.tableData) return null;
         const totalRows = message.tableData.total_count ?? 0;
@@ -126,6 +128,7 @@ export function TableMessage({ message, onMapLocationRequest, flyToLocation, isM
                 <p className="text-sm text-white font-medium">{message.tableData?.meta?.criteria}</p>
                 <p className="text-sm text-gray-300 mt-1">{message.tableData?.meta?.guide}</p>
             </div> */}
+            {message.actions && message.actions.length > 0 && onActionClick && <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />}
             {message.disclaimer && (
                 <>
                     <hr className="border-t border-[#40424a] my-6" role="separator" />
