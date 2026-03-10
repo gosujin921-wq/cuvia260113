@@ -12,6 +12,7 @@ interface ObjectTrackingMapViewProps {
   hoveredCCTVId?: string | null; // 외부에서 전달받은 호버 CCTV ID
   showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
   pulseRadius?: number; // 펄스 반경 (m)
+  showMapControls?: boolean; // 맵 컨트롤 버튼 표시 여부 (CCTV 예측 패널과 함께 페이드인)
 }
 
 const ObjectTrackingMapView = ({ 
@@ -22,7 +23,8 @@ const ObjectTrackingMapView = ({
   onCCTVHover,
   hoveredCCTVId,
   showCCTVLabel = false,
-  pulseRadius = 100
+  pulseRadius = 100,
+  showMapControls = false
 }: ObjectTrackingMapViewProps) => {
   const [is3DMode, setIs3DMode] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -37,7 +39,7 @@ const ObjectTrackingMapView = ({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
+      style: 'https://api.maptiler.com/maps/019cd585-7992-7faa-9a87-243ab5ce8247/style.json?key=WPWmpNf4y5nzKDA7mQXe',
       center: initialMapStateRef.current.center,
       zoom: initialMapStateRef.current.zoom,
       pitch: initialMapStateRef.current.pitch,
@@ -54,6 +56,9 @@ const ObjectTrackingMapView = ({
     });
 
     map.on('load', () => {
+      // terrain 비활성화 (활성 시 먼 거리 3D 건물 렌더링 안 됨)
+      map.setTerrain(null);
+
       const layers = map.getStyle().layers;
       if (layers) {
         layers.forEach((layer) => {
@@ -62,6 +67,63 @@ const ObjectTrackingMapView = ({
           }
         });
       }
+
+      // Construction 레이어 색상 변경
+      if (map.getLayer('Construction')) {
+        map.setPaintProperty('Construction', 'fill-color', '#514C3E');
+        map.setPaintProperty('Construction', 'fill-opacity', 1);
+      }
+
+      // Residential(Built-up) 레이어 색상 변경
+      if (map.getLayer('Residential')) {
+        map.setPaintProperty('Residential', 'fill-color', '#514C3E');
+      }
+
+      // Heliport 레이어 색상 변경
+      if (map.getLayer('Heliport')) {
+        map.setPaintProperty('Heliport', 'fill-color', '#4C4E56');
+      }
+
+      // Building 3D 렌더링 안정화
+      if (map.getLayer('Building 3D')) {
+        map.setLayerZoomRange('Building 3D', 12, 24);
+      }
+      if (map.getLayer('Building')) {
+        map.setLayerZoomRange('Building', 12, 24);
+      }
+
+      // Background 컬러 오버라이드
+      if (map.getLayer('Background')) {
+        map.setPaintProperty('Background', 'background-color', '#3F3E47');
+      }
+
+      // 산/숲/공원 컬러 오버라이드
+      ['Wood', 'Forest'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#3C4142');
+          map.setPaintProperty(layerId, 'fill-opacity', 1);
+        }
+      });
+      ['Farmland', 'Grass'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#444F4A');
+        }
+      });
+
+      // Residential / Construction / Industrial 컬러 오버라이드
+      ['Residential', 'Construction', 'Industrial'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#3F3E47');
+          map.setPaintProperty(layerId, 'fill-opacity', 1);
+        }
+      });
+
+      // Minor road 컬러 오버라이드
+      ['Minor road', 'Minor road outline', 'Minor road bridge', 'Service road', 'Service road outline', 'Pathway outline'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'line-color', '#585861');
+        }
+      });
     });
 
     return () => {
@@ -870,10 +932,12 @@ const ObjectTrackingMapView = ({
         style={{ zIndex: 2 }}
       />
 
-      {/* 맵 컨트롤 버튼 */}
+      {/* 맵 컨트롤 버튼 - CCTV 예측 패널(80+700=780px) 우측에 위치, 패널과 함께 페이드인 */}
       <div
-        className="absolute top-4 flex flex-col gap-2"
-        style={{ left: '90px', zIndex: 250 }}
+        className={`absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-out ${
+          showMapControls ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
+        }`}
+        style={{ left: '804px', zIndex: 250 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* 확대 */}

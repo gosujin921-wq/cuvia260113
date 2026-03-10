@@ -319,8 +319,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://api.maptiler.com/maps/019c21f9-8624-7dcb-bcdb-d31ef1c059af/style.json?key=ny4gKYAFAR9pfkXMVnmh',
-      center: [126.989127259713, 37.425989842666], // 정부과천청사역
+      style: 'https://api.maptiler.com/maps/019cd585-7992-7faa-9a87-243ab5ce8247/style.json?key=WPWmpNf4y5nzKDA7mQXe',
+      center: showInitialCCTVClusters ? [126.98946, 37.42822] : [126.9913292, 37.4262026],
       zoom: 15,
       minZoom: 9,
       maxZoom: 22,
@@ -339,15 +339,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     // 맵 로드 후 3D 건물 활성화 및 라벨 숨기기
     map.on('load', () => {
+      // terrain 비활성화 (활성 시 먼 거리 3D 건물 렌더링 안 됨)
+      map.setTerrain(null);
+
       const style = map.getStyle();
       if (!style || !style.layers) return;
 
-      // 모든 레이어 확인
       const layers = style.layers;
-      // 레이어 처리
       layers.forEach((layer: any) => {
-        const layerId = layer.id.toLowerCase();
-        
         // 도로명, 건물명 등 텍스트 라벨 숨기기
         if (layer.type === 'symbol') {
           try {
@@ -358,76 +357,62 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             console.warn('라벨 레이어 숨기기 실패:', layer.id, e);
           }
         }
-        
-        const isBuildingLayer = 
-          layerId.includes('building') || 
-          layerId.includes('건물') ||
-          layerId.includes('extrusion') ||
-          (layer.type === 'fill-extrusion');
-        
-        if (isBuildingLayer) {
-          try {
-            if (layer.type === 'fill-extrusion') {
-              // 이미 fill-extrusion이면 높이 설정
-              if (map.getLayer(layer.id)) {
-                map.setPaintProperty(layer.id, 'fill-extrusion-height', [
-                  'case',
-                  ['has', 'height'],
-                  ['*', ['to-number', ['get', 'height']], 1],
-                  ['has', 'render_height'],
-                  ['*', ['to-number', ['get', 'render_height']], 1],
-                  ['has', 'building:levels'],
-                  ['*', ['to-number', ['get', 'building:levels']], 3],
-                  15 // 기본 높이 (미터)
-                ]);
-                map.setPaintProperty(layer.id, 'fill-extrusion-base', [
-                  'case',
-                  ['has', 'min_height'],
-                  ['to-number', ['get', 'min_height']],
-                  0
-                ]);
-              }
-            } else if (layer.type === 'fill' && layer.source) {
-              // fill 타입을 fill-extrusion으로 변환
-              const sourceId = layer.source;
-              const sourceLayer = layer['source-layer'];
-              
-              if (map.getSource(sourceId)) {
-                // 기존 레이어 제거
-                if (map.getLayer(layer.id)) {
-                  map.removeLayer(layer.id);
-                }
-                
-                // fill-extrusion 레이어 추가
-                map.addLayer({
-                  id: `${layer.id}-3d`,
-                  type: 'fill-extrusion',
-                  source: sourceId,
-                  'source-layer': sourceLayer,
-                  paint: {
-                    'fill-extrusion-color': '#c8c8c8',
-                    'fill-extrusion-height': [
-                      'case',
-                      ['has', 'height'],
-                      ['*', ['to-number', ['get', 'height']], 1],
-                      ['has', 'building:levels'],
-                      ['*', ['to-number', ['get', 'building:levels']], 3],
-                      15
-                    ],
-                    'fill-extrusion-base': [
-                      'case',
-                      ['has', 'min_height'],
-                      ['to-number', ['get', 'min_height']],
-                      0
-                    ],
-                  },
-                  filter: layer.filter || ['has', 'height'],
-                });
-              }
-            }
-          } catch (e) {
-            console.warn('건물 레이어 설정 실패:', layer.id, e);
-          }
+      });
+
+      // Construction 레이어 색상 변경
+      if (map.getLayer('Construction')) {
+        map.setPaintProperty('Construction', 'fill-color', '#514C3E');
+        map.setPaintProperty('Construction', 'fill-opacity', 1);
+      }
+
+      // Residential(Built-up) 레이어 색상 변경
+      if (map.getLayer('Residential')) {
+        map.setPaintProperty('Residential', 'fill-color', '#514C3E');
+      }
+
+      // Heliport 레이어 색상 변경
+      if (map.getLayer('Heliport')) {
+        map.setPaintProperty('Heliport', 'fill-color', '#4C4E56');
+      }
+
+      // Building 3D 렌더링 안정화: minzoom을 낮춰 타일 로드 시 깜빡임 방지
+      if (map.getLayer('Building 3D')) {
+        map.setLayerZoomRange('Building 3D', 12, 24);
+      }
+      if (map.getLayer('Building')) {
+        map.setLayerZoomRange('Building', 12, 24);
+      }
+
+      // Background 컬러 오버라이드
+      if (map.getLayer('Background')) {
+        map.setPaintProperty('Background', 'background-color', '#3F3E47');
+      }
+
+      // 산/숲/공원 컬러 오버라이드
+      ['Wood', 'Forest'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#3C4142');
+          map.setPaintProperty(layerId, 'fill-opacity', 1);
+        }
+      });
+      ['Farmland', 'Grass'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#444F4A');
+        }
+      });
+
+      // Residential / Construction / Industrial 컬러 오버라이드
+      ['Residential', 'Construction', 'Industrial'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#3F3E47');
+          map.setPaintProperty(layerId, 'fill-opacity', 1);
+        }
+      });
+
+      // Minor road 컬러 오버라이드
+      ['Minor road', 'Minor road outline', 'Minor road bridge', 'Service road', 'Service road outline', 'Pathway outline'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'line-color', '#585861');
         }
       });
 
@@ -986,9 +971,9 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         oldEventMarker.remove();
       }
       
-      if (map.loaded()) {
+      if (!showInitialCCTVClusters && map.loaded()) {
         animatedFlyTo(map, {
-          center: [126.989127259713, 37.425989842666],
+          center: [126.9913292, 37.4262026],
           zoom: 15,
           pitch: 45,
           bearing: 0,
@@ -1132,14 +1117,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }
       if (!hasFliedForInitialCCTVRef.current) {
         hasFliedForInitialCCTVRef.current = true;
-        animatedFlyTo(map, {
-          center: [126.99656, 37.43527],
-          zoom: 15,
-          pitch: 45,
-          bearing: 0,
-          duration: 800,
-          essential: true
-        });
       }
       const visible = externalShowCCTV === false ? false : showCCTV;
 

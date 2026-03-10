@@ -391,6 +391,7 @@ export default function HomeV2() {
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
   const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const captureTriggeredRef = useRef<boolean>(false);
 
   // 신고 팝업 이미지 선로드 (캐시 미리 워밍)
   useEffect(() => {
@@ -631,6 +632,7 @@ export default function HomeV2() {
     };
     
     setCaptureItems((prev) => [newItem, ...prev]);
+    captureTriggeredRef.current = true;
     
     // 알림 메시지 설정
     const message = `${cctvName} | ${location}의 클립을 포착 목록에 추가했습니다.\n전파 패키지를 생성하여 전파를 보내세요.`;
@@ -1045,6 +1047,7 @@ export default function HomeV2() {
               hoveredCCTVId={hoveredCCTVId}
               showCCTVLabel={showCCTVLabel}
               pulseRadius={captureListRadius}
+              showMapControls={showPredictedCCTVList && !uiState.showCaptureList && !uiState.showPropagationList}
             />
         ) : (
             <MapView
@@ -1197,9 +1200,15 @@ export default function HomeV2() {
         autoCapture={candidateAutoCapture}
         onPopupClose={() => {
           if (showMouseGuide && currentStepId === 'candidate-detail') {
-            jumpToStep('route-analysis');
-            dispatch({ type: 'START_OBJECT_TRACKING' });
-            handleStartTrackingSequence();
+            if (captureTriggeredRef.current) {
+              captureTriggeredRef.current = false;
+              setShowCaptureNotification(false);
+              jumpToStep('route-analysis');
+              dispatch({ type: 'START_OBJECT_TRACKING' });
+              handleStartTrackingSequence();
+            } else {
+              jumpToStep('review-candidates');
+            }
           }
         }}
       />
@@ -1220,12 +1229,18 @@ export default function HomeV2() {
           }
         }}
         onCCTVDetailClose={() => {
-          if (showMouseGuide) {
-            dispatch({ type: 'SHOW_CAPTURE_LIST' });
-            setShowPredictedCCTVList(false);
-            setVisibleTrackingPins(0);
-            setFlyToLocation(null);
-            jumpToStep('capture-list-review');
+          if (showMouseGuide && currentStepId === 'predicted-cctv-detail') {
+            if (captureTriggeredRef.current) {
+              captureTriggeredRef.current = false;
+              setShowCaptureNotification(false);
+              dispatch({ type: 'SHOW_CAPTURE_LIST' });
+              setShowPredictedCCTVList(false);
+              setVisibleTrackingPins(0);
+              setFlyToLocation(null);
+              jumpToStep('capture-list-review');
+            } else {
+              jumpToStep('predicted-cctv');
+            }
           }
         }}
         openCCTVId={openCCTVId}
