@@ -164,7 +164,7 @@ const MessageList: React.FC<MessageListProps> = ({
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     {message.id !== 'object-tracking-progress' && (
                       <div className="mb-3">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-2">{message.id === 'capture-progress' ? '포착 분석 중' : 'AI 분석 중'}</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 mb-2">{message.id === 'capture-progress' ? '포착 분석 중' : message.id === 'propagation-draft-progress' ? '전파 초안 생성 중' : 'AI 분석 중'}</h3>
                         <p className="text-sm text-gray-700 leading-relaxed">
                           {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
                         </p>
@@ -210,6 +210,24 @@ const MessageList: React.FC<MessageListProps> = ({
                       </div>
                     )}
                     
+                    {/* 전파 초안 생성 단계별 표시 */}
+                    {message.id === 'propagation-draft-progress' && message.totalSteps === 3 && (
+                      <div className="space-y-2 mb-3 text-xs">
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
+                          <span>1. 확보 영상 클립 분석 {(message.currentStep || 0) === 1 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
+                          <span>2. 객체 정보·이동 경로 종합 {(message.currentStep || 0) === 2 && '⏳'}</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+                          <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
+                          <span>3. 전파 초안 생성 {(message.currentStep || 0) === 3 && '⏳'}</span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 고속검색 단계별 표시 */}
                     {message.id === 'fast-search-progress' && message.totalSteps === 5 && (
                       <div className="space-y-2 mb-3 text-xs">
@@ -782,11 +800,24 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   const lastCaptureNotificationRef = useRef<string>('');
   const onFastSearchCompleteRef = useRef(onFastSearchComplete);
   onFastSearchCompleteRef.current = onFastSearchComplete;
+  const onPropagationDraftRequestRef = useRef(onPropagationDraftRequest);
+  onPropagationDraftRequestRef.current = onPropagationDraftRequest;
+  const onPropagationPanelRequestRef = useRef(onPropagationPanelRequest);
+  onPropagationPanelRequestRef.current = onPropagationPanelRequest;
   
   // 애니메이션 interval refs
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const progressTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 2키 자동 타이핑+전송 refs
+  const autoTypeSentRef = useRef(false);
+  const autoTypeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoTypeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const draftReplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftReplyTypingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const draftProgressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftProgressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // 고속검색 프로그래스 상태
   const [fastSearchStep, setFastSearchStep] = useState<number>(0);
@@ -811,6 +842,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       clearTimeout(progressTimeoutRef.current);
       progressTimeoutRef.current = null;
     }
+    if (draftReplyTimerRef.current) { clearTimeout(draftReplyTimerRef.current); draftReplyTimerRef.current = null; }
+    if (draftReplyTypingRef.current) { clearInterval(draftReplyTypingRef.current); draftReplyTypingRef.current = null; }
+    if (draftProgressTimerRef.current) { clearTimeout(draftProgressTimerRef.current); draftProgressTimerRef.current = null; }
+    if (draftProgressIntervalRef.current) { clearInterval(draftProgressIntervalRef.current); draftProgressIntervalRef.current = null; }
     
     // 타이핑 중이거나 프로그래스바 표시 중인 메시지 제거
     setMessages((prev) =>
@@ -834,6 +869,12 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
       if (progressTimeoutRef.current) clearTimeout(progressTimeoutRef.current);
+      if (autoTypeTimerRef.current) clearTimeout(autoTypeTimerRef.current);
+      if (autoTypeIntervalRef.current) clearInterval(autoTypeIntervalRef.current);
+      if (draftReplyTimerRef.current) clearTimeout(draftReplyTimerRef.current);
+      if (draftReplyTypingRef.current) clearInterval(draftReplyTypingRef.current);
+      if (draftProgressTimerRef.current) clearTimeout(draftProgressTimerRef.current);
+      if (draftProgressIntervalRef.current) clearInterval(draftProgressIntervalRef.current);
     };
   }, []);
 
@@ -1078,6 +1119,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         };
         return [...without, progressMsg];
       });
+
+      if (currentStep === 1) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            const container = scrollContainerRef.current;
+            if (container) {
+              container.scrollTop = container.scrollHeight;
+            }
+          });
+        });
+      }
     } else {
       setMessages((prev) => prev.filter((msg) => msg.id !== 'capture-progress'));
     }
@@ -1151,6 +1203,152 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         clearInterval(trackingUpdateTypingRef.current);
         trackingUpdateTypingRef.current = null;
       }
+    };
+  }, [showFeaturedLayout]);
+
+  // 2키: 5번핀 지도이동 완료 후 5초 뒤 "도주 차량 일치..." 자동 타이핑 + 전송
+  useEffect(() => {
+    if (showFeaturedLayout && !autoTypeSentRef.current) {
+      autoTypeSentRef.current = true;
+
+      const autoTypeText = '도주 차량 일치, 영상 포함해서 전파 초안 작성해줘';
+
+      autoTypeTimerRef.current = setTimeout(() => {
+        let index = 0;
+        autoTypeIntervalRef.current = setInterval(() => {
+          index++;
+          setChatInput(autoTypeText.slice(0, index));
+
+          if (index >= autoTypeText.length) {
+            if (autoTypeIntervalRef.current) {
+              clearInterval(autoTypeIntervalRef.current);
+              autoTypeIntervalRef.current = null;
+            }
+
+            setTimeout(() => {
+              const userMessage: ChatMessage = {
+                id: `user-autotype-${Date.now()}`,
+                role: 'user',
+                content: autoTypeText,
+                timestamp: new Date().toLocaleTimeString('ko-KR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                }),
+              };
+              setMessages((prev) => [...prev, userMessage]);
+              setChatInput('');
+              setInputKey((k) => k + 1);
+              ignoreNextChangeRef.current = true;
+
+              // AI 응답 타이핑 → 프로그래스 → 전파패널
+              const replyText = 'AI가 전파 초안을 생성했습니다.\nAI는 지금까지 확보된 클립, 객체 정보, 이동 경로, 분석 결과를 종합해 전파 초안을 자동으로 작성합니다.';
+
+              draftReplyTimerRef.current = setTimeout(() => {
+                const replyMessage: ChatMessage = {
+                  id: 'propagation-draft-reply',
+                  role: 'assistant',
+                  content: replyText,
+                  timestamp: new Date().toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                  }),
+                  isTyping: true,
+                  displayedContent: '',
+                };
+                setMessages((prev) => [...prev, replyMessage]);
+
+                let replyIndex = 0;
+                draftReplyTypingRef.current = setInterval(() => {
+                  replyIndex++;
+                  if (replyIndex <= replyText.length) {
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === 'propagation-draft-reply'
+                          ? { ...msg, displayedContent: replyText.substring(0, replyIndex) }
+                          : msg
+                      )
+                    );
+                  } else {
+                    if (draftReplyTypingRef.current) {
+                      clearInterval(draftReplyTypingRef.current);
+                      draftReplyTypingRef.current = null;
+                    }
+                    setMessages((prev) =>
+                      prev.map((msg) =>
+                        msg.id === 'propagation-draft-reply'
+                          ? { ...msg, isTyping: false, displayedContent: replyText }
+                          : msg
+                      )
+                    );
+
+                    draftProgressTimerRef.current = setTimeout(() => {
+                      const progressMsg: ChatMessage = {
+                        id: 'propagation-draft-progress',
+                        role: 'assistant',
+                        content: '전파 초안을 생성하고 있습니다.',
+                        timestamp: new Date().toLocaleTimeString('ko-KR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        }),
+                        type: 'analyzing',
+                        progress: 0,
+                        currentStep: 1,
+                        totalSteps: 3,
+                      };
+                      setMessages((prev) => [...prev, progressMsg]);
+
+                      let progress = 0;
+                      let step = 1;
+                      draftProgressIntervalRef.current = setInterval(() => {
+                        progress += 0.02;
+                        if (progress >= 0.33 && step < 2) step = 2;
+                        if (progress >= 0.66 && step < 3) step = 3;
+
+                        if (progress >= 1) {
+                          if (draftProgressIntervalRef.current) {
+                            clearInterval(draftProgressIntervalRef.current);
+                            draftProgressIntervalRef.current = null;
+                          }
+                          setMessages((prev) =>
+                            prev.filter((msg) => msg.id !== 'propagation-draft-progress')
+                          );
+                          if (onPropagationPanelRequestRef.current) {
+                            onPropagationPanelRequestRef.current();
+                          }
+                        } else {
+                          setMessages((prev) =>
+                            prev.map((msg) =>
+                              msg.id === 'propagation-draft-progress'
+                                ? { ...msg, progress, currentStep: step }
+                                : msg
+                            )
+                          );
+                        }
+                      }, 100);
+                    }, 500);
+                  }
+                }, 25);
+              }, 700);
+            }, 500);
+          }
+        }, 40);
+      }, 6000);
+    }
+
+    if (!showFeaturedLayout) {
+      autoTypeSentRef.current = false;
+    }
+
+    return () => {
+      if (autoTypeTimerRef.current) { clearTimeout(autoTypeTimerRef.current); autoTypeTimerRef.current = null; }
+      if (autoTypeIntervalRef.current) { clearInterval(autoTypeIntervalRef.current); autoTypeIntervalRef.current = null; }
+      if (draftReplyTimerRef.current) { clearTimeout(draftReplyTimerRef.current); draftReplyTimerRef.current = null; }
+      if (draftReplyTypingRef.current) { clearInterval(draftReplyTypingRef.current); draftReplyTypingRef.current = null; }
+      if (draftProgressTimerRef.current) { clearTimeout(draftProgressTimerRef.current); draftProgressTimerRef.current = null; }
+      if (draftProgressIntervalRef.current) { clearInterval(draftProgressIntervalRef.current); draftProgressIntervalRef.current = null; }
     };
   }, [showFeaturedLayout]);
 
@@ -1345,7 +1543,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     ignoreNextChangeRef.current = true;
 
     const isPropagationDraftMessage = (t: string) =>
-      t.includes('포착된 CCTV 영상 포함해서 전파 초안 생성해줘');
+      t.includes('포착된 CCTV 영상 포함해서 전파 초안 생성해줘') ||
+      t.includes('전파 초안 작성해줘');
 
     if (isPropagationDraftMessage(text) && onPropagationDraftRequest) {
       onPropagationDraftRequest();
