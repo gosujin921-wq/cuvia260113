@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 
-type Step = "start" | "progress" | "end";
+type Step = "progress" | "end";
 
 const STEP_CONFIG: Record<Step, { label: string; dot: string; glow: string; pulse: boolean }> = {
-    start: { label: "시작", dot: "#3b82f6", glow: "rgba(59,130,246,0.5)", pulse: false },
     progress: { label: "진행중", dot: "#f59e0b", glow: "rgba(245,158,11,0.5)", pulse: true },
     end: { label: "종료", dot: "#10b981", glow: "rgba(16,185,129,0.5)", pulse: false },
 };
@@ -21,7 +20,7 @@ interface TopControlPanelProps {
     currentStep?: Step;
 }
 
-const TopControlPanel: React.FC<TopControlPanelProps> = ({ isVisible, onStop, cctvCount = 8, currentStep = "start" }) => {
+const TopControlPanel: React.FC<TopControlPanelProps> = ({ isVisible, onStop, cctvCount = 8, currentStep = "progress" }) => {
     const [elapsed, setElapsed] = useState(0);
     const startTimeRef = useRef<number | null>(null);
     const frozenElapsedRef = useRef<number | null>(null);
@@ -95,16 +94,8 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({ isVisible, onStop, cc
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2" role="status" aria-label={`현재 단계: ${label}`}>
                             <span className="relative flex items-center justify-center w-2.5 h-2.5">
-                                {pulse && (
-                                    <span
-                                        className="absolute inset-0 rounded-full"
-                                        style={{ background: dot, animation: "statusPulse 2s ease-in-out infinite" }}
-                                    />
-                                )}
-                                <span
-                                    className="relative block w-2 h-2 rounded-full"
-                                    style={{ background: dot, boxShadow: `0 0 6px ${glow}` }}
-                                />
+                                {pulse && <span className="absolute inset-0 rounded-full" style={{ background: dot, animation: "statusPulse 2s ease-in-out infinite" }} />}
+                                <span className="relative block w-2 h-2 rounded-full" style={{ background: dot, boxShadow: `0 0 6px ${glow}` }} />
                             </span>
                             <span className="text-[13px] font-medium text-white/80">{label}</span>
                         </div>
@@ -132,8 +123,7 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({ isVisible, onStop, cc
                                     e.currentTarget.style.background = "rgba(255,255,255,0.08)";
                                     e.currentTarget.style.color = "rgba(255,255,255,0.7)";
                                 }}
-                                aria-label="투망감시 중지"
-                            >
+                                aria-label="투망감시 중지">
                                 투망감시 중지
                             </button>
                         )}
