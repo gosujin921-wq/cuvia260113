@@ -1294,11 +1294,6 @@ const MapView = ({
         };
 
         const updateStreamData = () => {
-            const oldPulse = (map as any)._pulseMarker as maplibregl.Marker | undefined;
-            if (oldPulse) {
-                oldPulse.remove();
-                (map as any)._pulseMarker = undefined;
-            }
             const oldPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
             if (oldPopup) {
                 oldPopup.remove();
@@ -1470,16 +1465,10 @@ const MapView = ({
         };
     }, [streamMapData, streamMarkerViewType, onMarkerLocationRequest]);
 
-    // flyToLocation이 변경되면 지도 이동 + 펄스 애니메이션 + 자동 팝업 (마커는 기존 스트림 마커를 사용)
+    // flyToLocation이 변경되면 지도 이동 + 자동 팝업 (마커는 기존 스트림 마커를 사용)
     useEffect(() => {
         if (!mapRef.current) return;
         const map = mapRef.current;
-
-        const oldPulseMarker = (map as any)._pulseMarker as maplibregl.Marker | undefined;
-        if (oldPulseMarker) {
-            oldPulseMarker.remove();
-            (map as any)._pulseMarker = undefined;
-        }
 
         const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
         if (existingPopup) {
@@ -1501,47 +1490,6 @@ const MapView = ({
                     essential: true,
                 });
             }
-
-            if (!document.getElementById("circle-pulse-style")) {
-                const styleEl = document.createElement("style");
-                styleEl.id = "circle-pulse-style";
-                styleEl.textContent = `
-                    @keyframes circle-pulse {
-                        0% { transform: translate(-50%, -50%) translateZ(0) scale(0.8); opacity: 1; }
-                        100% { transform: translate(-50%, -50%) translateZ(0) scale(2); opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(styleEl);
-            }
-
-            const pulseContainer = document.createElement("div");
-            pulseContainer.style.cssText = "position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;";
-
-            if (!showFastSearchList) {
-                for (let i = 0; i < 3; i++) {
-                    const pulse = document.createElement("div");
-                    pulse.style.cssText = `
-                        position:absolute;width:120px;height:120px;top:50%;left:50%;
-                        transform:translate(-50%,-50%) translateZ(0) scale(0.8);
-                        animation:circle-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;
-                        animation-delay:${i * 0.2}s;
-                        will-change:transform,opacity;pointer-events:none;z-index:1;
-                    `;
-                    const pulseInner = document.createElement("div");
-                    pulseInner.style.cssText = `width:100%;height:100%;border-radius:50%;background-color:rgba(239,68,68,${0.5 - i * 0.1});`;
-                    pulse.appendChild(pulseInner);
-                    pulseContainer.appendChild(pulse);
-                }
-            }
-
-            const pulseMarker = new maplibregl.Marker({
-                element: pulseContainer,
-                anchor: "center",
-            })
-                .setLngLat([targetLng, targetLat])
-                .addTo(map);
-
-            (map as any)._pulseMarker = pulseMarker;
 
             const matchedMarker = streamMapData?.markers?.find((m) => Math.abs(m.lng - targetLng) < 0.0001 && Math.abs(m.lat - targetLat) < 0.0001);
             if (matchedMarker && (matchedMarker.title || matchedMarker.description)) {
@@ -1577,7 +1525,7 @@ const MapView = ({
                 });
             }
         }
-    }, [flyToLocation, showFastSearchList, streamMapData]);
+    }, [flyToLocation, streamMapData]);
 
     // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
     useEffect(() => {
@@ -2593,12 +2541,6 @@ const MapView = ({
         } else {
             const map = mapRef.current;
             if (!map) return;
-
-            const pulseMarker = (map as any)._pulseMarker as maplibregl.Marker | undefined;
-            if (pulseMarker) {
-                pulseMarker.remove();
-                (map as any)._pulseMarker = undefined;
-            }
 
             const popup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
             if (popup) {
