@@ -43,8 +43,8 @@ export function TableMessage({ message, isLatest = true, onMapLocationRequest, f
     if (!displayTables) return null;
 
     return (
-        <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
-            <div className="text-sm leading-relaxed text-gray-200">
+        <div>
+            <div className={`text-sm leading-relaxed text-gray-200${!isLatest ? " select-none" : ""}`}>
                 {message.title && (
                     <div
                         className="rounded-lg px-4 py-2.5 text-center text-white text-sm font-medium"
@@ -74,10 +74,10 @@ export function TableMessage({ message, isLatest = true, onMapLocationRequest, f
                                 </thead>
                                 <tbody>
                                     {displayTables.visibleRows?.map((row, rowIdx) => {
-                                        const isClickable = !isMapMoving && displayTables.extension?.[rowIdx]?.type !== "text" && displayTables.extension?.[rowIdx]?.clickable;
+                                        const isClickable = isLatest && !isMapMoving && displayTables.extension?.[rowIdx]?.type !== "text" && displayTables.extension?.[rowIdx]?.clickable;
                                         const ext = displayTables.extension?.[rowIdx];
                                         const isHighlighted = (() => {
-                                            if (!flyToLocation || !ext) return false;
+                                            if (!flyToLocation || !ext || !isLatest) return false;
                                             const extLat = typeof ext.lat === "number" ? ext.lat : Number(ext.lat);
                                             const extLng = typeof ext.lng === "number" ? ext.lng : Number(ext.lng);
                                             if (!Number.isFinite(extLat) || !Number.isFinite(extLng)) return false;
@@ -119,17 +119,11 @@ export function TableMessage({ message, isLatest = true, onMapLocationRequest, f
                     </>
                 )}
             </div>
-            {/* <br />
-            <div
-                className="mt-0 rounded-lg px-3 py-2.5"
-                style={{
-                    background: "rgba(50,50,58,0.6)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                }}>
-                <p className="text-sm text-white font-medium">{message.tableData?.meta?.criteria}</p>
-                <p className="text-sm text-gray-300 mt-1">{message.tableData?.meta?.guide}</p>
-            </div> */}
-            {message.actions && message.actions.length > 0 && onActionClick && <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />}
+            {message.actions && message.actions.length > 0 && onActionClick && (
+                <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
+                    <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />
+                </div>
+            )}
             {message.disclaimer && (
                 <>
                     <hr className="border-t border-[#40424a] my-6" role="separator" />

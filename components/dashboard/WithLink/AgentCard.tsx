@@ -75,7 +75,7 @@ const ChartContent: React.FC<{ data: ChartStreamData }> = ({ data }) => {
     );
 };
 
-const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (lat: number, lng: number) => void; flyToLocation?: [number, number] | null; isMapMoving?: boolean }> = ({ data, onMapLocationRequest, flyToLocation, isMapMoving }) => {
+const TableContent: React.FC<{ data: TableStreamData; isLatest?: boolean; onMapLocationRequest?: (lat: number, lng: number) => void; flyToLocation?: [number, number] | null; isMapMoving?: boolean }> = ({ data, isLatest = true, onMapLocationRequest, flyToLocation, isMapMoving }) => {
     const columns = data.columns ?? [];
     const rows = data.data ?? [];
 
@@ -90,7 +90,7 @@ const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (la
     };
 
     return (
-        <div className="flex flex-col flex-1 min-h-0">
+        <div className={`flex flex-col flex-1 min-h-0${!isLatest ? " select-none" : ""}`}>
             <div className="flex-1 min-h-0 flex flex-col rounded-lg overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
                 <table className="w-full text-sm border-collapse">
                     <thead>
@@ -107,10 +107,10 @@ const TableContent: React.FC<{ data: TableStreamData; onMapLocationRequest?: (la
                     <table className="w-full text-sm border-collapse">
                         <tbody>
                             {rows.map((row, ri) => {
-                                const isClickable = !isMapMoving && data.extension?.[ri]?.type !== "text" && data.extension?.[ri]?.clickable;
+                                const isClickable = isLatest && !isMapMoving && data.extension?.[ri]?.type !== "text" && data.extension?.[ri]?.clickable;
                                 const ext = data.extension?.[ri];
                                 const isHighlighted = (() => {
-                                    if (!flyToLocation || !ext) return false;
+                                    if (!flyToLocation || !ext || !isLatest) return false;
                                     const extLat = typeof ext.lat === "number" ? ext.lat : Number(ext.lat);
                                     const extLng = typeof ext.lng === "number" ? ext.lng : Number(ext.lng);
                                     if (!Number.isFinite(extLat) || !Number.isFinite(extLng)) return false;
@@ -185,7 +185,7 @@ interface AgentCardProps {
 
 export const AgentCard: React.FC<AgentCardProps> = ({ data, isLatest = true, onRemove, className = "", style, onMapLocationRequest, flyToLocation, isMapMoving }) => {
     return (
-        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]${data.type === "table" && !isLatest ? " pointer-events-none select-none" : ""}`} style={{ ...CARD_STYLE, ...style }}>
+        <div className={`rounded-lg flex flex-col border border-[#31353a] overflow-hidden min-h-0 ${className} max-w-[700px]`} style={{ ...CARD_STYLE, ...style }}>
             {onRemove && (
                 <div className="absolute top-3 right-3 z-10">
                     <button type="button" onClick={onRemove} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors shrink-0 focus:outline-none" aria-label="카드 제거">
@@ -194,7 +194,7 @@ export const AgentCard: React.FC<AgentCardProps> = ({ data, isLatest = true, onR
                 </div>
             )}
             <div className={`flex-1 min-h-0 p-4 pt-12 ${data.type === "chart" ? "overflow-auto" : "overflow-hidden flex flex-col"}`}>
-                <div className={`rounded-lg w-full ${data.type === "chart" ? "h-full overflow-hidden" : "flex-1 min-h-0 flex flex-col"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />}</div>
+                <div className={`rounded-lg w-full ${data.type === "chart" ? "h-full overflow-hidden" : "flex-1 min-h-0 flex flex-col"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} isLatest={isLatest} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />}</div>
             </div>
         </div>
     );

@@ -75,7 +75,7 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
     };
 
     return (
-        <div className={`text-sm leading-relaxed text-gray-200${!isLatest ? " pointer-events-none select-none" : ""}`}>
+        <div className="text-sm leading-relaxed text-gray-200">
             {message.title && (
                 <div
                     className="rounded-lg px-4 py-2.5 text-center text-white text-sm font-medium"
@@ -90,7 +90,7 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
             {message.title && message.rationale && <br />}
             {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3">{message.rationale}</p>}
             {displayTables && (
-                <>
+                <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
                     <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">표 데이터</h3>
                     <div className="rounded-lg overflow-hidden mt-4" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
                         <table className="w-full text-sm">
@@ -105,10 +105,10 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
                             </thead>
                             <tbody>
                                 {displayTables.visibleRows?.map((row, rowIdx) => {
-                                    const isClickable = !isMapMoving && displayTables.extension?.[rowIdx]?.type !== "text" && displayTables.extension?.[rowIdx]?.clickable;
+                                    const isClickable = isLatest && !isMapMoving && displayTables.extension?.[rowIdx]?.type !== "text" && displayTables.extension?.[rowIdx]?.clickable;
                                     const ext = displayTables.extension?.[rowIdx];
                                     const isHighlighted = (() => {
-                                        if (!flyToLocation || !ext) return false;
+                                        if (!flyToLocation || !ext || !isLatest) return false;
                                         const extLat = typeof ext.lat === "number" ? ext.lat : Number(ext.lat);
                                         const extLng = typeof ext.lng === "number" ? ext.lng : Number(ext.lng);
                                         if (!Number.isFinite(extLat) || !Number.isFinite(extLng)) return false;
@@ -147,25 +147,17 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
                         </table>
                     </div>
                     {displayTables.remainingCount > 0 && <p className="text-sm text-gray-400 py-2">... {displayTables.remainingCount}건 더 있음</p>}
-                </>
+                </div>
             )}
             <div className="rounded-lg overflow-hidden mt-4">
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">차트 데이터</h3>
                 <StreamChart data={message.chartData} />
             </div>
-            {/* <br />
-            {message.tableData && message.tableData.meta && (
-                <div
-                    className="mt-0 rounded-lg px-3 py-2.5"
-                    style={{
-                        background: "rgba(50,50,58,0.6)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                    }}>
-                    <p className="text-sm text-white font-medium">{message.tableData?.meta?.criteria}</p>
-                    <p className="text-sm text-gray-300 mt-1">{message.tableData?.meta?.guide}</p>
+            {message.actions && message.actions.length > 0 && onActionClick && (
+                <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
+                    <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />
                 </div>
-            )} */}
-            {message.actions && message.actions.length > 0 && onActionClick && <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />}
+            )}
             {message.disclaimer && (
                 <>
                     <hr className="border-t border-[#40424a] my-6" role="separator" />

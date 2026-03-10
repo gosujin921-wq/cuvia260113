@@ -141,8 +141,7 @@ const getTrackingUpdateMsgContent = () => {
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }) => {
     const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
-    const lastTableMsgId = [...messages].reverse().find((m) => m.role === "assistant" && m.tableData)?.id;
-    const lastChartMsgId = [...messages].reverse().find((m) => m.role === "assistant" && m.chartData)?.id;
+    const lastAssistantMsgId = [...messages].reverse().find((m) => m.role === "assistant" && m.type !== "analyzing" && m.type !== "streaming-step")?.id;
     return (
         <>
             {isExpanded && (
@@ -414,9 +413,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                     {/* <div className="text-xs text-gray-200 pt-1">{message.timestamp}</div> */}
                                                 </>
                                             ) : message.chartData ? (
-                                                <ChartMessage message={message} isLatest={message.id === lastChartMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
+                                                <ChartMessage message={message} isLatest={message.id === lastAssistantMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.tableData ? (
-                                                <TableMessage message={message} isLatest={message.id === lastTableMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
+                                                <TableMessage message={message} isLatest={message.id === lastAssistantMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.markdownContent ? (
                                                 <NormalMessage message={message} type="markdown" onActionClick={onActionClick} />
                                             ) : message.htmlContent ? (
@@ -782,8 +781,14 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     return next;
                 })
             );
-            if (!payload?.data?.chart_data && !payload?.data?.chart) { setLastChartData(null); setLastChartMsgId(null); }
-            if (!table || (tableCount && tableCount <= 5)) { setLastTableData(null); setLastTableMsgId(null); }
+            if (!payload?.data?.chart_data && !payload?.data?.chart) {
+                setLastChartData(null);
+                setLastChartMsgId(null);
+            }
+            if (!table || (tableCount && tableCount <= 5)) {
+                setLastTableData(null);
+                setLastTableMsgId(null);
+            }
             if (!payload?.data?.map_data) onMapDataReceivedRef.current?.(null);
             setIsResponding(false);
             streamMessageIdRef.current = null;
@@ -1429,6 +1434,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     };
 
     const hasUserSentMessage = messages.some((m) => m.role === "user");
+    const lastAssistantMsgId = [...messages].reverse().find((m) => m.role === "assistant" && m.type !== "analyzing" && m.type !== "streaming-step")?.id;
     if (!isOpen && hasUserSentMessage) return null;
 
     const defaultBarStyle: React.CSSProperties = {
@@ -1556,12 +1562,30 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                         <div className="absolute top-[20px] right-[510px] flex flex-col flex-shrink-0 gap-2 w-[680px]">
                             {lastTableData && (
                                 <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ maxHeight: `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
-                                    <AgentCard data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }} isLatest={lastTableMsgId === [...messages].reverse().find((m) => m.role === "assistant" && m.tableData)?.id} onRemove={() => { setLastTableData(null); setLastTableMsgId(null); }} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
+                                    <AgentCard
+                                        data={{ type: "table", title: lastTableData.title ?? "테이블", tableData: lastTableData }}
+                                        isLatest={lastTableMsgId === lastAssistantMsgId}
+                                        onRemove={() => {
+                                            setLastTableData(null);
+                                            setLastTableMsgId(null);
+                                        }}
+                                        onMapLocationRequest={onMapLocationRequest}
+                                        flyToLocation={flyToLocation}
+                                        isMapMoving={isMapMoving}
+                                    />
                                 </div>
                             )}
                             {lastChartData && (
                                 <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ height: lastTableData ? `calc((${maxHeightProp ?? 600}px - 8px) / 2)` : `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
-                                    <AgentCard data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }} style={{ height: "100%" }} onRemove={() => { setLastChartData(null); setLastChartMsgId(null); }} onMapLocationRequest={onMapLocationRequest} />
+                                    <AgentCard
+                                        data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }}
+                                        style={{ height: "100%" }}
+                                        onRemove={() => {
+                                            setLastChartData(null);
+                                            setLastChartMsgId(null);
+                                        }}
+                                        onMapLocationRequest={onMapLocationRequest}
+                                    />
                                 </div>
                             )}
                         </div>
