@@ -52,6 +52,8 @@ interface MessageListProps {
   messages: ChatMessage[];
   isResponding: boolean;
   isExpanded: boolean;
+  showDetails: boolean;
+  onToggleDetails: () => void;
 }
 
 const INCIDENT_SUMMARY_TABLE_ROWS = [
@@ -205,10 +207,34 @@ const IncidentSummaryCard: React.FC = () => (
   </div>
 );
 
+const DetailsToggleButton: React.FC<{ showDetails: boolean; onToggle: () => void }> = ({ showDetails, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 bg-[#2a2b33] hover:bg-[#33343d] border border-[#3a3b44] rounded-full px-3 py-1 transition-colors mt-1.5"
+    aria-label={showDetails ? '접기' : '자세히 보기'}
+    tabIndex={0}
+  >
+    {showDetails ? (
+      <>
+        <Icon icon="mdi:close" className="w-3 h-3" />
+        <span>접기</span>
+      </>
+    ) : (
+      <>
+        <Icon icon="mdi:arrow-left" className="w-3 h-3" />
+        <span>자세히 보기</span>
+      </>
+    )}
+  </button>
+);
+
 const MessageList: React.FC<MessageListProps> = ({
   messages,
   isResponding,
   isExpanded,
+  showDetails,
+  onToggleDetails,
 }) => {
   return (
     <>
@@ -237,9 +263,9 @@ const MessageList: React.FC<MessageListProps> = ({
             <div className={isExpanded ? 'space-y-2' : 'flex items-start gap-3'}>
               <div className={isExpanded ? '' : 'min-w-0 flex-1'}>
                 {message.incidentSummary ? (
-                  <div className="space-y-2 w-full min-w-0">
+                  <div className="space-y-0.5 w-full min-w-0">
                     <IncidentSummaryCard />
-                    <div className="text-xs text-gray-300">{message.timestamp}</div>
+                    <DetailsToggleButton showDetails={showDetails} onToggle={onToggleDetails} />
                   </div>
                 ) : (
                   <>
@@ -252,10 +278,8 @@ const MessageList: React.FC<MessageListProps> = ({
                       <p className="text-sm leading-relaxed whitespace-pre-wrap break-words text-gray-200">
                         {message.content}
                       </p>
-                      <div className={`text-xs text-gray-300 ${isExpanded ? 'mt-1' : 'mt-2'}`}>
-                        {message.timestamp}
-                      </div>
                     </div>
+                    <DetailsToggleButton showDetails={showDetails} onToggle={onToggleDetails} />
                   </>
                 )}
               </div>
@@ -319,7 +343,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   placeholder = "검색 조건을 자연어로 입력해 주세요.",
 }) => {
   return (
-    <div className={`min-w-0 ${isExpanded ? 'flex-shrink-0' : 'p-4 border-t border-[#31353a] flex-shrink-0'} relative z-20`} style={{ background: 'transparent' }}>
+    <div className={`min-w-0 ${isExpanded ? 'flex-shrink-0' : 'px-4 py-2 border-t border-[#31353a] flex-shrink-0'} relative z-20`} style={{ background: 'transparent' }}>
       <div className={isExpanded ? 'p-4' : ''}>
         <div className="relative flex items-center gap-3 min-w-0 bg-[#393a42] border border-[#40424a] rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
           {isExpanded && (
@@ -684,16 +708,16 @@ const AIAgentPopup2: React.FC<AIAgentPopupProps> = ({
   onInitialMessageProcessed,
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
-  const [showAdditionalPopup1, setShowAdditionalPopup1] = useState(true);
-  const [showAdditionalPopup2, setShowAdditionalPopup2] = useState(true);
+  const [showDetails, setShowDetails] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const isExpanded = false;
+
+  const handleToggleDetails = () => setShowDetails((prev) => !prev);
 
   useEffect(() => {
     if (isOpen) {
       setSlideEntered(false);
-      setShowAdditionalPopup1(true);
-      setShowAdditionalPopup2(true);
+      setShowDetails(false);
       const t = requestAnimationFrame(() => {
         requestAnimationFrame(() => setSlideEntered(true));
       });
@@ -902,21 +926,17 @@ const AIAgentPopup2: React.FC<AIAgentPopupProps> = ({
       style={containerStyle}
       onClick={(e) => e.stopPropagation()}
     >
-      {(showAdditionalPopup1 || showAdditionalPopup2) && (
+      {showDetails && (
         <div
           className={`flex flex-col flex-shrink-0 gap-2 ${additionalPopupWidth} ${isExpanded ? 'h-full pl-4 py-4 pr-2' : ''}`}
           style={!isExpanded ? { height: maxHeightProp ?? 600 } : undefined}
         >
-          {showAdditionalPopup1 && (
-            <AdditionalPopup onClose={() => setShowAdditionalPopup1(false)} label="추가 팝업 1" className="flex-1 min-h-0">
-              <AdditionalPopup1Table />
-            </AdditionalPopup>
-          )}
-          {showAdditionalPopup2 && (
-            <AdditionalPopup onClose={() => setShowAdditionalPopup2(false)} label="추가 팝업 2" className="flex-1 min-h-0">
-              <AdditionalPopup2Chart />
-            </AdditionalPopup>
-          )}
+          <AdditionalPopup onClose={() => setShowDetails(false)} label="추가 팝업 1" className="flex-1 min-h-0">
+            <AdditionalPopup1Table />
+          </AdditionalPopup>
+          <AdditionalPopup onClose={() => setShowDetails(false)} label="추가 팝업 2" className="flex-1 min-h-0">
+            <AdditionalPopup2Chart />
+          </AdditionalPopup>
         </div>
       )}
       <div
@@ -947,6 +967,8 @@ const AIAgentPopup2: React.FC<AIAgentPopupProps> = ({
                 messages={messages}
                 isResponding={isResponding}
                 isExpanded={isExpanded}
+                showDetails={showDetails}
+                onToggleDetails={handleToggleDetails}
               />
           </div>
           <div ref={bottomRef} className={isExpanded ? 'h-[75px]' : 'h-2'} />
