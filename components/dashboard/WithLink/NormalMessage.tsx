@@ -5,10 +5,11 @@ import { CTAActionButtons } from "./CTAActionButtons";
 interface NormalMessageProps {
     message: ChatMessage;
     type?: "html" | "markdown";
+    isLatest?: boolean;
     onActionClick: (prompt: string) => void;
 }
 
-export function NormalMessage({ message, type = "html", onActionClick }: NormalMessageProps) {
+export function NormalMessage({ message, type = "html", isLatest = true, onActionClick }: NormalMessageProps) {
     return (
         <>
             {type === "markdown" && message.markdownContent && (
@@ -22,7 +23,9 @@ export function NormalMessage({ message, type = "html", onActionClick }: NormalM
                 </div>
             )}
             {message.actions && message.actions.length > 0 && (
-                <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />
+                <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
+                    <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />
+                </div>
             )}
             {/* <div className="text-xs text-gray-400 mt-2">{message.timestamp}</div> */}
         </>

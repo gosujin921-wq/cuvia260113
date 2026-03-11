@@ -417,9 +417,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                             ) : message.tableData ? (
                                                 <TableMessage message={message} isLatest={message.id === lastAssistantMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.markdownContent ? (
-                                                <NormalMessage message={message} type="markdown" onActionClick={onActionClick} />
+                                                <NormalMessage message={message} type="markdown" isLatest={message.id === lastAssistantMsgId} onActionClick={onActionClick} />
                                             ) : message.htmlContent ? (
-                                                <NormalMessage message={message} type="html" onActionClick={onActionClick} />
+                                                <NormalMessage message={message} type="html" isLatest={message.id === lastAssistantMsgId} onActionClick={onActionClick} />
                                             ) : (
                                                 <>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">
