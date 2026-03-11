@@ -915,6 +915,7 @@ export default function HomeV2() {
           showFastSearchStartButton={!uiState.showFastSearchList && !uiState.showObjectTracking && !uiState.showCaptureList && !uiState.showPropagationList}
           onLayout={setReportPopupHeight}
           position={uiState.showFastSearchList || uiState.showObjectTracking || uiState.showCaptureList || uiState.showPropagationList || isObjectTrackingTransitioning ? { top: '1.25rem', right: '20px' } : { top: '1.25rem', right: '370px' }}
+          showLatestCctv={showFeaturedLayout}
         />
         </div>
       )}

@@ -39,36 +39,10 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
   captureItems = [],
   onCreatePropagationPackage,
 }) => {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedCapture, setSelectedCapture] = useState<CaptureItem | null>(null);
   const [showPropagationPopup, setShowPropagationPopup] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const handleToggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (selectedIds.size === captureItems.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(captureItems.map((item) => item.id)));
-    }
-  };
-
-  // 선택된 아이템들 가져오기 (선택이 없으면 모든 아이템)
-  const selectedItems = selectedIds.size > 0 
-    ? captureItems.filter(item => selectedIds.has(item.id))
-    : captureItems;
 
   return (
     <>
@@ -77,7 +51,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
         <PropagationPackagePopup
           isOpen={showPropagationPopup}
           onClose={() => setShowPropagationPopup(false)}
-          selectedItems={selectedItems}
+          selectedItems={captureItems}
           onSendPropagation={onCreatePropagationPackage}
         />
       )}
@@ -85,11 +59,11 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
       {/* 포착 상세 팝업 */}
       {selectedCapture && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-[10000] px-6"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
           role="dialog"
           aria-modal="true"
           aria-label="포착 상세"
-          onClick={() => setSelectedCapture(null)}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedCapture(null); }}
         >
           <div
             className="gradient-border-right-bottom w-full flex flex-col rounded-lg shadow-lg overflow-hidden"
@@ -102,9 +76,8 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
               WebkitBackdropFilter: 'blur(4px)',
               borderWidth: '1px',
             }}
-            onClick={(e) => e.stopPropagation()}
           >
-            {/* 헤더 - 고정 */}
+            {/* 헤더 */}
             <div className="flex flex-wrap items-start justify-between gap-3 p-4 flex-shrink-0 border-b border-[#31353a]">
               <div className="flex flex-col gap-1.5 min-w-0">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -118,11 +91,11 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                 </div>
               </div>
               <button
-                id="capture-detail-close-button"
                 type="button"
                 onClick={() => setSelectedCapture(null)}
                 className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
                 aria-label="닫기"
+                tabIndex={0}
               >
                 <Icon icon="mdi:close" className="w-5 h-5" />
               </button>
@@ -326,13 +299,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                 <span>총 포착: {captureItems.length}건</span>
               </div>
               
-              {/* 선택된 개수 칩 */}
-              {selectedIds.size > 0 && (
-                <div className="px-4 py-2 rounded-full text-xs font-medium bg-blue-500/10 text-blue-300 flex items-center gap-2 border border-blue-500/50" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
-                  <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                  <span>선택됨: {selectedIds.size}건</span>
-                </div>
-              )}
+            
             </div>
           </div>
 
@@ -351,19 +318,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
             }}
           >
             {/* 상단 액션 버튼 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-[#31353a] flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleSelectAll}
-                  className="px-4 py-1.5 rounded-lg text-xs font-medium text-gray-300 hover:text-white bg-[#0f0f0f]/50 hover:bg-[#0f0f0f]/80 border border-[#31353a] hover:border-blue-500/30 transition-all"
-                  style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
-                  aria-label={selectedIds.size === captureItems.length ? '전체 해제' : '전체 선택'}
-                >
-                  {selectedIds.size === captureItems.length ? '전체 해제' : '전체 선택'}
-                </button>
-              </div>
-              
+            <div className="flex items-center justify-end px-4 py-3 border-b border-[#31353a] flex-shrink-0">
               <button
                 id="create-propagation-package-button"
                 type="button"
@@ -404,38 +359,14 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
-                  {captureItems.map((item, index) => {
-                    const isSelected = selectedIds.has(item.id);
-                    return (
+                  {captureItems.map((item, index) => (
                       <div
                         key={item.id}
                         id={index === 0 ? 'capture-item-0' : index === 1 ? 'capture-item-1' : undefined}
                         onClick={() => setSelectedCapture(item)}
-                        className={`relative bg-[#0f0f0f]/70 border rounded-lg overflow-hidden cursor-pointer transition-all group hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 ${
-                          isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-[#31353a]'
-                        }`}
+                        className="relative bg-[#0f0f0f]/70 border border-[#31353a] rounded-lg overflow-hidden cursor-pointer transition-all group hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10"
                         style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
                       >
-                        {/* 선택 체크박스 */}
-                        <div
-                          id={index === 0 ? 'capture-checkbox-0' : index === 1 ? 'capture-checkbox-1' : undefined}
-                          className="absolute top-2 left-2 z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleSelect(item.id);
-                          }}
-                        >
-                          <div
-                            className={`w-5 h-5 rounded flex items-center justify-center transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-blue-500 border-2 border-blue-500'
-                                : 'bg-black/50 border-2 border-gray-400 hover:border-blue-400'
-                            }`}
-                          >
-                            {isSelected && <Icon icon="mdi:check" className="w-4 h-4 text-white" />}
-                          </div>
-                        </div>
-
                         {/* 추적 핀 번호 뱃지 */}
                         {item.trackingPinNumber && (
                           <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded text-[10px] font-bold bg-red-500/90 text-white">
@@ -482,8 +413,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                           )}
                         </div>
                       </div>
-                    );
-                  })}
+                  ))}
                 </div>
               )}
             </div>

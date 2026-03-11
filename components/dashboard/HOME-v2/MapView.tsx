@@ -56,10 +56,9 @@ interface MapViewProps {
   /** 1키 누르기 전 초기 화면: 과천역 주변 CCTV 클러스터 표시 */
   showInitialCCTVClusters?: boolean;
   onAgentHubClick?: () => void;
-  onAnimatingChange?: (animating: boolean) => void;
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false, onAgentHubClick, onAnimatingChange }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false, onAgentHubClick }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -202,10 +201,6 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
   const animationFrameRef = useRef<number | null>(null);
   const hasFliedForInitialCCTVRef = useRef(false);
   const [isMapAnimating, setIsMapAnimating] = useState(false);
-
-  useEffect(() => {
-    onAnimatingChange?.(isMapAnimating);
-  }, [isMapAnimating, onAnimatingChange]);
 
   const animatedFlyTo = (map: maplibregl.Map, options: maplibregl.FlyToOptions) => {
     setIsMapAnimating(true);

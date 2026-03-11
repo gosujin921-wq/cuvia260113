@@ -14,7 +14,12 @@ interface ReportPopupProps {
   onLayout?: (height: number) => void;
   position?: { top?: number | string; left?: number | string; right?: number | string; bottom?: number | string };
   width?: number;
+  /** 2키: 별빛A-604 포착 표시 */
+  showLatestCctv?: boolean;
 }
+
+const CCTV_TRAIL = ['별빛A-444', '별빛A-317', '별빛A-192', '별빛A-078'];
+const CCTV_LATEST = '별빛A-604';
 
 const ReportPopup: React.FC<ReportPopupProps> = ({
   event,
@@ -24,6 +29,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   onLayout,
   position,
   width = 420,
+  showLatestCctv = false,
 }) => {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -132,12 +138,24 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                 <div className="text-sm text-gray-200 leading-relaxed">12* 3*** (가시성: 중간)</div>
               </div>
               <div>
-                <div className="text-xs text-gray-400 mb-1">최초 포착 / 최근 포착</div>
-                <div className="text-sm text-gray-200">CCTV-01 14:02:18 · CCTV-08 14:04:08</div>
+                <div className="text-xs text-gray-400 mb-1">포착 경로</div>
+                <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm">
+                  {CCTV_TRAIL.map((name, i) => (
+                    <span key={name} className="flex items-center gap-1">
+                      <span className="text-gray-200">{name}</span>
+                      {(i < CCTV_TRAIL.length - 1 || showLatestCctv) && (
+                        <span className="text-gray-500">→</span>
+                      )}
+                    </span>
+                  ))}
+                  {showLatestCctv && (
+                    <span className="text-red-400 font-semibold animate-pulse">{CCTV_LATEST}</span>
+                  )}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-gray-400 mb-1">이동 방향</div>
-                <div className="text-sm text-gray-200">동 (추정)</div>
+                <div className="text-sm text-gray-200">달빛동 방향 (추정)</div>
               </div>
             </div>
           </div>

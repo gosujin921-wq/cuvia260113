@@ -77,10 +77,11 @@ const statusTextColor: Record<TrafficStatusType, string> = {
   unknown: 'text-gray-400',
 };
 
-/** 노선별 소통정보: 롤링으로 4개 노선 교차 표시. 스크롤 가능 시 자동 스크롤 후 다음 노선으로 전환 */
+/** 노선별 소통정보: 롤링으로 4개 노선 교차 표시. 스크롤 가능 시 자동 스크롤 후 다음 노선으로 전환. 마우스 호버 시 일시정지 */
 export const TrafficRouteStatusSection = () => {
   const [routeIndex, setRouteIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isHoveredRef = useRef(false);
   const segments = ROUTE_SETS[routeIndex];
 
   const goToNextRoute = () => {
@@ -94,28 +95,60 @@ export const TrafficRouteStatusSection = () => {
     if (!el) return;
 
     let rafId: number | undefined;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
+
+    const waitThenRun = (delayMs: number, callback: () => void) => {
+      let accumulated = 0;
+      let lastTime = performance.now();
+
+      const tick = () => {
+        if (cancelled) return;
+        const now = performance.now();
+        if (!isHoveredRef.current) {
+          accumulated += now - lastTime;
+        }
+        lastTime = now;
+
+        if (accumulated >= delayMs) {
+          callback();
+        } else {
+          rafId = requestAnimationFrame(tick);
+        }
+      };
+      rafId = requestAnimationFrame(tick);
+    };
 
     const startScrollOrFallback = () => {
+      if (cancelled) return;
       const maxScroll = el.scrollHeight - el.clientHeight;
+
       if (maxScroll <= 0) {
-        timeoutId = setTimeout(goToNextRoute, FALLBACK_INTERVAL_MS);
+        waitThenRun(FALLBACK_INTERVAL_MS, goToNextRoute);
         return;
       }
 
-      const startTime = performance.now();
+      let scrollElapsed = 0;
+      let lastTime = performance.now();
       const startScrollTop = el.scrollTop;
 
-      const animateScroll = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / SCROLL_DURATION_MS, 1);
+      const animateScroll = () => {
+        if (cancelled) return;
+        const now = performance.now();
+        if (!isHoveredRef.current) {
+          scrollElapsed += now - lastTime;
+        }
+        lastTime = now;
+
+        const progress = Math.min(scrollElapsed / SCROLL_DURATION_MS, 1);
         const easeProgress = 1 - (1 - progress) ** 1.5;
-        el.scrollTop = startScrollTop + (maxScroll - startScrollTop) * easeProgress;
+        if (!isHoveredRef.current) {
+          el.scrollTop = startScrollTop + (maxScroll - startScrollTop) * easeProgress;
+        }
 
         if (progress < 1) {
           rafId = requestAnimationFrame(animateScroll);
         } else {
-          timeoutId = setTimeout(goToNextRoute, PAUSE_AFTER_SCROLL_MS);
+          waitThenRun(PAUSE_AFTER_SCROLL_MS, goToNextRoute);
         }
       };
 
@@ -125,15 +158,20 @@ export const TrafficRouteStatusSection = () => {
     const timerId = setTimeout(startScrollOrFallback, 150);
 
     return () => {
+      cancelled = true;
       clearTimeout(timerId);
-      clearTimeout(timeoutId);
-      cancelAnimationFrame(rafId);
+      if (rafId !== undefined) cancelAnimationFrame(rafId);
     };
   }, [routeIndex]);
+
+  const handleMouseEnter = () => { isHoveredRef.current = true; };
+  const handleMouseLeave = () => { isHoveredRef.current = false; };
 
   return (
     <div
       className="rounded-lg p-4 gradient-border-left-top flex flex-col"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         flexShrink: 0,
         flex: 1,

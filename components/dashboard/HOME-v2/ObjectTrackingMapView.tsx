@@ -13,7 +13,7 @@ interface ObjectTrackingMapViewProps {
   showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
   pulseRadius?: number; // 펄스 반경 (m)
   showMapControls?: boolean; // 맵 컨트롤 버튼 표시 여부 (CCTV 예측 패널과 함께 페이드인)
-  onAnimatingChange?: (animating: boolean) => void;
+  resetSignal?: number; // 값이 변경되면 초기 맵 상태로 리셋
 }
 
 const ObjectTrackingMapView = ({ 
@@ -26,7 +26,7 @@ const ObjectTrackingMapView = ({
   showCCTVLabel = false,
   pulseRadius = 100,
   showMapControls = false,
-  onAnimatingChange,
+  resetSignal = 0,
 }: ObjectTrackingMapViewProps) => {
   const [is3DMode, setIs3DMode] = useState(true);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -133,6 +133,15 @@ const ObjectTrackingMapView = ({
     };
   }, []);
 
+  // resetSignal 변경 시 초기 맵 상태로 리셋
+  useEffect(() => {
+    if (!resetSignal || !mapRef.current) return;
+    const map = mapRef.current;
+    if (!map.loaded()) return;
+    const { center, zoom, pitch, bearing } = initialMapStateRef.current;
+    map.flyTo({ center, zoom, pitch, bearing, duration: 1400, essential: true });
+  }, [resetSignal]);
+
   // flyToLocation 변경 시 지도 이동
   useEffect(() => {
     if (!mapRef.current || !flyToLocation) return;
@@ -142,9 +151,6 @@ const ObjectTrackingMapView = ({
     if (map.loaded()) {
       const currentZoom = map.getZoom();
       
-      onAnimatingChange?.(true);
-      map.once('moveend', () => onAnimatingChange?.(false));
-
       if (currentZoom >= 18) {
         map.easeTo({
           center: flyToLocation as [number, number],
@@ -208,8 +214,14 @@ const ObjectTrackingMapView = ({
         (map as any)._nearbyCCTVMarkers = null;
       }
       cctvMarkersRef.current.clear();
+
+      // 추적 라인/포인트 레이어 및 소스 제거
+      if (map.getLayer('tracking-line-layer')) map.removeLayer('tracking-line-layer');
+      if (map.getSource('tracking-line')) map.removeSource('tracking-line');
+      if (map.getLayer('tracking-points-layer')) map.removeLayer('tracking-points-layer');
+      if (map.getSource('tracking-points')) map.removeSource('tracking-points');
       
-      zoomOutTriggeredRef.current = false; // 리셋
+      zoomOutTriggeredRef.current = false;
       return;
     }
     

@@ -366,7 +366,7 @@ export default function HomeV2() {
   });
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
-  const [isMapAnimating, setIsMapAnimating] = useState<boolean>(false);
+  const [trackingMapResetSignal, setTrackingMapResetSignal] = useState<number>(0);
   const {
     showMouseGuide,
     setShowMouseGuide,
@@ -760,50 +760,44 @@ export default function HomeV2() {
   ]);
 
   // 객체 추적 시퀀스 시작 핸들러
-  const handleStartTrackingSequence = useCallback(() => {
-    // 기존 이벤트 핀 숨기기 (하지만 selectedEventId는 유지하여 신고 팝업 표시)
+  const handleStartTrackingSequence = useCallback((resetFirst = false) => {
     setVisibleEventIds(new Set());
-    
-    // 기존 추적 핀 초기화
     setVisibleTrackingPins(0);
-    
-    // 예측 CCTV 리스트 숨기기
     setShowPredictedCCTVList(false);
-    
-    // 객체 추적 완료 플래그 리셋
     setObjectTrackingCompleted(false);
-    
-    // 추적 경로 좌표 (과천역 근처)
+
     const trackingSequence = [
       [126.99656, 37.43527],                // 1번: 초기 목격 지점
       [126.997050219665, 37.434564088524],  // 2번: 목격 지점
       [126.995526419665, 37.435305588524],  // 3번: 목격 지점
       [126.995523619665, 37.434353188524],  // 4번: 목격 지점
     ];
-    
-    // 1단계: 1번 핀 표시 및 줌인 (초기화 후 약간의 딜레이)
+
+    const baseDelay = resetFirst ? 1600 : 0;
+
+    if (resetFirst) {
+      setTrackingMapResetSignal(prev => prev + 1);
+    }
+
     setTimeout(() => {
       setVisibleTrackingPins(1);
       setFlyToLocation(trackingSequence[0] as [number, number]);
-    }, 100);
-    
-    // 2단계: 2번 핀 표시 및 이동 (2.1초 후)
+    }, baseDelay + 100);
+
     setTimeout(() => {
       setVisibleTrackingPins(2);
       setFlyToLocation(trackingSequence[1] as [number, number]);
-    }, 2100);
-    
-    // 3단계: 3번 핀 표시 및 이동 (4.1초 후)
+    }, baseDelay + 2100);
+
     setTimeout(() => {
       setVisibleTrackingPins(3);
       setFlyToLocation(trackingSequence[2] as [number, number]);
-    }, 4100);
-    
-    // 4단계: 4번 핀 표시 및 이동 (6.1초 후)
+    }, baseDelay + 4100);
+
     setTimeout(() => {
       setVisibleTrackingPins(4);
       setFlyToLocation(trackingSequence[3] as [number, number]);
-    }, 6100);
+    }, baseDelay + 6100);
   }, []);
 
   // 가이드 스텝 네비게이션: 이전/다음 버튼으로 앱 상태까지 전환
@@ -849,17 +843,24 @@ export default function HomeV2() {
         setFlyToLocation([126.99656, 37.43527]);
       }
     } else if (PHASE_SEARCH_LIST.includes(targetStepId)) {
-      dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
+      dispatch({ type: targetStepId === 'candidate-detail' ? 'START_FAST_SEARCH' : 'START_FAST_SEARCH_WITH_PROGRESS' });
       setPinOffset({ x: 0, y: 0 });
       setShowPredictedCCTVList(false);
       setObjectTrackingCompleted(false);
+      setVisibleTrackingPins(0);
+      if (missingEvent) {
+        dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
+        dispatch({ type: 'SET_HIGHLIGHTED_EVENT', payload: missingEvent.id });
+        setVisibleEventIds(new Set([missingEvent.id]));
+        setFlyToLocation([126.99656, 37.43527]);
+      }
       if (targetStepId === 'candidate-detail') {
         setOpenCandidateId('10');
       }
     } else if (PHASE_TRACKING.includes(targetStepId)) {
       dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
       dispatch({ type: 'START_OBJECT_TRACKING' });
-      handleStartTrackingSequence();
+      handleStartTrackingSequence(true);
     } else if (PHASE_TRACKING_DONE.includes(targetStepId)) {
       dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });
       dispatch({ type: 'START_OBJECT_TRACKING' });
@@ -885,13 +886,18 @@ export default function HomeV2() {
     jumpToStep(targetStepId);
   }, [allConvertedEvents, jumpToStep, handleStartTrackingSequence]);
 
+  const isGuideNavigationDisabled = uiState.showFastSearchProgress || uiState.showReSearchProgress;
+  const isGuideNextDisabled = currentStepId === 'route-analysis';
+
   const handleGuidePrev = useCallback(() => {
+    if (isGuideNavigationDisabled) return;
     if (currentStepIndex <= 0) return;
     const prevId = getStepId(currentStepIndex - 1);
     if (prevId) handleGuideNavigate(prevId);
-  }, [currentStepIndex, getStepId, handleGuideNavigate]);
+  }, [currentStepIndex, getStepId, handleGuideNavigate, isGuideNavigationDisabled]);
 
   const handleGuideNext = useCallback(() => {
+    if (isGuideNavigationDisabled || isGuideNextDisabled) return;
     if (currentStepIndex >= totalSteps - 1) {
       setShowMouseGuide(false);
       setShowEndDialog(true);
@@ -907,7 +913,7 @@ export default function HomeV2() {
     }
     const nextId = getStepId(currentStepIndex + 1);
     if (nextId) handleGuideNavigate(nextId);
-  }, [currentStepIndex, totalSteps, currentStepId, getStepId, handleGuideNavigate]);
+  }, [currentStepIndex, totalSteps, currentStepId, getStepId, handleGuideNavigate, isGuideNavigationDisabled, isGuideNextDisabled]);
 
   // 메뉴 선택 핸들러 (useCallback으로 메모이제이션)
   const handleMenuSelect = useCallback((menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
@@ -1001,6 +1007,13 @@ export default function HomeV2() {
 
   // 키보드 단축키 핸들러 (시나리오 프로토타입용)
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      if (showPropagationPackagePopup) {
+        setShowPropagationPackagePopup(false);
+      }
+      return;
+    }
+
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
       return;
     }
@@ -1022,7 +1035,7 @@ export default function HomeV2() {
         jumpToStep('intro', 500);
       }
     }
-  }, [allConvertedEvents, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading]);
+  }, [allConvertedEvents, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading, showPropagationPackagePopup]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -1041,6 +1054,7 @@ export default function HomeV2() {
               flyToLocation={flyToLocation}
               initialMapState={lastMapState}
               onTrackingComplete={handleTrackingComplete}
+              resetSignal={trackingMapResetSignal}
               onCCTVHover={(cctvId, showLabel) => {
                 setHoveredCCTVId(cctvId);
                 setShowCCTVLabel(showLabel || false);
@@ -1121,7 +1135,7 @@ export default function HomeV2() {
         <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
           <EventList
             events={visibleEvents}
-            selectedEventId={uiState.selectedEventId || undefined}
+            selectedEventId={currentStepId === 'intro' ? undefined : (uiState.selectedEventId || undefined)}
             onEventSelect={currentStepId === 'intro' ? () => {} : handleEventAction}
             onEventHover={handleEventHover}
           />
@@ -1561,6 +1575,8 @@ export default function HomeV2() {
         currentStepId={currentStepId}
         onPrev={handleGuidePrev}
         onNext={handleGuideNext}
+        navigationDisabled={isGuideNavigationDisabled}
+        nextDisabled={isGuideNextDisabled}
       />
 
     </div>

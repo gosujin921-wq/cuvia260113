@@ -13,6 +13,8 @@ export type MouseGuideProps = {
   currentStepId?: string;
   onPrev?: () => void;
   onNext?: () => void;
+  navigationDisabled?: boolean;
+  nextDisabled?: boolean;
 };
 
 const STEP_ICONS: Record<string, string> = {
@@ -40,6 +42,8 @@ export const MouseGuide = ({
   currentStepId,
   onPrev,
   onNext,
+  navigationDisabled = false,
+  nextDisabled = false,
 }: MouseGuideProps) => {
   if (!show || (!guideTarget && !guideMessage)) return null;
 
@@ -111,7 +115,7 @@ export const MouseGuide = ({
                 <button
                   type="button"
                   onClick={onPrev}
-                  disabled={isFirst}
+                  disabled={isFirst || navigationDisabled}
                   className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   aria-label="이전 단계"
                   tabIndex={0}
@@ -121,7 +125,8 @@ export const MouseGuide = ({
                 <button
                   type="button"
                   onClick={onNext}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors"
+                  disabled={navigationDisabled || nextDisabled}
+                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   aria-label="다음 단계"
                   tabIndex={0}
                 >
