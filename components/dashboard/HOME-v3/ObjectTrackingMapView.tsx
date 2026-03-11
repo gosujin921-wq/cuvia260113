@@ -294,14 +294,14 @@ const ObjectTrackingMapView = ({
           const markerContainer = document.createElement('div');
           markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
 
-          // 목격지점 핀 위 영상 (4번, 5번 핀은 비디오 없음)
-          if (index < 3) {
+          // 목격지점 핀 위 영상 (5번 핀은 비디오 없음)
+          const videoFiles: (string | null)[] = ['/hijacking2/hnc_12.mp4', '/hijacking2/dnc_13.mp4', '/hijacking2/dnc_14.mp4', '/hijacking2/dnc_00.mp4', null];
+          if (index < 4) {
             const pinVideos = (map as any)._pinVideos || [];
             const videoWrapper = document.createElement('div');
             videoWrapper.style.cssText = 'width: 240px; height: 135px; border-radius: 6px; overflow: hidden; background: #0f0f0f; border: 1px solid #31353a; margin-bottom: 8px; flex-shrink: 0; position: relative;';
             const videoEl = document.createElement('video');
-            const videoFiles = ['/hijacking/cnc_01.mp4', '/hijacking/cnc_02.mp4', '/hijacking/cnc_03.mp4', '/hijacking/cnc_04.mp4'];
-            videoEl.src = videoFiles[index];
+            videoEl.src = videoFiles[index]!;
             videoEl.muted = true;
             videoEl.playsInline = true;
             videoEl.autoplay = true;
@@ -399,11 +399,10 @@ const ObjectTrackingMapView = ({
           markerContainer.addEventListener('mouseenter', showLabel);
           markerContainer.addEventListener('mouseleave', hideLabel);
 
-          // v2와 동일: anchor center (4번·5번은 40px 아래로)
           const marker = new maplibregl.Marker({
             element: markerContainer,
             anchor: 'center',
-            offset: index >= 3 ? [0, 40] : [0, 0],
+            offset: index === 4 ? [0, 40] : [0, 0],
           }).setLngLat(pin.location).addTo(map);
           
           pinEls[index] = el;
@@ -504,7 +503,7 @@ const ObjectTrackingMapView = ({
     if (!map) return;
     const pinVideos = (map as any)._pinVideos as HTMLVideoElement[] | undefined;
     if (!pinVideos) return;
-    [0, 1, 2].forEach((i) => {
+    [0, 1, 2, 3].forEach((i) => {
       const v = pinVideos[i];
       if (v) v.pause();
     });
