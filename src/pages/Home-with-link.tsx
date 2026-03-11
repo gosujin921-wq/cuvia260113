@@ -722,43 +722,6 @@ export default function HomeV2({ trafficLayerMode }: HomeWithLinkProps = {}) {
         }
     }, [allConvertedEvents]);
 
-    // 키보드 단축키 핸들러 (시나리오 프로토타입용)
-    const handleKeyPress = useCallback(
-        (e: KeyboardEvent) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-                return;
-            }
-
-            const missingEvent = allConvertedEvents.find((event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004");
-
-            if (e.key === "0") {
-                setShowStartMessage((prev) => !prev);
-            } else if (e.key === "1" && missingEvent) {
-                setShowStartMessage(false);
-                dispatch({ type: "SET_SELECTED_EVENT", payload: missingEvent.id });
-                dispatch({ type: "SET_HIGHLIGHTED_EVENT", payload: missingEvent.id });
-                setVisibleEventIds((prev) => new Set([...prev, missingEvent.id]));
-                setFlyToLocation([126.783853180335, 37.5049838114765]);
-            } else if (e.key === "2") {
-                setShowPredictedCCTVList(true);
-                setObjectTrackingCompleted(true);
-            } else if (e.key === "3") {
-                handleStartTrackingSequence();
-            } else if (e.key === "4") {
-                dispatch({ type: "SHOW_FAST_SEARCH_LIST" });
-                setPinOffset({ x: 0, y: 0 });
-                setOpenCandidateId("43");
-            } else if (e.key === "l" || e.key === "L") {
-                dispatch({ type: "TOGGLE_AI_AGENT_POPUP" });
-            }
-        },
-        [allConvertedEvents, handleStartTrackingSequence]
-    );
-
-    useEffect(() => {
-        window.addEventListener("keydown", handleKeyPress);
-        return () => window.removeEventListener("keydown", handleKeyPress);
-    }, [handleKeyPress]);
 
     const floatingBarStyle: React.CSSProperties = useMemo(
         () => ({
