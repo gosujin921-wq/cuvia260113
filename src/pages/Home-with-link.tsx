@@ -227,7 +227,12 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
     }
 };
 
-export default function HomeV2() {
+type HomeWithLinkProps = {
+    /** 교통정보 레이어 방식: "wmts" (국가교통정보센터) | "wms" (GitsMap). /link-v2는 wmts, /link는 wms */
+    trafficLayerMode?: "wmts" | "wms";
+};
+
+export default function HomeV2({ trafficLayerMode }: HomeWithLinkProps = {}) {
     const navigate = useNavigate();
 
     // UI 상태를 reducer로 통합 관리
@@ -815,6 +820,7 @@ export default function HomeV2() {
                         onMarkerLocationRequest={handleLocationRequest}
                         onMapMovingChange={handleMapMovingChange}
                         onAgentHubClick={handleAgentHubClick}
+                        trafficLayerMode={trafficLayerMode}
                     />
                 )}
             </div>

@@ -268,6 +268,8 @@ interface MapViewProps {
     hideAgentButton?: boolean;
     /** Agent Hub 버튼 클릭 시 (CUVIA Link로 이동) */
     onAgentHubClick?: () => void;
+    /** 교통정보 레이어 방식: "wmts" (국가교통정보센터) | "wms" (GitsMap) */
+    trafficLayerMode?: "wmts" | "wms";
 }
 
 const MapView = ({
@@ -300,6 +302,7 @@ const MapView = ({
     onMapMovingChange,
     hideAgentButton = false,
     onAgentHubClick,
+    trafficLayerMode = "wms",
 }: MapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(0);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
@@ -656,7 +659,20 @@ const MapView = ({
                 }
             });
 
-            // ========== 교통정보 WMS 커스텀 프로토콜 등록 (레이어는 토글 시 동적 생성) ==========
+            // ========== 교통정보 레이어 프로토콜 설정 ==========
+            // 교통정보 레이어 방식 선택: "wmts" | "wms"
+            // - "wmts": 국가교통정보센터 WMTS 타일 방식 (its.go.kr)
+            // - "wms": 기존 GitsMap WMS 방식 (gitsmap-proxy)
+            (maplibregl as any)._trafficLayerMode = trafficLayerMode;
+
+            // ========== 방식 1: 국가교통정보센터 WMTS 타일 (XYZ 방식) ==========
+            // 별도 프로토콜 등록 불필요 - 표준 XYZ 타일 URL 사용
+            // 원본 URL: https://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8
+            // 프록시 URL: /its-proxy/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8
+            // 좌표계: EPSG:3857 (Web Mercator) - MapLibre GL과 동일
+            // 프록시 사용 이유: CORS 해결, 캐시 전략(30초 TTL), 타임아웃 제어(5초), stale-while-revalidate
+
+            // ========== 방식 2: GitsMap WMS 커스텀 프로토콜 (기존 방식) ==========
             // 프로토콜은 한 번만 등록
             if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
                 maplibregl.addProtocol("gitsmap-wms", (params, abortController) => {
@@ -690,7 +706,7 @@ const MapView = ({
                 });
                 (maplibregl as any)._gitsmapWmsProtocolRegistered = true;
             }
-            // ========== 교통정보 WMS 프로토콜 등록 끝 ==========
+            // ========== 교통정보 레이어 프로토콜 설정 끝 ==========
         });
 
         mapRef.current = map;
@@ -728,7 +744,7 @@ const MapView = ({
             map.remove();
             mapRef.current = null;
         };
-    }, [onMapStateChange, onMapMovingChange]);
+    }, [onMapStateChange, onMapMovingChange, trafficLayerMode]);
 
     // 토글 ON 시 로딩 상태 시작
     useEffect(() => {
@@ -800,11 +816,62 @@ const MapView = ({
         const addWmsLayer = () => {
             if (map.getSource(trafficWmsSourceId)) return;
 
-            map.addSource(trafficWmsSourceId, {
-                type: "raster",
-                tiles: ["gitsmap-wms://{z}/{x}/{y}"],
-                tileSize: 256,
-            });
+            // 현재 설정된 교통정보 레이어 방식 확인
+            const trafficLayerMode = (maplibregl as any)._trafficLayerMode || "wmts";
+
+            if (trafficLayerMode === "wmts") {
+                // 방식 1: 국가교통정보센터 WMTS 타일 (XYZ 방식)
+                // EPSG:3857 좌표계 사용, MapLibre GL과 호환
+                // 줌 레벨 7~15 지원 (국가교통정보센터 제한)
+                // 프록시 경유: CORS 해결 + 캐시 전략 + 타임아웃 제어
+                map.addSource(trafficWmsSourceId, {
+                    type: "raster",
+                    tiles: [
+                        "/its-proxy/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8",
+                    ],
+                    tileSize: 256,
+                    minzoom: 7,
+                    maxzoom: 15,
+                });
+
+                // 타일 로드 에러 핸들링 (circuit breaker 패턴)
+                let consecutiveErrors = 0;
+                const MAX_CONSECUTIVE_ERRORS = 5;
+                const ERROR_RESET_TIMEOUT = 30000; // 30초 후 에러 카운트 리셋
+
+                map.on("error", (e: maplibregl.ErrorEvent) => {
+                    if (e.error?.message?.includes("its-proxy") || e.error?.message?.includes("WMTS")) {
+                        consecutiveErrors++;
+                        console.warn(`[ITS WMTS] 타일 로드 에러 (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}):`, e.error?.message);
+
+                        // 연속 에러 시 레이어 자동 비활성화 (circuit breaker)
+                        if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                            console.error("[ITS WMTS] 연속 에러 발생 - 레이어 일시 비활성화");
+                            if (map.getLayer(trafficWmsLayerId)) {
+                                map.setPaintProperty(trafficWmsLayerId, "raster-opacity", 0.3);
+                            }
+                        }
+
+                        // 일정 시간 후 에러 카운트 리셋
+                        setTimeout(() => {
+                            if (consecutiveErrors > 0) {
+                                consecutiveErrors = Math.max(0, consecutiveErrors - 1);
+                                // 에러가 해소되면 레이어 복원
+                                if (consecutiveErrors < MAX_CONSECUTIVE_ERRORS && map.getLayer(trafficWmsLayerId)) {
+                                    map.setPaintProperty(trafficWmsLayerId, "raster-opacity", 0.7);
+                                }
+                            }
+                        }, ERROR_RESET_TIMEOUT);
+                    }
+                });
+            } else {
+                // 방식 2: GitsMap WMS 커스텀 프로토콜 (기존 방식)
+                map.addSource(trafficWmsSourceId, {
+                    type: "raster",
+                    tiles: ["gitsmap-wms://{z}/{x}/{y}"],
+                    tileSize: 256,
+                });
+            }
 
             map.addLayer({
                 id: trafficWmsLayerId,

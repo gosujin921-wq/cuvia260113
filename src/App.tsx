@@ -18,7 +18,8 @@ function App() {
             <Route path="/demo-v2" element={<HomeV3 />} />
             <Route path="/demo-v1" element={<HomeV4 />} />
             <Route path="/agent" element={<HomeAgent />} />
-            <Route path="/link" element={<HomeWithLink />} />
+            <Route path="/link" element={<HomeWithLink trafficLayerMode="wms" />} />
+            <Route path="/link-v2" element={<HomeWithLink trafficLayerMode="wmts" />} />
             <Route path="/components-style" element={<ComponentsStylePage />} />
             <Route path="/agent-chat" element={<AgentChatPage />} />
             <Route path="/workspace" element={<CuviaLinkPage />} />

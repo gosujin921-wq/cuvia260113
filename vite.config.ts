@@ -42,6 +42,16 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/its-proxy/, ""),
+                timeout: 5000,
+                configure: (proxy) => {
+                    proxy.on("error", (err, _req, res) => {
+                        console.warn("[ITS Proxy] 연결 에러:", err.message);
+                        if (res && "writeHead" in res) {
+                            res.writeHead(504, { "Content-Type": "text/plain" });
+                            res.end("ITS Gateway Timeout");
+                        }
+                    });
+                },
             },
             "/gitsmap-proxy": {
                 target: "https://gitsmap.gg.go.kr",
