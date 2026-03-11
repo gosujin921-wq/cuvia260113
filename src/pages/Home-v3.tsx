@@ -875,6 +875,7 @@ export default function HomeV3() {
             flyToLocation={flyToLocation}
             externalShowCCTV={!uiState.showObjectTracking}
             onMapStateChange={setLastMapState}
+            hideAgentButton={uiState.showFastSearchList || uiState.showObjectTracking}
             eventVideoBlobUrl={eventVideoBlobUrlRef.current}
           />
         )}
@@ -1017,17 +1018,9 @@ export default function HomeV3() {
         } : null}
         onAddCapture={handleAddCaptureItem}
         onObjectTracking={() => {
-          if (uiState.showFastSearchList) {
-            dispatch({ type: 'SHOW_OBJECT_TRACKING_CONFIRM' });
-          } else {
-            setIsObjectTrackingTransitioning(true);
-            setTimeout(() => {
-              dispatch({ type: 'START_OBJECT_TRACKING' });
-              handleStartTrackingSequence();
-              setIsObjectTrackingTransitioning(false);
-              setReportFadeIn(false);
-            }, 350);
-          }
+          setShowFastSearchPopupOverlay(false);
+          setPinOffset({ x: 0, y: 0 });
+          dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
         }}
       />
 
@@ -1038,21 +1031,18 @@ export default function HomeV3() {
         onRadiusChange={setFastSearchRadius}
         onAppliedRadiusChange={setAppliedSearchRadius}
         onReSearchClick={() => {
-          // 짧은 스켈레톤 표시 (0.5초)
           setShowReSearchSkeleton(true);
           setTimeout(() => {
             setShowReSearchSkeleton(false);
             dispatch({ type: 'COMPLETE_RE_SEARCH' });
             isReSearchingRef.current = true;
-            
-            // 재검색 결과를 에이전트 팝업에 표시
             setReSearchResult({
               excludedAttributes: ['대표 후보 기반 유사도 재검색'],
-              deletedCount: 3, // 05, 11, 15번 제외
+              deletedCount: 2,
             });
           }, 500);
           
-          setExcludedImageIds(['3', '5', '7', '8', '9']);
+          setExcludedImageIds(['8', '9']);
         }}
         excludedAttributes={excludedAttributes}
         excludedImageIds={excludedImageIds}

@@ -1769,7 +1769,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 />
               </div>
 
-              <div ref={bottomRef} className="h-2" />
+              <div ref={bottomRef} className="h-6" />
             </div>
 
             <ChatInputForm

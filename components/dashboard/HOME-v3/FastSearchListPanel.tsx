@@ -1008,6 +1008,32 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 btn.style.backgroundColor = '#3b82f6';
               }
             }, 2600);
+
+            setTimeout(() => {
+              const btn = document.getElementById('re-search-button');
+              if (btn) {
+                btn.click();
+                btn.style.boxShadow = '';
+                btn.style.backgroundColor = '';
+              }
+            }, 3400);
+
+            setTimeout(() => {
+              const menuBtn = document.getElementById('object-tracking-menu');
+              if (menuBtn) {
+                menuBtn.style.transition = 'box-shadow 0.3s ease';
+                menuBtn.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.6)';
+                menuBtn.click();
+                setTimeout(() => { menuBtn.style.boxShadow = ''; }, 600);
+              }
+            }, 8400);
+
+            setTimeout(() => {
+              const confirmBtn = document.getElementById('object-tracking-confirm-button');
+              if (confirmBtn) {
+                confirmBtn.click();
+              }
+            }, 9200);
           }
         }}
         candidate={selectedCandidate}
