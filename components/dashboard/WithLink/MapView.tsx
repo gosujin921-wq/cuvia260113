@@ -518,7 +518,7 @@ const MapView = ({
             center: INITIAL_MAP_CENTER,
             zoom: 15,
             minZoom: 9,
-            maxZoom: 22,
+            maxZoom: 18,
             maxBounds: KOREA_BOUNDS, // 한국 범위로 이동 제한
             pitch: 45,
             bearing: 0,
@@ -666,14 +666,52 @@ const MapView = ({
             (maplibregl as any)._trafficLayerMode = trafficLayerMode;
 
             // ========== 방식 1: 국가교통정보센터 WMTS 타일 (XYZ 방식) ==========
-            // 별도 프로토콜 등록 불필요 - 표준 XYZ 타일 URL 사용
+            // ITS 서버 직접 호출 - <img> 기반 로딩으로 CORS 우회, 프록시 오버헤드 제거
             // 원본 URL: https://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8
-            // 프록시 URL: /its-proxy/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8
-            // 좌표계: EPSG:3857 (Web Mercator) - MapLibre GL과 동일
-            // 프록시 사용 이유: CORS 해결, 캐시 전략(30초 TTL), 타임아웃 제어(5초), stale-while-revalidate
+            if (!(maplibregl as any)._itsWmtsProtocolRegistered) {
+                maplibregl.addProtocol("its-wmts", (_params, abortController) => {
+                    const tileUrl = _params.url.replace("its-wmts://", "https://");
 
-            // ========== 방식 2: GitsMap WMS 커스텀 프로토콜 (기존 방식) ==========
-            // 프로토콜은 한 번만 등록
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.crossOrigin = "anonymous";
+
+                        const handleAbort = () => {
+                            img.src = "";
+                            reject(new DOMException("Aborted", "AbortError"));
+                        };
+                        abortController.signal.addEventListener("abort", handleAbort, { once: true });
+
+                        img.onload = () => {
+                            abortController.signal.removeEventListener("abort", handleAbort);
+                            const canvas = document.createElement("canvas");
+                            canvas.width = img.naturalWidth;
+                            canvas.height = img.naturalHeight;
+                            const ctx = canvas.getContext("2d")!;
+                            ctx.drawImage(img, 0, 0);
+                            canvas.toBlob((blob) => {
+                                if (!blob) {
+                                    reject(new Error("Canvas toBlob failed"));
+                                    return;
+                                }
+                                blob.arrayBuffer().then((data) => resolve({ data }));
+                            }, "image/png");
+                        };
+
+                        img.onerror = () => {
+                            abortController.signal.removeEventListener("abort", handleAbort);
+                            reject(new Error(`ITS tile load failed: ${tileUrl}`));
+                        };
+
+                        img.src = tileUrl;
+                    });
+                });
+                (maplibregl as any)._itsWmtsProtocolRegistered = true;
+            }
+
+            // ========== 방식 2: UTIC WMS (gis.utic.go.kr GeoServer) ==========
+            // 포맷: .../wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&tiled=true&LAYERS=UTIS:vi_2022_p_lv7_d&WIDTH=256&HEIGHT=256&SRS=EPSG:5181&BBOX=minx,miny,maxx,maxy&TIME=...
+            // BBOX는 EPSG:5181(한국중부원점) 미터 단위. 타일(z,x,y)→3857→5181 변환 후 프록시 경유(CORS 대응).
             if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
                 maplibregl.addProtocol("gitsmap-wms", (params, abortController) => {
                     const urlParts = params.url.replace("gitsmap-wms://", "").split("/");
@@ -690,12 +728,26 @@ const MapView = ({
                     const maxY3857 = 20037508.342789244 - y * tileSize;
                     const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
 
-                    const toWgs84 = proj4("EPSG:3857", "EPSG:4326");
-                    const minWgs84 = toWgs84.forward([minX3857, minY3857]);
-                    const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
-                    const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
+                    const to5181 = proj4("EPSG:3857", "EPSG:5181");
+                    const min5181 = to5181.forward([minX3857, minY3857]);
+                    const max5181 = to5181.forward([maxX3857, maxY3857]);
+                    const bbox5181 = `${min5181[0]},${min5181[1]},${max5181[0]},${max5181[1]}`;
 
-                    const wmsUrl = "/gitsmap-proxy/cgi-bin/mapserv.exe?" + "map=/ms4w/mapserver/mapfile/LV10.map" + "&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap" + "&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true" + "&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false" + "&apikey=4825cf7feed5cc3fc4a9e3f57fd19c3e516f5a8" + `&BBOX=${bboxWgs84}`;
+                    const wmsParams = new URLSearchParams({
+                        SERVICE: "WMS",
+                        VERSION: "1.1.1",
+                        REQUEST: "GetMap",
+                        FORMAT: "image/png",
+                        TRANSPARENT: "true",
+                        tiled: "true",
+                        LAYERS: "UTIS:vi_2022_p_lv7_d",
+                        WIDTH: "256",
+                        HEIGHT: "256",
+                        SRS: "EPSG:5181",
+                        BBOX: bbox5181,
+                        TIME: String(Date.now()),
+                    });
+                    const wmsUrl = `/utic-wms-proxy/geoserver/UTIS/wms?${wmsParams.toString()}`;
 
                     return fetch(wmsUrl, { signal: abortController.signal })
                         .then((response) => {
@@ -820,31 +872,26 @@ const MapView = ({
             const trafficLayerMode = (maplibregl as any)._trafficLayerMode || "wmts";
 
             if (trafficLayerMode === "wmts") {
-                // 방식 1: 국가교통정보센터 WMTS 타일 (XYZ 방식)
-                // EPSG:3857 좌표계 사용, MapLibre GL과 호환
-                // 줌 레벨 7~15 지원 (국가교통정보센터 제한)
-                // 프록시 경유: CORS 해결 + 캐시 전략 + 타임아웃 제어
+                // 방식 1: 국가교통정보센터 WMTS 타일 - ITS 직접 호출 (its-wmts:// 프로토콜)
                 map.addSource(trafficWmsSourceId, {
                     type: "raster",
                     tiles: [
-                        "/its-proxy/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8",
+                        "its-wmts://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8",
                     ],
                     tileSize: 256,
                     minzoom: 7,
                     maxzoom: 15,
                 });
 
-                // 타일 로드 에러 핸들링 (circuit breaker 패턴)
                 let consecutiveErrors = 0;
                 const MAX_CONSECUTIVE_ERRORS = 5;
-                const ERROR_RESET_TIMEOUT = 30000; // 30초 후 에러 카운트 리셋
+                const ERROR_RESET_TIMEOUT = 30000;
 
                 map.on("error", (e: maplibregl.ErrorEvent) => {
-                    if (e.error?.message?.includes("its-proxy") || e.error?.message?.includes("WMTS")) {
+                    if (e.error?.message?.includes("ITS tile") || e.error?.message?.includes("its.go.kr")) {
                         consecutiveErrors++;
                         console.warn(`[ITS WMTS] 타일 로드 에러 (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}):`, e.error?.message);
 
-                        // 연속 에러 시 레이어 자동 비활성화 (circuit breaker)
                         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
                             console.error("[ITS WMTS] 연속 에러 발생 - 레이어 일시 비활성화");
                             if (map.getLayer(trafficWmsLayerId)) {
@@ -852,11 +899,9 @@ const MapView = ({
                             }
                         }
 
-                        // 일정 시간 후 에러 카운트 리셋
                         setTimeout(() => {
                             if (consecutiveErrors > 0) {
                                 consecutiveErrors = Math.max(0, consecutiveErrors - 1);
-                                // 에러가 해소되면 레이어 복원
                                 if (consecutiveErrors < MAX_CONSECUTIVE_ERRORS && map.getLayer(trafficWmsLayerId)) {
                                     map.setPaintProperty(trafficWmsLayerId, "raster-opacity", 0.7);
                                 }
@@ -1594,767 +1639,10 @@ const MapView = ({
         }
     }, [flyToLocation, streamMapData]);
 
-    // 고속검색 리스트 표시 시 지도 이동 (우측으로 130px) - 프로그래스바 닫힌 후
-    useEffect(() => {
-        if (!mapRef.current) return;
 
-        const map = mapRef.current;
-
-        if (!showFastSearchList) return;
-
-        // 지도 이동 함수
-        const moveMap = () => {
-            if (!map.loaded()) {
-                setTimeout(moveMap, 300);
-                return;
-            }
-
-            // 현재 중심점 가져오기
-            const currentCenter = map.getCenter();
-            const currentZoom = map.getZoom();
-
-            // 130px을 경도로 변환 (줌 레벨에 따라 다름)
-            const pixelOffset = 130;
-            const metersPerPixel = (156543.03392 * Math.cos((currentCenter.lat * Math.PI) / 180)) / Math.pow(2, currentZoom);
-            const lngOffset = (pixelOffset * metersPerPixel) / 111320; // 경도 1도 = 약 111.32km
-
-            // 우측으로 이동 (경도 증가)
-            map.easeTo({
-                center: [currentCenter.lng + lngOffset, currentCenter.lat],
-                duration: 800,
-                essential: true,
-            });
-        };
-
-        moveMap();
-    }, [showFastSearchList]);
-
-    // CCTV 생성 및 표시 - 고속검색 리스트 표시 시에만
-    useEffect(() => {
-        if (!mapRef.current || !showFastSearchList) {
-            return;
-        }
-
-        const map = mapRef.current;
-
-        // 기존 CCTV 제거
-        const oldCCTVMarkers = (map as any)._cctvMarkers;
-        if (oldCCTVMarkers) {
-            oldCCTVMarkers.forEach((m: any) => m.remove());
-            (map as any)._cctvMarkers = null;
-        }
-
-        // CCTV 생성 함수
-        const createCCTV = () => {
-            // 오프셋 계산 함수
-            const getScatteredOffsets = (count: number) => {
-                const offsets = [];
-                const radius = 0.0001; // 약 10m 반경
-
-                if (count === 1) {
-                    offsets.push({ lngOffset: 0, latOffset: 0 });
-                } else if (count === 2) {
-                    offsets.push({ lngOffset: -radius, latOffset: 0 });
-                    offsets.push({ lngOffset: radius, latOffset: 0 });
-                } else if (count === 3) {
-                    offsets.push({ lngOffset: 0, latOffset: radius });
-                    offsets.push({ lngOffset: -radius * 0.866, latOffset: -radius * 0.5 });
-                    offsets.push({ lngOffset: radius * 0.866, latOffset: -radius * 0.5 });
-                } else if (count === 4) {
-                    offsets.push({ lngOffset: -radius, latOffset: radius });
-                    offsets.push({ lngOffset: radius, latOffset: radius });
-                    offsets.push({ lngOffset: radius, latOffset: -radius });
-                    offsets.push({ lngOffset: -radius, latOffset: -radius });
-                } else {
-                    for (let i = 0; i < count; i++) {
-                        const angle = (i / count) * Math.PI * 2;
-                        offsets.push({
-                            lngOffset: Math.cos(angle) * radius,
-                            latOffset: Math.sin(angle) * radius,
-                        });
-                    }
-                }
-                return offsets;
-            };
-
-            // CCTV 그룹 정의
-            const cctvGroups = [
-                {
-                    id: "A-230",
-                    name: "별빛A-230",
-                    location: [126.784245, 37.5056784],
-                    cameras: ["고정1", "고정2", "고정3", "고정4"],
-                    directions: [0, 90, 180, 270],
-                },
-                {
-                    id: "A-444",
-                    name: "별빛A-444",
-                    location: [126.7828196, 37.50501939999999],
-                    cameras: ["검지1", "검지2", "검지3"],
-                    directions: [45, 135, 225],
-                },
-                {
-                    id: "A-481",
-                    name: "별빛A-481",
-                    location: [126.7828168, 37.504067],
-                    cameras: ["검지1", "검지2", "검지3", "검지4"],
-                    directions: [0, 90, 180, 270],
-                },
-                {
-                    id: "A-498",
-                    name: "별빛A-498",
-                    location: [126.7843434, 37.5042779],
-                    cameras: ["검지1", "검지2", "검지3", "검지4"],
-                    directions: [45, 135, 225, 315],
-                },
-                {
-                    id: "A-583",
-                    name: "별빛A-583",
-                    location: [126.7839366, 37.5057328],
-                    cameras: ["검지1 별빛", "검지2 별빛", "검지3 별빛"],
-                    directions: [60, 150, 240],
-                },
-                {
-                    id: "A-604",
-                    name: "별빛A-604",
-                    location: [126.7858121, 37.5047548],
-                    cameras: ["검지1", "검지2"],
-                    directions: [90, 270],
-                },
-            ];
-
-            // 반경에 따라 CCTV 필터링
-            // 200m: 별빛A-498, 별빛A-583만 보임
-            // 200m 초과~400m 미만: 별빛A-498, 별빛A-583, 별빛A-444, 별빛A-481 보임
-            // 400m 이상: 모든 CCTV 보임 (별빛A-604 추가)
-            const filteredCctvGroups = cctvGroups.filter((group) => {
-                if (appliedSearchRadius <= 200) {
-                    // 200m 이하: 별빛A-498, 별빛A-583만
-                    return ["A-498", "A-583"].includes(group.id);
-                } else if (appliedSearchRadius < 400) {
-                    // 200m 초과~399m: 별빛A-498, 별빛A-583, 별빛A-444, 별빛A-481
-                    return ["A-498", "A-583", "A-444", "A-481"].includes(group.id);
-                } else {
-                    // 400m 이상: 모든 CCTV
-                    return true;
-                }
-            });
-
-            // 모든 CCTV 위치 계산
-            const cctvPositions: Array<{ lng: number; lat: number; name: string; groupId: string; direction: number }> = [];
-
-            filteredCctvGroups.forEach((group) => {
-                const offsets = getScatteredOffsets(group.cameras.length);
-                group.cameras.forEach((camera, index) => {
-                    cctvPositions.push({
-                        lng: group.location[0] + offsets[index].lngOffset,
-                        lat: group.location[1] + offsets[index].latOffset,
-                        name: `${group.name} ${camera}`,
-                        groupId: group.id,
-                        direction: group.directions[index] || 0,
-                    });
-                });
-            });
-
-            // 간단한 CCTV 아이콘 생성
-            const createSimpleCCTV = (name: string, direction: number = 0) => {
-                const el = document.createElement("div");
-                el.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      `;
-
-                // 시야각 컨테이너 (아이콘 뒤)
-                const iconContainer = document.createElement("div");
-                iconContainer.style.cssText = `
-        position: relative;
-        width: 24px;
-        height: 24px;
-      `;
-
-                // 시야각 (아이콘 뒤에 배치)
-                if (showCCTVViewAngle) {
-                    const viewAngleSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    viewAngleSvg.style.cssText = `
-          position: absolute;
-          width: 80px;
-          height: 80px;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%) rotate(${direction - 90}deg);
-          pointer-events: none;
-          z-index: 0;
-        `;
-
-                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    path.setAttribute("d", "M 40 40 L 20 10 A 35 35 0 0 1 60 10 Z");
-                    path.setAttribute("fill", "rgba(59, 130, 246, 0.15)");
-                    path.setAttribute("stroke", "rgba(59, 130, 246, 0.4)");
-                    path.setAttribute("stroke-width", "1.5");
-
-                    viewAngleSvg.appendChild(path);
-                    iconContainer.appendChild(viewAngleSvg);
-                }
-
-                const icon = document.createElement("div");
-                icon.style.cssText = `
-        width: 24px;
-        height: 24px;
-        background: linear-gradient(135deg, rgba(74, 74, 74, 1) 0%, rgba(58, 58, 58, 1) 50%, rgba(42, 42, 42, 1) 100%);
-        border: 2px solid rgba(209, 213, 219, 0.8);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-        position: relative;
-        z-index: 1;
-      `;
-
-                icon.innerHTML = `
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color: #d1d5db;">
-          <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
-        </svg>
-      `;
-
-                iconContainer.appendChild(icon);
-                el.appendChild(iconContainer);
-
-                // 라벨
-                if (showCCTVName) {
-                    const label = document.createElement("div");
-                    label.style.cssText = `
-          margin-top: 4px;
-          padding: 2px 6px;
-          background: rgba(26, 26, 26, 0.95);
-          border: 1px solid rgb(107, 114, 128);
-          border-radius: 4px;
-          color: white;
-          font-size: 10px;
-          white-space: nowrap;
-        `;
-                    label.textContent = name;
-                    el.appendChild(label);
-                }
-
-                return el;
-            };
-
-            // 클러스터 생성
-            const createCluster = (group: any, count: number) => {
-                const el = document.createElement("div");
-                el.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
-      `;
-
-                const icon = document.createElement("div");
-                icon.style.cssText = `
-        min-width: 32px;
-        height: 32px;
-        padding: 0 8px;
-        background: linear-gradient(135deg, rgba(74, 74, 74, 1) 0%, rgba(58, 58, 58, 1) 50%, rgba(42, 42, 42, 1) 100%);
-        border: 2px solid rgba(209, 213, 219, 0.8);
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-      `;
-
-                icon.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #d1d5db;">
-          <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
-        </svg>
-        <span style="font-size: 12px; font-weight: 600; color: #9ca3af;">${count}</span>
-      `;
-
-                el.appendChild(icon);
-
-                const label = document.createElement("div");
-                label.style.cssText = `
-        margin-top: 4px;
-        padding: 2px 6px;
-        background: rgba(26, 26, 26, 0.95);
-        border: 1px solid rgb(107, 114, 128);
-        border-radius: 4px;
-        color: white;
-        font-size: 10px;
-        white-space: nowrap;
-      `;
-                label.textContent = group.name;
-                el.appendChild(label);
-
-                return el;
-            };
-
-            // 클러스터 마커 생성 (필터링된 그룹만 사용)
-            const newClusterMarkers = filteredCctvGroups.map((group) => {
-                const groupCCTVs = cctvPositions.filter((pos) => pos.groupId === group.id);
-                const clusterCenter = [groupCCTVs.reduce((sum, pos) => sum + pos.lng, 0) / groupCCTVs.length, groupCCTVs.reduce((sum, pos) => sum + pos.lat, 0) / groupCCTVs.length];
-
-                const marker = new maplibregl.Marker({
-                    element: createCluster(group, group.cameras.length),
-                    anchor: "center",
-                }).setLngLat(clusterCenter as [number, number]);
-
-                // CCTV 클러스터 마커 z-index 설정 (반경 원보다 위)
-                const markerEl = marker.getElement();
-                if (markerEl) {
-                    markerEl.style.zIndex = "50";
-                }
-
-                return marker;
-            });
-
-            // 개별 CCTV 마커 생성
-            const newIndividualMarkers = cctvPositions.map((pos) => {
-                const marker = new maplibregl.Marker({
-                    element: createSimpleCCTV(pos.name, pos.direction),
-                    anchor: "center",
-                }).setLngLat([pos.lng, pos.lat] as [number, number]);
-
-                // 개별 CCTV 마커 z-index 설정 (반경 원보다 위)
-                const markerEl = marker.getElement();
-                if (markerEl) {
-                    markerEl.style.zIndex = "50";
-                }
-
-                return marker;
-            });
-
-            // 줌 레벨에 따라 클러스터/개별 전환
-            const updateDisplay = () => {
-                const zoom = map.getZoom();
-                if (zoom >= 16.5) {
-                    newClusterMarkers.forEach((m) => m.remove());
-                    newIndividualMarkers.forEach((m) => m.addTo(map));
-                } else {
-                    newIndividualMarkers.forEach((m) => m.remove());
-                    newClusterMarkers.forEach((m) => m.addTo(map));
-                }
-            };
-
-            // 초기 표시
-            updateDisplay();
-
-            // 줌 이벤트 리스너
-            const zoomHandler = () => updateDisplay();
-            map.on("zoom", zoomHandler);
-
-            // 저장
-            (map as any)._cctvMarkers = [...newClusterMarkers, ...newIndividualMarkers];
-            (map as any)._cctvZoomHandler = zoomHandler;
-
-            // 경찰서 위치 핀 추가
-            const oldPoliceMarkers = (map as any)._policeStationMarkers;
-            if (oldPoliceMarkers) {
-                oldPoliceMarkers.forEach((m: maplibregl.Marker) => m.remove());
-            }
-
-            const policeStationLocations = [
-                { location: [126.7852, 37.5062] as [number, number], name: "별빛파출소" },
-                { location: [126.7815, 37.504] as [number, number], name: "은하지구대" },
-                { location: [126.786, 37.5043] as [number, number], name: "별빛경찰서" },
-            ];
-
-            const policeMarkerList: maplibregl.Marker[] = [];
-
-            policeStationLocations.forEach((station) => {
-                const container = document.createElement("div");
-                container.style.cssText = "display: flex; flex-direction: column; align-items: center; pointer-events: auto;";
-
-                const iconWrapper = document.createElement("div");
-                iconWrapper.style.cssText = `
-        width: 32px;
-        height: 32px;
-        background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
-        border: 2px solid #16a34a;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 12px rgba(22, 163, 74, 0.4), 0 0 24px rgba(22, 163, 74, 0.15);
-        backdrop-filter: blur(4px);
-        z-index: 40;
-      `;
-
-                const img = document.createElement("img");
-                img.src = "/police.svg";
-                img.alt = station.name;
-                img.style.cssText = "width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(67%) sepia(61%) saturate(459%) hue-rotate(93deg) brightness(95%) contrast(92%);";
-                iconWrapper.appendChild(img);
-
-                const label = document.createElement("div");
-                label.style.cssText = `
-        margin-top: 6px;
-        padding: 3px 8px;
-        border-radius: 6px;
-        background: rgba(15, 15, 15, 0.9);
-        border: 1px solid rgba(22, 163, 74, 0.4);
-        white-space: nowrap;
-        font-size: 11px;
-        font-weight: 600;
-        color: #4ade80;
-      `;
-                label.textContent = station.name;
-
-                container.appendChild(iconWrapper);
-                container.appendChild(label);
-
-                const policeMarker = new maplibregl.Marker({ element: container, anchor: "center" }).setLngLat(station.location).addTo(map);
-
-                const markerEl = policeMarker.getElement();
-                if (markerEl) {
-                    markerEl.style.zIndex = "40";
-                }
-
-                policeMarkerList.push(policeMarker);
-            });
-
-            (map as any)._policeStationMarkers = policeMarkerList;
-
-            // cleanup
-            return () => {
-                map.off("zoom", zoomHandler);
-                newClusterMarkers.forEach((m) => m.remove());
-                newIndividualMarkers.forEach((m) => m.remove());
-                const pMarkers = (map as any)._policeStationMarkers;
-                if (pMarkers) {
-                    pMarkers.forEach((m: maplibregl.Marker) => m.remove());
-                    (map as any)._policeStationMarkers = null;
-                }
-            };
-        };
-
-        // 지도 로드 확인 및 CCTV 생성
-        if (map.loaded()) {
-            return createCCTV();
-        } else {
-            // 여러 번 재시도
-            let retryCount = 0;
-            const maxRetries = 10;
-
-            const checkAndCreate = () => {
-                retryCount++;
-                if (map.loaded()) {
-                    createCCTV();
-                } else if (retryCount < maxRetries) {
-                    setTimeout(checkAndCreate, 500);
-                } else {
-                    console.error("지도 로드 타임아웃 - CCTV 생성 실패");
-                }
-            };
-
-            setTimeout(checkAndCreate, 100);
-
-            return () => {};
-        }
-    }, [showFastSearchList, showCCTVName, showCCTVViewAngle, appliedSearchRadius]);
-
-    // 고속검색 반경 원 마커 생성 - 실제 지도 좌표에 고정, 바닥에 눕힘
-    useEffect(() => {
-        if (!mapRef.current) return;
-
-        const map = mapRef.current;
-        const radiusCenter: [number, number] = [126.783853180335, 37.5049838114765];
-
-        // showFastSearchList가 false면 기존 마커 제거
-        if (!showFastSearchList) {
-            const oldRadiusMarker = (map as any)._radiusMarker;
-            if (oldRadiusMarker) {
-                oldRadiusMarker.remove();
-                (map as any)._radiusMarker = null;
-            }
-            return;
-        }
-
-        if (!fastSearchRadius || fastSearchRadius <= 0) return;
-
-        // 기존 반경 마커 제거
-        const oldRadiusMarker = (map as any)._radiusMarker;
-        if (oldRadiusMarker) {
-            oldRadiusMarker.remove();
-        }
-
-        // 지도 로드 확인 및 마커 생성
-        const createRadiusMarker = () => {
-            if (!map.loaded()) {
-                setTimeout(createRadiusMarker, 500);
-                return;
-            }
-
-            // 미터를 픽셀로 변환
-            const zoom = map.getZoom();
-            const lat = radiusCenter[1];
-            const metersPerPixel = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
-            const radiusInPixels = fastSearchRadius / metersPerPixel;
-            const diameter = radiusInPixels * 2;
-
-            // 반경 원 컨테이너
-            const radiusContainer = document.createElement("div");
-            radiusContainer.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
-        z-index: 1;
-      `;
-
-            const radiusWrapper = document.createElement("div");
-            const currentPitch = map.getPitch();
-            radiusWrapper.style.cssText = `
-        position: relative;
-        width: ${diameter}px;
-        height: ${diameter}px;
-      `;
-
-            // radius-pulse 애니메이션 keyframes 추가
-            if (!document.getElementById("radius-pulse-style")) {
-                const styleEl = document.createElement("style");
-                styleEl.id = "radius-pulse-style";
-                styleEl.textContent = `
-          @keyframes radius-pulse {
-            0% {
-              transform: translate(-50%, -50%) translateZ(0) scale(0.5);
-              opacity: 1;
-            }
-            100% {
-              transform: translate(-50%, -50%) translateZ(0) scale(1);
-              opacity: 0;
-            }
-          }
-        `;
-                document.head.appendChild(styleEl);
-            }
-
-            // 하늘색 펄스 3개
-            for (let i = 0; i < 3; i++) {
-                const pulse = document.createElement("div");
-                pulse.style.cssText = `
-          position: absolute;
-          width: ${diameter - 4}px;
-          height: ${diameter - 4}px;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%) translateZ(0) scale(0.5);
-          animation: radius-pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-          animation-delay: ${i * 0.4}s;
-          will-change: transform, opacity;
-          pointer-events: none;
-          z-index: 1;
-        `;
-                const pulseInner = document.createElement("div");
-                pulseInner.style.cssText = `
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          background-color: rgba(59, 130, 246, ${0.4 - i * 0.08});
-        `;
-                pulse.appendChild(pulseInner);
-                radiusWrapper.appendChild(pulse);
-            }
-
-            // 반경 원 SVG (대시 라인)
-            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-            svg.setAttribute("width", `${diameter}px`);
-            svg.setAttribute("height", `${diameter}px`);
-            svg.style.cssText = `
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 2;
-      `;
-
-            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            circle.setAttribute("cx", "50%");
-            circle.setAttribute("cy", "50%");
-            circle.setAttribute("r", `${radiusInPixels - 2}px`);
-            circle.setAttribute("fill", "none");
-            circle.setAttribute("stroke", "rgba(59, 130, 246, 0.8)");
-            circle.setAttribute("stroke-width", "4");
-            circle.setAttribute("stroke-dasharray", "8 4");
-
-            svg.appendChild(circle);
-            radiusWrapper.appendChild(svg);
-            radiusContainer.appendChild(radiusWrapper);
-
-            // 마커 생성 - pitchAlignment: 'map'으로 바닥에 눕힘
-            const radiusMarker = new maplibregl.Marker({
-                element: radiusContainer,
-                anchor: "center",
-                pitchAlignment: "map",
-                rotationAlignment: "map",
-            })
-                .setLngLat(radiusCenter)
-                .addTo(map);
-
-            // z-index 설정 (이벤트 핀, CCTV보다 아래)
-            const markerElement = radiusMarker.getElement();
-            if (markerElement) {
-                markerElement.style.zIndex = "1";
-            }
-
-            // 저장
-            (map as any)._radiusMarker = radiusMarker;
-
-            // zoom 변경 시 크기 업데이트
-            const zoomHandler = () => {
-                const newZoom = map.getZoom();
-                const newMetersPerPixel = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, newZoom);
-                const newRadiusInPixels = fastSearchRadius / newMetersPerPixel;
-                const newDiameter = newRadiusInPixels * 2;
-
-                radiusWrapper.style.width = `${newDiameter}px`;
-                radiusWrapper.style.height = `${newDiameter}px`;
-
-                const pulses = radiusWrapper.querySelectorAll('div[style*="animation"]');
-                pulses.forEach((pulse: any) => {
-                    pulse.style.width = `${newDiameter - 4}px`;
-                    pulse.style.height = `${newDiameter - 4}px`;
-                });
-
-                svg.setAttribute("width", `${newDiameter}px`);
-                svg.setAttribute("height", `${newDiameter}px`);
-                circle.setAttribute("r", `${newRadiusInPixels - 2}px`);
-            };
-
-            map.on("zoom", zoomHandler);
-
-            (map as any)._radiusCleanup = () => {
-                map.off("zoom", zoomHandler);
-                radiusMarker.remove();
-            };
-        };
-
-        createRadiusMarker();
-
-        return () => {
-            const cleanup = (map as any)._radiusCleanup;
-            if (cleanup) cleanup();
-        };
-    }, [showFastSearchList, fastSearchRadius]);
-
-    // is3DMode와 mapBearing 변경은 이제 버튼 클릭 핸들러에서 직접 처리됨
-
-    // localStorage에서 초기값 읽기 (클라이언트에서만)
-    // 대시보드에서는 localStorage에 값이 없으면 기본값으로 true 설정
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const savedCCTV = localStorage.getItem("cctv-show-cctv");
-            if (savedCCTV === "true") {
-                setShowCCTV(true);
-            } else if (savedCCTV === null || savedCCTV === "false") {
-                // localStorage에 값이 없거나 false면 대시보드에서는 기본값으로 true
-                setShowCCTV(true);
-                setShowCCTVViewAngle(true);
-                setShowCCTVName(true);
-                // localStorage에도 저장
-                localStorage.setItem("cctv-show-cctv", "true");
-                localStorage.setItem("cctv-show-view-angle", "true");
-                localStorage.setItem("cctv-show-name", "true");
-            }
-            const savedViewAngle = localStorage.getItem("cctv-show-view-angle");
-            if (savedViewAngle === "true") {
-                setShowCCTVViewAngle(true);
-            } else if (savedViewAngle === null || savedViewAngle === "false") {
-                setShowCCTVViewAngle(true);
-                localStorage.setItem("cctv-show-view-angle", "true");
-            }
-            const savedName = localStorage.getItem("cctv-show-name");
-            if (savedName === "true") {
-                setShowCCTVName(true);
-            } else if (savedName === null || savedName === "false") {
-                setShowCCTVName(true);
-                localStorage.setItem("cctv-show-name", "true");
-            }
-        }
-    }, []);
-
-    // localStorage 저장은 이제 버튼 클릭 핸들러에서 직접 처리됨
-
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === "cctv-show-cctv") {
-                setShowCCTV(e.newValue === "true");
-            } else if (e.key === "cctv-show-view-angle") {
-                setShowCCTVViewAngle(e.newValue === "true");
-            } else if (e.key === "cctv-show-name") {
-                setShowCCTVName(e.newValue === "true");
-            }
-        };
-
-        window.addEventListener("storage", handleStorageChange);
-        return () => window.removeEventListener("storage", handleStorageChange);
-    }, []);
     const containerRef = useRef<HTMLDivElement>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
-
-    // showCCTV 변경 시 CCTV 마커 표시/숨김 (예측된 CCTV 제외)
-    useEffect(() => {
-        const map = mapRef.current;
-        if (!map) return;
-
-        const cctvMarkers = (map as any)._cctvMarkers;
-        if (cctvMarkers) {
-            cctvMarkers.forEach((marker: any) => {
-                const element = marker.getElement();
-                if (element && !element.classList.contains("predicted-cctv-marker")) {
-                    element.style.display = showCCTV ? "block" : "none";
-                }
-            });
-        }
-    }, [showCCTV]);
-
-    // CCTV 마커 표시/숨김 제어
-    useEffect(() => {
-        const map = mapRef.current;
-        if (!map) return;
-
-        const cctvMarkers = (map as any)._cctvMarkers;
-        if (cctvMarkers) {
-            cctvMarkers.forEach((marker: maplibregl.Marker) => {
-                const element = marker.getElement();
-                if (element && !element.classList.contains("predicted-cctv-marker")) {
-                    element.style.display = showCCTV ? "block" : "none";
-                }
-            });
-        }
-    }, [showCCTV]);
-
-    // 일반 이벤트 ID 목록 (event-26부터 event-33)
-    const generalEventIds = new Set(["event-26", "event-27", "event-28", "event-29", "event-30", "event-31", "event-32", "event-33"]);
-
-    const getEventIcon = (type: string) => {
-        switch (type) {
-            case "119-화재":
-                return "mdi:fire";
-            case "119-구조":
-                return "mdi:ambulance";
-            case "112-미아":
-                return "mdi:account-child";
-            case "112-치안":
-                return "mdi:shield-alert";
-            case "약자":
-                return "mdi:account-alert";
-            case "AI-배회":
-                return "mdi:walk";
-            case "NDMS":
-                return "mdi:alert";
-            case "소방서":
-                return "mdi:fire-truck";
-            default:
-                return "mdi:map-marker";
-        }
-    };
 
     // 이벤트 ID를 기반으로 일관된 랜덤 값 생성
     const seededRandom = (seed: string) => {
@@ -2522,85 +1810,6 @@ const MapView = ({
         // 이벤트 핀이 없으므로 자동 이동 비활성화
         return { x: 0, y: 0, offsetX: 0 };
     }, []);
-
-    // 핀 위치 계산 - 단순히 퍼센트 위치 유지
-    const getEventPosition = (event: Event) => {
-        return positionsById[event.id] || { left: centerX, top: centerY };
-    };
-
-    // 소방서 고정 위치 (3개) - 더 분산
-    const fireStations = useMemo(
-        () => [
-            { id: "fire-1", name: "안양소방서", left: 20, top: 30 },
-            { id: "fire-2", name: "평촌소방서", left: 75, top: 25 },
-            { id: "fire-3", name: "만안소방서", left: 30, top: 80 },
-        ],
-        []
-    );
-
-    // 경찰서 고정 위치 (5개) - 더 분산
-    const policeStations = useMemo(
-        () => [
-            { id: "police-1", name: "안양경찰서", left: 15, top: 50 },
-            { id: "police-2", name: "평촌경찰서", left: 80, top: 40 },
-            { id: "police-3", name: "만안경찰서", left: 25, top: 75 },
-            { id: "police-4", name: "비산파출소", left: 60, top: 60 },
-            { id: "police-5", name: "석수파출소", left: 10, top: 20 },
-        ],
-        []
-    );
-
-    // 두 점 사이의 거리 계산 (퍼센트 기반)
-    const calculateDistance = (x1: number, y1: number, x2: number, y2: number) => {
-        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    };
-
-    // 선택된 이벤트와 가까운 소방서/경찰서 찾기
-    const nearbyStations = useMemo(() => {
-        if (!selectedEventId) return { fireStations: [], policeStations: [] };
-
-        const selectedEvent = events.find((e) => e.id === selectedEventId);
-        if (!selectedEvent) return { fireStations: [], policeStations: [] };
-
-        // event-3(오토바이 도주) 선택 시 event-14(80대 여성 쓰러짐)의 위치를 기준으로 경찰서 찾기
-        let eventPosition = getEventPosition(selectedEvent);
-        if (selectedEventId === "event-3") {
-            const event14 = events.find((e) => e.id === "event-14");
-            if (event14) {
-                eventPosition = getEventPosition(event14);
-            }
-        }
-
-        // 이벤트 타입에 따라 소방서 또는 경찰서 결정
-        const needsFireStation = selectedEvent.type === "119-화재" || selectedEvent.type === "119-구조";
-        const needsPoliceStation = selectedEvent.type === "112-미아" || selectedEvent.type === "112-치안";
-
-        // 둘 다 필요한 경우도 있음 (기본적으로 둘 다 표시)
-        const showBoth = !needsFireStation && !needsPoliceStation;
-
-        let nearbyFire: typeof fireStations = [];
-        let nearbyPolice: typeof policeStations = [];
-
-        if (needsFireStation || showBoth) {
-            // 소방서 거리 계산 및 정렬 (가까운 순)
-            const fireWithDistance = fireStations.map((station) => ({
-                ...station,
-                distance: calculateDistance(eventPosition.left, eventPosition.top, station.left, station.top),
-            }));
-            nearbyFire = fireWithDistance.sort((a, b) => a.distance - b.distance).slice(0, 1); // 가까운 1개
-        }
-
-        if (needsPoliceStation || showBoth || selectedEventId === "event-3") {
-            // 경찰서 거리 계산 및 정렬 (가까운 순)
-            const policeWithDistance = policeStations.map((station) => ({
-                ...station,
-                distance: calculateDistance(eventPosition.left, eventPosition.top, station.left, station.top),
-            }));
-            nearbyPolice = policeWithDistance.sort((a, b) => a.distance - b.distance).slice(0, 1); // 가까운 1개
-        }
-
-        return { fireStations: nearbyFire, policeStations: nearbyPolice };
-    }, [selectedEventId, events, fireStations, policeStations, positionsById]);
 
     useEffect(() => {
         if (isAgentActive) {

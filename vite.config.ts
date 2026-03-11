@@ -59,6 +59,12 @@ export default defineConfig({
                 secure: false,
                 rewrite: (path) => path.replace(/^\/gitsmap-proxy/, ""),
             },
+            "/utic-wms-proxy": {
+                target: "https://gis.utic.go.kr",
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/utic-wms-proxy/, ""),
+            },
         },
     },
     css: {
