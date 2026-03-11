@@ -112,6 +112,9 @@ interface MessageListProps {
     onVideoView?: () => void;
     trackingUpdateMsgContent?: ReturnType<typeof getTrackingUpdateMsgContent>;
     onClickExpandTableOrChart?: (messageId: string) => void;
+    onCollapseTableOrChart?: (messageId: string) => void;
+    expandedChartMsgId?: string | null;
+    expandedTableMsgId?: string | null;
     onMapLocationRequest?: (lat: number, lng: number) => void;
     flyToLocation?: [number, number] | null;
     isMapMoving?: boolean;
@@ -139,7 +142,7 @@ const getTrackingUpdateMsgContent = () => {
     };
 };
 
-const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }) => {
+const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onObjectTrackingStart, onVideoView, trackingUpdateMsgContent, onClickExpandTableOrChart, onCollapseTableOrChart, expandedChartMsgId, expandedTableMsgId, onMapLocationRequest, flyToLocation, isMapMoving, onActionClick }) => {
     const trackingContent = trackingUpdateMsgContent ?? getTrackingUpdateMsgContent();
     const lastAssistantMsgId = [...messages].reverse().find((m) => m.role === "assistant" && m.type !== "analyzing" && m.type !== "streaming-step")?.id;
     return (
@@ -430,12 +433,21 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 </>
                                             )}
                                         </div>
-                                        {message.hasExpanded && (
-                                            <button className="text-sm text-blue-400 hover:text-blue-500 cursor-pointer underline flex items-center gap-1 mt-2" onClick={() => onClickExpandTableOrChart?.(message.id)}>
-                                                <Icon icon="mdi:arrow-left" className="w-5 h-5" />
-                                                확장
-                                            </button>
-                                        )}
+                                        {message.hasExpanded && (() => {
+                                            const isCurrentlyExpanded = expandedChartMsgId === message.id || expandedTableMsgId === message.id;
+                                            return (
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 bg-[#2a2b33] hover:bg-[#33343d] border border-[#3a3b44] rounded-full px-3 py-1 transition-colors mt-2"
+                                                    onClick={() => isCurrentlyExpanded ? onCollapseTableOrChart?.(message.id) : onClickExpandTableOrChart?.(message.id)}
+                                                    aria-label={isCurrentlyExpanded ? "접기" : "자세히 보기"}
+                                                    tabIndex={0}
+                                                >
+                                                    <Icon icon={isCurrentlyExpanded ? "mdi:close" : "mdi:arrow-left"} className="w-3 h-3" />
+                                                    <span>{isCurrentlyExpanded ? "접기" : "자세히 보기"}</span>
+                                                </button>
+                                            );
+                                        })()}
                                     </>
                                 )}
                             </div>
@@ -827,6 +839,17 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 setLastTableData(null);
                 setLastTableMsgId(null);
             }
+        }
+    };
+
+    const handleCollapseTableOrChart = (messageId: string) => {
+        if (lastChartMsgId === messageId) {
+            setLastChartData(null);
+            setLastChartMsgId(null);
+        }
+        if (lastTableMsgId === messageId) {
+            setLastTableData(null);
+            setLastTableMsgId(null);
         }
     };
 
@@ -1668,6 +1691,9 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                         onVideoView={onVideoView}
                                         trackingUpdateMsgContent={trackingUpdateMsgContent ?? undefined}
                                         onClickExpandTableOrChart={handleExpandTableOrChart}
+                                        onCollapseTableOrChart={handleCollapseTableOrChart}
+                                        expandedChartMsgId={lastChartMsgId}
+                                        expandedTableMsgId={lastTableMsgId}
                                         onMapLocationRequest={onMapLocationRequest}
                                         flyToLocation={flyToLocation}
                                         isMapMoving={isMapMoving}
