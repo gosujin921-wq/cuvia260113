@@ -20,6 +20,11 @@ export default defineConfig({
             usePolling: true, // macOS 등에서 파일 변경 감지 안 될 때 강제 폴링
         },
         proxy: {
+            "/api": {
+                target: "http://192.168.102.101:9090",
+                changeOrigin: true,
+                secure: false,
+            },
             "/v1": {
                 target: "http://192.168.102.102:16000/v1",
                 changeOrigin: true,
