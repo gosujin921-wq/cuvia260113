@@ -56,9 +56,11 @@ interface MapViewProps {
   /** 1키 누르기 전 초기 화면: 과천역 주변 CCTV 클러스터 표시 */
   showInitialCCTVClusters?: boolean;
   onAgentHubClick?: () => void;
+  /** 교통정보 레이어 방식: "wmts" (국가교통정보센터) | "wms" (GitsMap/UTIC) */
+  trafficLayerMode?: "wmts" | "wms";
 }
 
-const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false, onAgentHubClick }: MapViewProps) => {
+const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, aiDetectionEventId, onMapClick, onEventHover, onToggleGeneralEvents, externalZoomLevel, onZoomLevelChange, onAiDetectionClose, hideControls = false, showFastSearch = false, showFastSearchList = false, fastSearchRadius = 300, appliedSearchRadius = 200, leftPanelWidth = 480, pinOffset = { x: 0, y: 0 }, focusTargetXPercent = 50, flyToLocation = null, externalShowCCTV, onMapStateChange, hideAgentButton = false, showInitialCCTVClusters = false, onAgentHubClick, trafficLayerMode = "wmts" }: MapViewProps) => {
   const [zoomLevel, setZoomLevel] = useState(0);
   const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
   const [animatingViewAngles, setAnimatingViewAngles] = useState<Record<string, number>>({});
@@ -416,36 +418,82 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         }
       });
 
-      // ========== 교통정보 WMS 커스텀 프로토콜 등록 (레이어는 토글 시 동적 생성) ==========
+      // ========== 교통정보 레이어 프로토콜 설정 ==========
+      // 교통정보 레이어 방식: "wmts" | "wms"
+      // - "wmts": 국가교통정보센터 WMTS 타일 방식 (its.go.kr)
+      // - "wms": UTIC WMS 방식 (utic-wms-proxy)
+      (maplibregl as any)._trafficLayerMode = trafficLayerMode;
+
+      // ========== 방식 1: 국가교통정보센터 WMTS 타일 (XYZ 방식) ==========
+      if (!(maplibregl as any)._itsWmtsProtocolRegistered) {
+        maplibregl.addProtocol('its-wmts', (_params: { url: string }, abortController: AbortController) => {
+          const tileUrl = _params.url.replace('its-wmts://', 'https://');
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            const handleAbort = () => {
+              img.src = '';
+              reject(new DOMException('Aborted', 'AbortError'));
+            };
+            abortController.signal.addEventListener('abort', handleAbort, { once: true });
+            img.onload = () => {
+              abortController.signal.removeEventListener('abort', handleAbort);
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              const ctx = canvas.getContext('2d')!;
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob((blob) => {
+                if (!blob) {
+                  reject(new Error('Canvas toBlob failed'));
+                  return;
+                }
+                blob.arrayBuffer().then((data) => resolve({ data }));
+              }, 'image/png');
+            };
+            img.onerror = () => {
+              abortController.signal.removeEventListener('abort', handleAbort);
+              reject(new Error(`ITS tile load failed: ${tileUrl}`));
+            };
+            img.src = tileUrl;
+          });
+        });
+        (maplibregl as any)._itsWmtsProtocolRegistered = true;
+      }
+
+      // ========== 방식 2: UTIC WMS (gis.utic.go.kr GeoServer) ==========
       if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
         maplibregl.addProtocol('gitsmap-wms', (params: { url: string }, abortController: AbortController) => {
           const urlParts = params.url.replace('gitsmap-wms://', '').split('/');
           const z = parseInt(urlParts[0], 10);
           const x = parseInt(urlParts[1], 10);
           const y = parseInt(urlParts[2], 10);
-
           const tileCount = Math.pow(2, z);
           const worldSize = 20037508.342789244 * 2;
           const tileSize = worldSize / tileCount;
-
           const minX3857 = x * tileSize - 20037508.342789244;
           const maxX3857 = (x + 1) * tileSize - 20037508.342789244;
           const maxY3857 = 20037508.342789244 - y * tileSize;
           const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
-
-          const toWgs84 = proj4('EPSG:3857', 'EPSG:4326');
-          const minWgs84 = toWgs84.forward([minX3857, minY3857]);
-          const maxWgs84 = toWgs84.forward([maxX3857, maxY3857]);
-          const bboxWgs84 = `${minWgs84[0]},${minWgs84[1]},${maxWgs84[0]},${maxWgs84[1]}`;
-
-          const wmsUrl =
-            '/gitsmap-proxy/cgi-bin/mapserv.exe?' +
-            'map=/ms4w/mapserver/mapfile/LV10.map' +
-            '&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap' +
-            '&LAYERS=LV10&STYLES=&FORMAT=PNG&TRANSPARENT=true' +
-            '&SRS=EPSG:5181&WIDTH=256&HEIGHT=256&ISBASELAYER=false' +
-            `&BBOX=${bboxWgs84}`;
-
+          const to5181 = proj4('EPSG:3857', 'EPSG:5181');
+          const min5181 = to5181.forward([minX3857, minY3857]);
+          const max5181 = to5181.forward([maxX3857, maxY3857]);
+          const bbox5181 = `${min5181[0]},${min5181[1]},${max5181[0]},${max5181[1]}`;
+          const wmsParams = new URLSearchParams({
+            SERVICE: 'WMS',
+            VERSION: '1.1.1',
+            REQUEST: 'GetMap',
+            FORMAT: 'image/png',
+            TRANSPARENT: 'true',
+            tiled: 'true',
+            LAYERS: 'UTIS:vi_2022_p_lv7_d',
+            WIDTH: '256',
+            HEIGHT: '256',
+            SRS: 'EPSG:5181',
+            BBOX: bbox5181,
+            TIME: String(Date.now()),
+          });
+          const wmsUrl = `/utic-wms-proxy/geoserver/UTIS/wms?${wmsParams.toString()}`;
           return fetch(wmsUrl, { signal: abortController.signal })
             .then((response) => {
               if (!response.ok) throw new Error(`WMS request failed: ${response.status}`);
@@ -455,7 +503,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         });
         (maplibregl as any)._gitsmapWmsProtocolRegistered = true;
       }
-      // ========== 교통정보 WMS 프로토콜 등록 끝 ==========
+      // ========== 교통정보 레이어 프로토콜 설정 끝 ==========
     });
 
     mapRef.current = map;
@@ -487,7 +535,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       map.remove();
       mapRef.current = null;
     };
-  }, [onMapStateChange]);
+  }, [onMapStateChange, trafficLayerMode]);
 
   // 토글 ON 시 로딩 상태 시작
   useEffect(() => {
@@ -563,16 +611,57 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     const addWmsLayer = () => {
       if (map.getSource(trafficWmsSourceId)) return;
-      map.addSource(trafficWmsSourceId, {
-        type: 'raster',
-        tiles: ['gitsmap-wms://{z}/{x}/{y}'],
-        tileSize: 256
-      });
+
+      const currentTrafficLayerMode = (maplibregl as any)._trafficLayerMode || 'wmts';
+
+      if (currentTrafficLayerMode === 'wmts') {
+        // 방식 1: 국가교통정보센터 WMTS 타일 - ITS 직접 호출 (its-wmts:// 프로토콜)
+        map.addSource(trafficWmsSourceId, {
+          type: 'raster',
+          tiles: [
+            'its-wmts://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8',
+          ],
+          tileSize: 256,
+          minzoom: 7,
+          maxzoom: 15,
+        });
+        let consecutiveErrors = 0;
+        const MAX_CONSECUTIVE_ERRORS = 5;
+        const ERROR_RESET_TIMEOUT = 30000;
+        map.on('error', (e: maplibregl.ErrorEvent) => {
+          if (e.error?.message?.includes('ITS tile') || e.error?.message?.includes('its.go.kr')) {
+            consecutiveErrors++;
+            console.warn(`[ITS WMTS] 타일 로드 에러 (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}):`, e.error?.message);
+            if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+              console.error('[ITS WMTS] 연속 에러 발생 - 레이어 일시 비활성화');
+              if (map.getLayer(trafficWmsLayerId)) {
+                map.setPaintProperty(trafficWmsLayerId, 'raster-opacity', 0.3);
+              }
+            }
+            setTimeout(() => {
+              if (consecutiveErrors > 0) {
+                consecutiveErrors = Math.max(0, consecutiveErrors - 1);
+                if (consecutiveErrors < MAX_CONSECUTIVE_ERRORS && map.getLayer(trafficWmsLayerId)) {
+                  map.setPaintProperty(trafficWmsLayerId, 'raster-opacity', 0.7);
+                }
+              }
+            }, ERROR_RESET_TIMEOUT);
+          }
+        });
+      } else {
+        // 방식 2: GitsMap WMS 커스텀 프로토콜 (UTIC WMS)
+        map.addSource(trafficWmsSourceId, {
+          type: 'raster',
+          tiles: ['gitsmap-wms://{z}/{x}/{y}'],
+          tileSize: 256,
+        });
+      }
+
       map.addLayer({
         id: trafficWmsLayerId,
         type: 'raster',
         source: trafficWmsSourceId,
-        paint: { 'raster-opacity': 0.7 }
+        paint: { 'raster-opacity': 0.7 },
       });
     };
 
