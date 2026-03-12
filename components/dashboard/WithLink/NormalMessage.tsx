@@ -20,6 +20,12 @@ export function NormalMessage({ message, isLatest = true, onActionClick }: Norma
                     <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />
                 </div>
             )}
+            {message.disclaimer && (
+                <>
+                    <hr className="border-t border-[#40424a] my-6" role="separator" />
+                    <p className="text-xs text-gray-400 text-center">{message.disclaimer}</p>
+                </>
+            )}
             {/* <div className="text-xs text-gray-400 mt-2">{message.timestamp}</div> */}
         </>
     );
