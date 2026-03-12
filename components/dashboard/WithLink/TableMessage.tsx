@@ -60,7 +60,7 @@ export function TableMessage({ message, isLatest = true, onMapLocationRequest, f
                 {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3">{message.rationale}</p>}
                 {displayTables && (
                     <>
-                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">표 데이터</h3>
+                        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{message.tableData?.title ?? "표 데이터"}</h3>
                         <div className="rounded-lg overflow-hidden mt-4" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
                             <table className="w-full text-sm">
                                 <thead>

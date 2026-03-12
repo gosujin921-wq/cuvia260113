@@ -164,7 +164,7 @@ const TableContent: React.FC<{ data: TableStreamData; isLatest?: boolean; onMapL
     );
 };
 
-export type AgentCardData = { type: "chart"; title: string; chartData: ChartStreamData } | { type: "table"; title: string; tableData: TableStreamData };
+export type AgentCardData = { type: "chart"; title: string; chartData: ChartStreamData[] } | { type: "table"; title: string; tableData: TableStreamData };
 
 interface AgentCardProps {
     /** 차트 또는 테이블 데이터 */
@@ -194,7 +194,20 @@ export const AgentCard: React.FC<AgentCardProps> = ({ data, isLatest = true, onR
                 </div>
             )}
             <div className={`flex-1 min-h-0 p-4 pt-12 ${data.type === "chart" ? "overflow-auto" : "overflow-hidden flex flex-col"}`}>
-                <div className={`rounded-lg w-full ${data.type === "chart" ? "h-full overflow-hidden" : "flex-1 min-h-0 flex flex-col"}`}>{data.type === "chart" ? <ChartContent data={data.chartData} /> : <TableContent data={data.tableData} isLatest={isLatest} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />}</div>
+                {data.type === "chart" ? (
+                    <div className="flex flex-col gap-4 h-full">
+                        {data.chartData.map((chart, idx) => (
+                            <div key={idx} className="rounded-lg w-full flex-1 min-h-[280px] overflow-hidden">
+                                {chart.title && <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{chart.title}</h3>}
+                                <ChartContent data={chart} />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="rounded-lg w-full flex-1 min-h-0 flex flex-col">
+                        <TableContent data={data.tableData} isLatest={isLatest} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} />
+                    </div>
+                )}
             </div>
         </div>
     );

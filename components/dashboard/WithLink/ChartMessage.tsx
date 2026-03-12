@@ -62,7 +62,7 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
         return { ...message.tableData, visibleRows, needsTruncation, totalRows, remainingCount, idx: 0, extensions };
     }, [message]);
 
-    if (!message.chartData) return null;
+    if (!message.chartData || message.chartData.length === 0) return null;
 
     const handleCellClick = (row: Record<string, string | number | boolean>) => {
         if (row.type === "map" && onMapLocationRequest) {
@@ -84,14 +84,14 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
                         backdropFilter: "blur(4px)",
                         border: "1px solid rgba(255,255,255,0.08)",
                     }}>
-                    {message.chartData?.title || message.title || ""}
+                    {message.chartData?.[0]?.title || message.title || ""}
                 </div>
             )}
             {message.title && message.rationale && <br />}
             {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3">{message.rationale}</p>}
             {displayTables && (
                 <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
-                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">표 데이터</h3>
+                    <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{message.tableData?.title ?? "표 데이터"}</h3>
                     <div className="rounded-lg overflow-hidden mt-4" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
                         <table className="w-full text-sm">
                             <thead>
@@ -149,10 +149,12 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
                     {displayTables.remainingCount > 0 && <p className="text-sm text-gray-400 py-2">... {displayTables.remainingCount}건 더 있음</p>}
                 </div>
             )}
-            <div className="rounded-lg overflow-hidden mt-4">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">차트 데이터</h3>
-                <StreamChart data={message.chartData} />
-            </div>
+            {message.chartData.map((chart, chartIdx) => (
+                <div key={chartIdx} className="rounded-lg overflow-hidden mt-4">
+                    {chart.title && <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{chart.title}</h3>}
+                    <StreamChart data={chart} />
+                </div>
+            ))}
             {message.actions && message.actions.length > 0 && onActionClick && (
                 <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
                     <CTAActionButtons actions={message.actions} onActionClick={onActionClick} />

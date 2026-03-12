@@ -86,8 +86,8 @@ export interface ChatMessage {
     markdownContent?: string;
     htmlContent?: string;
     stepMessage?: string;
-    /** 스트림 type: 'chart' 수신 시 차트 데이터 */
-    chartData?: ChartStreamData | null;
+    /** 스트림 type: 'chart' 수신 시 차트 데이터 (복수 차트 지원) */
+    chartData?: ChartStreamData[] | null;
     tableData?: TableStreamData | null;
     disclaimer?: string | null;
     hasExpanded?: boolean;
@@ -415,7 +415,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">{message.displayedContent ?? message.content ?? ""}</p>
                                                     {/* <div className="text-xs text-gray-200 pt-1">{message.timestamp}</div> */}
                                                 </>
-                                            ) : message.chartData ? (
+                                            ) : message.chartData && message.chartData.length > 0 ? (
                                                 <ChartMessage message={message} isLatest={message.id === lastAssistantMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.tableData ? (
                                                 <TableMessage message={message} isLatest={message.id === lastAssistantMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
@@ -433,21 +433,21 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 </>
                                             )}
                                         </div>
-                                        {message.hasExpanded && (() => {
-                                            const isCurrentlyExpanded = expandedChartMsgId === message.id || expandedTableMsgId === message.id;
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 bg-[#2a2b33] hover:bg-[#33343d] border border-[#3a3b44] rounded-full px-3 py-1 transition-colors mt-2"
-                                                    onClick={() => isCurrentlyExpanded ? onCollapseTableOrChart?.(message.id) : onClickExpandTableOrChart?.(message.id)}
-                                                    aria-label={isCurrentlyExpanded ? "접기" : "자세히 보기"}
-                                                    tabIndex={0}
-                                                >
-                                                    <Icon icon={isCurrentlyExpanded ? "mdi:close" : "mdi:arrow-left"} className="w-3 h-3" />
-                                                    <span>{isCurrentlyExpanded ? "접기" : "자세히 보기"}</span>
-                                                </button>
-                                            );
-                                        })()}
+                                        {message.hasExpanded &&
+                                            (() => {
+                                                const isCurrentlyExpanded = expandedChartMsgId === message.id || expandedTableMsgId === message.id;
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 bg-[#2a2b33] hover:bg-[#33343d] border border-[#3a3b44] rounded-full px-3 py-1 transition-colors mt-2"
+                                                        onClick={() => (isCurrentlyExpanded ? onCollapseTableOrChart?.(message.id) : onClickExpandTableOrChart?.(message.id))}
+                                                        aria-label={isCurrentlyExpanded ? "접기" : "자세히 보기"}
+                                                        tabIndex={0}>
+                                                        <Icon icon={isCurrentlyExpanded ? "mdi:close" : "mdi:arrow-left"} className="w-3 h-3" />
+                                                        <span>{isCurrentlyExpanded ? "접기" : "자세히 보기"}</span>
+                                                    </button>
+                                                );
+                                            })()}
                                     </>
                                 )}
                             </div>
@@ -709,7 +709,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     const streamMessageIdRef = useRef<string | null>(null);
 
     // 마지막 스트림 응답의 차트/테이블만 노출 (최대 차트 1개, 테이블 1개)
-    const [lastChartData, setLastChartData] = useState<ChartStreamData | null>(null);
+    const [lastChartData, setLastChartData] = useState<ChartStreamData[] | null>(null);
     const [lastTableData, setLastTableData] = useState<TableStreamData | null>(null);
     /** 사이드 패널에 현재 표시 중인 차트/테이블의 원본 메시지 ID */
     const [lastChartMsgId, setLastChartMsgId] = useState<string | null>(null);
@@ -724,8 +724,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         onChartDataReceived: useCallback((data: ChartStreamData) => {
             const msgId = streamMessageIdRef.current;
             if (!msgId) return;
-            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal" as const, chartData: data } : msg)));
-            setLastChartData(data);
+            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal" as const, chartData: [...(msg.chartData ?? []), data] } : msg)));
+            setLastChartData((prev) => [...(prev ?? []), data]);
             setLastChartMsgId(msgId);
         }, []),
         onTableDataReceived: useCallback((data: TableStreamData) => {
@@ -773,7 +773,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             setMessages((prev) =>
                 prev.map((msg) => {
                     if (msg.id !== msgId) return msg;
-                    const hasChart = !!(payload?.data?.chart ?? payload?.data?.chart_data);
+                    const hasChart = !!(payload?.data?.chart ?? payload?.data?.chart_data ?? (msg.chartData && msg.chartData.length > 0));
                     const hasTable = !!(payload?.data?.table ?? (payload?.data?.tables && payload.data.tables.length > 0));
                     const hasExpanded = hasChart || tableCount > 5;
                     const isBlack = hasChart || hasTable;
@@ -794,8 +794,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 })
             );
             if (!payload?.data?.chart_data && !payload?.data?.chart) {
-                setLastChartData(null);
-                setLastChartMsgId(null);
+                setLastChartData((prev) => (prev && prev.length > 0 ? prev : null));
+                setLastChartMsgId((prev) => {
+                    if (prev) return prev;
+                    return null;
+                });
             }
             if (!table || (tableCount && tableCount <= 5)) {
                 setLastTableData(null);
@@ -824,7 +827,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
             setLastTableMsgId(null);
             return;
         }
-        if (findMessage.chartData) {
+        if (findMessage.chartData && findMessage.chartData.length > 0) {
             setLastChartData(findMessage.chartData);
             setLastChartMsgId(findMessage.id);
         } else {
@@ -1436,7 +1439,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
 
         // 스트림 API 호출
         setIsResponding(true);
-
+        setLastChartData(null);
+        setLastChartMsgId(null);
+        setLastTableData(null);
+        setLastTableMsgId(null);
         const streamMsgId = `stream-${Date.now()}`;
         streamMessageIdRef.current = streamMsgId;
 
@@ -1582,7 +1588,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 </div>
             ) : (
                 <>
-                    {(lastChartData || lastTableData) && (
+                    {((lastChartData && lastChartData.length > 0) || lastTableData) && (
                         <div className="absolute top-[20px] right-[510px] flex flex-col flex-shrink-0 gap-2 w-[680px]">
                             {lastTableData && (
                                 <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ maxHeight: `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
@@ -1599,10 +1605,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                                     />
                                 </div>
                             )}
-                            {lastChartData && (
+                            {lastChartData && lastChartData.length > 0 && (
                                 <div className="flex flex-col min-h-0 rounded-xl overflow-hidden relative border border-[#40424a]" style={{ height: lastTableData ? `calc((${maxHeightProp ?? 600}px - 8px) / 2)` : `calc((${maxHeightProp ?? 600}px - 8px) / 2)` }}>
                                     <AgentCard
-                                        data={{ type: "chart", title: lastChartData.title ?? "차트", chartData: lastChartData }}
+                                        data={{ type: "chart", title: lastChartData[0]?.title ?? "차트", chartData: lastChartData }}
                                         style={{ height: "100%" }}
                                         onRemove={() => {
                                             setLastChartData(null);

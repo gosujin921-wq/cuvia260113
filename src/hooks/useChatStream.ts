@@ -9,7 +9,7 @@ export interface ChatStreamState {
     stepMessage: string;
     messageContent: string;
     mapData: MapStreamData | null;
-    chartData: ChartStreamData | null;
+    chartData: ChartStreamData[];
     tableData: TableStreamData | null;
     disclaimer: string | null;
     error: string | null;
@@ -42,7 +42,7 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
         stepMessage: "",
         messageContent: "",
         mapData: null,
-        chartData: null,
+        chartData: [],
         tableData: null,
         disclaimer: null,
         error: null,
@@ -72,7 +72,7 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
             stepMessage: "",
             messageContent: "",
             mapData: null,
-            chartData: null,
+            chartData: [],
             tableData: null,
             disclaimer: null,
             error: null,
@@ -169,7 +169,7 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
                             } else if (isChartStreamPayload(payload)) {
                                 setState((prev) => ({
                                     ...prev,
-                                    chartData: payload.data,
+                                    chartData: [...prev.chartData, payload.data],
                                 }));
                                 options.onChartDataReceived?.(payload.data);
                             } else if (isTableStreamPayload(payload)) {
@@ -196,7 +196,7 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
                                     isStreaming: false,
                                     messageContent: payload.message,
                                     mapData: payload.data?.map_data ?? prev.mapData,
-                                    chartData: payload.data?.chart_data ?? prev.chartData,
+                                    chartData: payload.data?.chart_data ? [...prev.chartData, payload.data.chart_data] : prev.chartData,
                                     disclaimer: payload.data?.disclaimer ?? prev.disclaimer,
                                 }));
                                 options.onComplete?.(payload.success, payload.message, payload);
