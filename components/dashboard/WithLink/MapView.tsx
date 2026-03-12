@@ -675,8 +675,43 @@ const MapView = ({
             // CORS 우회: 동일 오리진 프록시(/its-proxy) 경유로 타일 로드
             // 원본: https://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/...
             if (!(maplibregl as any)._itsWmtsProtocolRegistered) {
+                // ===== WMTS 표시 범위: 서울 + 경기도 전역 =====
+                // (경도, 위도) WGS84. 경기 북부(연천)·남부(안성)·서부(강화)·동부(가평) 포함
+                const ITS_WMTS_BOUNDS = {
+                    minLon: 126.35,
+                    minLat: 36.9,
+                    maxLon: 127.85,
+                    maxLat: 38.25,
+                };
+
+                const isTileInSeoulGyeonggiBounds = (z: number, x: number, y: number): boolean => {
+                    const n = Math.pow(2, z);
+                    const worldSize = 20037508.342789244 * 2;
+                    const tileSize = worldSize / n;
+                    const minX3857 = x * tileSize - 20037508.342789244;
+                    const maxX3857 = (x + 1) * tileSize - 20037508.342789244;
+                    const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
+                    const maxY3857 = 20037508.342789244 - y * tileSize;
+                    const toLon = (x3857: number) => (x3857 * 180) / 20037508.342789244;
+                    const toLat = (y3857: number) =>
+                        (Math.atan(Math.exp((y3857 * Math.PI) / 20037508.342789244)) * 360) / Math.PI - 90;
+                    const tileMinLon = toLon(minX3857);
+                    const tileMaxLon = toLon(maxX3857);
+                    const tileMinLat = toLat(minY3857);
+                    const tileMaxLat = toLat(maxY3857);
+                    const intersects =
+                        tileMinLon < ITS_WMTS_BOUNDS.maxLon &&
+                        tileMaxLon > ITS_WMTS_BOUNDS.minLon &&
+                        tileMinLat < ITS_WMTS_BOUNDS.maxLat &&
+                        tileMaxLat > ITS_WMTS_BOUNDS.minLat;
+                    return intersects;
+                };
+
+                // 1x1 완전 투명 PNG RGBA (범위 밖 타일용, 팔레트 초록색 방지)
+                const EMPTY_PNG_BASE64 =
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVQYV2NgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
+
                 // ===== 요청 큐잉 시스템 (5순위 최적화) =====
-                // 동시 요청 수를 제한하여 ITS 서버 과부하 방지
                 const ITS_MAX_CONCURRENT_REQUESTS = 4;
                 const itsRequestQueue: Array<{
                     url: string;
@@ -713,6 +748,19 @@ const MapView = ({
                 maplibregl.addProtocol("its-wmts", (_params, abortController) => {
                     const directUrl = _params.url.replace("its-wmts://", "https://");
                     const tileUrl = directUrl.replace("https://its.go.kr:9443", "/its-proxy");
+
+                    const match = _params.url.match(/EPSG:3857:(\d+)\/(\d+)\/(\d+)/);
+                    if (match) {
+                        const z = parseInt(match[1], 10);
+                        const y = parseInt(match[2], 10);
+                        const x = parseInt(match[3], 10);
+                        if (!isTileInSeoulGyeonggiBounds(z, x, y)) {
+                            const binary = atob(EMPTY_PNG_BASE64);
+                            const arr = new Uint8Array(binary.length);
+                            for (let i = 0; i < binary.length; i++) arr[i] = binary.charCodeAt(i);
+                            return Promise.resolve({ data: arr.buffer });
+                        }
+                    }
 
                     return new Promise((resolve, reject) => {
                         itsRequestQueue.push({
