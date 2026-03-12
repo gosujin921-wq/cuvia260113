@@ -1114,16 +1114,16 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       const viewAngleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       viewAngleSvg.setAttribute('data-cctv-viewangle', '1');
       viewAngleSvg.style.cssText = `
-        position: absolute; width: 80px; height: 80px; top: 50%; left: 50%;
+        position: absolute; width: 120px; height: 120px; top: 50%; left: 50%;
         transform: translate(-50%, -50%) rotate(${direction - 90}deg);
         pointer-events: none; z-index: 0;
         display: ${showViewAngle ? 'block' : 'none'};
       `;
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M 40 40 L 20 10 A 35 35 0 0 1 60 10 Z');
-      path.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
-      path.setAttribute('stroke', 'rgba(59, 130, 246, 0.4)');
-      path.setAttribute('stroke-width', '1.5');
+      path.setAttribute('d', 'M 60 60 L 30 15 A 52 52 0 0 1 90 15 Z');
+      path.setAttribute('fill', 'rgba(147, 51, 234, 0.28)');
+      path.setAttribute('stroke', 'rgba(147, 51, 234, 0.65)');
+      path.setAttribute('stroke-width', '2');
       viewAngleSvg.appendChild(path);
       iconContainer.appendChild(viewAngleSvg);
 
@@ -1491,8 +1491,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         const viewAngleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         viewAngleSvg.style.cssText = `
           position: absolute;
-          width: 80px;
-          height: 80px;
+          width: 120px;
+          height: 120px;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%) rotate(${direction - 90}deg);
@@ -1501,10 +1501,10 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         `;
         
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('d', 'M 40 40 L 20 10 A 35 35 0 0 1 60 10 Z');
-        path.setAttribute('fill', 'rgba(59, 130, 246, 0.15)');
-        path.setAttribute('stroke', 'rgba(59, 130, 246, 0.4)');
-        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('d', 'M 60 60 L 30 15 A 52 52 0 0 1 90 15 Z');
+        path.setAttribute('fill', 'rgba(147, 51, 234, 0.28)');
+        path.setAttribute('stroke', 'rgba(147, 51, 234, 0.65)');
+        path.setAttribute('stroke-width', '2');
         
         viewAngleSvg.appendChild(path);
         iconContainer.appendChild(viewAngleSvg);
@@ -2087,32 +2087,22 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, [showCCTV]);
 
-  // 일반 이벤트 ID 목록 (event-26부터 event-33)
-  const generalEventIds = new Set([
-    'event-26', 'event-27', 'event-28', 'event-29',
-    'event-30', 'event-31', 'event-32', 'event-33',
-  ]);
-
   const getEventIcon = (type: string) => {
     switch (type) {
-      case '119-화재':
+      case '119 화재':
         return 'mdi:fire';
-      case '119-구조':
+      case '119 구조':
         return 'mdi:ambulance';
-      case '112-미아':
+      case '112 실종':
         return 'mdi:account-child';
-      case '112-치안':
+      case '112 치안':
         return 'mdi:shield-alert';
-      case '약자':
-        return 'mdi:account-alert';
-      case 'AI-배회':
+      case 'AI 탐지':
         return 'mdi:walk';
       case 'NDMS':
         return 'mdi:alert';
-      case '소방서':
-        return 'mdi:fire-truck';
       default:
-        return 'mdi:map-marker';
+        return 'mdi:alert-circle';
     }
   };
 
@@ -2331,8 +2321,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
     
     // 이벤트 타입에 따라 소방서 또는 경찰서 결정
-    const needsFireStation = selectedEvent.type === '119-화재' || selectedEvent.type === '119-구조';
-    const needsPoliceStation = selectedEvent.type === '112-미아' || selectedEvent.type === '112-치안';
+    const needsFireStation = selectedEvent.type === '119 화재' || selectedEvent.type === '119 구조';
+    const needsPoliceStation = selectedEvent.type === '112 실종' || selectedEvent.type === '112 치안';
     
     // 둘 다 필요한 경우도 있음 (기본적으로 둘 다 표시)
     const showBoth = !needsFireStation && !needsPoliceStation;
@@ -2524,13 +2514,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                }
              }}
              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-             aria-label="회전 왼쪽"
-           >
-             <Icon icon="mdi:rotate-left" className="w-5 h-5" />
-           </button>
-           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
-             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
-               왼쪽으로 회전
+            aria-label="반시계방향 회전"
+          >
+            <Icon icon="mdi:rotate-left" className="w-5 h-5" />
+          </button>
+          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+              반시계방향
              </div>
            </div>
          </div>
@@ -2551,21 +2541,21 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
                }
              }}
              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"
-             aria-label="회전 오른쪽"
-           >
-             <Icon icon="mdi:rotate-right" className="w-5 h-5" />
-           </button>
-           <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
-             <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
-               오른쪽으로 회전
+            aria-label="시계방향 회전"
+          >
+            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
+          </button>
+          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' }}>
+              시계방향
              </div>
            </div>
          </div>
          </div>
-         {/* 맵-CCTV 간격 30px */}
-         <div style={{ height: 30 }} />
-         {/* CCTV 컨트롤 */}
-         <div className="flex flex-col gap-2">
+        {/* 맵-CCTV 간격 30px */}
+        {!showFastSearchList && !aiDetectionEventId && <div style={{ height: 30 }} />}
+        {/* CCTV 컨트롤 */}
+        <div className="flex flex-col gap-2" style={{ display: (showFastSearchList || aiDetectionEventId) ? 'none' : 'flex' }}>
         {/* 도로 버튼 - 초기 화면에서만 표시 (고속검색 시 숨김) */}
         <div className="relative group">
           <button

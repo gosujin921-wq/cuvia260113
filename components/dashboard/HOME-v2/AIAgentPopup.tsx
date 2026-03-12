@@ -897,13 +897,14 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       const isRestore = deletedCount < 0;
       const isRestoreAttr = excludedAttributes.some((a) => a.includes('복원'));
       const isShowOnly = excludedAttributes.some((a) => a.endsWith('만 표시'));
+      const similarCandidateNote = '\n(유사 후보는 제외되지 않습니다)';
       const fullContent = isResultReSearchButton
         ? `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`
         : isShowOnly
-          ? `${excludedAttributes.map((a) => a.replace(/만 표시$/, '')).join(', ')} 속성의 영상만 표시합니다. ${deletedCount}건이 제외되었습니다.`
+          ? `${excludedAttributes.map((a) => a.replace(/만 표시$/, '')).join(', ')} 속성의 영상만 표시합니다. ${deletedCount}건이 제외되었습니다.${similarCandidateNote}`
           : (isRestore || isRestoreAttr)
             ? `${excludedAttributes.join(', ')} 조건이 적용되어 해당 영상이 리스트에 복원되었습니다.`
-            : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.`;
+            : `${excludedAttributes.join(', ')} 조건이 적용되어 ${deletedCount}건이 제외되었습니다.${similarCandidateNote}`;
       
       const messageId = `assistant-research-${Date.now()}`;
       const resultMessage: ChatMessage = {

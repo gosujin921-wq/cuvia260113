@@ -376,7 +376,7 @@ export default function HomeV3() {
       // 일반 5개
       {
         id: 'mock-1',
-        type: '112-치안',
+        type: '112 치안',
         title: '주차장 소음 민원 신고',
         priority: '일반' as const,
         status: 'NEW' as const,
@@ -387,18 +387,18 @@ export default function HomeV3() {
       },
       {
         id: 'mock-2',
-        type: '약자',
+        type: '119 구조',
         title: '노인 낙상 부상 신고',
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
         location: { name: '하늘시 별빛구 별양동 중앙공원 북문 인근', coordinates: [127.202706819665, 37.360286188524] as [number, number] },
         processingStage: '선별',
-        resolution: { category: '약자', code: '002', description: '' },
+        resolution: { category: '119', code: '002', description: '' },
       },
       {
         id: 'mock-3',
-        type: '112-치안',
+        type: '112 치안',
         title: '횡단보도 신호 위반',
         priority: '일반' as const,
         status: 'MONITORING' as const,
@@ -409,7 +409,7 @@ export default function HomeV3() {
       },
       {
         id: 'mock-4',
-        type: 'AI-배회',
+        type: 'AI 탐지',
         title: '이상 행동 AI 탐지',
         priority: '일반' as const,
         status: 'NEW' as const,
@@ -420,7 +420,7 @@ export default function HomeV3() {
       },
       {
         id: 'mock-5',
-        type: '112-치안',
+        type: '112 치안',
         title: '차량 사고 교통 정체',
         priority: '일반' as const,
         status: 'MONITORING' as const,
@@ -432,7 +432,7 @@ export default function HomeV3() {
       // 주의 3개
       {
         id: 'mock-6',
-        type: '112-미아',
+        type: '112 실종',
         title: '미아 발생 긴급 수색',
         priority: '주의' as const,
         status: 'MONITORING' as const,
@@ -443,7 +443,7 @@ export default function HomeV3() {
       },
       {
         id: 'mock-7',
-        type: '119-구조',
+        type: '119 구조',
         title: '차량 충돌 사고 발생',
         priority: '주의' as const,
         status: 'NEW' as const,
@@ -454,7 +454,7 @@ export default function HomeV3() {
       },
       {
         id: 'mock-8',
-        type: '112-치안',
+        type: '112 치안',
         title: '말다툼 주먹다짐 발생',
         priority: '주의' as const,
         status: 'MONITORING' as const,
@@ -466,7 +466,7 @@ export default function HomeV3() {
       // 경계 2개
       {
         id: 'mock-9',
-        type: '119-화재',
+        type: '119 화재',
         title: '쓰레기 수거함 화재 발생',
         priority: '경계' as const,
         status: 'MONITORING' as const,
@@ -477,7 +477,7 @@ export default function HomeV3() {
       },
       {
         id: 'mock-10',
-        type: '112-치안',
+        type: '112 치안',
         title: '절도 시도 의심 행동',
         priority: '경계' as const,
         status: 'NEW' as const,
@@ -489,13 +489,13 @@ export default function HomeV3() {
     ];
   }, []);
 
-  // 보이는 이벤트만 필터링 (중복 로직 제거)
+  const isKimDoyeonEvent = (event: Event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004";
+
+  // 보이는 이벤트만 필터링: 김도연(A-20260107-004)만 1키 입력 시 노출, 나머지는 항상 노출
   const visibleEvents: Event[] = useMemo(() => {
-    // 가상 이벤트는 항상 표시
-    const realEvents = visibleEventIds.size > 0 
-      ? allConvertedEvents.filter((event) => visibleEventIds.has(event.id))
-      : [];
-    return [...mockEvents, ...realEvents];
+    const alwaysVisibleReal = allConvertedEvents.filter((event) => !isKimDoyeonEvent(event));
+    const kimDoyeon = allConvertedEvents.filter((event) => isKimDoyeonEvent(event) && visibleEventIds.has(event.id));
+    return [...mockEvents, ...alwaysVisibleReal, ...kimDoyeon];
   }, [allConvertedEvents, visibleEventIds, mockEvents]);
 
   // MapView용 이벤트 (선택된 이벤트를 맨 앞에 추가)

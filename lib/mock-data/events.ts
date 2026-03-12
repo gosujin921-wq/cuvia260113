@@ -149,7 +149,7 @@ export const MOCK_EVENTS: BaseEvent[] = [
   {
     eventId: 'A-20241124-001',
     id: 'A-20241124-001',
-    type: '폭행 · 상해',
+    type: '폭행',
     title: '흉기 소지 남성 위협 행동',
     time: '18:42',
     location: '별빛구 은하로363번길 48',
@@ -167,7 +167,7 @@ export const MOCK_EVENTS: BaseEvent[] = [
   {
     eventId: 'A-20251210-003',
     id: 'A-20251210-003',
-    type: '유괴 의심 · 아동 실종',
+    type: '유괴 의심',
     title: '유괴 의심 신고, 아동 납치 추정',
     time: '15:20',
     location: '별빛구 은하동 중앙초등학교 앞 놀이터',
@@ -185,7 +185,7 @@ export const MOCK_EVENTS: BaseEvent[] = [
   {
     eventId: 'A-20260107-004',
     id: 'A-20260107-004',
-    type: '실종 · 미아',
+    type: '실종',
     title: '김도연(남, 22세, 장애) 실종 신고',
     time: '09:30',
     location: '별빛구 은하로363번길 48 일원',

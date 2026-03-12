@@ -1,12 +1,11 @@
 export type EventPriority = '긴급' | '경계' | '주의' | '일반';
 export type EventStatus = 'NEW' | 'MONITORING' | 'RESOLVED' | 'EVIDENCE';
 export type EventType =
-  | '119-화재'
-  | '119-구조'
-  | '112-미아'
-  | '112-치안'
-  | '약자'
-  | 'AI-배회'
+  | '119 화재'
+  | '119 구조'
+  | '112 실종'
+  | '112 치안'
+  | 'AI 탐지'
   | 'NDMS'
   | '소방서';
 

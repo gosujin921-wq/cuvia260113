@@ -53,12 +53,11 @@ export interface BaseEvent {
  *    - '생성' | '선별' | '착수' | '사실 검증' | '추적 · 지원' | '전파' | '종결'
  * 
  * 2. 이벤트 타입 매핑 (EventType)
- *    - BaseEvent.type (예: '폭행 · 상해') -> EventType (예: '112-치안')
+ *    - BaseEvent.type (예: '폭행') -> EventType (예: '112 치안')
  *    - 도메인별 그룹:
- *      * A (112 치안·방범): '112-치안', '112-미아'
- *      * B (119 재난·구조): '119-화재', '119-구조'
- *      * C (사회적 약자 보호): '약자', 'AI-배회'
- *      * D (AI 이상행동): '112-치안', '119-화재' 등
+ *      * A (112 치안·방범): '112 치안', '112 실종'
+ *      * B (119 재난·구조): '119 화재', '119 구조'
+ *      * D (AI 이상행동): 'AI 탐지'
  *      * E (재난): 'NDMS'
  *      * F (도시 운영·환경): '소방서'
  * 
@@ -92,7 +91,7 @@ const eventSpecificData: Record<string, {
   listLocation?: string;
 }> = {
   'A-20241124-001': {
-    type: '112-치안',
+    type: '112 치안',
     processingStage: '착수',
     resolution: {
       category: '112',
@@ -100,7 +99,7 @@ const eventSpecificData: Record<string, {
     },
   },
   'A-20251210-003': {
-    type: '112-미아',
+    type: '112 실종',
     processingStage: '착수',
     resolution: {
       category: '112',
@@ -108,7 +107,7 @@ const eventSpecificData: Record<string, {
     },
   },
   'A-20260107-004': {
-    type: '112-미아',
+    type: '112 실종',
     processingStage: '생성',
     resolution: {
       category: '112',
@@ -197,7 +196,7 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
     return {
       id: event.id,
       eventId: event.eventId,
-      type: '112-치안' as EventType,
+      type: '112 치안' as EventType,
       title: event.title,
       priority: event.risk,
       status: statusMap[event.status] || 'NEW',

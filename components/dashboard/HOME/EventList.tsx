@@ -85,10 +85,7 @@ const EventList = ({ events, selectedEventId, eventType, onEventSelect, onEventH
         return formatEventDateTime(event.eventId ?? "", event.timestamp);
     };
 
-    // 일반 이벤트 ID 목록 (event-26부터 event-33)
-    const generalEventIds = new Set(["event-26", "event-27", "event-28", "event-29", "event-30", "event-31", "event-32", "event-33"]);
-
-    const filteredEvents = priorityFilter === "GENERAL" ? sortedEvents.filter((event) => event.priority === "일반" || generalEventIds.has(event.id)) : priorityFilter === "ALL" ? sortedEvents : sortedEvents.filter((event) => event.priority === priorityFilter);
+    const filteredEvents = priorityFilter === "GENERAL" ? sortedEvents.filter((event) => event.priority === "일반") : priorityFilter === "ALL" ? sortedEvents : sortedEvents.filter((event) => event.priority === priorityFilter);
 
     // 우선순위별 건수 계산
     const getPriorityCount = (priority: "긴급" | "경계" | "주의") => {
@@ -99,13 +96,14 @@ const EventList = ({ events, selectedEventId, eventType, onEventSelect, onEventH
         return count > 99 ? "99+" : count.toString();
     };
 
+    const urgentCount = getPriorityCount("긴급");
     const cautionCount = getPriorityCount("경계");
     const attentionCount = getPriorityCount("주의");
-    const generalCount = sortedEvents.filter((event) => event.priority === "일반" || generalEventIds.has(event.id)).length;
+    const generalCount = sortedEvents.filter((event) => event.priority === "일반").length;
 
     const tabs = [
         { label: "전체", value: "ALL" as const, count: null },
-        { label: "긴급", value: "긴급" as const, count: key1PressTime ? 1 : 0 },
+        { label: "긴급", value: "긴급" as const, count: urgentCount },
         { label: "경계", value: "경계" as const, count: cautionCount },
         { label: "주의", value: "주의" as const, count: attentionCount },
         { label: "일반", value: "GENERAL" as const, count: generalCount },
@@ -203,8 +201,8 @@ const EventList = ({ events, selectedEventId, eventType, onEventSelect, onEventH
                                     <div className="text-gray-300 text-[0.7rem] font-medium">{dateTime}</div>
                                     {event.priority === "긴급" && <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full">긴급</span>}
                                     {event.priority === "경계" && <span className="px-2 py-0.5 bg-yellow-500 text-gray-900 text-[10px] font-semibold rounded-full">경계</span>}
-                                    {event.priority === "주의" && !generalEventIds.has(event.id) && <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-semibold rounded-full">주의</span>}
-                                    {((event.priority === "주의" && generalEventIds.has(event.id)) || event.priority === "일반") && <span className="px-2 py-0.5 bg-gray-500 text-white text-[10px] font-semibold rounded-full">일반</span>}
+                                    {event.priority === "주의" && <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-semibold rounded-full">주의</span>}
+                                    {event.priority === "일반" && <span className="px-2 py-0.5 bg-gray-500 text-white text-[10px] font-semibold rounded-full">일반</span>}
                                 </div>
 
                                 {/* 이벤트 제목 */}

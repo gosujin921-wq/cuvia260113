@@ -966,3 +966,32 @@ input[type="range"].slider::-moz-range-thumb {
 .agent-html-content .agent-table tbody tr:nth-child(even) .agent-table-cell {
     background: rgba(255, 255, 255, 0.03);
 }
+
+/* Display page - floating glow orbs */
+@keyframes display-orb-float-1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(200px, 160px) scale(1.2); }
+    50% { transform: translate(60px, 300px) scale(0.8); }
+    75% { transform: translate(-140px, 120px) scale(1.15); }
+}
+
+@keyframes display-orb-float-2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-180px, 140px) scale(0.85); }
+    50% { transform: translate(-60px, 280px) scale(1.2); }
+    75% { transform: translate(100px, 160px) scale(0.85); }
+}
+
+@keyframes display-orb-float-3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(180px, -140px) scale(1.15); }
+    50% { transform: translate(240px, -240px) scale(0.85); }
+    75% { transform: translate(60px, -180px) scale(1.15); }
+}
+
+@keyframes display-orb-float-4 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-140px, -180px) scale(0.85); }
+    50% { transform: translate(-180px, -280px) scale(1.2); }
+    75% { transform: translate(60px, -100px) scale(0.85); }
+}

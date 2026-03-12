@@ -2065,32 +2065,22 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
   }, [showCCTV]);
 
-  // 일반 이벤트 ID 목록 (event-26부터 event-33)
-  const generalEventIds = new Set([
-    'event-26', 'event-27', 'event-28', 'event-29',
-    'event-30', 'event-31', 'event-32', 'event-33',
-  ]);
-
   const getEventIcon = (type: string) => {
     switch (type) {
-      case '119-화재':
+      case '119 화재':
         return 'mdi:fire';
-      case '119-구조':
+      case '119 구조':
         return 'mdi:ambulance';
-      case '112-미아':
+      case '112 실종':
         return 'mdi:account-child';
-      case '112-치안':
+      case '112 치안':
         return 'mdi:shield-alert';
-      case '약자':
-        return 'mdi:account-alert';
-      case 'AI-배회':
+      case 'AI 탐지':
         return 'mdi:walk';
       case 'NDMS':
         return 'mdi:alert';
-      case '소방서':
-        return 'mdi:fire-truck';
       default:
-        return 'mdi:map-marker';
+        return 'mdi:alert-circle';
     }
   };
 
@@ -2309,8 +2299,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     }
     
     // 이벤트 타입에 따라 소방서 또는 경찰서 결정
-    const needsFireStation = selectedEvent.type === '119-화재' || selectedEvent.type === '119-구조';
-    const needsPoliceStation = selectedEvent.type === '112-미아' || selectedEvent.type === '112-치안';
+    const needsFireStation = selectedEvent.type === '119 화재' || selectedEvent.type === '119 구조';
+    const needsPoliceStation = selectedEvent.type === '112 실종' || selectedEvent.type === '112 치안';
     
     // 둘 다 필요한 경우도 있음 (기본적으로 둘 다 표시)
     const showBoth = !needsFireStation && !needsPoliceStation;

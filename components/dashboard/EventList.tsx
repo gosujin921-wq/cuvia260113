@@ -132,11 +132,8 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
     if (type.includes('화재') || type.includes('구조')) {
       return 'bg-red-500/20 text-red-400';
     }
-    if (type.includes('미아') || type.includes('치안')) {
+    if (type.includes('실종') || type.includes('치안')) {
       return 'bg-blue-500/20 text-blue-400';
-    }
-    if (type.includes('약자')) {
-      return 'bg-orange-500/20 text-orange-400';
     }
     if (type.includes('AI')) {
       return 'bg-green-500/20 text-green-400';
@@ -146,13 +143,15 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
 
   const getEventIcon = (type: string) => {
     switch (type) {
-      case '119-화재':
+      case '119 화재':
         return 'mdi:fire';
-      case '112-미아':
+      case '119 구조':
+        return 'mdi:ambulance';
+      case '112 실종':
         return 'mdi:account-child';
-      case '약자':
-        return 'mdi:account-alert';
-      case 'AI-배회':
+      case '112 치안':
+        return 'mdi:shield-alert';
+      case 'AI 탐지':
         return 'mdi:walk';
       case 'NDMS':
         return 'mdi:alert';
@@ -161,18 +160,9 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
     }
   };
 
-  // 일반 이벤트 ID 목록 (event-26부터 event-33)
-  const generalEventIds = new Set([
-    'event-26', 'event-27', 'event-28', 'event-29',
-    'event-30', 'event-31', 'event-32', 'event-33',
-  ]);
-
   const filteredGroups =
     priorityFilter === 'GENERAL'
-      ? groupedEvents.filter(({ main }) => {
-          // 일반 탭: 일반 이벤트 ID 목록에 포함된 이벤트들만 표시
-          return generalEventIds.has(main.id);
-        })
+      ? groupedEvents.filter(({ main }) => main.priority === '일반')
       : groupedEvents.filter(({ main }) =>
           priorityFilter === 'ALL' ? true : main.priority === priorityFilter,
         );
@@ -189,7 +179,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
   const urgentCount = getPriorityCount('긴급');
   const cautionCount = getPriorityCount('경계');
   const attentionCount = getPriorityCount('주의');
-  const generalCount = groupedEvents.filter(({ main }) => generalEventIds.has(main.id)).length;
+  const generalCount = groupedEvents.filter(({ main }) => main.priority === '일반').length;
 
   const tabs = [
     { label: '전체', value: 'ALL' as const, count: null },
@@ -328,11 +318,9 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                           })()}
                         </span>
                         <span className="text-gray-300 text-[0.7rem] font-medium">
-                          {main.type === '112-치안' ? '112 상황실' : 
-                           main.type === '112-미아' ? '112 상황실' :
-                           main.type === '119-화재' || main.type === '119-구조' ? '119 지휘센터' :
-                           main.type === '약자' ? '약자 보호 센터' :
-                           main.type === 'AI-배회' ? 'AI 시스템' : main.type}
+                          {main.type === '112 치안' || main.type === '112 실종' ? '112 상황실' : 
+                           main.type === '119 화재' || main.type === '119 구조' ? '119 지휘센터' :
+                           main.type === 'AI 탐지' ? 'AI 시스템' : main.type}
                         </span>
                       </>
                     ) : (
@@ -364,12 +352,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                       경계
                     </span>
                   )}
-                  {main.priority === '주의' && generalEventIds.has(main.id) && (
-                    <span className="px-2 py-0.5 bg-gray-500 text-white text-[10px] font-semibold rounded-full">
-                      일반
-                    </span>
-                  )}
-                  {main.priority === '주의' && !generalEventIds.has(main.id) && (
+                  {main.priority === '주의' && (
                     <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-semibold rounded-full">
                       주의
                     </span>

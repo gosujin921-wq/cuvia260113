@@ -8,6 +8,7 @@ import HomeWithLink from "./pages/Home-with-link";
 import ComponentsStylePage from "./pages/components-style";
 import AgentChatPage from "./pages/agent-chat";
 import CuviaLinkPage from "./pages/cuvia-link";
+import DisplayPage from "./pages/display";
 
 function App() {
     return (
@@ -23,6 +24,7 @@ function App() {
             <Route path="/components-style" element={<ComponentsStylePage />} />
             <Route path="/agent-chat" element={<AgentChatPage />} />
             <Route path="/workspace" element={<CuviaLinkPage />} />
+            <Route path="/display" element={<DisplayPage />} />
         </Routes>
     );
 }

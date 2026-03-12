@@ -1644,6 +1644,56 @@ const MapView = ({
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
 
+    // showCCTV 변경 시 CCTV 마커 표시/숨김 (예측된 CCTV 제외)
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const cctvMarkers = (map as any)._cctvMarkers;
+        if (cctvMarkers) {
+            cctvMarkers.forEach((marker: any) => {
+                const element = marker.getElement();
+                if (element && !element.classList.contains("predicted-cctv-marker")) {
+                    element.style.display = showCCTV ? "block" : "none";
+                }
+            });
+        }
+    }, [showCCTV]);
+
+    // CCTV 마커 표시/숨김 제어
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const cctvMarkers = (map as any)._cctvMarkers;
+        if (cctvMarkers) {
+            cctvMarkers.forEach((marker: maplibregl.Marker) => {
+                const element = marker.getElement();
+                if (element && !element.classList.contains("predicted-cctv-marker")) {
+                    element.style.display = showCCTV ? "block" : "none";
+                }
+            });
+        }
+    }, [showCCTV]);
+
+    const getEventIcon = (type: string) => {
+        switch (type) {
+            case "119 화재":
+                return "mdi:fire";
+            case "119 구조":
+                return "mdi:ambulance";
+            case "112 실종":
+                return "mdi:account-child";
+            case "112 치안":
+                return "mdi:shield-alert";
+            case "AI 탐지":
+                return "mdi:walk";
+            case "NDMS":
+                return "mdi:alert";
+            default:
+                return "mdi:alert-circle";
+        }
+    };
     // 이벤트 ID를 기반으로 일관된 랜덤 값 생성
     const seededRandom = (seed: string) => {
         let hash = 0;
@@ -1811,6 +1861,78 @@ const MapView = ({
         return { x: 0, y: 0, offsetX: 0 };
     }, []);
 
+    // 핀 위치 계산 - 단순히 퍼센트 위치 유지
+    const getEventPosition = (event: Event) => {
+        return positionsById[event.id] || { left: centerX, top: centerY };
+    };
+
+    // 소방서 고정 위치 (3개) - 더 분산
+    const fireStations = useMemo(
+        () => [
+            { id: "fire-1", name: "안양소방서", left: 20, top: 30 },
+            { id: "fire-2", name: "평촌소방서", left: 75, top: 25 },
+            { id: "fire-3", name: "만안소방서", left: 30, top: 80 },
+        ],
+        []
+    );
+
+    // 경찰서 고정 위치 (5개) - 더 분산
+    const policeStations = useMemo(
+        () => [
+            { id: "police-1", name: "안양경찰서", left: 15, top: 50 },
+            { id: "police-2", name: "평촌경찰서", left: 80, top: 40 },
+            { id: "police-3", name: "만안경찰서", left: 25, top: 75 },
+            { id: "police-4", name: "비산파출소", left: 60, top: 60 },
+            { id: "police-5", name: "석수파출소", left: 10, top: 20 },
+        ],
+        []
+    );
+
+    // 두 점 사이의 거리 계산 (퍼센트 기반)
+    const calculateDistance = (x1: number, y1: number, x2: number, y2: number) => {
+        return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    };
+
+    // 선택된 이벤트와 가까운 소방서/경찰서 찾기
+    const nearbyStations = useMemo(() => {
+        if (!selectedEventId) return { fireStations: [], policeStations: [] };
+
+        const selectedEvent = events.find((e) => e.id === selectedEventId);
+        if (!selectedEvent) return { fireStations: [], policeStations: [] };
+
+        let eventPosition = getEventPosition(selectedEvent);
+        if (selectedEventId === "event-3") {
+            const event14 = events.find((e) => e.id === "event-14");
+            if (event14) {
+                eventPosition = getEventPosition(event14);
+            }
+        }
+
+        const needsFireStation = selectedEvent.type === "119 화재" || selectedEvent.type === "119 구조";
+        const needsPoliceStation = selectedEvent.type === "112 실종" || selectedEvent.type === "112 치안";
+        const showBoth = !needsFireStation && !needsPoliceStation;
+
+        let nearbyFire: typeof fireStations = [];
+        let nearbyPolice: typeof policeStations = [];
+
+        if (needsFireStation || showBoth) {
+            const fireWithDistance = fireStations.map((station) => ({
+                ...station,
+                distance: calculateDistance(eventPosition.left, eventPosition.top, station.left, station.top),
+            }));
+            nearbyFire = fireWithDistance.sort((a, b) => a.distance - b.distance).slice(0, 1);
+        }
+
+        if (needsPoliceStation || showBoth || selectedEventId === "event-3") {
+            const policeWithDistance = policeStations.map((station) => ({
+                ...station,
+                distance: calculateDistance(eventPosition.left, eventPosition.top, station.left, station.top),
+            }));
+            nearbyPolice = policeWithDistance.sort((a, b) => a.distance - b.distance).slice(0, 1);
+        }
+
+        return { fireStations: nearbyFire, policeStations: nearbyPolice };
+    }, [selectedEventId, events, fireStations, policeStations, positionsById]);
     useEffect(() => {
         if (isAgentActive) {
             setShowTrafficLayer(false);

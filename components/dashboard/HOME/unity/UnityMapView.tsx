@@ -599,7 +599,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                               description: "",
                               timestamp: new Date().toISOString(),
                               priority: "주의",
-                              type: "AI-배회",
+                              type: "AI 탐지",
                               status: "NEW",
                               location: { name: "", coordinates: [0, 0] },
                               processingStage: "생성",

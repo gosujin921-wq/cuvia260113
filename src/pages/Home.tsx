@@ -170,7 +170,7 @@ export default function Home() {
             // 일반 5개
             {
                 id: "mock-1",
-                type: "112-치안",
+                type: "112 치안",
                 title: "주차장 소음 민원 신고",
                 priority: "일반",
                 status: "NEW",
@@ -181,18 +181,18 @@ export default function Home() {
             },
             {
                 id: "mock-2",
-                type: "약자",
+                type: "119 구조",
                 title: "노인 낙상 부상 신고",
                 priority: "일반",
                 status: "NEW",
                 timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
                 location: { name: "부천시 원미구 중앙공원 산책로", coordinates: [126.99, 37.43] },
                 processingStage: "선별",
-                resolution: { category: "약자", code: "002", description: "" },
+                resolution: { category: "119", code: "002", description: "" },
             },
             {
                 id: "mock-3",
-                type: "112-치안",
+                type: "112 치안",
                 title: "횡단보도 신호 위반",
                 priority: "일반",
                 status: "MONITORING",
@@ -203,7 +203,7 @@ export default function Home() {
             },
             {
                 id: "mock-4",
-                type: "AI-배회",
+                type: "AI 탐지",
                 title: "이상 행동 AI 탐지",
                 priority: "일반",
                 status: "NEW",
@@ -214,7 +214,7 @@ export default function Home() {
             },
             {
                 id: "mock-5",
-                type: "112-치안",
+                type: "112 치안",
                 title: "차량 사고 교통 정체",
                 priority: "일반",
                 status: "MONITORING",
@@ -226,7 +226,7 @@ export default function Home() {
             // 주의 3개
             {
                 id: "mock-6",
-                type: "112-미아",
+                type: "112 실종",
                 title: "미아 발생 긴급 수색",
                 priority: "주의",
                 status: "MONITORING",
@@ -237,7 +237,7 @@ export default function Home() {
             },
             {
                 id: "mock-7",
-                type: "119-구조",
+                type: "119 구조",
                 title: "차량 충돌 사고 발생",
                 priority: "주의",
                 status: "NEW",
@@ -248,7 +248,7 @@ export default function Home() {
             },
             {
                 id: "mock-8",
-                type: "112-치안",
+                type: "112 치안",
                 title: "말다툼 주먹다짐 발생",
                 priority: "주의",
                 status: "MONITORING",
@@ -260,7 +260,7 @@ export default function Home() {
             // 경계 2개
             {
                 id: "mock-9",
-                type: "119-화재",
+                type: "119 화재",
                 title: "쓰레기 수거함 화재 발생",
                 priority: "경계",
                 status: "MONITORING",
@@ -271,7 +271,7 @@ export default function Home() {
             },
             {
                 id: "mock-10",
-                type: "112-치안",
+                type: "112 치안",
                 title: "절도 시도 의심 행동",
                 priority: "경계",
                 status: "NEW",
@@ -283,27 +283,20 @@ export default function Home() {
         ];
     }, []);
 
-    // 표시할 이벤트만 필터링 (숫자 키를 눌렀을 때만 표시, 단 1번 이벤트는 항상 표시)
+    const isKimDoyeonEvent = (event: Event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004";
+
+    // 맵용 이벤트: 김도연(A-20260107-004)만 1키 입력 시 노출, 나머지는 항상 노출
     const events: Event[] = useMemo(() => {
-        const event1 = allConvertedEvents.find((event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004");
-
-        if (visibleEventIds.size === 0) {
-            return event1 ? [event1] : [];
-        }
-
-        const filteredEvents = allConvertedEvents.filter((event) => visibleEventIds.has(event.id));
-        if (event1 && !filteredEvents.find((e) => e.id === event1.id)) {
-            filteredEvents.push(event1);
-        }
-        return filteredEvents;
+        const alwaysVisible = allConvertedEvents.filter((event) => !isKimDoyeonEvent(event));
+        const kimDoyeon = allConvertedEvents.filter((event) => isKimDoyeonEvent(event) && visibleEventIds.has(event.id));
+        return [...alwaysVisible, ...kimDoyeon];
     }, [allConvertedEvents, visibleEventIds]);
 
     // 이벤트 리스트용 이벤트 (가상 이벤트 포함)
     const eventsForList: Event[] = useMemo(() => {
-        // 가상 이벤트는 항상 표시
-        const visibleRealEvents = visibleEventIds.size > 0 ? allConvertedEvents.filter((event) => visibleEventIds.has(event.id)) : [];
-
-        return [...mockEvents, ...visibleRealEvents];
+        const alwaysVisibleReal = allConvertedEvents.filter((event) => !isKimDoyeonEvent(event));
+        const kimDoyeon = allConvertedEvents.filter((event) => isKimDoyeonEvent(event) && visibleEventIds.has(event.id));
+        return [...mockEvents, ...alwaysVisibleReal, ...kimDoyeon];
     }, [allConvertedEvents, visibleEventIds, mockEvents]);
 
     // 이벤트 선택/클릭 핸들러 (통합)
