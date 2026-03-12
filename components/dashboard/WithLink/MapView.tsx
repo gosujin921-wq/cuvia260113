@@ -983,7 +983,7 @@ const MapView = ({
                         if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
                             console.error("[ITS WMTS] 연속 에러 발생 - 레이어 일시 비활성화");
                             if (map.getLayer(trafficWmsLayerId)) {
-                                map.setPaintProperty(trafficWmsLayerId, "raster-opacity", 0.3);
+                                map.setPaintProperty(trafficWmsLayerId, "raster-opacity", 0.7);
                             }
                         }
 

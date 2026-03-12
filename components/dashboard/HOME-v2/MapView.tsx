@@ -22,6 +22,13 @@ proj4.defs(
   'EPSG:5181',
   '+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
 );
+
+/** gitsmap-wms 타일 요청 간 최소 간격(ms). 호출을 천천히 하기 위해 큐로 직렬화한다. */
+const GITSMAP_WMS_TILE_DELAY_MS = 100;
+
+/** gitsmap-wms 프로토콜 요청 큐 꼬리 (한 번에 하나씩, 간격 두고 실행) */
+let gitsmapWmsQueueTail: Promise<void> = Promise.resolve();
+
 import { getInitialCCTVClusters, clusterInitialCCTVs, getRoadIncidentMarkers, type InitialCCTVItem } from '@/lib/initial-cctv-clusters';
 import { KOREA_BOUNDS } from '@/src/const/const';
 
@@ -480,23 +487,69 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       }
 
       // ========== 방식 2: UTIC WMS (gis.utic.go.kr GeoServer) ==========
+      // 포맷: .../wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&tiled=true&LAYERS=UTIS:vi_2022_p_lvX_d&WIDTH=256&HEIGHT=256&SRS=EPSG:5181&BBOX=minx,miny,maxx,maxy
+      // BBOX는 EPSG:5181(한국중부원점) 미터 단위. 타일(z,x,y)→3857→5181 변환 후 프록시 경유(CORS 대응).
+      // 최적화: 지도 줌(9~18) → WMS 레벨(lv9~lv4) 매핑, BBOX 축소. TIME 파라미터로 캐시/버전 지정.
       if (!(maplibregl as any)._gitsmapWmsProtocolRegistered) {
+        // 지도 줌 → WMS 레벨 매핑 (지도 줌 9~18 → lv9~lv4)
+        // 줌인할수록 lv 숫자가 작아지는 구조
+        const zoomToLevelMap: { minZoom: number; maxZoom: number; level: number }[] = [
+          { minZoom: 9, maxZoom: 10.5, level: 9 },
+          { minZoom: 10.5, maxZoom: 12, level: 8 },
+          { minZoom: 12, maxZoom: 13.5, level: 7 },
+          { minZoom: 13.5, maxZoom: 15, level: 6 },
+          { minZoom: 15, maxZoom: 16.5, level: 5 },
+          { minZoom: 16.5, maxZoom: 19, level: 4 },
+        ];
+
+        const getLevelFromZoom = (zoom: number): number => {
+          for (const rule of zoomToLevelMap) {
+            if (zoom >= rule.minZoom && zoom < rule.maxZoom) {
+              return rule.level;
+            }
+          }
+          return zoom < 9 ? 9 : 4;
+        };
+
+        // BBOX 축소 비율 (0.8 = 원래 크기의 80%)
+        const BBOX_SCALE = 1;
+
         maplibregl.addProtocol('gitsmap-wms', (params: { url: string }, abortController: AbortController) => {
           const urlParts = params.url.replace('gitsmap-wms://', '').split('/');
           const z = parseInt(urlParts[0], 10);
           const x = parseInt(urlParts[1], 10);
           const y = parseInt(urlParts[2], 10);
+
           const tileCount = Math.pow(2, z);
           const worldSize = 20037508.342789244 * 2;
           const tileSize = worldSize / tileCount;
+
           const minX3857 = x * tileSize - 20037508.342789244;
           const maxX3857 = (x + 1) * tileSize - 20037508.342789244;
           const maxY3857 = 20037508.342789244 - y * tileSize;
           const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
+
           const to5181 = proj4('EPSG:3857', 'EPSG:5181');
           const min5181 = to5181.forward([minX3857, minY3857]);
           const max5181 = to5181.forward([maxX3857, maxY3857]);
-          const bbox5181 = `${min5181[0]},${min5181[1]},${max5181[0]},${max5181[1]}`;
+
+          // BBOX 축소 적용 (중심 기준으로 축소)
+          const centerX = (min5181[0] + max5181[0]) / 2;
+          const centerY = (min5181[1] + max5181[1]) / 2;
+          const halfWidth = ((max5181[0] - min5181[0]) / 2) * BBOX_SCALE;
+          const halfHeight = ((max5181[1] - min5181[1]) / 2) * BBOX_SCALE;
+
+          const scaledMinX = centerX - halfWidth;
+          const scaledMaxX = centerX + halfWidth;
+          const scaledMinY = centerY - halfHeight;
+          const scaledMaxY = centerY + halfHeight;
+
+          const bbox5181 = `${scaledMinX},${scaledMinY},${scaledMaxX},${scaledMaxY}`;
+
+          // 지도 줌 기반 레벨 선택
+          const level = getLevelFromZoom(z);
+          const layerName = `UTIS:vi_2022_p_lv${level}_d`;
+
           const wmsParams = new URLSearchParams({
             SERVICE: 'WMS',
             VERSION: '1.1.1',
@@ -504,20 +557,50 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
             FORMAT: 'image/png',
             TRANSPARENT: 'true',
             tiled: 'true',
-            LAYERS: 'UTIS:vi_2022_p_lv7_d',
+            LAYERS: layerName,
             WIDTH: '256',
             HEIGHT: '256',
             SRS: 'EPSG:5181',
             BBOX: bbox5181,
-            TIME: String(Date.now()),
+            TIME: '1773282392253',
           });
           const wmsUrl = `/utic-wms-proxy/geoserver/UTIS/wms?${wmsParams.toString()}`;
-          return fetch(wmsUrl, { signal: abortController.signal })
+
+          // 큐: 이전 요청 후 최소 간격을 두고 한 번에 하나씩 실행 (호출 천천히)
+          const delayWithAbort = new Promise<void>((resolve, reject) => {
+            const t = setTimeout(resolve, GITSMAP_WMS_TILE_DELAY_MS);
+            abortController.signal.addEventListener(
+              'abort',
+              () => {
+                clearTimeout(t);
+                reject(new DOMException('Aborted', 'AbortError'));
+              },
+              { once: true }
+            );
+          });
+
+          const thisRequest = gitsmapWmsQueueTail
+            .then(() => delayWithAbort)
+            .then(() => {
+              if (abortController.signal.aborted) throw new DOMException('Aborted', 'AbortError');
+              return fetch(wmsUrl, {
+                signal: abortController.signal,
+                headers: { Accept: 'image/png' },
+              });
+            })
             .then((response) => {
               if (!response.ok) throw new Error(`WMS request failed: ${response.status}`);
-              return response.arrayBuffer();
+              return response.blob();
             })
+            .then((blob) => blob.arrayBuffer())
             .then((data) => ({ data }));
+
+          gitsmapWmsQueueTail = gitsmapWmsQueueTail
+            .then(() => delayWithAbort)
+            .then(() => {})
+            .catch(() => {});
+
+          return thisRequest;
         });
         (maplibregl as any)._gitsmapWmsProtocolRegistered = true;
       }
