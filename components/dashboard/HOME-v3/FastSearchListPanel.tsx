@@ -36,6 +36,8 @@ interface FastSearchListPanelProps {
   autoCapture?: boolean;
   /** 팝업 닫힐 때 호출 */
   onPopupClose?: () => void;
+  /** [AUTO-DEMO] 팝업 열린 후 지정 ms 뒤 자동 "맞음" → "확인" */
+  autoMatchAndConfirmDelay?: number | null;
 }
 
 interface CaptureItem {
@@ -143,6 +145,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   closePopupSignal,
   autoCapture = false,
   onPopupClose,
+  autoMatchAndConfirmDelay = null,
 }) => {
   const [radius, setRadius] = useState<number>(400); // 반경 (m) - 실제 적용된 값
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
@@ -1039,6 +1042,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
         candidate={selectedCandidate}
         onAddCapture={onAddCapture}
         autoCapture={autoCapture}
+        autoMatchAndConfirmDelay={autoMatchAndConfirmDelay}
         matchState={
           selectedCandidate
             ? matchedIds.has(selectedCandidate.id)

@@ -333,6 +333,7 @@ export default function HomeV3() {
   // [AUTO-DEMO] 자동 데모 시퀀스 (나중에 이 블록 전체 삭제)
   const autoDemoTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const autoDemoPendingRef = useRef(false);
+  const [autoMatchDelay, setAutoMatchDelay] = useState<number | null>(null);
   const handleWelcomeTypingComplete = useCallback(() => {
     if (!autoDemoPendingRef.current) return;
     autoDemoPendingRef.current = false;
@@ -833,17 +834,10 @@ export default function HomeV3() {
       autoDemoPendingRef.current = true;
       // [/AUTO-DEMO]
     } else if (e.key === '2') {
-      setCaptureProgressMessage('예측 CCTV 분석 중...');
-      setTimeout(() => setCaptureProgressMessage('포착 가능 구역 산정 중...'), 600);
-      setTimeout(() => setCaptureProgressMessage('포착대상 감지 중...'), 1400);
-      setTimeout(() => setCaptureProgressMessage('별빛A-655에서 포착 확인'), 2200);
-      setTimeout(() => {
-        setCaptureProgressMessage(null);
-        setShowFeaturedLayout(true);
-        setObjectTrackingCompleted(true);
-        setVisibleTrackingPins(5);
-        setShowPredictedCCTVList(true);
-      }, 3000);
+      // [AUTO-DEMO] 별빛A-230 팝업 열기 → 3초 뒤 맞음+확인
+      setOpenCandidateId('1');
+      setAutoMatchDelay(3000);
+      // [/AUTO-DEMO]
     } else if (e.key === '3') {
       handleStartTrackingSequence();
     } else if (e.key === '4') {
@@ -1078,6 +1072,8 @@ export default function HomeV3() {
         showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress || showReSearchSkeleton}
         onAddCapture={handleAddCaptureItem}
         closePopupSignal={closePopupSignal}
+        autoMatchAndConfirmDelay={autoMatchDelay}
+        onPopupClose={() => setAutoMatchDelay(null)}
       />
 
       {/* PredictedCCTVListPanel - 객체 추적 애니메이션 완료 후 표시 */}

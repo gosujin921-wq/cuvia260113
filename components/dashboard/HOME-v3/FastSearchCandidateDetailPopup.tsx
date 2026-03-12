@@ -44,6 +44,8 @@ interface FastSearchCandidateDetailPopupProps {
   autoCapture?: boolean;
   matchState?: 'none' | 'wrong' | 'matched';
   onMatchStateChange?: (state: 'none' | 'wrong' | 'matched') => void;
+  /** [AUTO-DEMO] 팝업 열린 후 지정 ms 뒤 자동 "맞음" → 500ms 뒤 "확인" */
+  autoMatchAndConfirmDelay?: number | null;
 }
 
 const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupProps> = ({
@@ -54,6 +56,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   autoCapture = false,
   matchState: externalMatchState,
   onMatchStateChange,
+  autoMatchAndConfirmDelay = null,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,6 +84,18 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
       setPendingMatchState(externalMatchState);
     }
   }, [externalMatchState]);
+
+  // [AUTO-DEMO] 자동 맞음 → 확인 시퀀스
+  useEffect(() => {
+    if (!isOpen || autoMatchAndConfirmDelay == null) return;
+    const t1 = setTimeout(() => setPendingMatchState('matched'), autoMatchAndConfirmDelay);
+    const t2 = setTimeout(() => {
+      onMatchStateChange?.('matched');
+      onClose();
+    }, autoMatchAndConfirmDelay + 500);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [isOpen, autoMatchAndConfirmDelay]);
+  // [/AUTO-DEMO]
   
   // ========== 초록색 박스 관련 (프레임 추적용) - 1920x1080 기준 좌표 ==========
   const ORIGINAL_VIDEO_WIDTH = 1920;

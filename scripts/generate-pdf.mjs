@@ -6,7 +6,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DISPLAY_WIDTH = 528;
 const DISPLAY_HEIGHT = 1520;
 const SCALE = 3;
-const URL = 'http://localhost:3001/display';
+const pageName = process.argv[2] || 'display';
+const URL = `http://localhost:3001/${pageName}`;
 
 const run = async () => {
   const browser = await puppeteer.launch({
@@ -25,7 +26,7 @@ const run = async () => {
   await new Promise((r) => setTimeout(r, 2000));
 
   // PNG (pixel-perfect, 3x resolution)
-  const pngPath = path.resolve(__dirname, '../public/display.png');
+  const pngPath = path.resolve(__dirname, `../public/${pageName}.png`);
   await page.screenshot({
     path: pngPath,
     type: 'png',
@@ -34,7 +35,7 @@ const run = async () => {
   console.log(`PNG saved: ${pngPath} (${DISPLAY_WIDTH * SCALE}x${DISPLAY_HEIGHT * SCALE}px)`);
 
   // PDF
-  const pdfPath = path.resolve(__dirname, '../public/display.pdf');
+  const pdfPath = path.resolve(__dirname, `../public/${pageName}.pdf`);
   await page.pdf({
     path: pdfPath,
     width: `${DISPLAY_WIDTH}px`,
