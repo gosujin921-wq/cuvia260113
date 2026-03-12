@@ -917,6 +917,8 @@ const MapView = ({
         map.on("moveend", updateMapState);
         const syncBearing = () => setMapBearing(map.getBearing());
         map.on("moveend", syncBearing);
+        const syncPitchTo3DMode = () => setIs3DMode(map.getPitch() > 0);
+        map.on("moveend", syncPitchTo3DMode);
 
         const handleMoveStart = () => onMapMovingChange?.(true);
         const handleMoveEnd = () => onMapMovingChange?.(false);
@@ -926,6 +928,7 @@ const MapView = ({
         return () => {
             map.off("moveend", updateMapState);
             map.off("moveend", syncBearing);
+            map.off("moveend", syncPitchTo3DMode);
             map.off("movestart", handleMoveStart);
             map.off("moveend", handleMoveEnd);
             map.remove();
@@ -1733,7 +1736,7 @@ const MapView = ({
                     center: [targetLng, targetLat],
                     zoom: 17,
                     pitch: 60,
-                    bearing: -17.6 + 165,
+                    bearing: 0,
                     duration: 1500,
                     essential: true,
                 });
@@ -1767,7 +1770,7 @@ const MapView = ({
                     center: INITIAL_MAP_CENTER,
                     zoom: INITIAL_MAP_ZOOM,
                     pitch: INITIAL_MAP_PITCH,
-                    bearing: INITIAL_MAP_BEARING,
+                    bearing: 0,
                     duration: 1500,
                     essential: true,
                 });
