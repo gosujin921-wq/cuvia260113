@@ -332,7 +332,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       center: showInitialCCTVClusters ? [126.98946, 37.42822] : [126.9913292, 37.4262026],
       zoom: 15,
       minZoom: 9,
-      maxZoom: 22,
+      maxZoom: 18,
       maxBounds: KOREA_BOUNDS, // 한국 범위로 이동 제한
       pitch: 45,
       bearing: 0,
