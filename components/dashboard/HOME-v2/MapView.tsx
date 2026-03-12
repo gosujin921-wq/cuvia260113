@@ -677,10 +677,13 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     const syncBearing = () => setMapBearing(map.getBearing());
     map.on('moveend', syncBearing);
+    const syncPitchTo3DMode = () => setIs3DMode(map.getPitch() > 0);
+    map.on('moveend', syncPitchTo3DMode);
 
     return () => {
       map.off('moveend', updateMapState);
       map.off('moveend', syncBearing);
+      map.off('moveend', syncPitchTo3DMode);
       map.remove();
       mapRef.current = null;
     };
