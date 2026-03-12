@@ -308,7 +308,7 @@ const MapView = ({
     onMapMovingChange,
     hideAgentButton = false,
     onAgentHubClick,
-    trafficLayerMode = "wms",
+    trafficLayerMode = "wmts",
 }: MapViewProps) => {
     const [zoomLevel, setZoomLevel] = useState(0);
     const [cctvViewAngles, setCctvViewAngles] = useState<Record<string, number>>({});
@@ -675,16 +675,54 @@ const MapView = ({
             // CORS 우회: 동일 오리진 프록시(/its-proxy) 경유로 타일 로드
             // 원본: https://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/...
             if (!(maplibregl as any)._itsWmtsProtocolRegistered) {
+                // ===== 요청 큐잉 시스템 (5순위 최적화) =====
+                // 동시 요청 수를 제한하여 ITS 서버 과부하 방지
+                const ITS_MAX_CONCURRENT_REQUESTS = 4;
+                const itsRequestQueue: Array<{
+                    url: string;
+                    resolve: (value: { data: ArrayBuffer }) => void;
+                    reject: (reason: Error) => void;
+                    abortController: AbortController;
+                }> = [];
+                let itsActiveRequests = 0;
+
+                const processItsQueue = () => {
+                    while (itsActiveRequests < ITS_MAX_CONCURRENT_REQUESTS && itsRequestQueue.length > 0) {
+                        const request = itsRequestQueue.shift();
+                        if (!request) break;
+
+                        itsActiveRequests++;
+                        fetch(request.url, { signal: request.abortController.signal })
+                            .then((res) => {
+                                if (!res.ok) throw new Error(`ITS tile failed: ${res.status} ${request.url}`);
+                                return res.arrayBuffer();
+                            })
+                            .then((data) => {
+                                request.resolve({ data });
+                            })
+                            .catch((err) => {
+                                request.reject(err);
+                            })
+                            .finally(() => {
+                                itsActiveRequests--;
+                                processItsQueue();
+                            });
+                    }
+                };
+
                 maplibregl.addProtocol("its-wmts", (_params, abortController) => {
                     const directUrl = _params.url.replace("its-wmts://", "https://");
                     const tileUrl = directUrl.replace("https://its.go.kr:9443", "/its-proxy");
 
-                    return fetch(tileUrl, { signal: abortController.signal })
-                        .then((res) => {
-                            if (!res.ok) throw new Error(`ITS tile failed: ${res.status} ${tileUrl}`);
-                            return res.arrayBuffer();
-                        })
-                        .then((data) => ({ data }));
+                    return new Promise((resolve, reject) => {
+                        itsRequestQueue.push({
+                            url: tileUrl,
+                            resolve,
+                            reject,
+                            abortController,
+                        });
+                        processItsQueue();
+                    });
                 });
                 (maplibregl as any)._itsWmtsProtocolRegistered = true;
             }
@@ -922,13 +960,14 @@ const MapView = ({
 
             if (trafficLayerMode === "wmts") {
                 // 방식 1: 국가교통정보센터 WMTS 타일 - ITS 직접 호출 (its-wmts:// 프로토콜)
+                // 3순위 최적화: minzoom 10으로 설정하여 저줌에서 불필요한 타일 요청 방지
                 map.addSource(trafficWmsSourceId, {
                     type: "raster",
                     tiles: [
                         "its-wmts://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8",
                     ],
                     tileSize: 256,
-                    minzoom: 7,
+                    minzoom: 10,
                     maxzoom: 15,
                 });
 
