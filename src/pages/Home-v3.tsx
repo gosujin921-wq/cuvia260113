@@ -330,6 +330,24 @@ export default function HomeV3() {
   const [hoveredCCTVId, setHoveredCCTVId] = useState<string | null>(null); // 호버된 CCTV ID
   const [showCCTVLabel, setShowCCTVLabel] = useState<boolean>(false); // CCTV 정보 라벨 표시 여부
 
+  // [AUTO-DEMO] 자동 데모 시퀀스 (나중에 이 블록 전체 삭제)
+  const autoDemoTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const autoDemoPendingRef = useRef(false);
+  const handleWelcomeTypingComplete = useCallback(() => {
+    if (!autoDemoPendingRef.current) return;
+    autoDemoPendingRef.current = false;
+    const t1 = setTimeout(() => {
+      setShowFastSearchPopupOverlay(true);
+    }, 3000);
+    const t2 = setTimeout(() => {
+      setShowFastSearchPopupOverlay(false);
+      setPinOffset({ x: 0, y: 0 });
+      dispatch({ type: 'START_FAST_SEARCH_WITH_PROGRESS' });
+    }, 6000);
+    autoDemoTimersRef.current.push(t1, t2);
+  }, []);
+  // [/AUTO-DEMO]
+
   // Refs
   const previousListCardCountRef = useRef<number>(0);
   const currentExcludedAttributesRef = useRef<string[]>([]);
@@ -355,6 +373,9 @@ export default function HomeV3() {
       if (eventVideoBlobUrlRef.current) {
         URL.revokeObjectURL(eventVideoBlobUrlRef.current);
       }
+      // [AUTO-DEMO] cleanup
+      autoDemoTimersRef.current.forEach(clearTimeout);
+      // [/AUTO-DEMO]
     };
   }, []);
 
@@ -805,6 +826,12 @@ export default function HomeV3() {
       setVisibleEventIds(prev => new Set([...prev, missingEvent.id]));
       setPinOffset({ x: -100, y: 0 });
       setFlyToLocation(missingEvent.location.coordinates as [number, number]);
+
+      // [AUTO-DEMO] 플래그 세팅 (타이핑 완료 콜백에서 시퀀스 시작)
+      autoDemoTimersRef.current.forEach(clearTimeout);
+      autoDemoTimersRef.current = [];
+      autoDemoPendingRef.current = true;
+      // [/AUTO-DEMO]
     } else if (e.key === '2') {
       setCaptureProgressMessage('예측 CCTV 분석 중...');
       setTimeout(() => setCaptureProgressMessage('포착 가능 구역 산정 중...'), 600);
@@ -1176,6 +1203,7 @@ export default function HomeV3() {
             }}
             onVideoView={() => setShowFastSearchPopupOverlay(true)}
             onPropagationPanelRequest={() => dispatch({ type: 'SHOW_PROPAGATION_LIST' })}
+            onWelcomeTypingComplete={handleWelcomeTypingComplete}
             showFastSearchProgress={uiState.showFastSearchProgress && !uiState.showCaptureList}
             onFastSearchComplete={() => {
               dispatch({ type: 'COMPLETE_FAST_SEARCH_PROGRESS' });

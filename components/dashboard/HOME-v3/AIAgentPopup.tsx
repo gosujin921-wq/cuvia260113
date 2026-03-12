@@ -45,6 +45,8 @@ interface AIAgentPopupProps {
   onVideoView?: () => void;
   /** "전파해줘" 등 타이핑 시 전파 패널 호출 (객체추적 2키 후) */
   onPropagationPanelRequest?: () => void;
+  /** [AUTO-DEMO] 웰컴 메시지 타이핑 완료 시 호출 */
+  onWelcomeTypingComplete?: () => void;
 }
 
 interface ChatMessage {
@@ -648,6 +650,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onPropagationDraftRequest,
   onVideoView,
   onPropagationPanelRequest,
+  onWelcomeTypingComplete,
 }) => {
   const [slideEntered, setSlideEntered] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -700,6 +703,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               : msg
           )
         );
+        // [AUTO-DEMO] 타이핑 완료 콜백
+        onWelcomeTypingComplete?.();
       }
     }, 30);
     return () => clearInterval(typingInterval);
