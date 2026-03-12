@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MapStreamData, ChartStreamData, isStepStreamPayload, isMessageStreamPayload, isMapStreamPayload, isChartStreamPayload, isCompleteStreamPayload, CompleteStreamPayload, isTableStreamPayload, TableStreamData, isDisclaimerStreamPayload, isHtmlStreamPayload, isMarkdownStreamPayload } from "@/types/streamJson.types";
+import { MapStreamData, ChartStreamData, isStepStreamPayload, isMessageStreamPayload, isMapStreamPayload, isChartStreamPayload, isCompleteStreamPayload, CompleteStreamPayload, isTableStreamPayload, TableStreamData, isDisclaimerStreamPayload } from "@/types/streamJson.types";
 
 const API_BASE_URL = "";
 
@@ -23,8 +23,6 @@ interface UseChatStreamOptions {
     onChartDataReceived?: (data: ChartStreamData) => void;
     onTableDataReceived?: (data: TableStreamData) => void;
     onDisclaimerReceived?: (data: string) => void;
-    onHtmlReceived?: (data: string) => void;
-    onMarkdownReceived?: (data: string) => void;
     onComplete?: (success: boolean, message: string, data?: CompleteStreamPayload) => void;
     onError?: (error: string) => void;
 }
@@ -183,12 +181,6 @@ export const useChatStream = (options: UseChatStreamOptions = {}) => {
                             } else if (isDisclaimerStreamPayload(payload)) {
                                 setState((prev) => ({ ...prev, disclaimer: payload.data }));
                                 options.onDisclaimerReceived?.(payload.data);
-                            } else if (isHtmlStreamPayload(payload)) {
-                                setState((prev) => ({ ...prev, htmlContent: payload.content }));
-                                options.onHtmlReceived?.(payload.content);
-                            } else if (isMarkdownStreamPayload(payload)) {
-                                setState((prev) => ({ ...prev, markdownContent: payload.content }));
-                                options.onMarkdownReceived?.(payload.content);
                             } else if (isCompleteStreamPayload(payload)) {
                                 setState((prev) => ({
                                     ...prev,

@@ -89,6 +89,7 @@ export function ChartMessage({ message, isLatest = true, onMapLocationRequest, f
             )}
             {message.title && message.rationale && <br />}
             {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3">{message.rationale}</p>}
+            <div dangerouslySetInnerHTML={{ __html: message?.htmlContent ?? "" }} />
             {displayTables && (
                 <div className={!isLatest ? "pointer-events-none select-none" : undefined}>
                     <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">{message.tableData?.title ?? "표 데이터"}</h3>

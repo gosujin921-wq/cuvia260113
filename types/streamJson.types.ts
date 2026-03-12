@@ -62,18 +62,6 @@ export interface TableStreamPayload {
     data: TableStreamData;
 }
 
-// ========== htmlType.json ==========
-export interface HtmlStreamPayload {
-    type: "html";
-    content: string;
-}
-
-// ========== markdownType.json ==========
-export interface MarkdownStreamPayload {
-    type: "markdown";
-    content: string;
-}
-
 // ========== mapType.json ==========
 export interface MapStreamFilters {
     event_name?: string;
@@ -167,7 +155,7 @@ export interface CompleteStreamPayload {
 }
 
 // ========== 유니온: 스트림 페이로드 공통 타입 ==========
-export type StreamPayload = StepStreamPayload | MessageStreamPayload | DisclaimerStreamPayload | ChartStreamPayload | MapStreamPayload | CompleteStreamPayload | HtmlStreamPayload | MarkdownStreamPayload;
+export type StreamPayload = StepStreamPayload | MessageStreamPayload | DisclaimerStreamPayload | ChartStreamPayload | MapStreamPayload | CompleteStreamPayload;
 
 // ========== 타입 가드 (런타임 파싱 검증용) ==========
 export const isStepStreamPayload = (payload: unknown): payload is StepStreamPayload => typeof payload === "object" && payload !== null && (payload as StepStreamPayload).type === "step" && typeof (payload as StepStreamPayload).data === "object";
@@ -179,10 +167,6 @@ export const isDisclaimerStreamPayload = (payload: unknown): payload is Disclaim
 export const isChartStreamPayload = (payload: unknown): payload is ChartStreamPayload => typeof payload === "object" && payload !== null && (payload as ChartStreamPayload).type === "chart" && typeof (payload as ChartStreamPayload).data === "object";
 
 export const isTableStreamPayload = (payload: unknown): payload is TableStreamPayload => typeof payload === "object" && payload !== null && (payload as TableStreamPayload).type === "table" && typeof (payload as TableStreamPayload).data === "object";
-
-export const isHtmlStreamPayload = (payload: unknown): payload is HtmlStreamPayload => typeof payload === "object" && payload !== null && (payload as HtmlStreamPayload).type === "html" && typeof (payload as HtmlStreamPayload).content === "string";
-
-export const isMarkdownStreamPayload = (payload: unknown): payload is MarkdownStreamPayload => typeof payload === "object" && payload !== null && (payload as MarkdownStreamPayload).type === "markdown" && typeof (payload as MarkdownStreamPayload).content === "string";
 
 export const isMapStreamPayload = (payload: unknown): payload is MapStreamPayload => typeof payload === "object" && payload !== null && (payload as MapStreamPayload).type === "map" && typeof (payload as MapStreamPayload).data === "object";
 

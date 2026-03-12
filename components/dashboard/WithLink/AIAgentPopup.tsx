@@ -419,10 +419,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                                                 <ChartMessage message={message} isLatest={message.id === lastAssistantMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
                                             ) : message.tableData ? (
                                                 <TableMessage message={message} isLatest={message.id === lastAssistantMsgId} onMapLocationRequest={onMapLocationRequest} flyToLocation={flyToLocation} isMapMoving={isMapMoving} onActionClick={onActionClick} />
-                                            ) : message.markdownContent ? (
-                                                <NormalMessage message={message} type="markdown" isLatest={message.id === lastAssistantMsgId} onActionClick={onActionClick} />
                                             ) : message.htmlContent ? (
-                                                <NormalMessage message={message} type="html" isLatest={message.id === lastAssistantMsgId} onActionClick={onActionClick} />
+                                                <NormalMessage message={message} isLatest={message.id === lastAssistantMsgId} onActionClick={onActionClick} />
                                             ) : (
                                                 <>
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-200">
@@ -754,16 +752,6 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         }, []),
         onMapDataReceived: useCallback((data: MapStreamData) => {
             onMapDataReceivedRef.current?.(data);
-        }, []),
-        onMarkdownReceived: useCallback((data: string) => {
-            const msgId = streamMessageIdRef.current;
-            if (!msgId) return;
-            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", markdownContent: data } : msg)));
-        }, []),
-        onHtmlReceived: useCallback((data: string) => {
-            const msgId = streamMessageIdRef.current;
-            if (!msgId) return;
-            setMessages((prev) => prev.map((msg) => (msg.id === msgId ? { ...msg, type: "normal", htmlContent: data } : msg)));
         }, []),
         onComplete: useCallback((success: boolean, message: string, payload?: CompleteStreamPayload) => {
             const msgId = streamMessageIdRef.current;

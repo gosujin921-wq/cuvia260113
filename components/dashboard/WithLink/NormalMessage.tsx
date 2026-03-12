@@ -1,23 +1,16 @@
-import Markdown from "react-markdown";
 import { ChatMessage } from "./AIAgentPopup";
 import { CTAActionButtons } from "./CTAActionButtons";
 
 interface NormalMessageProps {
     message: ChatMessage;
-    type?: "html" | "markdown";
     isLatest?: boolean;
     onActionClick: (prompt: string) => void;
 }
 
-export function NormalMessage({ message, type = "html", isLatest = true, onActionClick }: NormalMessageProps) {
+export function NormalMessage({ message, isLatest = true, onActionClick }: NormalMessageProps) {
     return (
         <>
-            {type === "markdown" && message.markdownContent && (
-                <div className="text-sm leading-relaxed text-gray-200 mb-3">
-                    <Markdown>{message.markdownContent}</Markdown>
-                </div>
-            )}
-            {type === "html" && message.htmlContent && (
+            {message.htmlContent && (
                 <div className="text-sm leading-relaxed text-gray-200 mb-3">
                     <div dangerouslySetInnerHTML={{ __html: message.htmlContent }} />
                 </div>
