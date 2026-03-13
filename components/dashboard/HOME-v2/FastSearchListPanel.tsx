@@ -18,6 +18,8 @@ interface FastSearchListPanelProps {
   excludedAttributes?: string[];
   /** 결과 재검색으로 직접 제외할 이미지 ID 목록 (예: ['1', '2', '3']) */
   excludedImageIds?: string[];
+  /** "만 보여줘" 등 명시적 속성 필터 시 반경 필터 우회 */
+  bypassRadiusFilter?: boolean;
   /** 외부에서 열 후보 ID (예: '42' = qs_img_57_y) */
   openCandidateId?: string | null;
   /** 후보가 열렸을 때 호출 */
@@ -106,6 +108,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   onReSearchClick,
   excludedAttributes = [],
   excludedImageIds = [],
+  bypassRadiusFilter = false,
   openCandidateId,
   onCandidateOpened,
   showSkeleton = false,
@@ -360,20 +363,21 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
       list = list.filter((item) => item.id === PINNED_CANDIDATE_ID || !excludedImageIds.includes(item.id));
     }
     
-    // ID 매핑: 1-3(별빛A-230), 4-5(별빛A-444), 6(별빛A-481), 7(별빛A-498), 8-9(별빛A-583), 10(별빛A-604)
-    list = list.filter((item) => {
-      if (item.id === PINNED_CANDIDATE_ID) return true;
+    if (!bypassRadiusFilter) {
+      list = list.filter((item) => {
+        if (item.id === PINNED_CANDIDATE_ID) return true;
 
-      const cctvName = getCctvNameForCaptureItem(item);
-      
-      if (radius <= 200) {
-        return ['별빛A-498', '별빛A-583'].includes(cctvName);
-      } else if (radius < 400) {
-        return ['별빛A-498', '별빛A-583', '별빛A-444', '별빛A-481'].includes(cctvName);
-      } else {
-        return true;
-      }
-    });
+        const cctvName = getCctvNameForCaptureItem(item);
+        
+        if (radius <= 200) {
+          return ['별빛A-498', '별빛A-583'].includes(cctvName);
+        } else if (radius < 400) {
+          return ['별빛A-498', '별빛A-583', '별빛A-444', '별빛A-481'].includes(cctvName);
+        } else {
+          return true;
+        }
+      });
+    }
     
     return [...list].sort((a, b) => {
       switch (sortOption) {
@@ -389,7 +393,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
           return 0;
       }
     });
-  }, [captureList, excludedAttributes, excludedImageIds, sortOption, radius]);
+  }, [captureList, excludedAttributes, excludedImageIds, sortOption, radius, bypassRadiusFilter]);
 
   useLayoutEffect(() => {
     if (!isVisible || !onListCardCountChange) return;

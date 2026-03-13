@@ -19,7 +19,7 @@ import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
 import { useMouseGuide } from '@/src/pages/useMouseGuide';
 import { Event } from '@/types';
 import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
-import { parseExcludedAttributesFromMessage, parseIncludedAttributesFromMessage, parseShowOnlyAttributesFromMessage, getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
+import { getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
 import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
 
 const EndDialog = ({ onConfirm }: { onConfirm: () => void }) => {
@@ -335,6 +335,7 @@ export default function HomeV2() {
   const [reportPopupHeight, setReportPopupHeight] = useState<number>(0);
   const [pinOffset, setPinOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [excludedAttributes, setExcludedAttributes] = useState<string[]>([]);
+  const [showOnlyMode, setShowOnlyMode] = useState<boolean>(false);
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
   const [agentPopupMaxHeight, setAgentPopupMaxHeight] = useState<number>(500);
   const [openCandidateId, setOpenCandidateId] = useState<string | null>(null);
@@ -349,7 +350,7 @@ export default function HomeV2() {
   const [candidateAutoCapture, setCandidateAutoCapture] = useState(false);
   const [cctvAutoCapture, setCCTVAutoCapture] = useState(false);
   const [flyToLocation, setFlyToLocation] = useState<[number, number] | null>(null);
-  const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number } | null>(null);
+  const [reSearchResult, setReSearchResult] = useState<{ excludedAttributes: string[]; deletedCount: number; visibleCount?: number } | null>(null);
   const [showReSearchSkeleton, setShowReSearchSkeleton] = useState<boolean>(false); // 재검색 스켈레톤 표시 여부
   const [excludedImageIds, setExcludedImageIds] = useState<string[]>([]); // 직접 제외할 이미지 ID (예: ['1', '2', '3'])
   const [visibleTrackingPins, setVisibleTrackingPins] = useState<number>(0); // 0~4: 보이는 핀 개수
@@ -388,6 +389,7 @@ export default function HomeV2() {
   const previousListCardCountRef = useRef<number>(0);
   const currentExcludedAttributesRef = useRef<string[]>([]);
   const isReSearchingRef = useRef<boolean>(false);
+  const skipListCardOverrideRef = useRef<boolean>(false);
   const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isUserScrollingRef = useRef<boolean>(false);
@@ -972,14 +974,20 @@ export default function HomeV2() {
     return () => window.removeEventListener('resize', handleResize);
   }, [reportPopupHeight, uiState.showFastSearchList, uiState.showObjectTracking, uiState.showCaptureList, uiState.showPropagationList]);
 
-  // 재검색 완료 후 카드 개수 변경 감지
+  // 재검색 완료 후 카드 개수 변경 감지 (showOnly/addLike가 이미 reSearchResult를 설정한 경우 스킵)
   useEffect(() => {
     if (!uiState.showReSearchProgress && isReSearchingRef.current) {
+      if (skipListCardOverrideRef.current) {
+        skipListCardOverrideRef.current = false;
+        isReSearchingRef.current = false;
+        return;
+      }
       if (previousListCardCountRef.current > 0 && listCardCount < previousListCardCountRef.current) {
         const deletedCount = previousListCardCountRef.current - listCardCount;
         setReSearchResult({
           excludedAttributes: currentExcludedAttributesRef.current,
           deletedCount: deletedCount,
+          visibleCount: listCardCount,
         });
         isReSearchingRef.current = false;
       }
@@ -1192,7 +1200,8 @@ export default function HomeV2() {
             // 재검색 결과를 에이전트 팝업에 표시
             setReSearchResult({
               excludedAttributes: ['대표 후보 기반 유사도 재검색'],
-              deletedCount: 3, // 05, 11, 15번 제외
+              deletedCount: 3,
+              visibleCount: 7,
             });
           }, 500);
           
@@ -1201,6 +1210,7 @@ export default function HomeV2() {
         }}
         excludedAttributes={excludedAttributes}
         excludedImageIds={excludedImageIds}
+        bypassRadiusFilter={showOnlyMode}
         openCandidateId={openCandidateId}
         onCandidateOpened={() => setOpenCandidateId(null)}
         showSkeleton={uiState.showFastSearchProgress || uiState.showReSearchProgress || showReSearchSkeleton}
@@ -1345,54 +1355,43 @@ export default function HomeV2() {
               right: '20px',
             }}
             listCardCount={listCardCount}
-            onDeleteLikeRequest={({ rawMessage }) => {
-              const parsed = parseExcludedAttributesFromMessage(rawMessage);
-              
-              if (parsed.length) {
-                previousListCardCountRef.current = listCardCount;
-                currentExcludedAttributesRef.current = parsed;
-                setExcludedAttributes((prev) => Array.from(new Set([...prev, ...parsed])));
-              }
-              
-              return parsed;
-            }}
-            onShowOnlyRequest={({ rawMessage }) => {
-              const parsed = parseShowOnlyAttributesFromMessage(rawMessage);
-              if (!parsed.length) return [];
-
-              const { excludeAttrs, hiddenCount } = computeExcludeForShowOnly(parsed);
+            onSearchRequest={({ attributes }) => {
+              const { excludeAttrs, hiddenCount, visibleCount } = computeExcludeForShowOnly(attributes);
               previousListCardCountRef.current = listCardCount;
               currentExcludedAttributesRef.current = excludeAttrs;
+              skipListCardOverrideRef.current = true;
               setExcludedImageIds([]);
               setExcludedAttributes(excludeAttrs);
+              setShowOnlyMode(true);
 
-              const displayAttrs = getCanonicalDisplayNames(parsed);
+              const displayAttrs = getCanonicalDisplayNames(attributes);
               setReSearchResult({
                 excludedAttributes: displayAttrs.map((a) => `${a}만 표시`),
                 deletedCount: hiddenCount,
+                visibleCount,
               });
-
-              return parsed;
             }}
-            onAddLikeRequest={({ rawMessage }) => {
-              const parsed = parseIncludedAttributesFromMessage(rawMessage);
+            onRemoveRequest={({ attributes }) => {
+              previousListCardCountRef.current = listCardCount;
+              currentExcludedAttributesRef.current = attributes;
+              setShowOnlyMode(false);
+              setExcludedAttributes((prev) => Array.from(new Set([...prev, ...attributes])));
+            }}
+            onRestoreRequest={({ attributes }) => {
+              previousListCardCountRef.current = listCardCount;
+              currentExcludedAttributesRef.current = attributes;
+              skipListCardOverrideRef.current = true;
+              setShowOnlyMode(false);
+              const prevExcluded = excludedAttributes;
+              const actuallyRestored = attributes.filter((attr) => prevExcluded.includes(attr));
+              setExcludedAttributes((prev) => prev.filter((attr) => !attributes.includes(attr)));
 
-              if (parsed.length) {
-                previousListCardCountRef.current = listCardCount;
-                currentExcludedAttributesRef.current = parsed;
-                const prevExcluded = excludedAttributes;
-                const actuallyRestored = parsed.filter((attr) => prevExcluded.includes(attr));
-                setExcludedAttributes((prev) => prev.filter((attr) => !parsed.includes(attr)));
-
-                if (actuallyRestored.length > 0) {
-                  setReSearchResult({
-                    excludedAttributes: actuallyRestored.map((a) => `${a} 복원`),
-                    deletedCount: -actuallyRestored.length,
-                  });
-                }
+              if (actuallyRestored.length > 0) {
+                setReSearchResult({
+                  excludedAttributes: actuallyRestored.map((a) => `${a} 복원`),
+                  deletedCount: -actuallyRestored.length,
+                });
               }
-
-              return parsed;
             }}
             maxHeight={agentPopupMaxHeight}
             reSearchResult={reSearchResult}

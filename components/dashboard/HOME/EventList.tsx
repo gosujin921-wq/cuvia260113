@@ -186,7 +186,9 @@ const EventList = ({ events, selectedEventId, eventType, onEventSelect, onEventH
                                         onEventSelect?.(event.id);
                                         return;
                                     }
-                                    if (event.eventId) {
+                                    const noLinkEvents = ['A-20260107-004', 'A-20251210-003'];
+                                    const isNoLink = noLinkEvents.some(id => event.eventId === id || event.id === id);
+                                    if (event.eventId && !isNoLink) {
                                         navigate(`/event/${event.eventId}`);
                                         return;
                                     }

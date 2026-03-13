@@ -6,7 +6,8 @@ const DISPLAY_HEIGHT = 1520;
 const FEATURES = [
   {
     title: 'CUVIA DASHBOARD',
-    desc: '도시 전역 데이터 통합 모니터링',
+    desc: '도시 데이터 통합 관제 대시보드',
+    keywords: ['통합 모니터링', '지도 기반 관제', 'AI 위험 분석', '위젯 리포팅'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
         <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
@@ -17,8 +18,21 @@ const FEATURES = [
     ),
   },
   {
+    title: 'CUVIA\nDRIVE',
+    desc: '실시간 통합 운영·제어 시스템',
+    keywords: ['통합 운영', '실시간 모니터링', '시스템 제어', '데이터 보안'],
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
+        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M8 21h8M12 17v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M7 8h4M7 11h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     title: 'CUVIA Metis',
-    desc: 'VLM 기반 영상 검색 및 추적',
+    desc: 'VLM 기반 초고속 영상\n검색·추적',
+    keywords: ['VLM 영상 검색', '유사도 분석', 'RE-ID 재추적', '경로 예측'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
         <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5" />
@@ -29,23 +43,13 @@ const FEATURES = [
   },
   {
     title: 'CUVIA LINK',
-    desc: 'AI Agent 기반 상황 판단 지원',
+    desc: 'AI Agent 기반 상황\n분석·대응 워크플로우',
+    keywords: ['AI Agent', '자연어 분석', '상황 판단', '보고 자동화'],
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
         <path d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke="currentColor" strokeWidth="1.5" />
         <path d="M16 16l5 5M18 13h3M13 18v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    title: 'CUVIA DRIVE',
-    desc: '관제 상황판 통합 운영',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
-        <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M8 21h8M12 17v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M7 8h4M7 11h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -81,7 +85,7 @@ const KEY_CAPABILITIES = [
     ),
   },
   {
-    label: 'RE-ID 객체\n재추적', sub: '이동 경로 분석',
+    label: 'Re-ID 객체\n재추적', sub: '이동 경로 분석',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5">
         <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
@@ -129,22 +133,22 @@ const DOMAINS = [
 ];
 
 const PRODUCT_LINEUP = [
-  { name: 'CUVIA LINK', desc: '도메인지식 기반 의사결정 지원' },
-  { name: 'CUVIA Metis', desc: 'VLM 기반 고속검색' },
-  { name: 'CUVIA Visual', desc: '공간 관제' },
-  { name: 'CUVIA DRIVE', desc: '상황판 통합 운영' },
-  { name: 'CUVIA DASHBOARD', desc: '통합관제 대시보드' },
-  { name: 'CUVIA FMS', desc: '시설물 관제' },
+  { name: 'CUVIA LINK', desc: '도메인지식 기반\n의사결정 지원 시스템' },
+  { name: 'CUVIA Metis', desc: 'VLM 기반\n영상 분석 · 고속검색' },
+  { name: 'CUVIA Visual', desc: 'GIS 기반\n공간 관제 · 상황 MAP' },
+  { name: 'CUVIA\nDRIVE', desc: '실시간 통합\n운영·제어 시스템' },
+  { name: 'CUVIA\nDASHBOARD', desc: 'AI 분석 기반\n지도 통합 모니터링' },
+  { name: 'CUVIA\nFMS', desc: '시설물 모니터링\n장애 · 자재 관리' },
 ];
 
 const AI_AGENTS = [
   {
     name: 'Dashboard Agent',
-    features: ['대시보드에서\n바로 사용', '즉시 연동\n빠른 지원', '운영 흐름\n보조형 Agent'],
+    features: ['대시보드에서\n바로 사용', '즉시 연동\n빠른 지원', '운영 흐름\n보조형 Agent', '자연어 UI\n직관 제어'],
   },
   {
     name: 'Workspace Agent',
-    features: ['핵심 요약·우선순위 제시', '보고서·전파문 자동 생성', '신속한 대응 지원'],
+    features: ['핵심 요약·\n우선순위 제시', '보고서·전파문\n자동 생성', '프로젝트별\n맥락 누적 기반 응답', '근거 기반\n판단 지원'],
   },
 ];
 
@@ -173,10 +177,14 @@ const Divider = () => (
 );
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <p className="text-gray-500 text-[14px] tracking-[0.2em] uppercase font-semibold text-center mb-3 flex-shrink-0">{children}</p>
+  <div className="flex items-center gap-3 mb-3 flex-shrink-0">
+    <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35))' }} />
+    <p className="text-gray-500 text-[14px] tracking-[0.2em] uppercase font-semibold">{children}</p>
+    <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.35), transparent)' }} />
+  </div>
 );
 
-export default function DisplayPage2() {
+export default function BackwallPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 100);
@@ -207,14 +215,14 @@ export default function DisplayPage2() {
         />
 
         <div
-          className={`relative z-10 flex flex-col h-full px-7 py-5 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+          className={`relative z-10 flex flex-col h-full px-7 py-8 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
         >
           {/* Logo */}
           <div className="flex flex-col items-center flex-shrink-0">
             <img
               src="/simbol.svg"
               alt="CUVIA Symbol"
-              className="w-14 h-14 mb-2"
+              className="w-10 h-10 mb-3"
               style={{ filter: 'brightness(1.4) drop-shadow(0 0 20px rgba(33,96,173,0.5))' }}
             />
             <img src="/logo.svg" alt="CUVIA" className="h-5" style={{ filter: 'brightness(0) invert(1)' }} />
@@ -236,141 +244,148 @@ export default function DisplayPage2() {
             </p>
           </div>
 
-          <Divider />
+          <div className="h-6 flex-shrink-0" />
 
-          {/* Key Capabilities */}
-          <SectionLabel>Key Capabilities</SectionLabel>
-          <div className="flex items-start justify-between gap-1 px-1 flex-shrink-0">
-            {KEY_CAPABILITIES.map((cap, i) => (
-              <div key={cap.label} className="flex flex-col items-center flex-1 relative">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center mb-2.5 text-blue-400 [&>svg]:w-5 [&>svg]:h-5"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(0,94,184,0.4) 0%, rgba(0,94,184,0.15) 100%)',
-                    border: '1px solid rgba(0,94,184,0.4)',
-                  }}
-                >
-                  {cap.icon}
-                </div>
-                {i < KEY_CAPABILITIES.length - 1 && (
-                  <div
-                    className="absolute top-[24px] left-[calc(50%+28px)] h-[1px]"
-                    style={{ width: 'calc(100% - 56px)', background: 'linear-gradient(90deg, rgba(0,94,184,0.5), rgba(0,94,184,0.15))' }}
-                  />
-                )}
-                <p className="text-white text-[14px] font-bold text-center leading-snug whitespace-pre-line">{cap.label}</p>
-                <p className="text-gray-500 text-[11px] text-center mt-1">{cap.sub}</p>
+          {/* Content sections - evenly distributed */}
+          <div className="flex flex-col flex-1 justify-between">
+            {/* Key Capabilities */}
+            <div>
+              <SectionLabel>Key Capabilities</SectionLabel>
+              <div className="flex items-start justify-between gap-1 px-1">
+                {KEY_CAPABILITIES.map((cap, i) => (
+                  <div key={cap.label} className="flex flex-col items-center flex-1 relative">
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center mb-2.5 text-blue-400 [&>svg]:w-5 [&>svg]:h-5"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(0,94,184,0.4) 0%, rgba(0,94,184,0.15) 100%)',
+                        border: '1px solid rgba(0,94,184,0.4)',
+                      }}
+                    >
+                      {cap.icon}
+                    </div>
+                    {i < KEY_CAPABILITIES.length - 1 && (
+                      <div
+                        className="absolute top-[24px] left-[calc(50%+28px)] h-[1px]"
+                        style={{ width: 'calc(100% - 56px)', background: 'linear-gradient(90deg, rgba(0,94,184,0.5), rgba(0,94,184,0.15))' }}
+                      />
+                    )}
+                    <p className="text-white text-[14px] font-bold text-center leading-snug whitespace-pre-line">{cap.label}</p>
+                    <p className="text-gray-500 text-[11px] text-center mt-1">{cap.sub}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
 
-          <Divider />
-
-          {/* System Architecture */}
-          <SectionLabel>System Architecture</SectionLabel>
-          <div className="grid grid-cols-3 gap-1.5 flex-shrink-0">
-            {PRODUCT_LINEUP.map((product) => (
-              <div
-                key={product.name}
-                className="relative rounded-lg py-3 px-3 text-center gradient-border-right-bottom"
-                style={{ background: 'linear-gradient(135deg, rgba(0,94,184,0.08) 0%, rgba(33,96,173,0.04) 100%)' }}
-              >
-                <p className="text-white text-[15px] font-bold leading-tight">{product.name}</p>
-                <p className="text-gray-400 text-[11px] mt-1">{product.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <Divider />
-
-          {/* Core Solutions */}
-          <SectionLabel>Core Solutions</SectionLabel>
-          <div className="grid grid-cols-2 gap-2 flex-shrink-0">
-            {FEATURES.map((feature) => (
-              <div
-                key={feature.title}
-                className="relative rounded-lg overflow-hidden gradient-border-right-bottom flex flex-col items-center text-center"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)',
-                  backdropFilter: 'blur(4px)',
-                  WebkitBackdropFilter: 'blur(4px)',
-                }}
-              >
-                <div className="px-3 py-3 flex flex-col items-center">
+            {/* Core Solutions */}
+            <div>
+              <SectionLabel>Core Solutions</SectionLabel>
+              <div className="grid grid-cols-2 gap-2">
+                {FEATURES.map((feature) => (
                   <div
-                    className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-blue-400 mb-2 [&>svg]:w-4 [&>svg]:h-4"
+                    key={feature.title}
+                    className="relative rounded-lg overflow-hidden gradient-border-right-bottom"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(0,94,184,0.25) 0%, rgba(0,94,184,0.08) 100%)',
-                      border: '1px solid rgba(0,94,184,0.25)',
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)',
+                      backdropFilter: 'blur(4px)',
+                      WebkitBackdropFilter: 'blur(4px)',
                     }}
                   >
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-white text-[16px] font-bold tracking-tight">{feature.title}</h3>
-                  <span className="text-gray-400 text-[12px] font-medium mt-1">{feature.desc}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <Divider />
-
-          {/* AI Agents */}
-          <div className="text-center flex-shrink-0 mb-2">
-            <SectionLabel>AI Agent</SectionLabel>
-            <p className="text-gray-400 text-[12px]"><span className="text-blue-400 font-semibold">CUVIA LINK</span> 기반 지능형 에이전트 · 근거 기반 판단 · 실행 중심 워크플로우</p>
-          </div>
-          <div className="grid grid-cols-2 gap-2 flex-shrink-0">
-            {AI_AGENTS.map((agent) => (
-              <div key={agent.name} className="py-2.5 px-2">
-                <h4 className="text-white text-[13px] font-bold mb-2 text-center">{agent.name}</h4>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {agent.features.map((f) => (
-                    <div
-                      key={f}
-                      className="rounded-md px-1.5 py-2 text-center border border-gray-700/30 bg-white/[0.03]"
-                    >
-                      <p className="text-gray-300 text-[10px] leading-snug whitespace-pre-line">{f}</p>
+                    <div className="px-4 py-4 flex items-start gap-3">
+                      <div
+                        className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-blue-400 mt-0.5 [&>svg]:w-5 [&>svg]:h-5"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(0,94,184,0.25) 0%, rgba(0,94,184,0.08) 100%)',
+                          border: '1px solid rgba(0,94,184,0.25)',
+                        }}
+                      >
+                        {feature.icon}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-white text-[18px] font-bold tracking-wide leading-tight whitespace-pre-line">{feature.title}</h3>
+                        <p className="text-blue-400/70 text-[11px] font-medium mt-0.5 whitespace-pre-line">{feature.desc}</p>
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {feature.keywords.map((kw) => (
+                            <span key={kw} className="text-gray-400 text-[9px] px-1.5 py-0.5 rounded border border-gray-700/40 bg-white/[0.03]">{kw}</span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          <Divider />
-
-          {/* Stats */}
-          <div className="flex items-center justify-center gap-8 flex-shrink-0">
-            {STATS.map((stat) => (
-              <div key={stat.label} className="flex flex-col items-center">
-                <span className="text-white text-[24px] font-bold tabular-nums">{stat.value}</span>
-                <span className="text-gray-500 text-[11px] font-medium">{stat.label}</span>
-              </div>
-            ))}
-          </div>
-
-          <Divider />
-
-          {/* Domains */}
-          <div className="flex flex-wrap justify-center gap-1.5 flex-shrink-0">
-            {DOMAINS.map((d) => (
-              <span key={d.label} className="inline-flex items-center gap-1 text-gray-400 text-[10px] font-medium px-2.5 py-1 rounded-full border border-gray-700/50 bg-white/[0.03]">
-                <span className="text-blue-400/70">{d.icon}</span>{d.label}
-              </span>
-            ))}
-          </div>
-
-          {/* Bottom CTA */}
-          <div className="flex flex-col items-center flex-shrink-0 mt-auto">
-            <div
-              className="w-full rounded-lg px-5 py-4 text-center mb-3 gradient-border-right-bottom"
-              style={{ background: 'linear-gradient(135deg, rgba(0,94,184,0.15) 0%, rgba(0,94,184,0.05) 100%)' }}
-            >
-              <p className="text-white/90 text-[18px] font-semibold">"CUVIA는 단순한 솔루션이 아닙니다"</p>
-              <p className="text-blue-400 text-[15px] font-medium mt-1">하나의 지능형 운영 생태계입니다</p>
             </div>
-            <img src="/cudo_CI.svg" alt="CUDO Communications" className="h-10 opacity-50" style={{ filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+
+            {/* System Architecture - hidden
+            <div>
+              <SectionLabel>System Architecture</SectionLabel>
+              <div className="grid grid-cols-3 gap-1.5">
+                {PRODUCT_LINEUP.map((product) => (
+                  <div
+                    key={product.name}
+                    className="relative rounded-lg py-3 px-3 text-center gradient-border-right-bottom"
+                    style={{ background: 'linear-gradient(135deg, rgba(0,94,184,0.08) 0%, rgba(33,96,173,0.04) 100%)' }}
+                  >
+                    <p className="text-white text-[15px] font-bold leading-tight whitespace-pre-line">{product.name}</p>
+                    <p className="text-gray-400 text-[11px] mt-1 whitespace-pre-line">{product.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            */}
+
+            {/* CUVIA LINK */}
+            <div>
+              <div className="text-center mb-6">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35))' }} />
+                  <p className="text-gray-500 text-[14px] tracking-[0.2em] uppercase font-semibold">CUVIA LINK</p>
+                  <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.35), transparent)' }} />
+                </div>
+                <p className="text-gray-400 text-[12px]"><span className="text-blue-400 font-semibold">CUVIA LINK</span> 기반 지능형 에이전트 · 근거 기반 판단 · 실행 중심 워크플로우</p>
+              </div>
+              <div className="flex flex-col gap-5">
+                {AI_AGENTS.map((agent) => (
+                  <div key={agent.name}>
+                    <h4 className="text-white text-[16px] font-bold mb-4 text-center">{agent.name}</h4>
+                    <div className="flex justify-center gap-2">
+                      {agent.features.map((f) => (
+                        <div
+                          key={f}
+                          className="relative w-[90px] h-[90px] overflow-hidden flex items-center justify-center text-center gradient-border-right-bottom"
+                          style={{
+                            borderRadius: '9999px',
+                            background: 'linear-gradient(135deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)',
+                            backdropFilter: 'blur(4px)',
+                            WebkitBackdropFilter: 'blur(4px)',
+                          }}
+                        >
+                          <p className="text-gray-300 text-[11px] leading-snug whitespace-pre-line px-2">{f}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className="w-full h-[1px]"
+              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }}
+            />
+
+            {/* Domains */}
+            <div className="flex flex-wrap justify-center gap-1.5">
+              {DOMAINS.map((d) => (
+                <span key={d.label} className="inline-flex items-center gap-1 text-gray-400 text-[10px] font-medium px-2.5 py-1 rounded-full border border-gray-700/50 bg-white/[0.03]">
+                  <span className="text-blue-400/70">{d.icon}</span>{d.label}
+                </span>
+              ))}
+            </div>
+
+            {/* Bottom Logo */}
+            <div className="flex flex-col items-center">
+              <img src="/cudo_CI.svg" alt="CUDO Communications" className="h-10 opacity-50" style={{ filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+            </div>
           </div>
         </div>
       </div>

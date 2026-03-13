@@ -5,6 +5,7 @@ export type GuideType = 'mouse' | 'eye' | 'keyboard';
 export type GuideStep = {
   id: string;
   targetId?: string;
+  additionalHighlightIds?: string[];
   message: string;
   type: GuideType;
   delayAfterClick: number;
@@ -21,6 +22,7 @@ const GUIDE_STEPS: GuideStep[] = [
   {
     id: 'review-candidates',
     targetId: 'fast-search-candidate-10',
+    additionalHighlightIds: ['radius-chip-button'],
     message: '실종자 특징을 기반으로 유사 후보를 탐색했습니다.<br/>검색 결과는 조건 조정과 사용자 피드백을 통해 더욱 정교하게 개선될 수 있습니다.<br/><br/><span style="opacity:0.7; font-weight:600;">직접 해볼 수 있는 기능</span><br/><span style="opacity:0.6">&nbsp;&nbsp;• 상단 반경을 클릭해 탐색 범위를 변경하기</span><br/><span style="opacity:0.6">&nbsp;&nbsp;• CUVIA Link에 비정형 조건 입력하기</span><br/><span style="opacity:0.5">&nbsp;&nbsp;&nbsp;&nbsp;예 : "회색 후드 입은 사람만 보여줘", "우산 쓴 사람은 제외해줘"</span><br/><span style="opacity:0.6">&nbsp;&nbsp;• 후보 카드에서 맞음 / 틀림 선택하기</span><br/><br/><b>[후보 카드]</b>를 클릭하면 다음 단계로 넘어갑니다.',
     type: 'eye',
     delayAfterClick: 0,
@@ -230,6 +232,10 @@ export const useMouseGuide = () => {
     if (!showMouseGuide || !guideTarget) return;
 
     let highlightedEl: HTMLElement | null = null;
+    const additionalEls: HTMLElement[] = [];
+
+    const currentStep = GUIDE_STEPS[currentStepIndex];
+    const extraIds = currentStep?.additionalHighlightIds ?? [];
 
     const updateTargetPosition = () => {
       const el = document.getElementById(guideTarget);
@@ -245,6 +251,14 @@ export const useMouseGuide = () => {
           y: rect.top + rect.height / 2,
         });
       }
+
+      for (const id of extraIds) {
+        const extra = document.getElementById(id);
+        if (extra && !additionalEls.includes(extra)) {
+          extra.classList.add('guide-target-highlight');
+          additionalEls.push(extra);
+        }
+      }
     };
 
     updateTargetPosition();
@@ -252,8 +266,9 @@ export const useMouseGuide = () => {
     return () => {
       clearInterval(interval);
       highlightedEl?.classList.remove('guide-target-highlight');
+      additionalEls.forEach((el) => el.classList.remove('guide-target-highlight'));
     };
-  }, [showMouseGuide, guideTarget]);
+  }, [showMouseGuide, guideTarget, currentStepIndex]);
 
   const getStepId = useCallback((index: number): string | undefined => {
     if (index < 0 || index >= GUIDE_STEPS.length) return undefined;
