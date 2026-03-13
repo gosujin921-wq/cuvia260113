@@ -156,10 +156,11 @@ export const MouseGuide = ({
                 >
                   <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-700" />
                 </button>
+                <div className="w-px h-3.5 bg-gray-500 mx-0.5" />
                 <button
                   type="button"
                   onClick={handleToggleCollapse}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors ml-0.5"
+                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors"
                   aria-label={collapsed ? '가이드 펼치기' : '가이드 접기'}
                   tabIndex={0}
                 >
