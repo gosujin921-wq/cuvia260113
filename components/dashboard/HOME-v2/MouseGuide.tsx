@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Icon } from '@iconify/react';
 
 export type GuideType = 'mouse' | 'eye' | 'keyboard';
@@ -45,12 +46,36 @@ export const MouseGuide = ({
   navigationDisabled = false,
   nextDisabled = false,
 }: MouseGuideProps) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [bodyHeight, setBodyHeight] = useState<number | 'auto'>('auto');
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const prevStepId = useRef(currentStepId);
+
+  useEffect(() => {
+    if (prevStepId.current !== currentStepId) {
+      setCollapsed(false);
+      prevStepId.current = currentStepId;
+    }
+  }, [currentStepId]);
+
+  useEffect(() => {
+    if (!bodyRef.current) return;
+    setBodyHeight(bodyRef.current.scrollHeight);
+  }, [guideMessage, currentStepId]);
+
+  const handleToggleCollapse = useCallback(() => {
+    if (!bodyRef.current) return;
+    setBodyHeight(bodyRef.current.scrollHeight);
+    requestAnimationFrame(() => {
+      setCollapsed(prev => !prev);
+    });
+  }, []);
+
   if (!show || (!guideTarget && !guideMessage)) return null;
 
   const iconName = currentStepId ? STEP_ICONS[currentStepId] : undefined;
   const stepNumber = currentStepIndex + 1;
   const isFirst = currentStepIndex <= 0;
-  const isLast = currentStepIndex >= totalSteps - 1;
 
   return (
     <>
@@ -84,7 +109,6 @@ export const MouseGuide = ({
       {/* 메시지 박스 */}
       {guideMessage && (
         <div
-          key={currentStepId}
           className="fixed left-1/2 -translate-x-1/2 z-[10010]"
           style={{ bottom: currentStepId === 'intro' ? '214px' : '32px' }}
           aria-live="polite"
@@ -99,8 +123,8 @@ export const MouseGuide = ({
               boxShadow: '0 4px 24px 0 rgba(31, 38, 135, 0.15)',
             }}
           >
-            {/* 헤더: STEP + 이전/다음 */}
-            <div className="flex items-center justify-between px-4 pt-3 pb-1">
+            {/* 헤더: STEP + 접기/펼치기 + 이전/다음 */}
+            <div className={`flex items-center justify-between px-4 ${collapsed ? 'py-2.5' : 'pt-3 pb-1'}`}>
               <div className="flex items-center gap-2">
                 {iconName && (
                   <Icon icon={iconName} className="w-4 h-4 text-gray-700" />
@@ -132,15 +156,36 @@ export const MouseGuide = ({
                 >
                   <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-700" />
                 </button>
+                <button
+                  type="button"
+                  onClick={handleToggleCollapse}
+                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors ml-0.5"
+                  aria-label={collapsed ? '가이드 펼치기' : '가이드 접기'}
+                  tabIndex={0}
+                >
+                  <Icon
+                    icon={collapsed ? 'mdi:chevron-up' : 'mdi:chevron-down'}
+                    className="w-4 h-4 text-gray-700 transition-transform duration-200"
+                  />
+                </button>
               </div>
             </div>
 
-            {/* 메시지 본문 */}
-            <div className="px-5 pb-3.5 pt-1">
-              <span
-                className="text-gray-900 text-sm font-medium leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: guideMessage }}
-              />
+            {/* 메시지 본문 (접기/펼치기) */}
+            <div
+              ref={bodyRef}
+              className="overflow-hidden transition-all duration-300 ease-in-out"
+              style={{
+                maxHeight: collapsed ? 0 : bodyHeight,
+                opacity: collapsed ? 0 : 1,
+              }}
+            >
+              <div className="px-5 pb-3.5 pt-1">
+                <span
+                  className="text-gray-900 text-sm font-medium leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: guideMessage }}
+                />
+              </div>
             </div>
           </div>
         </div>
