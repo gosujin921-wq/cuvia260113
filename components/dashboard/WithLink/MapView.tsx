@@ -1600,6 +1600,7 @@ const MapView = ({
 
         // 클러스터 클릭 핸들러 (클러스터 모드일 때만)
         const handleClusterClick = async (e: maplibregl.MapMouseEvent) => {
+            if (map.isMoving()) return;
             const features = map.queryRenderedFeatures(e.point, {
                 layers: [streamClusterLayerId],
             });
@@ -1626,6 +1627,7 @@ const MapView = ({
 
         // 개별 스트림 마커 클릭 핸들러 (individual / cluster 뷰에서만)
         const handleStreamMarkerClick = (e: maplibregl.MapMouseEvent) => {
+            if (map.isMoving()) return;
             const features = map.queryRenderedFeatures(e.point, {
                 layers: [streamLayerId],
             });
@@ -1723,16 +1725,14 @@ const MapView = ({
             const targetLng = (flyToLocation as [number, number])[0];
             const targetLat = (flyToLocation as [number, number])[1];
 
-            if (map.loaded()) {
-                map.flyTo({
-                    center: [targetLng, targetLat],
-                    zoom: 17,
-                    pitch: 60,
-                    bearing: 0,
-                    duration: 1500,
-                    essential: true,
-                });
-            }
+            map.flyTo({
+                center: [targetLng, targetLat],
+                zoom: 17,
+                pitch: 60,
+                bearing: 0,
+                duration: 1500,
+                essential: true,
+            });
 
             const matchedMarker = streamMapData?.markers?.find((m) => Math.abs(m.lng - targetLng) < 0.0001 && Math.abs(m.lat - targetLat) < 0.0001);
             if (matchedMarker && (matchedMarker.title || matchedMarker.description)) {
