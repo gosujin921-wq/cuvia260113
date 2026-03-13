@@ -31,7 +31,7 @@ let gitsmapWmsQueueTail: Promise<void> = Promise.resolve();
 const escapeHtml = (text: string): string => {
     const div = document.createElement("div");
     div.textContent = text;
-    return div.innerHTML.replace(/\n/g, "<br>");
+    return div.innerHTML.replace(/\\n/g, "<br>");
 };
 
 const createStreamMarkerPopupContent = (marker: MapStreamMarker): string => {
@@ -693,23 +693,17 @@ const MapView = ({
                     const minY3857 = 20037508.342789244 - (y + 1) * tileSize;
                     const maxY3857 = 20037508.342789244 - y * tileSize;
                     const toLon = (x3857: number) => (x3857 * 180) / 20037508.342789244;
-                    const toLat = (y3857: number) =>
-                        (Math.atan(Math.exp((y3857 * Math.PI) / 20037508.342789244)) * 360) / Math.PI - 90;
+                    const toLat = (y3857: number) => (Math.atan(Math.exp((y3857 * Math.PI) / 20037508.342789244)) * 360) / Math.PI - 90;
                     const tileMinLon = toLon(minX3857);
                     const tileMaxLon = toLon(maxX3857);
                     const tileMinLat = toLat(minY3857);
                     const tileMaxLat = toLat(maxY3857);
-                    const intersects =
-                        tileMinLon < ITS_WMTS_BOUNDS.maxLon &&
-                        tileMaxLon > ITS_WMTS_BOUNDS.minLon &&
-                        tileMinLat < ITS_WMTS_BOUNDS.maxLat &&
-                        tileMaxLat > ITS_WMTS_BOUNDS.minLat;
+                    const intersects = tileMinLon < ITS_WMTS_BOUNDS.maxLon && tileMaxLon > ITS_WMTS_BOUNDS.minLon && tileMinLat < ITS_WMTS_BOUNDS.maxLat && tileMaxLat > ITS_WMTS_BOUNDS.minLat;
                     return intersects;
                 };
 
                 // 1x1 완전 투명 PNG RGBA (범위 밖 타일용, 팔레트 초록색 방지)
-                const EMPTY_PNG_BASE64 =
-                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVQYV2NgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
+                const EMPTY_PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVQYV2NgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
 
                 // ===== 요청 큐잉 시스템 (5순위 최적화) =====
                 const ITS_MAX_CONCURRENT_REQUESTS = 4;
@@ -1014,9 +1008,7 @@ const MapView = ({
                 // 3순위 최적화: minzoom 10으로 설정하여 저줌에서 불필요한 타일 요청 방지
                 map.addSource(trafficWmsSourceId, {
                     type: "raster",
-                    tiles: [
-                        "its-wmts://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8",
-                    ],
+                    tiles: ["its-wmts://its.go.kr:9443/geoserver/gwc/service/wmts/rest/ntic:N_LEVEL_{z}/ntic:REALTIME/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8"],
                     tileSize: 256,
                     minzoom: 10,
                     maxzoom: 15,
@@ -1778,7 +1770,6 @@ const MapView = ({
         }
     }, [flyToLocation, streamMapData]);
 
-
     const containerRef = useRef<HTMLDivElement>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
@@ -2432,7 +2423,8 @@ const MapView = ({
                 </div>
 
                 {/* Agent Hub 버튼 - 초기: CCTV 위 30px / 1번: 아래로만 / 고속검색: 우측 하단 */}
-                {!hideAgentButton && !isAgentActive &&
+                {!hideAgentButton &&
+                    !isAgentActive &&
                     (() => {
                         const rightPanelWidth = 370;
                         const panelGap = 16;
@@ -2451,39 +2443,26 @@ const MapView = ({
                                     right: `${right}px`,
                                     zIndex: 200,
                                     transition: "bottom 0.3s ease-in-out, right 0.3s ease-in-out",
-                                }}
-                            >
+                                }}>
                                 <button
                                     type="button"
                                     onClick={onAgentHubClick}
                                     className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 hover:scale-105"
                                     style={{
                                         background: "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)",
-                                        boxShadow:
-                                            "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)",
+                                        boxShadow: "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)",
                                     }}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.boxShadow =
-                                            "0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)";
+                                        e.currentTarget.style.boxShadow = "0 6px 16px rgba(0, 102, 255, 0.4), 0 4px 8px rgba(138, 43, 226, 0.3)";
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.currentTarget.style.boxShadow =
-                                            "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)";
+                                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 102, 255, 0.3), 0 2px 4px rgba(138, 43, 226, 0.2)";
                                     }}
                                     aria-label="CUVIA Link로 이동"
-                                    tabIndex={0}
-                                >
-                                    <img
-                                        src="/simbol.svg"
-                                        alt="AI"
-                                        className="w-6 h-6"
-                                        style={{ filter: "brightness(0) saturate(100%) invert(100%)" }}
-                                    />
+                                    tabIndex={0}>
+                                    <img src="/simbol.svg" alt="AI" className="w-6 h-6" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
                                 </button>
-                                <div
-                                    className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]"
-                                    aria-hidden
-                                >
+                                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 px-3 py-2 bg-[#1a1a1a] text-white text-sm rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border border-[#31353a]" aria-hidden>
                                     CUVIA Link로 이동
                                     <div className="absolute left-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-[#1a1a1a]" />
                                 </div>
