@@ -149,7 +149,7 @@ const PRODUCT_LINEUP = [
 const AI_AGENTS = [
   {
     name: 'Dashboard Agent',
-    features: ['대시보드에서 바로 사용', '즉시 연동 빠른 지원', '운영 흐름 보조형 Agent'],
+    features: ['대시보드에서\n바로 사용', '즉시 연동\n빠른 지원', '운영 흐름\n보조형 Agent'],
   },
   {
     name: 'Workspace Agent',
@@ -354,7 +354,7 @@ export default function DisplayPage() {
                       key={f}
                       className="rounded-md px-1.5 py-2 text-center border border-gray-700/30 bg-white/[0.03]"
                     >
-                      <p className="text-gray-300 text-[8px] leading-snug">{f}</p>
+                      <p className="text-gray-300 text-[8px] leading-snug whitespace-pre-line">{f}</p>
                     </div>
                   ))}
                 </div>
@@ -422,7 +422,7 @@ export default function DisplayPage() {
               style={{ background: 'linear-gradient(135deg, rgba(0,94,184,0.15) 0%, rgba(0,94,184,0.05) 100%)' }}
             >
               <p className="text-gray-400 text-[10px] mb-0.5">스마트시티의 미래, 새로운 패러다임을 제시합니다</p>
-              <p className="text-white text-[15px] font-bold">차세대 AI-Agent 미래를 경험하십시오</p>
+              <p className="text-white text-[15px] font-bold">차세대 AI-Agent 미래를 경험하세요</p>
             </div>
             <img src="/cudo_CI.svg" alt="CUDO Communications" className="h-8 opacity-50" style={{ filter: 'brightness(0) invert(1) opacity(0.6)' }} />
           </div>

@@ -56,6 +56,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   const [showGreenBox, setShowGreenBox] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(true);
   const [isSimilarityOpen, setIsSimilarityOpen] = useState(false);
+  const detailScrollRef = useRef<HTMLDivElement>(null);
+  const autoAnimDoneRef = useRef(false);
   const [isCaptureAnimating, setIsCaptureAnimating] = useState(false);
   const [flyingThumbnail, setFlyingThumbnail] = useState<{
     startX: number;
@@ -76,6 +78,38 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen || !candidate) return;
+    autoAnimDoneRef.current = false;
+    setActiveTab('timeline');
+    setIsSimilarityOpen(false);
+
+    const timer = setTimeout(() => {
+      if (!autoAnimDoneRef.current) {
+        setActiveTab('detail');
+      }
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, candidate?.id]);
+
+  useEffect(() => {
+    if (activeTab !== 'detail' || autoAnimDoneRef.current) return;
+
+    const timer = setTimeout(() => {
+      autoAnimDoneRef.current = true;
+      setIsSimilarityOpen(true);
+      requestAnimationFrame(() => {
+        detailScrollRef.current?.scrollTo({
+          top: detailScrollRef.current.scrollHeight,
+          behavior: 'smooth',
+        });
+      });
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!candidate) return;
@@ -806,7 +840,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             </div>
 
             {/* 탭 컨텐츠 */}
-            <div className="flex-1 overflow-y-auto min-h-0 p-4" style={{
+            <div ref={detailScrollRef} className="flex-1 overflow-y-auto min-h-0 p-4" style={{
               scrollbarWidth: 'thin',
               scrollbarColor: '#31353a #0f0f0f',
             }}>
