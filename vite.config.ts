@@ -64,6 +64,16 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/utic-wms-proxy/, ""),
+                timeout: 20000,
+                configure: (proxy) => {
+                    proxy.on("error", (err, _req, res) => {
+                        console.warn("[UTIC WMS Proxy] 연결 실패:", err.message);
+                        if (res && "writeHead" in res) {
+                            res.writeHead(504, { "Content-Type": "text/plain" });
+                            res.end("UTIC WMS Gateway Timeout");
+                        }
+                    });
+                },
             },
         },
     },
