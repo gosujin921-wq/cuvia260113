@@ -593,7 +593,7 @@ export default function Home() {
                     </div>
                 </div>
             </div>
-            {showAIAgentPopup && isUnityMode && (
+            {showAIAgentPopup && isUnityMode && isReadyToAnalyze && (
                 <UnityAIAgentPopup
                     mainCameraName={mainCameraName}
                     eventType={eventType}
@@ -601,7 +601,10 @@ export default function Home() {
                     occurredTime={occurredTime}
                     vlmRequestInfo={vlmRequestInfo ?? undefined}
                     isOpen={showAIAgentPopup}
-                    onClose={() => setShowAIAgentPopup(false)}
+                    onClose={() => {
+                        setShowAIAgentPopup(false);
+                        setIsReadyToAnalyze(false);
+                    }}
                     hideControls={hideControls}
                     eventTime={key1PressTime ?? new Date()}
                     isReadyToAnalyze={isReadyToAnalyze}
