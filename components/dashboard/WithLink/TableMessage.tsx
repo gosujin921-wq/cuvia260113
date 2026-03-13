@@ -57,7 +57,7 @@ export function TableMessage({ message, isLatest = true, onMapLocationRequest, f
                     </div>
                 )}
                 {message.title && message.rationale && <br />}
-                {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3">{message.rationale}</p>}
+                {message.rationale && <p className="text-sm text-gray-200 leading-relaxed mb-3" dangerouslySetInnerHTML={{ __html: message.rationale }} />}
                 <div dangerouslySetInnerHTML={{ __html: message?.htmlContent ?? "" }} />
                 {displayTables && (
                     <>
