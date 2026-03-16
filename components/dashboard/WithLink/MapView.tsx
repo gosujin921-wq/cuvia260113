@@ -948,9 +948,29 @@ const MapView = ({
             document.head.appendChild(style);
         }
 
+        // WMTS 전용: 이동/줌 완료 후에만 타일 로드 (안정적 호출 우선)
+        const addTrafficLayerOnly = () => {
+            if (map.getSource(trafficWmsSourceId) && !map.getLayer(trafficWmsLayerId)) {
+                map.addLayer({
+                    id: trafficWmsLayerId,
+                    type: "raster",
+                    source: trafficWmsSourceId,
+                    paint: { "raster-opacity": 0.7 },
+                });
+            }
+        };
+        const removeTrafficLayerOnly = () => {
+            if (map.getLayer(trafficWmsLayerId)) map.removeLayer(trafficWmsLayerId);
+        };
+        let wmtsIdleOff: (() => void) | null = null;
+
         // 레이어/소스 제거 함수
         const removeWmsLayer = () => {
             try {
+                if (wmtsIdleOff) {
+                    wmtsIdleOff();
+                    wmtsIdleOff = null;
+                }
                 if (map.getLayer && map.getLayer(trafficWmsLayerId)) {
                     map.removeLayer(trafficWmsLayerId);
                 }
@@ -1023,6 +1043,16 @@ const MapView = ({
                 source: trafficWmsSourceId,
                 paint: { "raster-opacity": 0.7 },
             });
+
+            // WMTS 전용: 줌 중에만 레이어 제거 → 줌 완료 후 레이어 재추가 (이동/드래그 시에는 레이어 유지)
+            if (trafficLayerMode === "wmts") {
+                map.on("zoomstart", removeTrafficLayerOnly);
+                map.on("zoomend", addTrafficLayerOnly);
+                wmtsIdleOff = () => {
+                    map.off("zoomstart", removeTrafficLayerOnly);
+                    map.off("zoomend", addTrafficLayerOnly);
+                };
+            }
         };
 
         // 마커 제거 함수
