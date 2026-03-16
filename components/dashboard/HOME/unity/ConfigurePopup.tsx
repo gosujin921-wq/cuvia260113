@@ -2,7 +2,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import ConfigureAgent from "./ConfigureAgent";
 import { CameraListPageData } from "@/src/apis/camera/types";
-import { useAssignCamera } from "@/src/apis/camera/hooks";
+import { useAssignCamera, useSyncCamera } from "@/src/apis/camera/hooks";
 
 interface ConfigurePopupProps {
     onClose: () => void;
@@ -41,7 +41,7 @@ export default function ConfigurePopup({ onClose, availableCCTVs, bridgeSlots }:
     const { mutate: assignCamera } = useAssignCamera();
     // 이미 할당된 CCTV 목록 계산 (다른 슬롯에서 사용 중인 CCTV)
     const assignedCctvIds = bridgeSlots.filter((slot) => slot.assignedCctvId).map((slot) => slot.assignedCctvId);
-
+    const { mutate: syncCamera } = useSyncCamera();
     // Bridge 슬롯에 CCTV 할당 핸들러
     const handleAssignCctv = (bridgeId: string, cctvId: string | undefined) => {
         // 선택된 카메라 정보 가져오기
@@ -109,7 +109,7 @@ export default function ConfigurePopup({ onClose, availableCCTVs, bridgeSlots }:
     };
 
     const handleClickRefresh = () => {
-        console.log("카메라 목록 갱신");
+        syncCamera();
     };
 
     return (

@@ -22,3 +22,8 @@ export const assignCamera = async (request: CameraAssignRequest, bridgeId: strin
     const resp = await axiosInstance.patch<BaseResponse>(`/v1/cuvia-was/cctv-setting/update/${bridgeId}`, request);
     return normalizeResponse(resp.data);
 };
+
+export const syncCamera = async () => {
+    const resp = await axiosInstance.get<BaseResponse>(`/v1/cuvia-was/camera/sync`);
+    return normalizeResponse(resp.data);
+};

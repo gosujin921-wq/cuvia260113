@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { assignCamera, getCameraAssignCameraInfo, getCameraList, getIceServerList } from "./service";
+import { assignCamera, getCameraAssignCameraInfo, getCameraList, getIceServerList, syncCamera } from "./service";
 import { CameraAssignRequest } from "./types";
 
 export const useGetCamera = (page: number, pageSize: number, searchData: string, sort: string) => {
@@ -29,6 +29,16 @@ export const useAssignCamera = () => {
         mutationFn: ({ request, bridgeId }: { request: CameraAssignRequest; bridgeId: string }) => assignCamera(request, bridgeId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["cameraAssignCameraInfo"] });
+        },
+    });
+};
+
+export const useSyncCamera = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: () => syncCamera(),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["camera"] });
         },
     });
 };
