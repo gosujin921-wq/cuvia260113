@@ -9,6 +9,7 @@ import ComponentsStylePage from "./pages/components-style";
 import AgentChatPage from "./pages/agent-chat";
 import CuviaLinkPage from "./pages/cuvia-link";
 import BackwallPage from "./pages/backwall";
+import Backwall2Page from "./pages/backwall2";
 
 function App() {
     return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/agent-chat" element={<AgentChatPage />} />
             <Route path="/workspace" element={<CuviaLinkPage />} />
             <Route path="/backwall" element={<BackwallPage />} />
+            <Route path="/backwall2" element={<Backwall2Page />} />
         </Routes>
     );
 }
