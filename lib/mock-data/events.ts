@@ -147,42 +147,6 @@ export const MOCK_EVENTS: BaseEvent[] = [
   // ========================================================================
   
   {
-    eventId: 'A-20241124-001',
-    id: 'A-20241124-001',
-    type: '폭행',
-    title: '흉기 소지 남성 위협 행동',
-    time: '18:42',
-    location: '별빛구 은하로363번길 48',
-    description: '112 신고자 "흉기 든 남성이 위협 중"',
-    source: '별빛112센터',
-    risk: '긴급',
-    status: '진행중',
-    domain: 'A',
-    broadcastHistory: {
-      count: 2,
-      lastBroadcastTime: '2024-11-24 18:45:30',
-    },
-  },
-  
-  {
-    eventId: 'A-20251210-003',
-    id: 'A-20251210-003',
-    type: '유괴 의심',
-    title: '유괴 의심 신고, 아동 납치 추정',
-    time: '15:20',
-    location: '별빛구 은하동 중앙초등학교 앞 놀이터',
-    description: '112 신고: 검은 후드티 남성이 파란 가방 멘 아이를 억지로 끌고 갔다',
-    source: '별빛112센터',
-    risk: '긴급',
-    status: '진행중',
-    domain: 'A',
-    broadcastHistory: {
-      count: 1,
-      lastBroadcastTime: '2024-12-10 15:25:15',
-    },
-  },
-  
-  {
     eventId: 'A-20260107-004',
     id: 'A-20260107-004',
     type: '실종',

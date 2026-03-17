@@ -90,22 +90,6 @@ const eventSpecificData: Record<string, {
   /** EventList용 장소 (신고팝업 실종 장소/시간) */
   listLocation?: string;
 }> = {
-  'A-20241124-001': {
-    type: '112 치안',
-    processingStage: '착수',
-    resolution: {
-      category: '112',
-      code: '용의자 확보',
-    },
-  },
-  'A-20251210-003': {
-    type: '112 실종',
-    processingStage: '착수',
-    resolution: {
-      category: '112',
-      code: '용의자 확보',
-    },
-  },
   'A-20260107-004': {
     type: '112 실종',
     processingStage: '생성',
@@ -260,15 +244,6 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
 export const generateAIInsight = (event: BaseEvent): string => {
   const { type, title, description, risk, location, domain, source } = event;
 
-  // 실제 사용하는 이벤트에 대한 하드코딩 인사이트
-  if (event.id === 'A-20241124-001' || event.eventId === 'A-20241124-001') {
-    return `폭행 사건 발생. ${description || title}. ${location}에서 발생한 폭행 사건으로 위험도 ${risk}입니다. 피해자와 가해자 구분이 명확하며, 가해자는 현재 도주 중입니다. 즉시 경찰 출동이 필요하며, CCTV-7, CCTV-12, CCTV-15 집중 모니터링을 권장합니다.`;
-  }
-  
-  if (event.id === 'A-20251210-003' || event.eventId === 'A-20251210-003') {
-    return `유괴 의심 사건 발생. ${description || title}. ${location}에서 유괴 의심 신고가 접수되었습니다. 위험도 ${risk}입니다. 인접 CCTV에서 유괴범과 아동이 함께 이동하는 장면이 포착되었으며, 용의자가 차량에 아이를 태우는 장면도 확인되었습니다. 차량 도주 추적 중입니다. 즉시 경찰 출동 및 전방 차단이 필요합니다.`;
-  }
-  
   if (event.id === 'A-20260107-004' || event.eventId === 'A-20260107-004') {
     return `실종 사건 발생. ${description || title}. ${location}에서 실종 신고가 접수되었습니다. 위험도 ${risk}입니다. 마지막 목격 좌표 기준 반경 300m 내에서 배회 행동이 감지되었습니다. 즉시 수색대 출동이 필요합니다.`;
   }
@@ -498,15 +473,6 @@ export const generateEventCompletionMessage = (event: BaseEvent, dashboardEvent:
  * @returns {string[]} 키워드 배열 (최대 3개)
  */
 export const getAIInsightKeywords = (event: BaseEvent): string[] => {
-  // 실제 사용하는 이벤트에 대한 하드코딩 키워드
-  if (event.id === 'A-20241124-001' || event.eventId === 'A-20241124-001') {
-    return ['흉기소지', '도주중', 'CCTV추적'];
-  }
-  
-  if (event.id === 'A-20251210-003' || event.eventId === 'A-20251210-003') {
-    return ['유괴의심', '아동납치', '차량도주추적'];
-  }
-  
   if (event.id === 'A-20260107-004' || event.eventId === 'A-20260107-004') {
     return ['아동실종', '수색필요', '긴급'];
   }
