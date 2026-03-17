@@ -79,7 +79,7 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
     predictedTime: '09:36:00',
     confidence: 95,
     direction: '남서쪽',
-    thumbnailUrl: '/fastsearch_img/qs_img_21_y_2.mp4',
+    thumbnailUrl: '/fastsearch_img/qs_img_21_y.mp4',
     posterUrl: '/fastsearch_img/qs_img_21_y_2.png',
   },
   {
