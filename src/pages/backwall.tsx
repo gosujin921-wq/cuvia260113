@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const DISPLAY_WIDTH = 528;
+const DISPLAY_WIDTH = 573;
 const DISPLAY_HEIGHT = 1520;
 
 const FEATURES = [
@@ -171,15 +171,15 @@ const GlowOrb = ({ className, animIndex = 0 }: { className: string; animIndex?: 
 
 const Divider = () => (
   <div
-    className="w-full h-[1px] my-3 flex-shrink-0"
+    className="w-full h-[1px] my-4 flex-shrink-0"
     style={{ background: 'linear-gradient(90deg, transparent, rgba(0,94,184,0.4), transparent)' }}
   />
 );
 
 const SectionLabel = ({ children }: { children: string }) => (
-  <div className="flex items-center gap-3 mb-3 flex-shrink-0">
+  <div className="flex items-center gap-3 mb-4 flex-shrink-0">
     <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35))' }} />
-    <p className="text-gray-500 text-[14px] tracking-[0.2em] uppercase font-semibold">{children}</p>
+    <p className="text-gray-400 text-[18px] tracking-[0.2em] uppercase font-semibold">{children}</p>
     <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.35), transparent)' }} />
   </div>
 );
@@ -222,90 +222,103 @@ export default function BackwallPage() {
             <img
               src="/simbol.svg"
               alt="CUVIA Symbol"
-              className="w-10 h-10 mb-3"
+              className="w-12 h-12 mb-3"
               style={{ filter: 'brightness(1.4) drop-shadow(0 0 20px rgba(33,96,173,0.5))' }}
             />
-            <img src="/logo.svg" alt="CUVIA" className="h-5" style={{ filter: 'brightness(0) invert(1)' }} />
+            <img src="/logo.svg" alt="CUVIA" className="h-8" style={{ filter: 'brightness(0) invert(1)' }} />
           </div>
 
           <Divider />
 
           {/* Slogan */}
           <div className="flex flex-col items-center text-center flex-shrink-0">
-            <p className="text-blue-400 text-[14px] font-semibold tracking-[0.3em] uppercase mb-3">
+            <p className="text-blue-400 text-[18px] font-semibold tracking-[0.3em] uppercase mb-3">
               Next Generation AI Platform
             </p>
-            <h1 className="text-white font-bold leading-tight mb-3" style={{ fontSize: '40px', letterSpacing: '-0.02em' }}>
+            <h1 className="text-white font-bold leading-tight" style={{ fontSize: '52px', letterSpacing: '-0.02em' }}>
               스마트시티의 미래,<br />지능형 운영을 재정의하다
             </h1>
-            <p className="text-gray-400 text-[14px] leading-relaxed">
-              분산된 도시 데이터를 연결하고 영상 맥락 기반 분석으로<br />
-              도시 상황을 판단하고 신속한 대응을 지원하는 지능형 도시 운영 플랫폼
-            </p>
           </div>
 
-          <div className="h-6 flex-shrink-0" />
+          <div className="h-8 flex-shrink-0" />
 
-          {/* Content sections - evenly distributed */}
-          <div className="flex flex-col flex-1 justify-between">
+          {/* Content sections */}
+          <div className="flex flex-col flex-1 gap-8">
             {/* Key Capabilities */}
             <div>
               <SectionLabel>Key Capabilities</SectionLabel>
-              <div className="flex items-start justify-between gap-1 px-1">
-                {KEY_CAPABILITIES.map((cap, i) => (
-                  <div key={cap.label} className="flex flex-col items-center flex-1 relative">
-                    <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center mb-2.5 text-blue-400 [&>svg]:w-5 [&>svg]:h-5"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(0,94,184,0.4) 0%, rgba(0,94,184,0.15) 100%)',
-                        border: '1px solid rgba(0,94,184,0.4)',
-                      }}
-                    >
-                      {cap.icon}
-                    </div>
-                    {i < KEY_CAPABILITIES.length - 1 && (
+              <div className="flex flex-col gap-6">
+                <div className="flex justify-center gap-12">
+                  {KEY_CAPABILITIES.slice(0, 2).map((cap) => (
+                    <div key={cap.label} className="flex flex-col items-center w-[140px]">
                       <div
-                        className="absolute top-[24px] left-[calc(50%+28px)] h-[1px]"
-                        style={{ width: 'calc(100% - 56px)', background: 'linear-gradient(90deg, rgba(0,94,184,0.5), rgba(0,94,184,0.15))' }}
-                      />
-                    )}
-                    <p className="text-white text-[14px] font-bold text-center leading-snug whitespace-pre-line">{cap.label}</p>
-                    <p className="text-gray-500 text-[11px] text-center mt-1">{cap.sub}</p>
-                  </div>
-                ))}
+                        className="rounded-full flex items-center justify-center mb-3 text-blue-400 [&>svg]:w-9 [&>svg]:h-9"
+                        style={{
+                          width: '72px',
+                          height: '72px',
+                          background: 'linear-gradient(135deg, rgba(0,94,184,0.6) 0%, rgba(0,94,184,0.3) 100%)',
+                          border: '1px solid rgba(0,94,184,0.6)',
+                        }}
+                      >
+                        {cap.icon}
+                      </div>
+                      <p className="text-white text-[20px] font-bold text-center leading-snug whitespace-pre-line">{cap.label}</p>
+                      <p className="text-gray-300 text-[16px] text-center mt-1.5">{cap.sub}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-center gap-8">
+                  {KEY_CAPABILITIES.slice(2).map((cap) => (
+                    <div key={cap.label} className="flex flex-col items-center w-[140px]">
+                      <div
+                        className="rounded-full flex items-center justify-center mb-3 text-blue-400 [&>svg]:w-9 [&>svg]:h-9"
+                        style={{
+                          width: '72px',
+                          height: '72px',
+                          background: 'linear-gradient(135deg, rgba(0,94,184,0.6) 0%, rgba(0,94,184,0.3) 100%)',
+                          border: '1px solid rgba(0,94,184,0.6)',
+                        }}
+                      >
+                        {cap.icon}
+                      </div>
+                      <p className="text-white text-[20px] font-bold text-center leading-snug whitespace-pre-line">{cap.label}</p>
+                      <p className="text-gray-300 text-[16px] text-center mt-1.5">{cap.sub}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Core Solutions */}
             <div>
               <SectionLabel>Core Solutions</SectionLabel>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex flex-col gap-2.5">
                 {FEATURES.map((feature) => (
                   <div
                     key={feature.title}
-                    className="relative rounded-lg overflow-hidden gradient-border-right-bottom"
+                    className="relative rounded-xl overflow-hidden gradient-border-right-bottom"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)',
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.10) 100%)',
                       backdropFilter: 'blur(4px)',
                       WebkitBackdropFilter: 'blur(4px)',
                     }}
                   >
-                    <div className="px-4 py-4 flex items-start gap-3">
+                    <div className="px-5 py-4 flex items-start gap-4">
                       <div
-                        className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-blue-400 mt-0.5 [&>svg]:w-5 [&>svg]:h-5"
+                        className="flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center text-blue-400 [&>svg]:w-6 [&>svg]:h-6 mt-0.5"
                         style={{
-                          background: 'linear-gradient(135deg, rgba(0,94,184,0.25) 0%, rgba(0,94,184,0.08) 100%)',
-                          border: '1px solid rgba(0,94,184,0.25)',
+                          background: 'linear-gradient(135deg, rgba(0,94,184,0.5) 0%, rgba(0,94,184,0.25) 100%)',
+                          border: '1px solid rgba(0,94,184,0.5)',
                         }}
                       >
                         {feature.icon}
                       </div>
-                      <div className="min-w-0">
-                        <h3 className="text-white text-[18px] font-bold tracking-wide leading-tight whitespace-pre-line">{feature.title}</h3>
-                        <p className="text-blue-400/70 text-[11px] font-medium mt-0.5 whitespace-pre-line">{feature.desc}</p>
-                        <div className="flex flex-wrap gap-1 mt-1.5">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-white text-[24px] font-bold tracking-wide leading-tight">{feature.title}</h3>
+                        <p className="text-blue-300 text-[17px] font-medium mt-1">{feature.desc}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-2">
                           {feature.keywords.map((kw) => (
-                            <span key={kw} className="text-gray-400 text-[9px] px-1.5 py-0.5 rounded border border-gray-700/40 bg-white/[0.03]">{kw}</span>
+                            <span key={kw} className="text-gray-300 text-[14px] px-3 py-1 rounded border border-gray-500/50 bg-white/[0.08]">{kw}</span>
                           ))}
                         </div>
                       </div>
@@ -315,76 +328,9 @@ export default function BackwallPage() {
               </div>
             </div>
 
-            {/* System Architecture - hidden
-            <div>
-              <SectionLabel>System Architecture</SectionLabel>
-              <div className="grid grid-cols-3 gap-1.5">
-                {PRODUCT_LINEUP.map((product) => (
-                  <div
-                    key={product.name}
-                    className="relative rounded-lg py-3 px-3 text-center gradient-border-right-bottom"
-                    style={{ background: 'linear-gradient(135deg, rgba(0,94,184,0.08) 0%, rgba(33,96,173,0.04) 100%)' }}
-                  >
-                    <p className="text-white text-[15px] font-bold leading-tight whitespace-pre-line">{product.name}</p>
-                    <p className="text-gray-400 text-[11px] mt-1 whitespace-pre-line">{product.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            */}
-
-            {/* CUVIA LINK */}
-            <div>
-              <div className="text-center mb-6">
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35))' }} />
-                  <p className="text-gray-500 text-[14px] tracking-[0.2em] uppercase font-semibold">CUVIA LINK</p>
-                  <div className="flex-1 h-[1px]" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.35), transparent)' }} />
-                </div>
-                <p className="text-gray-400 text-[12px]"><span className="text-blue-400 font-semibold">CUVIA LINK</span> 기반 지능형 에이전트 · 근거 기반 판단 · 실행 중심 워크플로우</p>
-              </div>
-              <div className="flex flex-col gap-5">
-                {AI_AGENTS.map((agent) => (
-                  <div key={agent.name}>
-                    <h4 className="text-white text-[16px] font-bold mb-4 text-center">{agent.name}</h4>
-                    <div className="flex justify-center gap-2">
-                      {agent.features.map((f) => (
-                        <div
-                          key={f}
-                          className="relative w-[90px] h-[90px] overflow-hidden flex items-center justify-center text-center gradient-border-right-bottom"
-                          style={{
-                            borderRadius: '9999px',
-                            background: 'linear-gradient(135deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)',
-                            backdropFilter: 'blur(4px)',
-                            WebkitBackdropFilter: 'blur(4px)',
-                          }}
-                        >
-                          <p className="text-gray-300 text-[11px] leading-snug whitespace-pre-line px-2">{f}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div
-              className="w-full h-[1px]"
-              style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)' }}
-            />
-
-            {/* Domains */}
-            <div className="flex flex-wrap justify-center gap-1.5">
-              {DOMAINS.map((d) => (
-                <span key={d.label} className="inline-flex items-center gap-1 text-gray-400 text-[10px] font-medium px-2.5 py-1 rounded-full border border-gray-700/50 bg-white/[0.03]">
-                  <span className="text-blue-400/70">{d.icon}</span>{d.label}
-                </span>
-              ))}
-            </div>
-
             {/* Bottom Logo */}
-            <div className="flex flex-col items-center">
-              <img src="/cudo_CI.svg" alt="CUDO Communications" className="h-10 opacity-50" style={{ filter: 'brightness(0) invert(1) opacity(0.6)' }} />
+            <div className="flex flex-col items-center mt-auto">
+              <img src="/cudo_CI.svg" alt="CUDO Communications" className="h-14 opacity-50" style={{ filter: 'brightness(0) invert(1) opacity(0.6)' }} />
             </div>
           </div>
         </div>
