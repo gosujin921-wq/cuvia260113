@@ -623,49 +623,91 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                         }
                     });
 
+                    // 왼쪽 3개 영상 너비 계산: 전체 높이를 3등분하여 16:9 비율로 너비 산출
+                    const topOffset = padding + (hideControls ? 56 : 0);
+                    const containerHeight = window.innerHeight - topOffset - padding;
+                    const CARD_NON_VIDEO_HEIGHT = 44; // 헤더(~32px) + 하단 패딩(12px)
+                    const leftVideoHeight = (containerHeight - 2 * padding) / 3 - CARD_NON_VIDEO_HEIGHT;
+                    const leftVideoWidth = Math.max(Math.floor(leftVideoHeight * (16 / 9)), 180);
+
+                    // 메인 카메라(index 0)를 우측으로, 기존 4번째(index 3)를 좌측 최상단으로 스위칭
+                    const displayItems = [...gridItems];
+                    if (displayItems.length >= 4) {
+                        [displayItems[0], displayItems[3]] = [displayItems[3], displayItems[0]];
+                    }
+                    const leftItems = displayItems.slice(0, 3);
+                    const rightItem = displayItems[3] ?? null;
+
                     return (
                         <div
                             style={{
                                 position: "absolute",
                                 left: `${padding}px`,
-                                top: `${padding + (hideControls ? 56 : 0)}px`,
-                                display: "grid",
-                                gridTemplateColumns: `repeat(2, ${gridPopupWidth}px)`,
-                                gridAutoRows: "auto",
+                                top: `${topOffset}px`,
+                                bottom: `${padding}px`,
+                                display: "flex",
+                                flexDirection: "row",
+                                alignItems: "flex-start",
                                 gap: `${padding}px`,
                                 pointerEvents: "none",
                                 zIndex: 1000,
                             }}>
-                            {gridItems.map(({ cctv, isMain }, idx) => {
-                                const cctvCameraInfo = isMain
-                                    ? (activeEventCameraInfo ?? { rtsp_url: cctv.rtsp_url })
-                                    : { rtsp_url: cctv.rtsp_url };
-                                return (
-                                    <div
-                                        key={`${cctv.bridgeId}-${idx}`}
-                                        style={{
-                                            width: `${gridPopupWidth}px`,
-                                            height: "fit-content",
-                                            pointerEvents: "auto",
-                                        }}>
-                                        <UnityCCTVMeshTracking
-                                            iceServerList={iceServers}
-                                            mediaAgentUrl={mediaAgentUrl}
-                                            event={currentEvent}
-                                            onClose={isMain ? () => onAiDetectionClose?.() : () => {}}
-                                            cctvId={cctv.bridgeId}
-                                            cctvName={isMain ? cctv.bridgeId || "메인 카메라" : cctv.bridgeId}
-                                            position={undefined}
-                                            width={gridPopupWidth}
-                                            hideControls={hideControls}
-                                            highlighted={hoveredCCTVId === cctv.bridgeId}
-                                            isMain={isMain}
-                                            onHover={handleHoverCctv}
-                                            cameraInfo={cctvCameraInfo}
-                                        />
-                                    </div>
-                                );
-                            })}
+                            {/* 왼쪽 컬럼: 최대 3개 */}
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: `${padding}px`,
+                                    height: "100%",
+                                }}>
+                                {leftItems.map(({ cctv, isMain }, idx) => {
+                                    const cctvCameraInfo = isMain ? activeEventCameraInfo ?? { rtsp_url: cctv.rtsp_url } : { rtsp_url: cctv.rtsp_url };
+                                    return (
+                                        <div key={`${cctv.bridgeId}-${idx}`} style={{ pointerEvents: "auto" }}>
+                                            <UnityCCTVMeshTracking
+                                                iceServerList={iceServers}
+                                                mediaAgentUrl={mediaAgentUrl}
+                                                event={currentEvent}
+                                                onClose={isMain ? () => onAiDetectionClose?.() : () => {}}
+                                                cctvId={cctv.bridgeId}
+                                                cctvName={isMain ? cctv.bridgeId || "메인 카메라" : cctv.bridgeId}
+                                                position={undefined}
+                                                width={leftVideoWidth}
+                                                hideControls={hideControls}
+                                                highlighted={hoveredCCTVId === cctv.bridgeId}
+                                                isMain={isMain}
+                                                onHover={handleHoverCctv}
+                                                cameraInfo={cctvCameraInfo}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {/* 오른쪽 컬럼: 1개, 상단 정렬 */}
+                            {rightItem &&
+                                (() => {
+                                    const { cctv, isMain } = rightItem;
+                                    const cctvCameraInfo = isMain ? activeEventCameraInfo ?? { rtsp_url: cctv.rtsp_url } : { rtsp_url: cctv.rtsp_url };
+                                    return (
+                                        <div style={{ pointerEvents: "auto", alignSelf: "flex-start" }}>
+                                            <UnityCCTVMeshTracking
+                                                iceServerList={iceServers}
+                                                mediaAgentUrl={mediaAgentUrl}
+                                                event={currentEvent}
+                                                onClose={isMain ? () => onAiDetectionClose?.() : () => {}}
+                                                cctvId={cctv.bridgeId}
+                                                cctvName={isMain ? cctv.bridgeId || "메인 카메라" : cctv.bridgeId}
+                                                position={undefined}
+                                                width={gridPopupWidth}
+                                                hideControls={hideControls}
+                                                highlighted={hoveredCCTVId === cctv.bridgeId}
+                                                isMain={isMain}
+                                                onHover={handleHoverCctv}
+                                                cameraInfo={cctvCameraInfo}
+                                            />
+                                        </div>
+                                    );
+                                })()}
                         </div>
                     );
                 })()}
