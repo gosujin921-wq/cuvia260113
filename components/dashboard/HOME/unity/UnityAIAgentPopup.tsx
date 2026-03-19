@@ -289,9 +289,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
         <>
             {isExpanded ? (
                 <div className="fixed right-0 z-[2000]" onClick={(e) => e.stopPropagation()} style={{ zIndex: 2000, top: "60px", bottom: 0 }}>
-                    <div className="flex flex-col bg-white border-l border-[#31353a] h-full w-[30rem] overflow-hidden rounded-t-xl" style={{ borderLeftWidth: "1px" }}>
+                    <div className="flex flex-col border-l border-[#31353a] h-full w-[30rem] overflow-hidden rounded-t-xl" style={{ borderLeftWidth: "1px", background: "linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(23,23,23,0.4) 100%)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)" }}>
                         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-                            <button type="button" onClick={() => setIsExpanded(false)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none" aria-label="축소">
+                            <button type="button" onClick={() => setIsExpanded(false)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors focus:outline-none" aria-label="축소">
                                 <Icon icon="mdi:window-restore" className="w-5 h-5" />
                             </button>
                         </div>
@@ -299,7 +299,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0 p-3 pl-10 pr-9">
                             {/* CUVIA Agent 헤더 */}
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-gray-700 text-sm">
+                                <div className="flex items-center gap-2 text-gray-200 text-sm">
                                     <div
                                         className="w-8 h-8 rounded-full flex items-center justify-center text-white"
                                         style={{
@@ -307,7 +307,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                         }}>
                                         <img src="/simbol.svg" alt="AI" className="w-4 h-4" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
                                     </div>
-                                    <span className="text-gray-900 font-semibold">CUVIA Agent</span>
+                                    <span className="text-white font-semibold">CUVIA Agent</span>
                                 </div>
                                 {messages.map((message) => (
                                     <div key={message.id} className="space-y-2">
@@ -315,18 +315,18 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                             <div className="space-y-2">
                                                 <div>
                                                     {message.type === "analyzing" ? (
-                                                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                                        <div className="rounded-xl border border-[#40424a] bg-[#393a42] p-4">
                                                             {isAnalyzing && (
                                                                 <>
                                                                     <div className="mb-3">
-                                                                        <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
-                                                                        <p className="text-sm text-gray-700 leading-relaxed flex items-center gap-2">
-                                                                            {!hasReceivedFirstVlmResponse && <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />}
+                                                                        <h3 className="text-sm font-semibold text-white mb-2">AI 분석 중</h3>
+                                                                        <p className="text-sm text-gray-200 leading-relaxed flex items-center gap-2">
+                                                                            {!hasReceivedFirstVlmResponse && <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-400" aria-hidden />}
                                                                             {message.content} (소요시간 : {message.processingTime}초)
                                                                         </p>
                                                                     </div>
                                                                     <div className="mb-2">
-                                                                        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                                                        <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
                                                                             <div
                                                                                 className="h-full rounded-full transition-all duration-300"
                                                                                 style={{
@@ -341,39 +341,39 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
 
                                                             {/* 분석 결과 표시 (프로그래스 완료 시) */}
                                                             {(message.progress ?? 0) >= 1 && message.analysisResult && (
-                                                                <div className={`space-y-4 ${isAnalyzing ? "border-t border-gray-300 pt-4 mt-4 " : ""}`}>
+                                                                <div className={`space-y-4 ${isAnalyzing ? "border-t border-[#40424a] pt-4 mt-4 " : ""}`}>
                                                                     {/* 한 줄 결론 */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                    <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                            <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
+                                                                            <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-400" />
+                                                                            <h4 className="text-white font-semibold text-sm">1. 한 줄 결론</h4>
                                                                         </div>
-                                                                        <div className="text-gray-700 text-sm">
+                                                                        <div className="text-gray-200 text-sm">
                                                                             <Markdown>{message.analysisResult.conclusion}</Markdown>
                                                                         </div>
                                                                     </div>
 
                                                                     {/* 사건 요약 */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                    <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                            <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
+                                                                            <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-400" />
+                                                                            <h4 className="text-white font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
+                                                                            <div className="text-gray-200 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.summary}</Markdown>
                                                                             </div>
                                                                         </div>
                                                                     </div>
 
                                                                     {/* 근거 */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                    <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                            <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
+                                                                            <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-400" />
+                                                                            <h4 className="text-white font-semibold text-sm">3. 근거</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
+                                                                            <div className="text-gray-200 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.evidence}</Markdown>
                                                                             </div>
                                                                         </div>
@@ -381,17 +381,17 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
 
                                                                     {/* 대응 추천 (퀵 버튼) */}
                                                                     {message.analysisResult.recommendations.length > 0 && (
-                                                                        <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                        <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                             <div className="flex items-center gap-2 mb-3">
-                                                                                <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-600" />
-                                                                                <h4 className="text-gray-900 font-semibold text-sm">4. 대응 추천</h4>
+                                                                                <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-400" />
+                                                                                <h4 className="text-white font-semibold text-sm">4. 대응 추천</h4>
                                                                             </div>
                                                                             <div className="flex flex-wrap gap-2">
                                                                                 <button
                                                                                     onClick={() => {
                                                                                         // 퀵 버튼 기능 (나중에 구현)
                                                                                     }}
-                                                                                    className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                                                                    className="px-3 py-1.5 bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg text-gray-200 text-sm hover:border-blue-400 hover:bg-gray-700/50 transition-colors"
                                                                                     style={{ borderWidth: "1px" }}>
                                                                                     관련 인물 고속 검색
                                                                                 </button>
@@ -399,7 +399,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                                     onClick={() => {
                                                                                         handleClickPropagationButton();
                                                                                     }}
-                                                                                    className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                                                                    className="px-3 py-1.5 bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg text-gray-200 text-sm hover:border-blue-400 hover:bg-gray-700/50 transition-colors"
                                                                                     style={{ borderWidth: "1px" }}>
                                                                                     전파하기
                                                                                 </button>
@@ -410,9 +410,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <div className="max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200" style={{ borderWidth: "1px" }}>
+                                                        <div className="max-w-[70%] px-4 py-2 rounded-2xl border border-[#40424a] bg-[#393a42] text-gray-200" style={{ borderWidth: "1px" }}>
                                                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                                                            <div className="text-xs text-gray-500 mt-1">{message.timestamp}</div>
+                                                            <div className="text-xs text-gray-400 mt-1">{message.timestamp}</div>
                                                         </div>
                                                     )}
                                                 </div>
@@ -420,16 +420,16 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                         )}
                                         {message.role === "user" && (
                                             <div className="flex justify-end">
-                                                <div className="max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap bg-gradient-to-br from-[#ff8566] to-[#ff8566] text-white border-transparent">
+                                                <div className="max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap bg-[#4b5563] text-gray-100">
                                                     <p>{message.content}</p>
-                                                    <div className="text-xs text-orange-100 mt-1">{message.timestamp}</div>
+                                                    <div className="text-xs text-gray-300 mt-1">{message.timestamp}</div>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
                                 ))}
                                 {isResponding && (
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1 text-xs text-gray-400">
                                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
                                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
@@ -440,51 +440,50 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                             <div ref={bottomRef} className="h-[75px]" />
                         </div>
 
-                        <div className="bg-white flex-shrink-0">
-                            <div className="p-4">
-                                <div className="relative flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
-                                    <button
-                                        onClick={() => {
-                                            // 도구 팝업 (나중에 구현)
-                                        }}
-                                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors self-center"
-                                        aria-label="도구 열기">
-                                        <Icon icon="mdi:plus" className="w-5 h-5" />
-                                    </button>
-                                    <textarea
-                                        ref={textareaRef}
-                                        key={inputKey}
-                                        value={chatInput}
-                                        onChange={(e) => {
-                                            if (ignoreNextChangeRef.current) {
-                                                ignoreNextChangeRef.current = false;
-                                                return;
-                                            }
-                                            setChatInput(e.target.value);
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter" && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleSendMessage();
-                                            }
-                                        }}
-                                        placeholder="CUVIA에게 물어보기"
-                                        className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none overflow-hidden self-center"
-                                        style={{
-                                            minHeight: "24px",
-                                            maxHeight: "96px",
-                                            lineHeight: "24px",
-                                        }}
-                                        rows={1}
-                                    />
-                                    <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || !isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 self-center" style={{ background: AGENT_GRADIENT }} aria-label="전송">
-                                        <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
-                                    </button>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2 text-center">
-                                    <span className="font-semibold">CUVIA Agent</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
-                                </p>
+                        <div className="min-w-0 p-4 border-t border-[#31353a] flex-shrink-0 relative z-20 bg-transparent">
+                            <div className="relative flex items-center gap-3 min-w-0 bg-[#393a42] border border-[#40424a] rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
+                                <button
+                                    onClick={() => {
+                                        // 도구 팝업 (나중에 구현)
+                                    }}
+                                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors self-center"
+                                    aria-label="도구 열기">
+                                    <Icon icon="mdi:plus" className="w-5 h-5" />
+                                </button>
+                                <textarea
+                                    ref={textareaRef}
+                                    key={inputKey}
+                                    value={chatInput}
+                                    onChange={(e) => {
+                                        if (ignoreNextChangeRef.current) {
+                                            ignoreNextChangeRef.current = false;
+                                            return;
+                                        }
+                                        setChatInput(e.target.value);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                    placeholder="CUVIA에게 물어보기"
+                                    className="flex-1 min-w-0 w-full max-w-full bg-transparent border-none text-white text-sm placeholder-gray-400 focus:outline-none resize-none overflow-hidden self-center"
+                                    style={{
+                                        minHeight: "24px",
+                                        maxHeight: "96px",
+                                        lineHeight: "24px",
+                                    }}
+                                    rows={1}
+                                />
+                                <button type="button" onClick={handleSendMessage} disabled={!chatInput.trim() || isResponding || !isReadyToAnalyze} className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 self-center" style={{ background: AGENT_GRADIENT }} aria-label="전송">
+                                    <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
+                                </button>
                             </div>
+                            <p className="text-xs text-gray-300 mt-2 text-center">
+                                <span className="font-semibold text-gray-300">CUVIA Agent</span>
+                                <span className="text-gray-400">는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -500,9 +499,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                               }
                     }
                     onClick={(e) => e.stopPropagation()}>
-                    <div className="flex flex-col rounded-2xl bg-white border border-gray-200 shadow-lg relative overflow-hidden w-[420px]" style={{ maxHeight: maxHeightProp ?? 600 }}>
+                    <div className="flex flex-col rounded-2xl relative overflow-hidden w-[420px] border border-[#40424a]" style={{ maxHeight: maxHeightProp ?? 600, background: "linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(23,23,23,0.4) 100%)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)" }}>
                         <div className="absolute top-3 right-3 z-10 flex items-center gap-2">
-                            <button type="button" onClick={() => setIsExpanded(!isExpanded)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none" aria-label={isExpanded ? "축소" : "확장"}>
+                            <button type="button" onClick={() => setIsExpanded(!isExpanded)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors focus:outline-none" aria-label={isExpanded ? "축소" : "확장"}>
                                 <Icon icon={isExpanded ? "mdi:window-restore" : "mdi:window-maximize"} className="w-5 h-5" />
                             </button>
                         </div>
@@ -515,16 +514,16 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                             <div className="flex items-start gap-3">
                                                 <div className="min-w-0 flex-1">
                                                     {message.type === "analyzing" ? (
-                                                        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                                        <div className="rounded-xl border border-[#40424a] bg-[#393a42] p-4">
                                                             <div className="mb-3">
-                                                                <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
-                                                                <p className="text-sm text-gray-700 leading-relaxed flex items-center gap-2">
-                                                                    {!hasReceivedFirstVlmResponse && <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-500" aria-hidden />}
+                                                                <h3 className="text-sm font-semibold text-white mb-2">AI 분석 중</h3>
+                                                                <p className="text-sm text-gray-200 leading-relaxed flex items-center gap-2">
+                                                                    {!hasReceivedFirstVlmResponse && <Icon icon="svg-spinners:90-ring-with-bg" className="w-5 h-5 flex-shrink-0 text-blue-400" aria-hidden />}
                                                                     {message.content} (소요시간 : {message.processingTime}초)
                                                                 </p>
                                                             </div>
                                                             <div className="mb-2">
-                                                                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                                                <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
                                                                     <div
                                                                         className="h-full rounded-full transition-all duration-300"
                                                                         style={{
@@ -537,49 +536,49 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
 
                                                             {/* 분석 결과 표시 (프로그래스 완료 시) */}
                                                             {(message.progress ?? 0) >= 1 && message.analysisResult && (
-                                                                <div className="mt-4 space-y-4 pt-4 border-t border-gray-300">
+                                                                <div className="mt-4 space-y-4 pt-4 border-t border-[#40424a]">
                                                                     {/* 한 줄 결론 */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                    <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                            <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
+                                                                            <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-400" />
+                                                                            <h4 className="text-white font-semibold text-sm">1. 한 줄 결론</h4>
                                                                         </div>
-                                                                        <div className="text-gray-700 text-sm">
+                                                                        <div className="text-gray-200 text-sm">
                                                                             <Markdown>{message.analysisResult.conclusion}</Markdown>
                                                                         </div>
                                                                     </div>
 
                                                                     {/* 사건 요약 */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                    <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                            <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
+                                                                            <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-400" />
+                                                                            <h4 className="text-white font-semibold text-sm">2. 사건 요약</h4>
                                                                         </div>
                                                                         <div className="space-y-1.5 text-sm">
-                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
+                                                                            <div className="text-gray-200 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.summary}</Markdown>
                                                                             </div>
                                                                         </div>
                                                                     </div>
 
                                                                     {/* 근거 */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                    <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                            <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
+                                                                            <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-400" />
+                                                                            <h4 className="text-white font-semibold text-sm">3. 근거</h4>
                                                                         </div>
                                                                         <ul className="space-y-1.5">
-                                                                            <div className="text-gray-700 text-sm whitespace-pre-line">
+                                                                            <div className="text-gray-200 text-sm whitespace-pre-line">
                                                                                 <Markdown>{message.analysisResult.evidence}</Markdown>
                                                                             </div>
                                                                         </ul>
                                                                     </div>
 
                                                                     {/* 대응 추천 (퀵 버튼) */}
-                                                                    <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: "1px" }}>
+                                                                    <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg p-4">
                                                                         <div className="flex items-center gap-2 mb-3">
-                                                                            <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-600" />
-                                                                            <h4 className="text-gray-900 font-semibold text-sm">4. 대응 추천</h4>
+                                                                            <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-400" />
+                                                                            <h4 className="text-white font-semibold text-sm">4. 대응 추천</h4>
                                                                         </div>
                                                                         <div className="flex flex-wrap gap-2">
                                                                             {message.analysisResult.recommendations.map((rec, idx) => {
@@ -590,7 +589,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                                                         onClick={() => {
                                                                                             // 퀵 버튼 기능 (나중에 구현)
                                                                                         }}
-                                                                                        className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm hover:border-blue-500 hover:bg-blue-50 transition-colors"
+                                                                                        className="px-3 py-1.5 bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-lg text-gray-200 text-sm hover:border-blue-400 hover:bg-gray-700/50 transition-colors"
                                                                                         style={{ borderWidth: "1px" }}>
                                                                                         {buttonText}
                                                                                     </button>
@@ -604,11 +603,11 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                                     ) : (
                                                         <>
                                                             <div className="flex items-center gap-2 mb-1">
-                                                                <span className="text-gray-900 font-semibold text-sm">CUVIA Agent</span>
+                                                                <span className="text-white font-semibold text-sm">CUVIA Agent</span>
                                                             </div>
-                                                            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                                                                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                                                                <div className="text-xs text-gray-500 mt-2">{message.timestamp}</div>
+                                                            <div className="rounded-xl border border-[#40424a] bg-[#393a42] p-4 text-gray-200">
+                                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                                                <div className="text-xs text-gray-400 mt-2">{message.timestamp}</div>
                                                             </div>
                                                         </>
                                                     )}
@@ -617,14 +616,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                         )}
                                         {message.role === "user" && (
                                             <div className="flex justify-end">
-                                                <div
-                                                    className="max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap"
-                                                    style={{
-                                                        background: "rgba(255, 133, 102, 0.2)",
-                                                        color: "#1f2937",
-                                                    }}>
+                                                <div className="max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap bg-[#4b5563] text-gray-100">
                                                     <p>{message.content}</p>
-                                                    <div className="text-xs text-gray-600 mt-1">{message.timestamp}</div>
+                                                    <div className="text-xs text-gray-300 mt-1">{message.timestamp}</div>
                                                 </div>
                                             </div>
                                         )}
@@ -632,7 +626,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                 ))}
                                 {isResponding && (
                                     <div className="flex items-start gap-3">
-                                        <div className="flex items-center gap-1 pt-2">
+                                        <div className="flex items-center gap-1 pt-2 text-gray-400">
                                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
                                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
@@ -644,8 +638,8 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                             <div ref={bottomRef} className="h-2" />
                         </div>
 
-                        <div className="p-4 border-t border-gray-200 flex-shrink-0 bg-white">
-                            <div className="relative flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
+                        <div className="p-4 border-t border-[#31353a] flex-shrink-0 bg-transparent">
+                            <div className="relative flex items-center gap-3 bg-[#393a42] border border-[#40424a] rounded-2xl px-4 py-3 focus-within:border-blue-500 transition-colors">
                                 <textarea
                                     ref={textareaRef}
                                     key={inputKey}
@@ -665,7 +659,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                         }
                                     }}
                                     placeholder="CUVIA에게 물어보기"
-                                    className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none overflow-y-auto"
+                                    className="flex-1 bg-transparent border-none text-white text-sm placeholder-gray-400 focus:outline-none resize-none overflow-y-auto"
                                     style={{
                                         minHeight: "24px",
                                         maxHeight: "72px",
@@ -677,8 +671,9 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                     <img src="/simbol.svg" alt="전송" className="w-5 h-5" style={{ filter: "brightness(0) saturate(100%) invert(100%)" }} />
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2 text-center">
-                                <span className="font-semibold">CUVIA Link</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+                            <p className="text-xs text-gray-300 mt-2 text-center">
+                                <span className="font-semibold text-gray-300">CUVIA Agent</span>
+                                <span className="text-gray-400">는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.</span>
                             </p>
                         </div>
                     </div>

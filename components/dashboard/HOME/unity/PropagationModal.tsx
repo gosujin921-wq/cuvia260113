@@ -203,7 +203,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
 
             {/* 중앙 패널 */}
             <div
-                className="fixed top-1/2 left-1/2 flex flex-col transition-all duration-500 ease-out opacity-100 scale-100 bg-gray-100 rounded-xl p-4 shadow-2xl"
+                className="fixed top-1/2 left-1/2 flex flex-col transition-all duration-500 ease-out opacity-100 scale-100 rounded-xl p-4 shadow-2xl border border-[#40424a]"
                 style={{
                     transform: "translate(-50%, -50%)",
                     width: "900px",
@@ -211,6 +211,9 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                     height: "90vh",
                     maxHeight: "90vh",
                     zIndex: 10002,
+                    background: "linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(23,23,23,0.4) 100%)",
+                    backdropFilter: "blur(5px)",
+                    WebkitBackdropFilter: "blur(5px)",
                 }}>
                 <div className="flex flex-col gap-3 h-full" style={{ minHeight: 0 }}>
                     {/* 헤더 */}
@@ -223,13 +226,13 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                         <div className="flex items-center justify-between gap-2 flex-wrap relative">
                             <div className="flex items-center gap-2">
                                 {/* 전파 건수 칩 */}
-                                <div className="px-4 py-2 rounded-full text-xs font-medium bg-white/90 text-gray-700 flex items-center gap-2 border border-gray-200 shadow-sm" style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
-                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+                                <div className="px-4 py-2 rounded-full text-xs font-medium text-gray-200 flex items-center gap-2 border border-[#40424a] bg-[rgba(40,40,48,0.6)]">
+                                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
                                     <span>전파 건수: {threads.length}건</span>
                                 </div>
                                 {/* 상태 칩 - 완료됨 또는 진행 중일 때만 표시 */}
                                 {currentThread && currentThread.status !== "pending" && (
-                                    <div className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-2 border shadow-sm ${currentThread.status === "completed" ? "bg-green-50 text-green-700 border-green-200" : "bg-blue-50 text-blue-700 border-blue-200"}`} style={{ backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
+                                    <div className={`px-4 py-2 rounded-full text-xs font-medium flex items-center gap-2 border bg-[rgba(40,40,48,0.6)] ${currentThread.status === "completed" ? "text-green-300 border-green-500/50" : "text-blue-300 border-blue-500/50"}`}>
                                         <span className={`w-2 h-2 rounded-full ${currentThread.status === "completed" ? "bg-green-400" : "bg-blue-400"} animate-pulse`}></span>
                                         <span>{currentThread.status === "completed" ? "완료됨" : "진행 중"}</span>
                                     </div>
@@ -237,7 +240,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                             </div>
 
                             {/* 닫기 버튼 */}
-                            <button type="button" onClick={onClose} className="flex-shrink-0 w-8 h-8 rounded-full bg-white/90 border border-gray-200 hover:border-red-300 hover:bg-red-50 flex items-center justify-center text-gray-600 hover:text-red-500 transition-all shadow-sm" aria-label="닫기">
+                            <button type="button" onClick={onClose} className="flex-shrink-0 w-8 h-8 rounded-full border border-[#40424a] bg-[rgba(40,40,48,0.6)] hover:border-red-400/70 hover:bg-red-900/30 flex items-center justify-center text-gray-400 hover:text-red-400 transition-all" aria-label="닫기">
                                 <Icon icon="mdi:close" className="w-5 h-5" />
                             </button>
                         </div>
@@ -245,7 +248,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
 
                     {/* 메인 영역 - 메시지 영역만 표시 */}
                     <div
-                        className="rounded-lg flex-1 border border-gray-200 relative flex flex-col overflow-hidden bg-white shadow-lg"
+                        className="rounded-lg flex-1 border border-[#40424a] relative flex flex-col overflow-hidden bg-[rgba(30,30,36,0.6)]"
                         style={{
                             minHeight: 0,
                             maxHeight: "100%",
@@ -253,10 +256,10 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                         {/* 메시지 영역 */}
                         <div className="flex-1 flex flex-col overflow-hidden min-w-0 relative">
                             {/* 메시지 헤더 */}
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0 bg-gray-50">
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-[#40424a] flex-shrink-0 bg-[#393a42]">
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="text-base font-semibold text-gray-800 truncate">{currentThread?.title || "전파"}</h3>
-                                    <p className="text-sm text-gray-600 mt-0.5">
+                                    <h3 className="text-base font-semibold text-white truncate">{currentThread?.title || "전파"}</h3>
+                                    <p className="text-sm text-gray-300 mt-0.5">
                                         {currentThread &&
                                             new Date(currentThread.createdAt).toLocaleString("ko-KR", {
                                                 year: "numeric",
@@ -272,10 +275,10 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                             {/* 메시지 영역 - 채팅 스타일 (HOME-v2 PropagationListPanel 참고) */}
                             <div
                                 ref={scrollContainerRef}
-                                className="flex-1 overflow-y-auto p-4 bg-gray-50/50"
+                                className="flex-1 overflow-y-auto p-4 bg-[rgba(26,27,33,0.5)]"
                                 style={{
                                     scrollbarWidth: "thin",
-                                    scrollbarColor: "#d1d5db #f3f4f6",
+                                    scrollbarColor: "#40424a #2a2b33",
                                 }}>
                                 {/* 메시지들 */}
                                 <div className="flex flex-col gap-4 max-w-full">
@@ -284,25 +287,25 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                             {/* 왼쪽 정렬: agency (신고기관) - 수신 메시지 */}
                                             {message.role === "agency" && (
                                                 <div className="flex items-start gap-3 w-[80%] min-w-[80%]">
-                                                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center border-2 border-white shadow-sm">
+                                                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-red-500 flex items-center justify-center border-2 border-[#40424a]">
                                                         <Icon icon="mdi:alert-circle" className="w-4 h-4 text-white" />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm p-4 shadow-sm">
+                                                        <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-2xl rounded-tl-sm p-4">
                                                             <div className="flex items-center gap-2 mb-2">
-                                                                <span className="text-sm font-bold text-red-600">{message.author || "신고기관"}</span>
+                                                                <span className="text-sm font-bold text-red-400">{message.author || "신고기관"}</span>
                                                                 {message.status === "unread" && <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">NEW</span>}
                                                             </div>
-                                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">{message.content}</pre>
+                                                            <pre className="text-sm text-gray-200 whitespace-pre-wrap font-sans">{message.content}</pre>
                                                             {message.showCompletionButton && (
-                                                                <div className="mt-4 pt-4 border-t border-gray-200">
-                                                                    <p className="text-sm text-gray-600 mb-4">해당 시뮬레이션을 종료합니다.</p>
-                                                                    <button type="button" onClick={() => onBackToInitial?.()} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors" aria-label="확인">
+                                                                <div className="mt-4 pt-4 border-t border-[#40424a]">
+                                                                    <p className="text-sm text-gray-300 mb-4">해당 시뮬레이션을 종료합니다.</p>
+                                                                    <button type="button" onClick={() => onBackToInitial?.()} className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors hover:opacity-90" style={{ background: "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)" }} aria-label="확인">
                                                                         확인
                                                                     </button>
                                                                 </div>
                                                             )}
-                                                            <div className="text-xs text-gray-500 mt-2">{message.timestamp}</div>
+                                                            <div className="text-xs text-gray-400 mt-2">{message.timestamp}</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -310,31 +313,31 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                             <div className="flex items-end gap-2 w-[80%] min-w-[80%]">
                                                 <div className="flex-1 min-w-0 flex flex-col items-end">
                                                     {message.role === "system" && (
-                                                        <div className="bg-blue-50 border border-blue-100 rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
+                                                        <div className="bg-[rgba(40,40,48,0.6)] border border-[#40424a] rounded-2xl rounded-tr-sm p-4 w-full">
                                                             <div className="flex items-center justify-end gap-2 mb-2">
-                                                                <span className="text-sm font-bold text-gray-800">전파 전송</span>
+                                                                <span className="text-sm font-bold text-white">전파 전송</span>
                                                             </div>
                                                             {message.content ? (
-                                                                <div className="text-sm text-gray-700 whitespace-pre-wrap font-sans [&_p]:my-1 [&_p:last-child]:mb-0 [&_*:last-child]:mb-0">
+                                                                <div className="text-sm text-gray-200 whitespace-pre-wrap font-sans [&_p]:my-1 [&_p:last-child]:mb-0 [&_*:last-child]:mb-0 [&_a]:text-blue-400 [&_strong]:text-white">
                                                                     <Markdown>{message.content}</Markdown>
                                                                 </div>
                                                             ) : (
                                                                 <p className="text-sm text-red-400">내용이 없습니다</p>
                                                             )}
-                                                            <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
+                                                            <div className="text-xs text-gray-400 mt-2 text-right">{message.timestamp}</div>
                                                         </div>
                                                     )}
                                                 </div>
                                                 {message.role === "user" && (
-                                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl rounded-tr-sm p-4 shadow-sm">
+                                                    <div className="bg-[#4b5563] border border-[#40424a] rounded-2xl rounded-tr-sm p-4 text-gray-100">
                                                         <div className="flex items-center justify-end gap-2 mb-2">
-                                                            <span className="text-sm font-semibold text-blue-600">담당자</span>
+                                                            <span className="text-sm font-semibold text-blue-300">담당자</span>
                                                         </div>
-                                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{message.content}</p>
-                                                        <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
+                                                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                                        <div className="text-xs text-gray-400 mt-2 text-right">{message.timestamp}</div>
                                                     </div>
                                                 )}
-                                                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center border-2 border-white shadow-sm">
+                                                <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center border-2 border-[#40424a]" style={{ background: "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)" }}>
                                                     <Icon icon={message.role === "system" ? "mdi:send" : "mdi:account"} className="w-4 h-4 text-white" />
                                                 </div>
                                             </div>
@@ -345,9 +348,9 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                             </div>
 
                             {/* 입력 영역 */}
-                            <div ref={inputContainerRef} className="flex-shrink-0 border-t border-gray-200 bg-white">
+                            <div ref={inputContainerRef} className="flex-shrink-0 border-t border-[#31353a] bg-transparent">
                                 <div className="p-3">
-                                    <div className="relative flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-colors">
+                                    <div className="relative flex items-center gap-2 bg-[#393a42] border border-[#40424a] rounded-lg px-3 py-2 focus-within:border-blue-500 transition-colors">
                                         <textarea
                                             ref={textareaRef}
                                             value={messageInput}
@@ -360,7 +363,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                                 }
                                             }}
                                             placeholder="메시지를 입력하세요..."
-                                            className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-400 focus:outline-none resize-none overflow-hidden"
+                                            className="flex-1 bg-transparent border-none text-white text-sm placeholder-gray-400 focus:outline-none resize-none overflow-hidden"
                                             style={{
                                                 minHeight: "24px",
                                                 maxHeight: "96px",
@@ -368,11 +371,11 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                                             }}
                                             rows={1}
                                         />
-                                        <button onClick={handleSendMessage} disabled={!messageInput.trim()} className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95" aria-label="전송">
+                                        <button onClick={handleSendMessage} disabled={!messageInput.trim()} className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95" style={{ background: "linear-gradient(135deg, #0066FF 0%, #8A2BE2 50%, #ff8566 100%)" }} aria-label="전송">
                                             <Icon icon="mdi:send" className="w-4 h-4 text-white" />
                                         </button>
                                     </div>
-                                    <p className="text-[10px] text-gray-500 mt-1.5 text-center">신고기관과의 소통 스레드입니다. 상황 진행 사항을 실시간으로 확인하세요.</p>
+                                    <p className="text-[10px] text-gray-400 mt-1.5 text-center">신고기관과의 소통 스레드입니다. 상황 진행 사항을 실시간으로 확인하세요.</p>
                                 </div>
                             </div>
 
@@ -380,7 +383,7 @@ ${evidence}${requestBlock ? `\n\n${requestBlock}` : ""}
                             {showScrollTop && (
                                 <button
                                     onClick={scrollToTop}
-                                    className="absolute right-4 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-lg flex items-center justify-center text-gray-600 hover:text-blue-600 hover:border-blue-300 transition-all hover:scale-110 z-50"
+                                    className="absolute right-4 w-10 h-10 rounded-full border border-[#40424a] bg-[rgba(40,40,48,0.8)] flex items-center justify-center text-gray-300 hover:text-white hover:border-blue-400/70 hover:bg-gray-700/50 transition-all hover:scale-110 z-50"
                                     style={{
                                         bottom: `${inputContainerHeight + 16}px`,
                                     }}
