@@ -85,6 +85,8 @@ export interface MapStreamMarker {
     restrict_type?: string;
     start_time?: string;
     est_end_time?: string;
+    /** 스트림 맵 CCTV 마커 등에서 미디어 에이전트(WebRTC) 재생용 RTSP URL */
+    rtsp_url?: string | null;
 }
 
 export interface MapStreamCenter {
@@ -194,6 +196,7 @@ export interface GeoJsonFeatureProperties {
     restrict_type?: string;
     start_time?: string;
     est_end_time?: string;
+    rtsp_url?: string | null;
 }
 
 export interface GeoJsonFeature {

@@ -4,6 +4,8 @@ import { useRef, useEffect, useCallback, useState } from "react";
 export interface WebRTCVideoProps {
     mediaAgentUrl?: string;
     rtspUrl?: string;
+    /** WebRTC 실패·미가용 시 재생할 로컬/정적 영상 (예: /cctv_img/cctv1.mov) */
+    fallbackVideoSrc?: string;
     className?: string;
     autoConnect?: boolean;
     iceServerList: IceServerInfo[];
@@ -11,16 +13,26 @@ export interface WebRTCVideoProps {
     onError?: (error: string) => void;
 }
 
-const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", autoConnect = true, onConnectionChange, onError }: WebRTCVideoProps) => {
+const WebRTCVideo = ({
+    iceServerList,
+    mediaAgentUrl,
+    rtspUrl,
+    fallbackVideoSrc,
+    className = "",
+    autoConnect = true,
+    onConnectionChange,
+    onError,
+}: WebRTCVideoProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const isConnectingRef = useRef(false);
     const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const fallbackAfterErrorRef = useRef(false);
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
+    const [usingFallbackFile, setUsingFallbackFile] = useState(false);
 
-    // 콜백을 ref로 저장하여 의존성 문제 해결
     const onConnectionChangeRef = useRef(onConnectionChange);
     const onErrorRef = useRef(onError);
 
@@ -29,7 +41,6 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
         onErrorRef.current = onError;
     });
 
-    // props를 ref로 저장하여 콜백 내부에서 최신 값 사용
     const rtspUrlRef = useRef(rtspUrl);
     const iceServerListRef = useRef(iceServerList);
 
@@ -42,6 +53,20 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
         if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify(msg));
         }
+    }, []);
+
+    const attachFallbackFile = useCallback((src: string) => {
+        const v = videoRef.current;
+        if (!v) return;
+        v.srcObject = null;
+        v.src = src;
+        v.loop = true;
+        v.muted = true;
+        v.playsInline = true;
+        void v.play().catch(() => {});
+        setUsingFallbackFile(true);
+        setConnectionError(null);
+        setIsConnected(false);
     }, []);
 
     const handleSdpAnswer = useCallback(async (message: { sdpAnswer: string }) => {
@@ -95,9 +120,9 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
                 videoRef.current.srcObject = event.streams[0];
                 setIsConnected(true);
                 setConnectionError(null);
+                setUsingFallbackFile(false);
                 onConnectionChangeRef.current?.(true);
 
-                // 기존 ping interval 정리 후 새로 시작
                 if (pingIntervalRef.current) {
                     clearInterval(pingIntervalRef.current);
                 }
@@ -140,7 +165,6 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
     const stopStreaming = useCallback(() => {
         isConnectingRef.current = false;
 
-        // Ping interval 정리
         if (pingIntervalRef.current) {
             clearInterval(pingIntervalRef.current);
             pingIntervalRef.current = null;
@@ -160,8 +184,17 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
         setIsConnected(false);
     }, []);
 
+    const clearFallbackVideo = useCallback(() => {
+        const v = videoRef.current;
+        if (v) {
+            v.pause();
+            v.removeAttribute("src");
+            v.load();
+        }
+        setUsingFallbackFile(false);
+    }, []);
+
     const startStreaming = useCallback(() => {
-        // 이미 연결 중이거나 연결된 상태면 무시
         if (isConnectingRef.current || wsRef.current) {
             console.log("[WebRTC] 이미 연결 중이거나 연결됨");
             return;
@@ -176,7 +209,6 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
             return;
         }
 
-        // ICE 서버 목록이 없으면 연결하지 않음
         if (!currentIceServers || currentIceServers.length === 0) {
             console.log("[WebRTC] ICE 서버 목록 아직 로딩 중, 연결 대기");
             return;
@@ -184,6 +216,7 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
 
         isConnectingRef.current = true;
         setConnectionError(null);
+        setUsingFallbackFile(false);
 
         console.log("[WebRTC] 연결 시작:", currentMediaAgentUrl);
         const ws = new WebSocket(currentMediaAgentUrl);
@@ -211,7 +244,6 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
                         onErrorRef.current?.(parsedMessage.message);
                         break;
                     case "pong":
-                        // ping 응답 무시
                         break;
                     default:
                         console.warn("[WebRTC] 알 수 없는 메시지:", parsedMessage);
@@ -238,13 +270,28 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
         };
     }, [mediaAgentUrl, createPeerConnection, handleSdpAnswer, handleIceCandidate]);
 
-    // 연결 시작/정지 - ICE 서버 목록이 준비되면 연결 시작
+    const canTryWebRtc = Boolean(mediaAgentUrl && rtspUrl && iceServerList && iceServerList.length > 0);
+
     useEffect(() => {
-        if (!autoConnect || !mediaAgentUrl || !rtspUrl || !iceServerList || iceServerList.length === 0) {
-            return;
+        fallbackAfterErrorRef.current = false;
+    }, [mediaAgentUrl, rtspUrl, iceServerList?.length, fallbackVideoSrc]);
+
+    useEffect(() => {
+        if (!autoConnect) return;
+
+        if (!canTryWebRtc) {
+            if (fallbackVideoSrc) {
+                clearFallbackVideo();
+                attachFallbackFile(fallbackVideoSrc);
+            }
+            return () => {
+                if (fallbackVideoSrc) {
+                    clearFallbackVideo();
+                }
+            };
         }
 
-        // 약간의 지연을 두어 중복 호출 방지
+        clearFallbackVideo();
         const timer = setTimeout(() => {
             startStreaming();
         }, 100);
@@ -254,10 +301,20 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
             stopStreaming();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [autoConnect, mediaAgentUrl, rtspUrl, iceServerList?.length]);
+    }, [autoConnect, canTryWebRtc, fallbackVideoSrc, mediaAgentUrl, rtspUrl, iceServerList?.length]);
 
-    // ICE 서버 로딩 중 또는 준비 안됨 상태 표시
-    const isWaitingForIceServer = !!mediaAgentUrl && !!rtspUrl && (!iceServerList || iceServerList.length === 0);
+    useEffect(() => {
+        if (!connectionError || !fallbackVideoSrc || fallbackAfterErrorRef.current || !canTryWebRtc) return;
+
+        fallbackAfterErrorRef.current = true;
+        stopStreaming();
+        requestAnimationFrame(() => {
+            attachFallbackFile(fallbackVideoSrc);
+        });
+    }, [connectionError, fallbackVideoSrc, canTryWebRtc, stopStreaming, attachFallbackFile]);
+
+    const isWaitingForIceServer = !!mediaAgentUrl && !!rtspUrl && (!iceServerList || iceServerList.length === 0) && !usingFallbackFile;
+
     return (
         <div className={`relative ${className}`}>
             <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover bg-black" />
@@ -269,7 +326,7 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
                     </div>
                 </div>
             )}
-            {!isConnected && !connectionError && iceServerList && mediaAgentUrl && rtspUrl && (
+            {!isConnected && !connectionError && !usingFallbackFile && iceServerList && mediaAgentUrl && rtspUrl && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                     <div className="flex flex-col items-center gap-2">
                         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -277,17 +334,17 @@ const WebRTCVideo = ({ iceServerList, mediaAgentUrl, rtspUrl, className = "", au
                     </div>
                 </div>
             )}
-            {connectionError && (
+            {connectionError && !usingFallbackFile && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                     <span className="text-red-400 text-xs text-center px-2">{connectionError}</span>
                 </div>
             )}
-            {!mediaAgentUrl && (
+            {!mediaAgentUrl && !usingFallbackFile && !fallbackVideoSrc && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                     <span className="text-gray-400 text-xs">미디어 에이전트 없음</span>
                 </div>
             )}
-            {!rtspUrl && mediaAgentUrl && (
+            {!rtspUrl && mediaAgentUrl && !usingFallbackFile && !fallbackVideoSrc && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                     <span className="text-gray-400 text-xs">RTSP URL 없음</span>
                 </div>

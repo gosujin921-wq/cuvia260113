@@ -42,6 +42,7 @@ const markerToFeature = (marker: MapStreamMarker): GeoJsonFeature => ({
         restrict_type: marker.restrict_type,
         start_time: marker.start_time,
         est_end_time: marker.est_end_time,
+        rtsp_url: marker.rtsp_url ?? null,
     },
 });
 

@@ -1,12 +1,16 @@
 import { Event } from "@/types";
 import { Icon } from "@iconify/react";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
+import { createRoot } from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
-import type { MapStreamData, MapStreamMarker, MapStreamWmsLayer } from "@/types/streamJson.types";
+import type { GeoJsonFeatureProperties, MapStreamData, MapStreamMarker, MapStreamWmsLayer } from "@/types/streamJson.types";
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
-import { useGetIncidentList } from "@/src/apis/agent/hooks";
+import { useGetAgentList, useGetIncidentList } from "@/src/apis/agent/hooks";
+import { useGetIceServerList } from "@/src/apis/camera/hooks";
+import type { IceServerInfo } from "@/src/apis/camera/types";
+import WebRTCVideo from "@/components/common/WebRTCVideo";
 import proj4 from "proj4";
 import { KOREA_BOUNDS } from "@/src/const/const";
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
@@ -34,14 +38,220 @@ const escapeHtml = (text: string): string => {
     return div.innerHTML.replace(/\\n/g, "<br>");
 };
 
-const createStreamMarkerPopupContent = (marker: MapStreamMarker): string => {
+/** 설명 문자열을 \\n 기준으로 나누고, "라벨: 값" 형태면 행으로 분리 (ID, 상태, 목적 등) */
+type StreamDetailRow = { label: string; value: string };
+
+/** JSON/스트림에서 실제 줄바꿈 대신 문자열 "\\n" 이 올 때 처리 */
+const normalizeStreamDescriptionNewlines = (description: string): string => {
+    return description.replace(/\r\n/g, "\n").replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+};
+
+/** "ID 값"(공백 구분) / "ID: 값" / "상태: 값" 등 한 줄 파싱 */
+const KNOWN_DETAIL_LABEL = /^(?:ID|상태|목적|설명|위치|이름|구분|유형|코드|동)$/i;
+
+const parseOneDescriptionLine = (line: string): StreamDetailRow => {
+    // 1) "키: 값" — 콜론 뒤에 공백 필수 (날짜·시간 `23:48` 등과 구분)
+    const colonSpaced = line.match(/^([^:：]+)[:：]\s+(.+)$/);
+    if (colonSpaced) {
+        return { label: colonSpaced[1].trim(), value: colonSpaced[2].trim() };
+    }
+    // 2) "키:값" — 공백 없을 때는 라벨이 알려진 키일 때만 (상태:고장, ID:xxx)
+    const colonTight = line.match(/^([^:：]+)[:：](.+)$/);
+    if (colonTight) {
+        const lbl = colonTight[1].trim();
+        if (KNOWN_DETAIL_LABEL.test(lbl)) {
+            return { label: lbl, value: colonTight[2].trim() };
+        }
+    }
+    // 3) "ID 값" — 알려진 키 + 공백
+    const spaceIdx = line.search(/\s/);
+    if (spaceIdx > 0) {
+        const labelPart = line.slice(0, spaceIdx).trim();
+        const valuePart = line.slice(spaceIdx + 1).trim();
+        if (valuePart.length > 0 && KNOWN_DETAIL_LABEL.test(labelPart)) {
+            return { label: labelPart, value: valuePart };
+        }
+    }
+    return { label: "설명", value: line };
+};
+
+const parseDescriptionToDetailRows = (description: string): StreamDetailRow[] => {
+    const normalized = normalizeStreamDescriptionNewlines(description);
+    const lines = normalized
+        .split(/\n/)
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+    return lines.map((line) => parseOneDescriptionLine(line));
+};
+
+const buildNonTrafficDetailRowsHtml = (description: string): string => {
+    const rows = parseDescriptionToDetailRows(description);
+    if (rows.length === 0) return "";
+    return `
+                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                    ${rows
+                        .map(
+                            (row) => `
+                    <div style="display: flex; justify-content: space-between; gap: 8px;">
+                        <span style="color: #9ca3af;">${escapeHtml(row.label)}</span>
+                        <span style="font-weight: 500; color: rgb(197, 206, 221); text-align: right; max-width: 180px; line-height: 1.4;">
+                            ${escapeHtml(row.value)}
+                        </span>
+                    </div>`
+                        )
+                        .join("")}
+                </div>
+                `;
+};
+
+/** 스트림 마커 팝업용 (GeoJSON의 markerType ↔ API의 type 통일) */
+type StreamMarkerPopupFields = {
+    id: string;
+    title: string;
+    description: string;
+    markerType: string;
+    category: string | null;
+    dong: string | null;
+    location?: string;
+    restrict_type?: string;
+    start_time?: string;
+    est_end_time?: string;
+    rtsp_url?: string | null;
+};
+
+const geoJsonPropsToPopupFields = (p: GeoJsonFeatureProperties): StreamMarkerPopupFields => ({
+    id: String(p.id),
+    title: String(p.title ?? ""),
+    description: String(p.description ?? ""),
+    markerType: String(p.markerType ?? ""),
+    category: p.category,
+    dong: p.dong,
+    location: p.location,
+    restrict_type: p.restrict_type,
+    start_time: p.start_time,
+    est_end_time: p.est_end_time,
+    rtsp_url: p.rtsp_url ?? null,
+});
+
+const mapStreamMarkerToPopupFields = (m: MapStreamMarker): StreamMarkerPopupFields => ({
+    id: m.id,
+    title: m.title,
+    description: m.description,
+    markerType: m.type,
+    category: m.category,
+    dong: m.dong,
+    location: m.location,
+    restrict_type: m.restrict_type,
+    start_time: m.start_time,
+    est_end_time: m.est_end_time,
+    rtsp_url: m.rtsp_url ?? null,
+});
+
+type StreamCctvPopupViewProps = {
+    fields: StreamMarkerPopupFields;
+    mediaAgentUrl?: string;
+    iceServerList: IceServerInfo[];
+};
+
+const StreamCctvPopupView = ({ fields, mediaAgentUrl, iceServerList }: StreamCctvPopupViewProps) => {
+    const rtsp = (fields.rtsp_url ?? "").trim();
+    const title = fields.title ?? "";
+    const description = fields.description ?? "";
+    const hasTitle = title.trim().length > 0;
+    const detailRows = parseDescriptionToDetailRows(description);
+    const hasDesc = detailRows.length > 0;
+    const streamCctvFallbackSrc = "/cctv_img/cctv6.mov";
+
+    return (
+        <div
+            style={{
+                fontFamily: "'Pretendard', sans-serif",
+                minWidth: 280,
+                maxWidth: 320,
+                padding: 0,
+                background: "rgba(15, 15, 15, 0.98)",
+                border: "1px solid #31353a",
+                borderRadius: 8,
+                overflow: "hidden",
+            }}>
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "12px 14px",
+                    background: "rgba(40, 40, 48, 0.95)",
+                    borderRadius: "8px 8px 0 0",
+                    borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+                }}>
+                <span style={{ color: "#ffffff", fontWeight: 600, fontSize: 14 }}>위치 정보</span>
+            </div>
+            <div style={{ padding: "12px 14px" }}>
+                <div
+                    style={{
+                        background: "rgba(35, 35, 42, 0.8)",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        borderRadius: 6,
+                        padding: "10px 12px",
+                        marginBottom: 10,
+                    }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#ffffff", lineHeight: 1.4 }}>
+                        {hasTitle ? title : "정보 없음"}
+                    </div>
+                </div>
+                <div
+                    style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "16 / 9",
+                        maxHeight: 200,
+                        background: "#000",
+                        borderRadius: 6,
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        overflow: "hidden",
+                        marginBottom: hasDesc ? 10 : 0,
+                    }}>
+                    <WebRTCVideo
+                        iceServerList={iceServerList}
+                        mediaAgentUrl={mediaAgentUrl}
+                        rtspUrl={rtsp || undefined}
+                        fallbackVideoSrc={streamCctvFallbackSrc}
+                        className="h-full w-full min-h-[128px]"
+                        autoConnect={true}
+                    />
+                </div>
+                {hasDesc ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
+                        {detailRows.map((row, i) => (
+                            <div key={`${row.label}-${i}`} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                                <span style={{ color: "#9ca3af" }}>{row.label}</span>
+                                <span
+                                    style={{
+                                        fontWeight: 500,
+                                        color: "rgb(197, 206, 221)",
+                                        textAlign: "right",
+                                        maxWidth: 180,
+                                        lineHeight: 1.4,
+                                    }}>
+                                    {row.value}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                ) : null}
+            </div>
+        </div>
+    );
+};
+
+const createStreamMarkerPopupContent = (marker: StreamMarkerPopupFields): string => {
     const title = marker.title ?? "";
     const description = marker.description ?? "";
-    const type = marker.type ?? "";
+    const markerType = marker.markerType ?? "";
     const location = marker.location ?? "";
     const hasTitle = title.trim().length > 0;
     const hasDesc = description.trim().length > 0;
-    const isTrafficIncident = type === "traffic_incident";
+    const isTrafficIncident = markerType === "traffic_incident";
     if (!hasTitle && !hasDesc) return "";
 
     return `
@@ -79,16 +289,18 @@ const createStreamMarkerPopupContent = (marker: MapStreamMarker): string => {
                 </div>
                 ${
                     hasDesc
-                        ? `
+                        ? isTrafficIncident
+                            ? `
                 <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
                     <div style="display: flex; justify-content: space-between; gap: 8px;">
-                        <span style="color: #9ca3af;">${isTrafficIncident ? "위치" : "설명"}</span>
+                        <span style="color: #9ca3af;">위치</span>
                         <span style="font-weight: 500; color: rgb(197, 206, 221); text-align: right; max-width: 180px; line-height: 1.4;">
-                            ${isTrafficIncident ? `${escapeHtml(location ?? "")}` : escapeHtml(description)}
+                            ${escapeHtml(location ?? "")}
                         </span>
                     </div>
                 </div>
                 `
+                            : buildNonTrafficDetailRowsHtml(description)
                         : ""
                 }
                 ${
@@ -337,6 +549,81 @@ const MapView = ({
     const { data: incidentData, isFetching: isIncidentFetching } = useGetIncidentList(showTrafficLayer);
     const trafficToggleCooldownRef = useRef(0);
     const TRAFFIC_TOGGLE_COOLDOWN_MS = 300;
+
+    const { data: mediaAgentList } = useGetAgentList(-1, 100, "agent_type:1", "");
+    const mediaAgent = mediaAgentList?.page_data?.[0];
+    const mediaAgentUrl = useMemo(
+        () => (mediaAgent ? `ws://${mediaAgent.agent_ip}:${mediaAgent.agent_port}/v1/media-agent/camera/stream` : undefined),
+        [mediaAgent?.agent_ip, mediaAgent?.agent_port]
+    );
+    const { data: iceServerListResponse } = useGetIceServerList();
+    const iceServers = useMemo(() => iceServerListResponse?.ice_servers ?? [], [iceServerListResponse?.ice_servers]);
+
+    const openStreamMarkerPopup = useCallback(
+        (
+            map: maplibregl.Map,
+            coords: [number, number],
+            fields: StreamMarkerPopupFields,
+            popupOptions?: { offset?: maplibregl.Offset; maxWidth?: string }
+        ) => {
+            const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
+            if (existingPopup) {
+                existingPopup.remove();
+            }
+
+            const rtspTrim = (fields.rtsp_url ?? "").trim();
+            const streamMapType = streamMapData?.type;
+            const isCctvContext =
+                streamMapType === "cctv" ||
+                fields.markerType.toLowerCase() === "cctv" ||
+                (fields.category ?? "").toLowerCase() === "cctv";
+            const useCctvPopup = Boolean(rtspTrim) || isCctvContext;
+
+            if (!useCctvPopup) {
+                const html = createStreamMarkerPopupContent(fields);
+                if (!html) return;
+                const popup = new maplibregl.Popup({
+                    offset: popupOptions?.offset ?? 20,
+                    closeButton: true,
+                    closeOnClick: true,
+                    maxWidth: popupOptions?.maxWidth ?? "340px",
+                    className: "stream-marker-popup",
+                })
+                    .setLngLat(coords)
+                    .setHTML(html)
+                    .addTo(map);
+                (map as any)._streamMarkerPopup = popup;
+                return;
+            }
+
+            const container = document.createElement("div");
+            const root = createRoot(container);
+            let didUnmount = false;
+            const cleanup = () => {
+                if (didUnmount) return;
+                didUnmount = true;
+                root.unmount();
+            };
+
+            const popup = new maplibregl.Popup({
+                offset: popupOptions?.offset ?? 20,
+                closeButton: true,
+                closeOnClick: true,
+                maxWidth: popupOptions?.maxWidth ?? "340px",
+                className: "stream-marker-popup stream-marker-popup--cctv",
+            })
+                .setLngLat(coords)
+                .setDOMContent(container)
+                .addTo(map);
+
+            popup.on("close", cleanup);
+
+            root.render(<StreamCctvPopupView fields={fields} mediaAgentUrl={mediaAgentUrl} iceServerList={iceServers} />);
+
+            (map as any)._streamMarkerPopup = popup;
+        },
+        [streamMapData?.type, mediaAgentUrl, iceServers]
+    );
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -1642,27 +1929,9 @@ const MapView = ({
                 return;
             }
 
-            const props = feature.properties as MapStreamMarker;
-            const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
-            if (existingPopup) {
-                existingPopup.remove();
-            }
-
-            const popupContent = createStreamMarkerPopupContent(props);
-            if (!popupContent) return;
-
-            const popup = new maplibregl.Popup({
-                offset: 20,
-                closeButton: true,
-                closeOnClick: true,
-                maxWidth: "340px",
-                className: "stream-marker-popup",
-            })
-                .setLngLat(coords)
-                .setHTML(popupContent)
-                .addTo(map);
-
-            (map as any)._streamMarkerPopup = popup;
+            const props = feature.properties as GeoJsonFeatureProperties;
+            const fields = geoJsonPropsToPopupFields(props);
+            openStreamMarkerPopup(map, coords, fields, { offset: 20, maxWidth: "340px" });
         };
 
         // 스트림 마커 레이어 호버 시 커서 포인터
@@ -1706,7 +1975,7 @@ const MapView = ({
                 (map as any)._streamMarkerPopup = undefined;
             }
         };
-    }, [streamMapData, streamMarkerViewType, onMarkerLocationRequest]);
+    }, [streamMapData, streamMarkerViewType, onMarkerLocationRequest, openStreamMarkerPopup]);
 
     // flyToLocation이 변경되면 지도 이동 + 자동 팝업 (마커는 기존 스트림 마커를 사용)
     useEffect(() => {
@@ -1733,23 +2002,13 @@ const MapView = ({
             });
 
             const matchedMarker = streamMapData?.markers?.find((m) => Math.abs(m.lng - targetLng) < 0.0001 && Math.abs(m.lat - targetLat) < 0.0001);
-            if (matchedMarker && (matchedMarker.title || matchedMarker.description)) {
+            if (matchedMarker) {
                 const showPopup = () => {
-                    const popupContent = createStreamMarkerPopupContent(matchedMarker);
-                    if (!popupContent) return;
-
-                    const popup = new maplibregl.Popup({
-                        closeButton: true,
-                        closeOnClick: true,
-                        className: "stream-marker-popup",
+                    const fields = mapStreamMarkerToPopupFields(matchedMarker);
+                    openStreamMarkerPopup(map, [matchedMarker.lng, matchedMarker.lat], fields, {
                         offset: [0, -16],
                         maxWidth: "340px",
-                    })
-                        .setLngLat([matchedMarker.lng, matchedMarker.lat])
-                        .setHTML(popupContent)
-                        .addTo(map);
-
-                    (map as any)._streamMarkerPopup = popup;
+                    });
                 };
 
                 map.once("moveend", showPopup);
@@ -1766,7 +2025,7 @@ const MapView = ({
                 });
             }
         }
-    }, [flyToLocation, streamMapData]);
+    }, [flyToLocation, streamMapData, openStreamMarkerPopup]);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -2087,6 +2346,10 @@ const MapView = ({
                     background: rgba(15, 15, 15, 0.95);
                     min-width: 140px;
                     max-width: 280px;
+                }
+                .stream-marker-popup--cctv .maplibregl-popup-content {
+                    min-width: 280px;
+                    max-width: 320px;
                 }
                 .stream-marker-popup .maplibregl-popup-tip {
                     border-top-color: rgba(15, 15, 15, 0.95);
