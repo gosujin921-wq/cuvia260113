@@ -161,6 +161,9 @@ const StreamCctvPopupView = ({ fields, mediaAgentUrl, iceServerList }: StreamCct
     const detailRows = parseDescriptionToDetailRows(description);
     const hasDesc = detailRows.length > 0;
     const streamCctvFallbackSrc = "/cctv_img/cctv6.mov";
+    const [isFallbackCctvVideo, setIsFallbackCctvVideo] = useState(false);
+    const videoBlockMarginBottom = isFallbackCctvVideo ? 0 : hasDesc ? 10 : 0;
+    const fallbackCaptionMarginBottom = isFallbackCctvVideo && hasDesc ? 10 : 0;
 
     return (
         <div
@@ -209,7 +212,7 @@ const StreamCctvPopupView = ({ fields, mediaAgentUrl, iceServerList }: StreamCct
                         borderRadius: 6,
                         border: "1px solid rgba(255, 255, 255, 0.08)",
                         overflow: "hidden",
-                        marginBottom: hasDesc ? 10 : 0,
+                        marginBottom: videoBlockMarginBottom,
                     }}>
                     <WebRTCVideo
                         iceServerList={iceServerList}
@@ -218,8 +221,22 @@ const StreamCctvPopupView = ({ fields, mediaAgentUrl, iceServerList }: StreamCct
                         fallbackVideoSrc={streamCctvFallbackSrc}
                         className="h-full w-full min-h-[128px]"
                         autoConnect={true}
+                        hideFallbackDisclaimer={true}
+                        onFallbackPlaybackChange={setIsFallbackCctvVideo}
                     />
                 </div>
+                {isFallbackCctvVideo ? (
+                    <div
+                        className="mt-2 flex items-center"
+                        style={{ marginBottom: fallbackCaptionMarginBottom }}
+                        role="note"
+                        aria-live="polite">
+                        <span className="mr-1 h-2 w-2 rounded-full bg-amber-400 inline-block" aria-hidden="true" />
+                        <p className="text-center text-[11px] font-semibold leading-snug tracking-wide text-amber-100 sm:text-xs m-0 p-0">
+                            해당 영상은 실제 교통상황과 다를 수 있습니다
+                        </p>
+                    </div>
+                ) : null}
                 {hasDesc ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12 }}>
                         {detailRows.map((row, i) => (

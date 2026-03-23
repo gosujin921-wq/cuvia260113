@@ -11,6 +11,10 @@ export interface WebRTCVideoProps {
     iceServerList: IceServerInfo[];
     onConnectionChange?: (isConnected: boolean) => void;
     onError?: (error: string) => void;
+    /** 로컬 폴백 영상 재생 여부 (부모에서 캡션 등 배치용) */
+    onFallbackPlaybackChange?: (usingFallback: boolean) => void;
+    /** true면 컴포넌트 내부 폴백 안내 문구를 렌더하지 않음 (부모가 비디오 아래에 둘 때) */
+    hideFallbackDisclaimer?: boolean;
 }
 
 const WebRTCVideo = ({
@@ -22,6 +26,8 @@ const WebRTCVideo = ({
     autoConnect = true,
     onConnectionChange,
     onError,
+    onFallbackPlaybackChange,
+    hideFallbackDisclaimer = false,
 }: WebRTCVideoProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
@@ -35,11 +41,17 @@ const WebRTCVideo = ({
 
     const onConnectionChangeRef = useRef(onConnectionChange);
     const onErrorRef = useRef(onError);
+    const onFallbackPlaybackChangeRef = useRef(onFallbackPlaybackChange);
 
     useEffect(() => {
         onConnectionChangeRef.current = onConnectionChange;
         onErrorRef.current = onError;
+        onFallbackPlaybackChangeRef.current = onFallbackPlaybackChange;
     });
+
+    useEffect(() => {
+        onFallbackPlaybackChangeRef.current?.(usingFallbackFile);
+    }, [usingFallbackFile]);
 
     const rtspUrlRef = useRef(rtspUrl);
     const iceServerListRef = useRef(iceServerList);
@@ -316,39 +328,53 @@ const WebRTCVideo = ({
     const isWaitingForIceServer = !!mediaAgentUrl && !!rtspUrl && (!iceServerList || iceServerList.length === 0) && !usingFallbackFile;
 
     return (
-        <div className={`relative ${className}`}>
-            <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover bg-black" />
-            {isWaitingForIceServer && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-yellow-400 text-xs">ICE 서버 로딩...</span>
+        <div className={`relative flex h-full min-h-0 flex-col ${className}`}>
+            <div className="relative min-h-0 w-full flex-1">
+                <video ref={videoRef} autoPlay muted playsInline className="h-full w-full object-cover bg-black" />
+                {isWaitingForIceServer && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="h-6 w-6 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+                            <span className="text-xs text-yellow-400">ICE 서버 로딩...</span>
+                        </div>
                     </div>
-                </div>
-            )}
-            {!isConnected && !connectionError && !usingFallbackFile && iceServerList && mediaAgentUrl && rtspUrl && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span className="text-white text-xs">연결 중...</span>
+                )}
+                {!isConnected && !connectionError && !usingFallbackFile && iceServerList && mediaAgentUrl && rtspUrl && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            <span className="text-xs text-white">연결 중...</span>
+                        </div>
                     </div>
-                </div>
-            )}
-            {connectionError && !usingFallbackFile && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                    <span className="text-red-400 text-xs text-center px-2">{connectionError}</span>
-                </div>
-            )}
-            {!mediaAgentUrl && !usingFallbackFile && !fallbackVideoSrc && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                    <span className="text-gray-400 text-xs">미디어 에이전트 없음</span>
-                </div>
-            )}
-            {!rtspUrl && mediaAgentUrl && !usingFallbackFile && !fallbackVideoSrc && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
-                    <span className="text-gray-400 text-xs">RTSP URL 없음</span>
-                </div>
-            )}
+                )}
+                {connectionError && !usingFallbackFile && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                        <span className="px-2 text-center text-xs text-red-400">{connectionError}</span>
+                    </div>
+                )}
+                {!mediaAgentUrl && !usingFallbackFile && !fallbackVideoSrc && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                        <span className="text-xs text-gray-400">미디어 에이전트 없음</span>
+                    </div>
+                )}
+                {!rtspUrl && mediaAgentUrl && !usingFallbackFile && !fallbackVideoSrc && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                        <span className="text-xs text-gray-400">RTSP URL 없음</span>
+                    </div>
+                )}
+            </div>
+            {usingFallbackFile && !hideFallbackDisclaimer ? (
+                <div
+                className="mt-2 flex items-center"
+                style={{ marginBottom: fallbackCaptionMarginBottom }}
+                role="note"
+                aria-live="polite">
+                <span className="mr-1 h-2 w-2 rounded-full bg-amber-400 inline-block" aria-hidden="true" />
+                <p className="text-center text-[11px] font-semibold leading-snug tracking-wide text-amber-100 sm:text-xs m-0 p-0">
+                    해당 영상은 실제 교통상황과 다를 수 있습니다
+                </p>
+            </div>
+            ) : null}
         </div>
     );
 };
