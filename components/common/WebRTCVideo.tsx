@@ -365,10 +365,9 @@ const WebRTCVideo = ({
             </div>
             {usingFallbackFile && !hideFallbackDisclaimer ? (
                 <div
-                className="mt-2 flex items-center"
-                style={{ marginBottom: fallbackCaptionMarginBottom }}
-                role="note"
-                aria-live="polite">
+                    className="mt-2 flex items-center"
+                    role="note"
+                    aria-live="polite">
                 <span className="mr-1 h-2 w-2 rounded-full bg-amber-400 inline-block" aria-hidden="true" />
                 <p className="text-center text-[11px] font-semibold leading-snug tracking-wide text-amber-100 sm:text-xs m-0 p-0">
                     해당 영상은 실제 교통상황과 다를 수 있습니다
