@@ -326,6 +326,7 @@ export default function HomeV2() {
 
   // 나머지 필요한 state들
   const [showStartMessage, setShowStartMessage] = useState<boolean>(true); // 시작 메시지창 표시 여부
+  const [startDialogVisible, setStartDialogVisible] = useState<boolean>(true); // 시작 다이얼로그 보이기/숨기기 (0키 토글)
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
   const [visibleEventIds, setVisibleEventIds] = useState<Set<string>>(new Set());
   const [listCardCount, setListCardCount] = useState<number>(0);
@@ -1018,7 +1019,9 @@ export default function HomeV2() {
     if (e.key === 'Escape') {
       if (showPropagationPackagePopup) {
         setShowPropagationPackagePopup(false);
+        return;
       }
+      navigate('/');
       return;
     }
 
@@ -1031,7 +1034,11 @@ export default function HomeV2() {
     );
     
     if (e.key === '0') {
-      toggleGuide();
+      if (showStartMessage) {
+        setStartDialogVisible(prev => !prev);
+      } else {
+        toggleGuide();
+      }
     } else if (e.key === '1' && missingEvent && !isInitialLoading) {
       setShowStartMessage(false);
       dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
@@ -1043,7 +1050,7 @@ export default function HomeV2() {
         jumpToStep('intro', 500);
       }
     }
-  }, [allConvertedEvents, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading, showPropagationPackagePopup]);
+  }, [allConvertedEvents, showMouseGuide, jumpToStep, toggleGuide, isInitialLoading, showPropagationPackagePopup, showStartMessage, handleBackToInitial]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -1499,7 +1506,7 @@ export default function HomeV2() {
         <EndDialog onConfirm={() => { sessionStorage.clear(); window.location.reload(); }} />
       )}
 
-      {showStartMessage && (
+      {showStartMessage && startDialogVisible && (
         <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[9999]">
           <div
             className="gradient-border-right-bottom rounded-lg overflow-hidden"
@@ -1528,6 +1535,29 @@ export default function HomeV2() {
                   체험 시간: 약 3~5분
                 </p>
               </div>
+              {/* 단축키 안내 */}
+              <div className="mt-3 px-3 py-2.5 rounded-md border border-gray-300/60 bg-white/40">
+                <p className="text-gray-800 text-sm font-semibold leading-relaxed mb-2">키보드 단축키</p>
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center gap-3">
+                    <kbd className="inline-flex items-center justify-center min-w-[32px] h-[28px] px-2 rounded-md bg-gray-100 border border-gray-300 shadow-[0_1px_0_1px_rgba(0,0,0,0.08)] text-gray-700 text-xs font-bold leading-none">
+                      0
+                    </kbd>
+                    <span className="text-gray-600 text-[13px] leading-relaxed">
+                      튜토리얼 가이드를 닫거나 다시 엽니다
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <kbd className="inline-flex items-center justify-center min-w-[32px] h-[28px] px-2 rounded-md bg-gray-100 border border-gray-300 shadow-[0_1px_0_1px_rgba(0,0,0,0.08)] text-gray-700 text-xs font-bold leading-none">
+                      ESC
+                    </kbd>
+                    <span className="text-gray-600 text-[13px] leading-relaxed">
+                      튜토리얼을 초기화합니다
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <p className="text-gray-700 text-sm leading-relaxed mt-3">
                 시작 버튼을 누르면 튜토리얼이 바로 시작됩니다.
               </p>

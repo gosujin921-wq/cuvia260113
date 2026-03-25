@@ -1,5 +1,39 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
+
+const Tooltip = ({ label, children }: { label: string; children: ReactNode }) => {
+  const [visible, setVisible] = useState(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  const handleEnter = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPos({ x: rect.left + rect.width / 2, y: rect.top });
+    }
+    setVisible(true);
+  };
+
+  return (
+    <div
+      ref={triggerRef}
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setVisible(false)}
+    >
+      {children}
+      {visible && createPortal(
+        <div
+          className="fixed px-2 py-1 rounded bg-gray-800 text-white text-[11px] font-medium whitespace-nowrap pointer-events-none z-[10020]"
+          style={{ left: `${pos.x}px`, top: `${pos.y - 8}px`, transform: 'translate(-50%, -100%)' }}
+        >
+          {label}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
 
 export type GuideType = 'mouse' | 'eye' | 'keyboard';
 
@@ -136,39 +170,45 @@ export const MouseGuide = ({
               </div>
 
               <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={onPrev}
-                  disabled={isFirst || navigationDisabled}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="이전 단계"
-                  tabIndex={0}
-                >
-                  <Icon icon="mdi:chevron-left" className="w-4 h-4 text-gray-700" />
-                </button>
-                <button
-                  type="button"
-                  onClick={onNext}
-                  disabled={navigationDisabled || nextDisabled}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  aria-label="다음 단계"
-                  tabIndex={0}
-                >
-                  <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-700" />
-                </button>
+                <Tooltip label="이전">
+                  <button
+                    type="button"
+                    onClick={onPrev}
+                    disabled={isFirst || navigationDisabled}
+                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    aria-label="이전 단계"
+                    tabIndex={0}
+                  >
+                    <Icon icon="mdi:chevron-left" className="w-4 h-4 text-gray-700" />
+                  </button>
+                </Tooltip>
+                <Tooltip label="다음">
+                  <button
+                    type="button"
+                    onClick={onNext}
+                    disabled={navigationDisabled || nextDisabled}
+                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    aria-label="다음 단계"
+                    tabIndex={0}
+                  >
+                    <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-700" />
+                  </button>
+                </Tooltip>
                 <div className="w-px h-3.5 bg-gray-500 mx-0.5" />
-                <button
-                  type="button"
-                  onClick={handleToggleCollapse}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors"
-                  aria-label={collapsed ? '가이드 펼치기' : '가이드 접기'}
-                  tabIndex={0}
-                >
+                <Tooltip label={collapsed ? '펼치기' : '접기'}>
+                  <button
+                    type="button"
+                    onClick={handleToggleCollapse}
+                    className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors"
+                    aria-label={collapsed ? '가이드 펼치기' : '가이드 접기'}
+                    tabIndex={0}
+                  >
                   <Icon
                     icon={collapsed ? 'mdi:chevron-up' : 'mdi:chevron-down'}
                     className="w-4 h-4 text-gray-700 transition-transform duration-200"
                   />
                 </button>
+                </Tooltip>
               </div>
             </div>
 

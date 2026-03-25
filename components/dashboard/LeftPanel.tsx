@@ -857,9 +857,9 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                 {/* 상단 헤더: 좌측 로고, 우측 날씨 + 시간 */}
                 <div className="rounded-lg p-4 flex items-center justify-between gradient-border-left-top" style={{ flexShrink: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
                     {/* 좌측: 패널 로고 */}
-                    <div className="flex items-center gap-2">
+                    <a href="/" className="flex items-center gap-2 cursor-pointer" aria-label="메인으로 이동" tabIndex={0}>
                         <img src="/logo.svg" alt="CUVIA" className="h-5 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
-                    </div>
+                    </a>
 
                     {/* 우측: 날씨 + 시간 (시간을 뒤로) */}
                     <div className="flex items-center gap-3">
