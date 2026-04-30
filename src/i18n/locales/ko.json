@@ -1,0 +1,580 @@
+{
+  "common": {
+    "confirm": "확인",
+    "cancel": "취소",
+    "start": "시작",
+    "next": "다음",
+    "previous": "이전",
+    "close": "닫기",
+    "expand": "펼치기",
+    "collapse": "접기",
+    "guide": {
+      "expand": "가이드 펼치기",
+      "collapse": "가이드 접기"
+    },
+    "step": {
+      "previous": "이전 단계",
+      "next": "다음 단계"
+    }
+  },
+  "language": {
+    "modalTitle": "언어를 선택해주세요",
+    "modalDescription": "Please select a language to start the tutorial.",
+    "korean": "한국어",
+    "english": "English",
+    "switchToKorean": "한국어로 보기",
+    "switchToEnglish": "View in English"
+  },
+  "home": {
+    "endDialog": {
+      "title": "CUVIA 튜토리얼이 종료되었습니다.",
+      "thanks": "체험해주셔서 감사합니다.",
+      "returnHome": "확인 버튼을 누르면 초기 화면으로 돌아갑니다.",
+      "confirmAriaLabel": "확인"
+    },
+    "startDialog": {
+      "title": "CUVIA 튜토리얼을 시작해보세요",
+      "description1": "실종 사건 접수 상황을 바탕으로",
+      "description2": "CUVIA의 전체 대응 흐름을 직접 체험하실 수 있습니다.",
+      "flow": "사건 접수 → 고속검색 → 객체추적 → 전파 → 보고서 자동작성",
+      "duration": "체험 시간: 약 3~5분",
+      "shortcutsTitle": "키보드 단축키",
+      "shortcutHToggle": "튜토리얼 가이드를 닫거나 다시 엽니다",
+      "shortcutResetGuide": "튜토리얼을 초기화합니다",
+      "footerStart": "시작 버튼을 누르면 튜토리얼이 바로 시작됩니다.",
+      "footerDisclaimer": "화면에 표시되는 사건, 인물 및 데이터는 실제와 무관한 가상 데이터입니다.",
+      "startButton": "시작",
+      "startAriaLabel": "시작"
+    },
+    "guideDialog": {
+      "title": "안내",
+      "linkOnly": "<b>CUVIA Link는 별도 체험존에서 제공됩니다.</b><br/>CUVIA Link 체험존에서 이용해주세요.",
+      "demoOnly": "이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요."
+    },
+    "objectTrackingConfirm": {
+      "title": "객체 추적 검사",
+      "message": "현재 고속 검색 결과 {{count}}건이 있습니다.<br/>객체 추적 검사를 시작하시겠습니까?",
+      "confirm": "시작",
+      "cancel": "취소"
+    },
+    "captureMenu": {
+      "label": "포착목록"
+    },
+    "capture": {
+      "addedNotification": "{{cctvName}} | {{location}}의 클립을 포착 목록에 추가했습니다.\n전파 패키지를 생성하여 전파를 보내세요."
+    },
+    "agent": {
+      "showOnlyAttribute": "{{attribute}}만 표시",
+      "restoredAttribute": "{{attribute}} 복원",
+      "reSearchByCandidate": "대표 후보 기반 유사도 재검색"
+    }
+  },
+  "leftMenu": {
+    "homeAriaLabel": "홈으로 이동",
+    "items": {
+      "netMonitoring": "투망감시",
+      "fastSearch": "고속검색",
+      "objectTracking": "객체추적",
+      "captureList": "포착목록",
+      "propagation": "전파"
+    },
+    "cuviaLink": "CUVIA Link"
+  },
+  "video": {
+    "loading": "영상 로드 중",
+    "cctvAriaLabel": "CCTV 영상"
+  },
+  "topControl": {
+    "fastSearchTitle": "고속 검색",
+    "monitoringMessage": "인근 CCTV 8대를 모니터링 중입니다.",
+    "stop": "고속검색 중지",
+    "stopAriaLabel": "고속검색 중지"
+  },
+  "reportDownload": {
+    "title": "문서 미리보기 및 파일 다운로드",
+    "previewTitle": "사건 처리 결과 보고서",
+    "saveAs": "다음형식으로 저장",
+    "fileName": "사건처리결과보고서.pdf",
+    "prevPage": "이전 페이지",
+    "nextPage": "다음 페이지",
+    "formats": {
+      "hwp": "한글(.hwp)",
+      "jpg": "이미지(.jpg)",
+      "docx": "Word(.docx)",
+      "pdf": "PDF(.pdf)"
+    }
+  },
+  "trackingBox": {
+    "title": "추적 박스 컨트롤",
+    "position": "위치",
+    "size": "크기",
+    "width": "너비",
+    "height": "높이",
+    "up": "위로",
+    "down": "아래로",
+    "left": "왼쪽",
+    "right": "오른쪽",
+    "widthDecrease": "너비 축소",
+    "widthIncrease": "너비 확대",
+    "heightDecrease": "높이 축소",
+    "heightIncrease": "높이 확대",
+    "positionLabel": "위치: X: {{x}}px, Y: {{y}}px",
+    "sizeLabel": "크기: {{width}}px × {{height}}px",
+    "modeLabel": "모드: {{mode}}",
+    "modeAuto": "자동",
+    "modeManual": "수동"
+  },
+  "trafficIncident": {
+    "title": "도시 교통 돌발 정보",
+    "content": "내용",
+    "occurrenceTime": "발생시각",
+    "endTime": "종료시각",
+    "control": "통제",
+    "videoAriaLabel": "교통 상황 영상"
+  },
+  "trafficRoute": {
+    "title": "노선별 소통정보",
+    "videoAriaLabel": "{{location}} 교통 영상",
+    "statusLabel": {
+      "congestion": "정체",
+      "slow": "서행",
+      "smooth": "원활",
+      "unknown": ""
+    }
+  },
+  "heatmap": {
+    "title": "구역별 이벤트 발생 건 수",
+    "last24h": "지난 24시간",
+    "cellLabel": "{{area}} · {{start}}~{{end}}시 · {{count}}건",
+    "hourSuffix": "(시)"
+  },
+  "leftPanel": {
+    "airQuality": {
+      "title": "실시간 대기질 모니터링",
+      "lastUpdate": "마지막 업데이트",
+      "basedOn": "{{location}} 기준",
+      "temperature": "온도",
+      "humidity": "습도",
+      "precipitation": "강수량",
+      "cumulative": "(누적량)",
+      "windSpeed": "풍속"
+    },
+    "safety": {
+      "title": "도시 안전·시설 관리 현황",
+      "floodRisk": "침수 위험 관리 수준",
+      "facilityRiskLine1": "노후·위험시설",
+      "facilityRiskLine2": "관리 필요도",
+      "statusNormal": "정상",
+      "statusCaution": "주의",
+      "statusDanger": "위험",
+      "levelLow": "낮음",
+      "levelMedium": "보통",
+      "levelHigh": "높음"
+    },
+    "facility": {
+      "streetLight": "도로 조명",
+      "trafficSignal": "교통신호",
+      "emergencyBell": "안전 비상벨",
+      "normal": "정상",
+      "error": "장애"
+    }
+  },
+  "eventList": {
+    "empty": "표시할 이벤트가 없습니다.",
+    "tabs": {
+      "all": "전체"
+    },
+    "priority": {
+      "긴급": "긴급",
+      "경계": "경계",
+      "주의": "주의",
+      "일반": "일반"
+    },
+    "status": {
+      "new": "NEW",
+      "monitoring": "모니터링",
+      "evidence": "증거"
+    },
+    "type": {
+      "112 치안": "112 치안",
+      "112 실종": "112 실종",
+      "119 화재": "119 화재",
+      "119 구조": "119 구조",
+      "AI 탐지": "AI 탐지",
+      "NDMS": "NDMS"
+    },
+    "agency": {
+      "112": "112 상황실",
+      "119": "119 지휘센터",
+      "ai": "AI 시스템"
+    }
+  },
+  "mockEvents": {
+    "mock-1": { "title": "주차장 소음 민원 신고", "location": "하늘시 별빛구 달빛동 지하주차장" },
+    "mock-2": { "title": "노인 낙상 부상 신고", "location": "하늘시 별빛구 별양동 중앙공원 북문 인근" },
+    "mock-3": { "title": "횡단보도 신호 위반", "location": "하늘시 별빛구 막계동 관문사거리" },
+    "mock-4": { "title": "이상 행동 AI 탐지", "location": "하늘시 별빛구 문원동 하늘역 2번 출구" },
+    "mock-5": { "title": "차량 사고 교통 정체", "location": "하늘시 별빛구 중앙동 구름대로 사당역 방향" },
+    "mock-6": { "title": "미아 발생 긴급 수색", "location": "하늘시 별빛구 별양동 달빛초등학교 정문 앞" },
+    "mock-7": { "title": "차량 충돌 사고 발생", "location": "하늘시 별빛구 중앙동 하늘시청 앞 교차로" },
+    "mock-8": { "title": "말다툼 주먹다짐 발생", "location": "하늘시 별빛구 중앙동 구름역 인근 상가 앞" },
+    "mock-9": { "title": "쓰레기 수거함 화재 발생", "location": "하늘시 별빛구 막계동 달빛동 아파트 단지 쓰레기 수거함" },
+    "mock-10": { "title": "절도 시도 의심 행동", "location": "하늘시 별빛구 달빛동 상가 앞" }
+  },
+  "candidateDetailMock": {
+    "04": {
+      "summary": "회색 후드 남성이 편의점 앞에 체류하다가 입장·퇴장 후 상단 중앙 방향으로 화면을 이탈함",
+      "timeline": [
+        { "time": "00:00", "label": "회색 후드티 착용 남성 등장, 편의점 입구 근처 체류" },
+        { "time": "00:20", "label": "전화하는 듯한 모습, 입구 쪽으로 이동" },
+        { "time": "00:25", "label": "검은색 옷 + 우산 착용 행인 도로 이동" }
+      ]
+    }
+  },
+  "reportPopup": {
+    "imageAlt": "신고 대상 인물",
+    "nameAge": "이름/나이",
+    "description": "인상착의",
+    "locationTime": "실종 장소/시간",
+    "subjectName": "김도연 / 22세 (남)",
+    "subjectDescription": "회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg.",
+    "subjectLocationTime": "은하로363번길 48, 09:30경",
+    "urgentNotice": "장애 있음. 긴급 수색 요망.",
+    "startFastSearch": "고속검색 시작"
+  },
+  "events": {
+    "A-20260107-004": {
+      "listTitle": "김도연(22세, 남) 실종 - 회색 후드·청바지, 장애 있음. 긴급 수색 요망",
+      "listLocation": "은하로363번길 48, 09:30경"
+    }
+  },
+  "propagationPackage": {
+    "dialogAriaLabel": "전파 패키지",
+    "title": "전파 패키지",
+    "selectedCount": "{{count}}건 선택됨",
+    "captureVideo": "포착 영상",
+    "tab": {
+      "preview": "전파 내용 미리보기",
+      "detail": "상세 보기"
+    },
+    "aiHint": "AI 로 생성된 전파문 초안입니다. 상세내용을 확인하신 후 필요 사항 수정·보완 후 전파해 주세요.",
+    "contentPlaceholder": "전파 내용을 입력하세요...",
+    "send": "전파 패키지 전송",
+    "detail": {
+      "latestCapture": {
+        "title": "최신 포착(즉시 출동 기준)",
+        "line": "10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%",
+        "note": "편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측"
+      },
+      "nearestStation": {
+        "title": "최인근 파출소(출동 거점)",
+        "referenceLabel": "기준 지점(최신 포착지):",
+        "referenceValue": "10:35:56 / 별빛A-230 / 은하로363번길 48",
+        "stationLabel": "최인근 파출소:",
+        "stationValue": "(파출소명) / 약 (거리)km",
+        "note": "참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다."
+      },
+      "subject": {
+        "title": "대상자 정보",
+        "nameAgeLabel": "성명/나이:",
+        "nameAgeValue": "김도연 / 22세(남)",
+        "descLabel": "인상착의:",
+        "descValue": "회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg",
+        "intakeLabel": "실종 접수:",
+        "intakeValue": "09:30경 은하로363번길 48 일원"
+      },
+      "trackingSummary": {
+        "title": "추적 판단 요약(방향/가능 동선)",
+        "items": [
+          "남서 방향 이동 지속 추정(경로 적합도 83)",
+          "인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능",
+          "체류 후 동일 방향 이탈 패턴 반복 관측"
+        ]
+      },
+      "surveillance": {
+        "title": "관제 확인 범위(현재 탐색 상태)",
+        "timeLabel": "시간:",
+        "timeValue": "09:30~현재",
+        "rangeLabel": "범위:",
+        "rangeValue": "은하로363번길 48 인근 및 인접 구간 반경 10km 확인",
+        "note": "상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능"
+      },
+      "captureTimeline": {
+        "title": "포착 현황(근거 상세)",
+        "fastSearchLine": "(고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%",
+        "fastSearchNote": "· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측",
+        "linkedItems": [
+          { "line": "(추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48", "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단" },
+          { "line": "(추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54", "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단" },
+          { "line": "(추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28", "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단" }
+        ]
+      },
+      "cooperation": {
+        "title": "상호 협조(112 회신 요청)",
+        "lines": [
+          "112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면 해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행",
+          "추가 포착 또는 동선 변경 확인 시 바로 재전파"
+        ]
+      },
+      "attachments": {
+        "title": "첨부",
+        "items": [
+          "별빛A-230/444/498/604 포착 썸네일 및 클립",
+          "동선 지도(4지점 표시)"
+        ]
+      },
+      "disclaimer": "※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.",
+      "dispatcher": "관제 담당: 김쿠도 / 032-266-3454"
+    }
+  },
+  "propagation": {
+    "agencyName": "하늘별빛경찰서",
+    "agencyShortName": "별빛경찰서",
+    "threadTitle": "실종자 김도연(22세) 긴급 수색",
+    "threadCount": "전파 건수: {{count}}건",
+    "statusCompleted": "완료됨",
+    "statusInProgress": "진행 중",
+    "fallbackTitle": "전파",
+    "fallbackAuthor": "신고기관",
+    "downloadReport": "사건 처리 결과 보고서 다운로드",
+    "sentLabel": "전파 전송",
+    "userRole": "담당자",
+    "noContent": "내용이 없습니다",
+    "captureListLabel": "포착 목록 ({{count}}건)",
+    "agencyAck": "전파 내용 확인했습니다. 현재 현장 파견 중입니다.",
+    "messagePlaceholder": "메시지를 입력하세요...",
+    "chatHint": "신고기관과의 채팅입니다. 상황 진행 사항을 실시간으로 확인하세요.",
+    "scrollToTop": "맨 위로",
+    "defaultReportContent": "🚨 실종자 신고 접수\n\n▪ 신고 접수 정보\n\n신고 기관: 하늘별빛경찰서\n접수 시각: 오전 09:45:23\n담당자: 김민수 경위\n\n▪ 실종자 정보\n\n이름/나이: 김도연 / 22세 (남)\n인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg\n실종 장소: 은하로363번길 48 일원\n실종 시각: 오전 09:30경\n\n▪ 특이사항\n\n⚠️ 장애 있음. 긴급 수색 요망.\n\n보호자 진술에 따르면 평소 익숙한 경로를 벗어나지 않는 편이나, \n오늘 아침 집을 나선 후 연락이 두절됨.\n휴대전화 위치추적 결과 은하로363번길 48 일대에서 마지막 신호 확인.",
+    "defaultPropagationContent": "[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.\n\n\n🚨 1. 최신 포착(즉시 출동 기준)\n10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%\n편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측\n\n\n🚓 2. 최인근 파출소(출동 거점)\n기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하로363번길 48\n최인근 파출소: (파출소명) / 약 (거리)km\n\n참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.\n\n\n👤 3. 대상자 정보\n성명/나이: 김도연 / 22세(남)\n인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg\n실종 접수: 09:30경 은하로363번길 48 일원\n\n🧭 4. 추적 판단 요약(방향/가능 동선)\n남서 방향 이동 지속 추정(경로 적합도 83)\n인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능\n체류 후 동일 방향 이탈 패턴 반복 관측\n\n\n📡 5. 관제 확인 범위(현재 탐색 상태)\n시간: 09:30~현재\n범위: 은하로363번길 48 인근 및 인접 구간 반경 10km 확인\n상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능\n\n\n🎯 6. 포착 현황(근거 상세)\n\n🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%\n\n· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측\n🔗 (추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48\n\n· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단\n🔗 (추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54\n\n· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단\n🔗 (추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28\n\n· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단\n\n\n🤝 7. 상호 협조(112 회신 요청)\n112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면\n해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행\n\n추가 포착 또는 동선 변경 확인 시 바로 재전파\n\n\n📎 8. 첨부\n별빛A-230/444/498/604 포착 썸네일 및 클립\n동선 지도(4지점 표시)\n\n\n※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.\n관제 담당: 김쿠도 / 032-266-3454",
+    "discoveryReportContent": "📢 [112 회신] 실종자 발견 통보\n\n🚨 실종자 발견 통보\n\n▪ 사건번호: 2026-02-23-별빛구-실종\n▪ 대상자: 김도연 / 22세(남)\n\n\n✅ 1. 발견 결과\n\n발견 시각: 11:02:14\n발견 장소: 달빛로301번길 54 인근 골목\n발견 상태: 생명 징후 정상, 외상 없음\n\n보호자 인계 예정\n현장 출동 경찰관 확인 완료.\n\n\n📍 2. 조치 사항\n\n인근 수색 종료\n추가 CCTV 탐색 중지 요청\n119 이송 필요 없음\n\n\n📡 3. 관제 협조 요청\n\n관련 영상 백업 요청 (10:10~11:10 구간)\n포착 지점 4건 자료 보존 요청\n\n\n🔒 4. 상태 전환\n\n해당 건 수색 종료 처리 요청드립니다.\n추가 특이사항 발생 시 재통보 예정.\n\n담당: 김민수 경위\n하늘별빛경찰서"
+  },
+  "fastSearchList": {
+    "zoneAll": "전체",
+    "timeChip": "시간: {{start}}~{{end}}",
+    "radiusPopover": {
+      "title": "검색 반경 설정",
+      "hint": "반경을 넓히면 더 많은 CCTV를 탐색하지만 분석 시간이 길어질 수 있습니다."
+    },
+    "timePopover": {
+      "title": "시간 범위 선택",
+      "hint": "시간 범위를 조정하여 검색할 시간대를 선택할 수 있습니다."
+    },
+    "sortAriaLabel": "정렬 옵션",
+    "sort": {
+      "popoverAriaLabel": "정렬 기준 선택",
+      "title": "정렬 기준",
+      "confidenceDesc": "유사도 높은 순",
+      "confidenceAsc": "유사도 낮은 순",
+      "distanceAsc": "신고 위치와 가까운 순",
+      "distanceDesc": "신고 위치와 먼 순",
+      "confidenceDescChip": "유사도순",
+      "confidenceAscChip": "유사도 낮은순",
+      "distanceAscChip": "거리순",
+      "distanceDescChip": "거리 먼순"
+    },
+    "resetFilters": "필터 초기화",
+    "reSearch": "결과 재검색",
+    "similarCandidate": "유사 후보",
+    "selected": "선택됨",
+    "wrong": "틀림",
+    "match": "맞음"
+  },
+  "agent": {
+    "analyzing": "AI 분석 중",
+    "timingSuffix": "(처리 : {{processing}}초, 전송 : {{transmission}}초)",
+    "welcome": "고속검색 결과 {{count}}건이 검색되었습니다.\n조건을 추가해 후보를 좁힐 수 있습니다.",
+    "searchingCandidates": "후보를 탐색하고 있습니다… (카메라 {{count}}대 확인 중)",
+    "applyConditionAria": "{{suggestion}} 조건 적용",
+    "tools": {
+      "open": "도구 열기"
+    },
+    "send": "전송",
+    "cancelResponse": "답변 취소",
+    "disclaimer": "는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.",
+    "placeholder": {
+      "fastSearch": "검색 조건을 자연어로 입력해 주세요.",
+      "objectTracking": "검색된 내용으로 객체 추적을 시작해 주세요."
+    },
+    "fastSearchSteps": {
+      "1": "1. 사건 위치 기준 검색 범위 설정",
+      "2": "2. CCTV 목록 불러오기",
+      "3": "3. 특징 조건 적용(신고 내용)",
+      "4": "4. 후보 탐색 및 유사도 점수 계산",
+      "5": "5. 결과 정렬 및 화면 준비"
+    },
+    "reSearchSteps": {
+      "1": "1. 조건 필터링",
+      "2": "2. 결과 재정렬",
+      "3": "3. 화면 업데이트"
+    },
+    "objectTrackingSteps": {
+      "1": "1. 대표 후보 기준점 설정",
+      "2": "2. 경로 적합도 기반 재탐색",
+      "3": "3. 시간순 정렬 및 경로 연결",
+      "4": "4. 이동 방향/시간대 반영",
+      "5": "5. 다음 포착 후보 CCTV 생성"
+    },
+    "summary": {
+      "eventTime": "발생 시각",
+      "personnel": "관여 인원(추정)",
+      "progressStatus": "진행 상태",
+      "evidenceTitle": "3. 근거",
+      "recommendationsTitle": "4. 대응 추천"
+    },
+    "objectTracking": {
+      "startMessage": "마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV를 예측하겠습니다.",
+      "completeMessage": "마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV 예측을 완료 했습니다."
+    },
+    "fastSearch": {
+      "starting": "고속검색을 시작합니다."
+    },
+    "reSearchProgress": "조건에 맞는 결과를 재검색하고 있습니다.",
+    "reSearchResult": {
+      "byCandidate": "대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.",
+      "restored": "{{names}} 조건이 복원되었습니다.",
+      "applied": "조건이 적용되어 유사후보를 포함한 총 {{count}}건을 표시합니다."
+    },
+    "attributeOverflow": "{{list}} 외 {{more}}개",
+    "unknownPrompt": "\"{{prompt}}\"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.",
+    "unknownPromptWithSuggestions": "\"{{prompt}}\"에 대한 정확한 조건을 찾지 못했습니다.\n아래 유사 조건을 선택해 보세요.",
+    "showOnlyTemplate": "{{suggestion}}만 보여줘",
+    "collapse": "축소",
+    "expand": "확장"
+  },
+  "predictedCCTV": {
+    "radius": "반경: {{radius}}m",
+    "sort": "정렬: {{value}}",
+    "sortConfidence": "신뢰도순",
+    "sortDistance": "거리순",
+    "sortTime": "시간순",
+    "score": "{{score}}점"
+  },
+  "captureList": {
+    "detailAriaLabel": "포착 상세",
+    "captureTime": "포착 시각",
+    "totalCaptures": "총 포착: {{count}}건",
+    "createBroadcastPackage": "전파 패키지 생성",
+    "empty": "포착된 대상이 없습니다.",
+    "emptyHint": "객체 추적 중 CCTV 라이브에서 \"대상 포착\" 버튼을 눌러 포착하세요.",
+    "pinNumber": "{{number}}번 핀",
+    "noAnalysis": "분석 결과가 없습니다.",
+    "prediction": {
+      "title": "예측 정보",
+      "trendLabel": "이동 추세:",
+      "trendValue": "남서쪽 (최근 3프레임 평균)",
+      "etaLabel": "예상 도달 시각:",
+      "etaValue": "09:36:00 (현재 시각 +30초)"
+    },
+    "routeRationale": {
+      "title": "경로 예측 상세 근거",
+      "items": [
+        "마지막 프레임 기준 북동 방향을 유지하며 이동 중임.",
+        "정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.",
+        "하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.",
+        "인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.",
+        "특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.",
+        "해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음."
+      ]
+    },
+    "analysis": {
+      "conclusionTitle": "1. 한 줄 결론",
+      "summaryTitle": "2. 사건 요약",
+      "evidenceTitle": "3. 관측 근거 (요약)",
+      "time": "관측 시간대",
+      "location": "위치/카메라",
+      "personnel": "대상 인물(추정)",
+      "features": "주요 특징",
+      "status": "행동 상태",
+      "riskLevel": "위험도"
+    }
+  },
+  "candidateDetail": {
+    "dialogAriaLabel": "고속검색 후보 상세",
+    "timeRange": "시간 범위",
+    "similarity": "유사도",
+    "similarityLabel": "유사도 {{percent}}%",
+    "clipAriaLabel": "캡처 구간 클립",
+    "observationSummary": "관찰 요약",
+    "captureTarget": "대상 포착",
+    "captureThumbnailAlt": "캡처 썸네일",
+    "finalSimilarity": "최종 유사도",
+    "tab": {
+      "timeline": "시간 기반 관찰 기록",
+      "meta": "후보 메타 정보"
+    },
+    "meta": {
+      "cameraId": "카메라 ID",
+      "detectedObject": "감지 객체",
+      "mainAttributes": "주요 속성",
+      "behavior": "행동 특징",
+      "exitDirection": "이탈 방향"
+    },
+    "similarityTable": {
+      "category": "항목",
+      "missing": "실종자 정보",
+      "captured": "포착 인물 정보",
+      "match": "일치 여부",
+      "matched": "일치",
+      "unmatched": "불일치",
+      "special": "특이점"
+    },
+    "video": {
+      "play": "재생",
+      "pause": "일시정지",
+      "rewind10": "10초 뒤로",
+      "forward10": "10초 앞으로",
+      "fullscreen": "전체화면",
+      "fullscreenExit": "전체화면 해제"
+    }
+  },
+  "predictedCCTVDetail": {
+    "dialogAriaLabel": "예측 CCTV 상세",
+    "channel": "채널",
+    "routeFit": "경로 적합도",
+    "currentTime": "현재 시간",
+    "noInfo": "정보 없음",
+    "distanceFallback": "약 {{distance}}m (이전 위치 기준)",
+    "trendFallback": "{{direction}} (최근 3프레임 평균)",
+    "etaFallback": "{{time}} (현재 시각 +30초)",
+    "fields": {
+      "objectAttributes": "객체 속성",
+      "expectedDistance": "예상 이동 거리",
+      "movementTrend": "이동 추세",
+      "expectedArrivalTime": "예상 도달 시각",
+      "routeFitScore": "경로 적합도(유사도)"
+    },
+    "routeRationale": {
+      "title": "경로 예측 상세 근거",
+      "summary": "6개 항목 분석 완료",
+      "categories": {
+        "movementDirection": "이동 방향",
+        "movementSpeed": "이동 속도",
+        "pathStructure": "보행로 구조",
+        "cctvLinkage": "CCTV 연계",
+        "similarCases": "유사 사례"
+      },
+      "defaults": {
+        "movementDirection": "마지막 프레임 기준 북동 방향을 유지하며 이동 중임.",
+        "movementSpeed": "정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.",
+        "pathStructure": "하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.",
+        "cctvLinkage": "인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.",
+        "similarCases": "해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음."
+      }
+    }
+  },
+  "guide": {
+    "steps": {
+      "intro": "실종 신고가 접수되었습니다.<br/>실종자 정보를 바탕으로 주변 CCTV 영상에서 대상을 빠르게 탐색할 수 있습니다.<br/><b>[고속검색 시작]</b> 버튼을 클릭해주세요.",
+      "review-candidates": "실종자 특징을 기반으로 유사 후보를 탐색했습니다.<br/>검색 결과는 조건 조정과 사용자 피드백을 통해 더욱 정교하게 개선될 수 있습니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 상단 반경을 클릭해 탐색 범위를 변경하기</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• CUVIA Link에 비정형 조건 입력하기</span><br/><span style=\"opacity:0.5\">&nbsp;&nbsp;&nbsp;&nbsp;예 : \"회색 후드 입은 사람만 보여줘\", \"우산 쓴 사람은 제외해줘\"</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 후보 카드에서 맞음 / 틀림 선택하기</span><br/><br/><b>[후보 카드]</b>를 클릭하면 다음 단계로 넘어갑니다.",
+      "candidate-detail": "후보가 포착된 클립 영상을 확인하세요.<br/>CUVIA는 영상의 주요 장면을 VLM 기반 텍스트로 요약하고,<br/>신고 정보와 영상 정보를 비교해 유사도 점수를 제공합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 후보 클립 영상 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 후보 메타 정보 확인 및 유사도 점수 확인</span><br/><br/><b>[대상 포착]</b> 버튼을 누르면 해당 인물을 대상으로 확정하고 다음 단계로 진행됩니다.",
+      "route-analysis": "포착된 대상을 기반으로 객체추적이 진행됩니다.<br/>대상이 나타난 CCTV와 포착 시각을 분석하여<br/>시간 흐름에 따른 이동 경로를 생성하고 지도 위에 표시합니다.<br/><br/>이 단계는 별도 조작 없이 자동으로 진행되며, 잠시 후 다음 단계로 넘어갑니다.",
+      "predicted-cctv": "마지막 포착 지점을 중심으로 주변 CCTV를 투망감시합니다.<br/>CUVIA는 마지막으로 포착된 CCTV와 이전 포착 지점의 영상을 함께 분석하여,<br/>VLM 기반으로 이동 방향, 보행 동선, 보행로 구조를 파악합니다.<br/><br/><b>[CCTV 카드]</b> 중 하나를 클릭하면 다음 단계로 이동합니다.",
+      "predicted-cctv-detail": "추천된 CCTV 영상에서 대상을 찾아보세요.<br/>CUVIA는 대상이 나타날 가능성이 높은 CCTV를 재생하고,<br/>찾아야 하는 객체의 속성과 함께 이 CCTV를 추천한 상세 근거를 제공합니다.<br/><br/><b>[대상 포착]</b> 버튼을 누르면 전파할 수 있는 전파 목록으로 이동합니다.",
+      "capture-list-review": "포착된 정보를 확인하고 전파 패키지를 생성하세요.<br/>CUVIA는 이전 단계에서 확보한 대상 정보를 모아<br/>공유할 정보를 선택하고 전파할 수 있도록 지원합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 포착된 대상 카드를 클릭해 시간대별 캡션 설명, 후보 메타 정보 등 상세 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 공유할 정보 선택</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 전파 패키지 생성 버튼 클릭</span><br/><br/><b>[전파 패키지 생성]</b> 버튼을 누르면 다음 단계로 진행됩니다.",
+      "propagation": "전파 패키지를 바탕으로 전파문을 작성하세요.<br/>CUVIA는 지금까지 선택한 클립, 포착 정보, 대상 정보를 종합해<br/>전파문 초안을 자동으로 생성합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• AI 생성 전파문 초안 확인 및 수정</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 최인근 파출소 / 소방서 정보 확인</span><br/><br/><b>[전파 패키지 전송]</b> 버튼을 누르면 다음 단계인 전파 스레드로 이동합니다.",
+      "report-download": "전파 스레드에서 신고 및 전파 내역을 확인하세요.<br/>수신한 신고 정보와 보낸 전파 내용을 대화형 스레드 형태로 확인할 수 있습니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 수신한 신고 정보, 보낸 전파 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 추가 요청 / 회신 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 경찰서 처리 결과 확인</span><br/><br/><b>[사건 처리 결과 보고서 다운로드]</b> 버튼을 누르면 다음 단계로 진행됩니다.",
+      "report-result": "AI가 사건 대응 전 과정을 종합해 최종 보고서를 생성합니다.<br/>지금까지의 모든 단계에서 확인한 내용과<br/>사용자가 선택한 정보, 수신·전송된 전파 내역을 바탕으로<br/>사건 처리 결과 보고서를 자동으로 작성합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• AI가 작성한 최종 보고서 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 원하는 저장 형식 선택</span><br/><br/><b>[저장 형식]</b>을 선택하면 튜토리얼이 종료됩니다."
+    }
+  }
+}

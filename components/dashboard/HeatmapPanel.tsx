@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface HeatmapPanelProps {
   className?: string;
@@ -8,6 +9,7 @@ interface HeatmapPanelProps {
 }
 
 const HeatmapPanel = ({ className = '', areaLabelPrefix = 'Zone', areaLabels, minVisibleCount = 4 }: HeatmapPanelProps) => {
+  const { t } = useTranslation();
   const [heatmapAreaOffset, setHeatmapAreaOffset] = useState(0);
   const [heatmapAnimationKey, setHeatmapAnimationKey] = useState(0);
   const [previousHeatmapData, setPreviousHeatmapData] = useState<Record<string, Record<string, number>>>({});
@@ -210,8 +212,8 @@ const HeatmapPanel = ({ className = '', areaLabelPrefix = 'Zone', areaLabels, mi
   return (
     <div className={`rounded-lg p-4 gradient-border-right-bottom flex flex-col ${className}`} style={{ flexShrink: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white font-semibold text-sm">구역별 이벤트 발생 건 수</h3>
-        <span className="text-gray-400 text-xs">지난 24시간</span>
+        <h3 className="text-white font-semibold text-sm">{t('heatmap.title')}</h3>
+        <span className="text-gray-400 text-xs">{t('heatmap.last24h')}</span>
       </div>
       <div className="flex items-center justify-end gap-4 text-[12px] text-gray-200 mb-3">
         <div className="flex items-center gap-2">
@@ -257,7 +259,7 @@ const HeatmapPanel = ({ className = '', areaLabelPrefix = 'Zone', areaLabels, mi
                     const bucket = getHeatmapBucket(count);
                     const isNowNone = bucket === 'none';
                     
-                    const label = `${area} · ${slot.label}~${(slot.startHour + 2).toString().padStart(2, '0')}시 · ${count}건`;
+                    const label = t('heatmap.cellLabel', { area, start: slot.label, end: (slot.startHour + 2).toString().padStart(2, '0'), count });
                     const borderClass = bucket === 'none' ? 'border border-gray-500/30' : '';
                     
                     const cellSeed = `${heatmapAnimationKey}-${area}-${slot.key}`;
@@ -376,7 +378,7 @@ const HeatmapPanel = ({ className = '', areaLabelPrefix = 'Zone', areaLabels, mi
                     <>
                       {slot.label}
                       <br />
-                      (시)
+                      {t('heatmap.hourSuffix')}
                     </>
                   ) : (
                     slot.label

@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LANGUAGE_STORAGE_KEY, SupportedLanguage } from '@/src/i18n';
 import EventList from '@/components/dashboard/EventList';
 import MapView from '@/components/dashboard/HOME-v2/MapView';
 import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
@@ -23,6 +25,7 @@ import { getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
 import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
 
 const EndDialog = ({ onConfirm }: { onConfirm: () => void }) => {
+  const { t } = useTranslation();
   return (
     <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-[10010]">
       <div
@@ -38,21 +41,21 @@ const EndDialog = ({ onConfirm }: { onConfirm: () => void }) => {
       >
         <div className="px-6 pt-5 pb-3 text-left">
           <p className="text-gray-900 font-bold leading-relaxed" style={{ fontSize: '18px' }}>
-            CUVIA 튜토리얼이 종료되었습니다.
+            {t('home.endDialog.title')}
           </p>
           <p className="text-gray-700 text-sm leading-relaxed mt-2">
-            체험해주셔서 감사합니다.<br />
-            확인 버튼을 누르면 초기 화면으로 돌아갑니다.
+            {t('home.endDialog.thanks')}<br />
+            {t('home.endDialog.returnHome')}
           </p>
         </div>
         <div className="px-6 pb-4 flex justify-end">
           <button
             onClick={onConfirm}
             className="px-8 py-2.5 rounded-lg text-sm font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-            aria-label="확인"
+            aria-label={t('home.endDialog.confirmAriaLabel')}
             tabIndex={0}
           >
-            확인
+            {t('common.confirm')}
           </button>
         </div>
       </div>
@@ -301,7 +304,20 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
 
 export default function HomeV2() {
   const navigate = useNavigate();
-  
+  const { t, i18n } = useTranslation();
+
+  // 시작 안내 모달 안에서 언어를 전환할 때 사용. 선택 즉시 localStorage에 저장한다.
+  const currentLang = (i18n.resolvedLanguage || i18n.language || 'ko').slice(0, 2) as SupportedLanguage;
+  const handleLanguageChange = useCallback((lang: SupportedLanguage) => {
+    if (currentLang === lang) return;
+    i18n.changeLanguage(lang);
+    try {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+    } catch {
+      // localStorage가 막혀 있어도 in-memory로 적용된 상태이므로 무시
+    }
+  }, [currentLang, i18n]);
+
   // UI 상태를 reducer로 통합 관리
   const [uiState, dispatch] = useReducer(uiReducer, {
     selectedEventId: null,
@@ -412,73 +428,77 @@ export default function HomeV2() {
   }, [showStartMessage]);
 
   // 모든 이벤트를 한 번만 변환 (종결되지 않은 것만)
+  // i18n.language를 deps에 포함시켜 언어 전환 시 이벤트의 listTitle/listLocation이 재계산되게 함
   const allConvertedEvents: Event[] = useMemo(() => {
     return allEvents
       .map((event, index) => convertToDashboardEvent(event, index))
       .filter((event) => event.processingStage !== '종결');
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
-  // 가상 이벤트 데이터 (레이아웃 확인용) - 가상 지역(하늘시 별빛구), 과천 내부 좌표
+  // 가상 이벤트 데이터 (레이아웃 확인용) - 가상 지역(하늘시 별빛구), 과천 내부 좌표.
+  // i18n.language를 deps에 두어 언어 전환 시 title/location.name이 재계산됨.
   const mockEvents: Event[] = useMemo(() => {
     const now = new Date();
     const formatTime = (hours: number, minutes: number) => {
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
     };
+    const trans = (key: string) => t(`mockEvents.${key}`);
 
     return [
       // 일반 5개
       {
         id: 'mock-1',
         type: '112 치안',
-        title: '주차장 소음 민원 신고',
+        title: trans('mock-1.title'),
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
-        location: { name: '하늘시 별빛구 달빛동 지하주차장', coordinates: [127.192706819665, 37.350286188524] as [number, number] },
+        location: { name: trans('mock-1.location'), coordinates: [127.192706819665, 37.350286188524] as [number, number] },
         processingStage: '생성',
         resolution: { category: '112', code: '001', description: '' },
       },
       {
         id: 'mock-2',
         type: '119 구조',
-        title: '노인 낙상 부상 신고',
+        title: trans('mock-2.title'),
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
-        location: { name: '하늘시 별빛구 별양동 중앙공원 북문 인근', coordinates: [127.202706819665, 37.360286188524] as [number, number] },
+        location: { name: trans('mock-2.location'), coordinates: [127.202706819665, 37.360286188524] as [number, number] },
         processingStage: '선별',
         resolution: { category: '119', code: '002', description: '' },
       },
       {
         id: 'mock-3',
         type: '112 치안',
-        title: '횡단보도 신호 위반',
+        title: trans('mock-3.title'),
         priority: '일반' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
-        location: { name: '하늘시 별빛구 막계동 관문사거리', coordinates: [127.182706819665, 37.340286188524] as [number, number] },
+        location: { name: trans('mock-3.location'), coordinates: [127.182706819665, 37.340286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '112', code: '003', description: '' },
       },
       {
         id: 'mock-4',
         type: 'AI 탐지',
-        title: '이상 행동 AI 탐지',
+        title: trans('mock-4.title'),
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 45)),
-        location: { name: '하늘시 별빛구 문원동 하늘역 2번 출구', coordinates: [127.172706819665, 37.330286188524] as [number, number] },
+        location: { name: trans('mock-4.location'), coordinates: [127.172706819665, 37.330286188524] as [number, number] },
         processingStage: '생성',
         resolution: { category: 'AI', code: '004', description: '' },
       },
       {
         id: 'mock-5',
         type: '112 치안',
-        title: '차량 사고 교통 정체',
+        title: trans('mock-5.title'),
         priority: '일반' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
-        location: { name: '하늘시 별빛구 중앙동 구름대로 사당역 방향', coordinates: [127.162706819665, 37.320286188524] as [number, number] },
+        location: { name: trans('mock-5.location'), coordinates: [127.162706819665, 37.320286188524] as [number, number] },
         processingStage: '선별',
         resolution: { category: '112', code: '005', description: '' },
       },
@@ -486,33 +506,33 @@ export default function HomeV2() {
       {
         id: 'mock-6',
         type: '112 실종',
-        title: '미아 발생 긴급 수색',
+        title: trans('mock-6.title'),
         priority: '주의' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
-        location: { name: '하늘시 별빛구 별양동 달빛초등학교 정문 앞', coordinates: [127.192706819665, 37.350286188524] as [number, number] },
+        location: { name: trans('mock-6.location'), coordinates: [127.192706819665, 37.350286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '112', code: '006', description: '' },
       },
       {
         id: 'mock-7',
         type: '119 구조',
-        title: '차량 충돌 사고 발생',
+        title: trans('mock-7.title'),
         priority: '주의' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
-        location: { name: '하늘시 별빛구 중앙동 하늘시청 앞 교차로', coordinates: [127.202706819665, 37.360286188524] as [number, number] },
+        location: { name: trans('mock-7.location'), coordinates: [127.202706819665, 37.360286188524] as [number, number] },
         processingStage: '생성',
         resolution: { category: '119', code: '007', description: '' },
       },
       {
         id: 'mock-8',
         type: '112 치안',
-        title: '말다툼 주먹다짐 발생',
+        title: trans('mock-8.title'),
         priority: '주의' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 30)),
-        location: { name: '하늘시 별빛구 중앙동 구름역 인근 상가 앞', coordinates: [127.182706819665, 37.340286188524] as [number, number] },
+        location: { name: trans('mock-8.location'), coordinates: [127.182706819665, 37.340286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '112', code: '008', description: '' },
       },
@@ -520,27 +540,28 @@ export default function HomeV2() {
       {
         id: 'mock-9',
         type: '119 화재',
-        title: '쓰레기 수거함 화재 발생',
+        title: trans('mock-9.title'),
         priority: '경계' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
-        location: { name: '하늘시 별빛구 막계동 달빛동 아파트 단지 쓰레기 수거함', coordinates: [127.172706819665, 37.330286188524] as [number, number] },
+        location: { name: trans('mock-9.location'), coordinates: [127.172706819665, 37.330286188524] as [number, number] },
         processingStage: '착수',
         resolution: { category: '119', code: '009', description: '' },
       },
       {
         id: 'mock-10',
         type: '112 치안',
-        title: '절도 시도 의심 행동',
+        title: trans('mock-10.title'),
         priority: '경계' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
-        location: { name: '하늘시 별빛구 달빛동 상가 앞', coordinates: [127.162706819665, 37.320286188524] as [number, number] },
+        location: { name: trans('mock-10.location'), coordinates: [127.162706819665, 37.320286188524] as [number, number] },
         processingStage: '선별',
         resolution: { category: '112', code: '010', description: '' },
       },
     ];
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
   const isKimDoyeonEvent = (event: Event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004";
 
@@ -621,14 +642,17 @@ export default function HomeV2() {
       }
     }
     
+    // 영문 모드에서는 24h 형식("11:08:47") 사용, 한국어 모드에서는 "오전 HH:MM:SS"
+    const isENLang = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
     const newItem: CaptureItem = {
       id: `capture-${Date.now()}`,
       cctvName,
       location,
-      timestamp: new Date().toLocaleTimeString('ko-KR', {
+      timestamp: new Date().toLocaleTimeString(isENLang ? 'en-US' : 'ko-KR', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
+        hour12: !isENLang,
       }),
       thumbnailUrl,
       videoUrl,
@@ -639,7 +663,7 @@ export default function HomeV2() {
     captureTriggeredRef.current = true;
     
     // 알림 메시지 설정
-    const message = `${cctvName} | ${location}의 클립을 포착 목록에 추가했습니다.\n전파 패키지를 생성하여 전파를 보내세요.`;
+    const message = t('home.capture.addedNotification', { cctvName, location });
     setCaptureNotificationMessage(message);
     setShowCaptureNotification(true);
     
@@ -658,7 +682,7 @@ export default function HomeV2() {
         jumpToStep('capture-list-review');
       }, 500);
     }
-  }, [showMouseGuide, jumpToStep, currentStepId]);
+  }, [showMouseGuide, jumpToStep, currentStepId, t]);
 
   // 이벤트 액션 핸들러 (useCallback으로 메모이제이션)
   const handleEventAction = useCallback((eventId: string) => {
@@ -1135,8 +1159,17 @@ export default function HomeV2() {
         className={`absolute right-0 top-0 bottom-0 flex flex-col pl-4 pr-5 gap-4 transition-all duration-300 ease-out ${uiState.panelsSlidOut ? 'translate-x-full opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}
         style={{ width: '370px', zIndex: 100, paddingTop: '16px', paddingBottom: '16px' }}
       >
-        <HeatmapPanel 
-          areaLabels={{
+        <HeatmapPanel
+          areaLabels={i18n.language?.startsWith('en') ? {
+            zone1: 'Moonlight',
+            zone2: 'Daylight',
+            zone3: 'Breeze',
+            zone4: 'Rainbow',
+            zone5: 'Nebula',
+            zone6: 'Cloud',
+            zone7: 'Sunshine',
+            zone8: 'Dawn',
+          } : {
             zone1: '달빛동',
             zone2: '해빛동',
             zone3: '바람동',
@@ -1319,11 +1352,11 @@ export default function HomeV2() {
       {/* 투망감시/CUVIA Link 안내 다이얼로그 */}
       <ConfirmDialog
         isOpen={uiState.showNetMonitoringDialog}
-        title="안내"
+        title={t('home.guideDialog.title')}
         message={dialogSource === 'broadcast'
-          ? '<b>CUVIA Link는 별도 체험존에서 제공됩니다.</b><br/>CUVIA Link 체험존에서 이용해주세요.'
-          : '이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요.'}
-        confirmText="확인"
+          ? t('home.guideDialog.linkOnly')
+          : t('home.guideDialog.demoOnly')}
+        confirmText={t('common.confirm')}
         hideCancel
         showDim
         zIndex={10020}
@@ -1334,11 +1367,11 @@ export default function HomeV2() {
       {/* 객체 추적 확인 다이얼로그 */}
       <ConfirmDialog
         isOpen={uiState.showObjectTrackingConfirm}
-        title="객체 추적 검사"
-        message={`현재 고속 검색 결과 ${listCardCount}건이 있습니다.<br/>객체 추적 검사를 시작하시겠습니까?`}
+        title={t('home.objectTrackingConfirm.title')}
+        message={t('home.objectTrackingConfirm.message', { count: listCardCount })}
         variant="dark"
-        confirmText="시작"
-        cancelText="취소"
+        confirmText={t('home.objectTrackingConfirm.confirm')}
+        cancelText={t('home.objectTrackingConfirm.cancel')}
         onConfirm={() => {
           dispatch({ type: 'HIDE_OBJECT_TRACKING_CONFIRM' });
           dispatch({ type: 'START_OBJECT_TRACKING' });
@@ -1493,7 +1526,7 @@ export default function HomeV2() {
                 </div>
                 
                 <span className="text-[10px] font-medium mt-1.5 text-gray-400 group-hover:text-white transition-colors">
-                  포착목록
+                  {t('home.captureMenu.label')}
                 </span>
               </button>
             </div>
@@ -1520,31 +1553,68 @@ export default function HomeV2() {
             }}
           >
             <div className="px-6 pt-5 pb-3 text-left">
-              <p className="text-gray-900 font-bold leading-relaxed" style={{ fontSize: '18px' }}>
-                CUVIA 튜토리얼을 시작해보세요
-              </p>
+              {/* 헤더: 타이틀 + 우측 상단 언어 전환 토글 (KR / EN) */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-gray-900 font-bold leading-relaxed flex-1" style={{ fontSize: '18px' }}>
+                  {t('home.startDialog.title')}
+                </p>
+                <div
+                  className="flex items-center rounded-full overflow-hidden border border-gray-400/70 shrink-0 mt-0.5"
+                  role="group"
+                  aria-label="Language switcher"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageChange('ko')}
+                    className={`px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                      currentLang === 'ko'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                    aria-pressed={currentLang === 'ko'}
+                    aria-label="한국어로 보기"
+                    tabIndex={0}
+                  >
+                    KR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLanguageChange('en')}
+                    className={`px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                      currentLang === 'en'
+                        ? 'bg-gray-900 text-white'
+                        : 'bg-transparent text-gray-600 hover:text-gray-900'
+                    }`}
+                    aria-pressed={currentLang === 'en'}
+                    aria-label="View in English"
+                    tabIndex={0}
+                  >
+                    EN
+                  </button>
+                </div>
+              </div>
               <p className="text-gray-700 text-sm leading-relaxed mt-2">
-                실종 사건 접수 상황을 바탕으로<br />
-                CUVIA의 전체 대응 흐름을 직접 체험하실 수 있습니다.
+                {t('home.startDialog.description1')}<br />
+                {t('home.startDialog.description2')}
               </p>
               <div className="mt-3 px-3 py-2.5 rounded-md border border-gray-300/60 bg-white/40">
                 <p className="text-gray-800 text-xs font-semibold leading-relaxed">
-                  사건 접수 → 고속검색 → 객체추적 → 전파 → 보고서 자동작성
+                  {t('home.startDialog.flow')}
                 </p>
                 <p className="text-gray-600 text-[11px] leading-relaxed mt-1">
-                  체험 시간: 약 3~5분
+                  {t('home.startDialog.duration')}
                 </p>
               </div>
               {/* 단축키 안내 */}
               <div className="mt-3 px-3 py-2.5 rounded-md border border-gray-300/60 bg-white/40">
-                <p className="text-gray-800 text-sm font-semibold leading-relaxed mb-2">키보드 단축키</p>
+                <p className="text-gray-800 text-sm font-semibold leading-relaxed mb-2">{t('home.startDialog.shortcutsTitle')}</p>
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-3">
                     <kbd className="inline-flex items-center justify-center min-w-[32px] h-[28px] px-2 rounded-md bg-gray-100 border border-gray-300 shadow-[0_1px_0_1px_rgba(0,0,0,0.08)] text-gray-700 text-xs font-bold leading-none">
                       0
                     </kbd>
                     <span className="text-gray-600 text-[13px] leading-relaxed">
-                      튜토리얼 가이드를 닫거나 다시 엽니다
+                      {t('home.startDialog.shortcutHToggle')}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1552,17 +1622,17 @@ export default function HomeV2() {
                       ESC
                     </kbd>
                     <span className="text-gray-600 text-[13px] leading-relaxed">
-                      튜토리얼을 초기화합니다
+                      {t('home.startDialog.shortcutResetGuide')}
                     </span>
                   </div>
                 </div>
               </div>
 
               <p className="text-gray-700 text-sm leading-relaxed mt-3">
-                시작 버튼을 누르면 튜토리얼이 바로 시작됩니다.
+                {t('home.startDialog.footerStart')}
               </p>
               <p className="text-gray-700 text-[11px] leading-relaxed mt-2">
-                화면에 표시되는 사건, 인물 및 데이터는 실제와 무관한 가상 데이터입니다.
+                {t('home.startDialog.footerDisclaimer')}
               </p>
             </div>
 
@@ -1582,10 +1652,10 @@ export default function HomeV2() {
                 <button
                   onClick={handleStartSimulation}
                   className="px-8 py-2.5 rounded-lg text-sm font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-                  aria-label="시작"
+                  aria-label={t('home.startDialog.startAriaLabel')}
                   tabIndex={0}
                 >
-                  시작
+                  {t('home.startDialog.startButton')}
                 </button>
               )}
             </div>

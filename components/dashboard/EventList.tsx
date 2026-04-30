@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import { Event, EventPriority } from '@/types';
 import { getEventById, getEventCategory, getAIInsightKeywords, formatEventDateTime } from '@/lib/events-data';
 
@@ -15,6 +16,16 @@ interface EventListProps {
 
 const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: EventListProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  // 한국어 enum값 → 화면 표시용 문자열로 변환 (현재 언어 적용)
+  const displayPriority = (p: EventPriority) => t(`eventList.priority.${p}`, { defaultValue: p });
+  const displayType = (typeStr: string) => t(`eventList.type.${typeStr}`, { defaultValue: typeStr });
+  const displayAgency = (typeStr: string): string => {
+    if (typeStr === '112 치안' || typeStr === '112 실종') return t('eventList.agency.112');
+    if (typeStr === '119 화재' || typeStr === '119 구조') return t('eventList.agency.119');
+    if (typeStr === 'AI 탐지') return t('eventList.agency.ai');
+    return typeStr;
+  };
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const eventItemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const agentPathByDomain: Record<string, string> = {
@@ -118,11 +129,11 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'NEW':
-        return { label: 'NEW', color: 'bg-blue-600 text-white' };
+        return { label: t('eventList.status.new'), color: 'bg-blue-600 text-white' };
       case 'MONITORING':
-        return { label: '모니터링', color: 'bg-yellow-600 text-white' };
+        return { label: t('eventList.status.monitoring'), color: 'bg-yellow-600 text-white' };
       case 'EVIDENCE':
-        return { label: '증거', color: 'bg-gray-600 text-white' };
+        return { label: t('eventList.status.evidence'), color: 'bg-gray-600 text-white' };
       default:
         return { label: status, color: 'bg-gray-600 text-white' };
     }
@@ -182,11 +193,11 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
   const generalCount = groupedEvents.filter(({ main }) => main.priority === '일반').length;
 
   const tabs = [
-    { label: '전체', value: 'ALL' as const, count: null },
-    { label: '긴급', value: '긴급' as const, count: urgentCount },
-    { label: '경계', value: '경계' as const, count: cautionCount },
-    { label: '주의', value: '주의' as const, count: attentionCount },
-    { label: '일반', value: 'GENERAL' as const, count: generalCount },
+    { label: t('eventList.tabs.all'), value: 'ALL' as const, count: null },
+    { label: t('eventList.priority.긴급'), value: '긴급' as const, count: urgentCount },
+    { label: t('eventList.priority.경계'), value: '경계' as const, count: cautionCount },
+    { label: t('eventList.priority.주의'), value: '주의' as const, count: attentionCount },
+    { label: t('eventList.priority.일반'), value: 'GENERAL' as const, count: generalCount },
   ];
 
   // selectedEventId가 변경될 때 호버 효과 적용 및 스크롤
@@ -264,7 +275,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto space-y-2">
         {filteredGroups.length === 0 ? (
           <div className="text-gray-500 text-xs px-3 py-6 border-b border-[#2f3136]">
-            표시할 이벤트가 없습니다.
+            {t('eventList.empty')}
           </div>
         ) : (
         filteredGroups.map((group) => {
@@ -318,9 +329,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                           })()}
                         </span>
                         <span className="text-gray-300 text-[0.7rem] font-medium">
-                          {main.type === '112 치안' || main.type === '112 실종' ? '112 상황실' : 
-                           main.type === '119 화재' || main.type === '119 구조' ? '119 지휘센터' :
-                           main.type === 'AI 탐지' ? 'AI 시스템' : main.type}
+                          {displayAgency(main.type)}
                         </span>
                       </>
                     ) : (
@@ -344,22 +353,22 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                   </div>
                   {main.priority === '긴급' && (
                     <span className="px-2 py-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full">
-                      긴급
+                      {displayPriority('긴급')}
                     </span>
                   )}
                   {main.priority === '경계' && (
                     <span className="px-2 py-0.5 bg-yellow-500 text-gray-900 text-[10px] font-semibold rounded-full">
-                      경계
+                      {displayPriority('경계')}
                     </span>
                   )}
                   {main.priority === '주의' && (
                     <span className="px-2 py-0.5 bg-blue-500 text-white text-[10px] font-semibold rounded-full">
-                      주의
+                      {displayPriority('주의')}
                     </span>
                   )}
                   {main.priority === '일반' && (
                     <span className="px-2 py-0.5 bg-gray-500 text-white text-[10px] font-semibold rounded-full">
-                      일반
+                      {displayPriority('일반')}
                     </span>
                   )}
                 </div>
@@ -369,7 +378,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                     {/* 허구 이벤트: 카테고리(유형) 배지 */}
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`px-2 py-0.5 rounded text-xs ${getTypeColor(main.type)}`}>
-                        {main.type}
+                        {displayType(main.type)}
                       </span>
                     </div>
                     {/* 허구 이벤트: 신고 내용 */}
@@ -405,13 +414,13 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                                         ? 'bg-orange-500/20 text-orange-400'
                                         : 'bg-gray-500/20 text-gray-400'
                             }`}>
-                              {baseEvent.type}
+                              {displayType(baseEvent.type)}
                             </span>
                           );
                         } else {
                           return (
                             <span className={`px-2 py-0.5 rounded text-xs ${getTypeColor(main.type)}`}>
-                              {main.type}
+                              {displayType(main.type)}
                             </span>
                           );
                         }
@@ -443,7 +452,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-1 h-1 bg-gray-400 rounded-full" />
-                        <span className="text-gray-200 text-[0.7rem]">{evt.type}</span>
+                        <span className="text-gray-200 text-[0.7rem]">{displayType(evt.type)}</span>
                         <span className="text-gray-300 text-[0.7rem]">(Evidence)</span>
                       </div>
                     </div>

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import { getPredictedCCTVDetail } from '@/lib/predicted-cctv-details';
 
 export interface PredictedCCTVItem {
@@ -29,6 +30,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
   onAddCapture,
   autoCapture = false,
 }) => {
+  const { t, i18n } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -160,37 +162,18 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
     }
   };
 
+  // CaptureListPanel은 이 분석 결과를 본문으로 렌더링하지 않고, 'object-tracking' 마커만 인식해
+  // i18n 기반 정적 카드로 대체 렌더링한다. 본문은 마커 외에는 사용되지 않으므로 로깅용 데이터만 채운다.
+  const OBJECT_TRACKING_MARKER = 'object-tracking';
   const generateAnalysisMarkdown = (cctvItem: PredictedCCTVItem): string => {
-    return `# 객체 추적 분석 결과
-
-## 1. 예측 정보
-
-**예상 이동 거리**: 약 ${cctvItem.distance}m (이전 위치 기준)
-
-**이동 추세**: ${cctvItem.direction} (최근 3프레임 평균)
-
-**예상 도달 시각**: ${cctvItem.predictedTime} (현재 시각 +30초)
-
-**경로 적합도**: ${cctvItem.confidence}점
-
----
-
-## 2. 경로 예측 상세 근거
-
-### 이동 방향
-마지막 프레임 기준 북동 방향을 유지하며 이동 중임.
-
-### 이동 속도
-정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.
-
-### 보행로 구조
-하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.
-
-### CCTV 연계
-인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.
-
-### 유사 사례
-해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.`;
+    return [
+      `[${OBJECT_TRACKING_MARKER}]`,
+      `cctv=${cctvItem.cctvName}`,
+      `distance=${cctvItem.distance}`,
+      `direction=${cctvItem.direction}`,
+      `predictedTime=${cctvItem.predictedTime}`,
+      `confidence=${cctvItem.confidence}`,
+    ].join('\n');
   };
 
   const handleCaptureTarget = () => {
@@ -221,7 +204,8 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
 
     setIsCaptureAnimating(true);
 
-    const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
+    // 메뉴 버튼은 LeftMenuPanel에서 id="capture-list-menu"로 마킹됨. aria-label은 다국어로 바뀜.
+    const captureMenuButton = document.getElementById('capture-list-menu');
     let endX = 40;
     let endY = 250;
     if (captureMenuButton) {
@@ -279,10 +263,13 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
 
   if (!isOpen || !cctv) return null;
 
-  const liveTimeString = currentLiveTime.toLocaleTimeString('ko-KR', {
+  // 영문 모드는 24h 포맷, 한국어 모드는 "오전/오후" 포함
+  const isENTime = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+  const liveTimeString = currentLiveTime.toLocaleTimeString(isENTime ? 'en-US' : 'ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    hour12: !isENTime,
   });
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -296,7 +283,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
         className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
         role="dialog"
         aria-modal="true"
-        aria-label="예측 CCTV 상세"
+        aria-label={t('predictedCCTVDetail.dialogAriaLabel')}
         onClick={handleOverlayClick}
       >
       <div
@@ -325,11 +312,11 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
               <span className="text-gray-300 text-sm truncate">{cctv.location}</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-              <span className="text-gray-400">채널</span>
+              <span className="text-gray-400">{t('predictedCCTVDetail.channel')}</span>
               <span className="text-gray-300">CH-{cctv.id.padStart(3, '0')}</span>
               <span className="text-gray-500">|</span>
-              <span className="text-gray-400">경로 적합도</span>
-              <span className="text-white font-semibold">{cctv.confidence}점</span>
+              <span className="text-gray-400">{t('predictedCCTVDetail.routeFit')}</span>
+              <span className="text-white font-semibold">{t('predictedCCTV.score', { score: cctv.confidence })}</span>
               <div
                 className="h-2 rounded-full bg-[#0f0f0f] overflow-hidden border border-[#31353a]"
                 style={{ width: '80px' }}
@@ -346,7 +333,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
-            aria-label="닫기"
+            aria-label={t('common.close')}
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
           </button>
@@ -368,7 +355,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                 muted
                 playsInline
                 autoPlay
-                aria-label="CCTV 영상"
+                aria-label={t('video.cctvAriaLabel')}
               />
               
               {/* 캡처 애니메이션 오버레이 */}
@@ -417,7 +404,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                         type="button"
                         onClick={togglePlayPause}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label={isPlaying ? '일시정지' : '재생'}
+                        aria-label={isPlaying ? t('candidateDetail.video.pause') : t('candidateDetail.video.play')}
                       >
                         <Icon icon={isPlaying ? 'mdi:pause' : 'mdi:play'} className="w-6 h-6" />
                       </button>
@@ -434,7 +421,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                         type="button"
                         onClick={toggleFullscreen}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label="전체화면"
+                        aria-label={t('candidateDetail.video.fullscreen')}
                       >
                         <Icon icon={isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'} className="w-5 h-5" />
                       </button>
@@ -458,7 +445,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                   <div className="flex items-start gap-3">
                     <Icon icon="mdi:clock-outline" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-gray-400 mb-1">현재 시간</div>
+                      <div className="text-xs text-gray-400 mb-1">{t('predictedCCTVDetail.currentTime')}</div>
                       <div className="text-lg text-white font-semibold font-mono">{liveTimeString}</div>
                     </div>
                   </div>
@@ -466,13 +453,15 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                 
                 {/* 예측 정보 카드들 */}
                 {(() => {
-                  const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
+                  // i18n.language를 클로저에 캡쳐해 언어 변경 시 재렌더로 반영됨
+                  void i18n.language;
+                  const detail = getPredictedCCTVDetail(cctv.thumbnailUrl, i18n.language);
                   return [
-                    { icon: 'mdi:account-details', label: '객체 속성', value: detail?.objectAttributes || '정보 없음' },
-                    { icon: 'mdi:map-marker-distance', label: '예상 이동 거리', value: detail?.expectedDistance || `약 ${cctv.distance}m (이전 위치 기준)` },
-                    { icon: 'mdi:navigation', label: '이동 추세', value: detail?.movementTrend || `${cctv.direction} (최근 3프레임 평균)` },
-                    { icon: 'mdi:clock-outline', label: '예상 도달 시각', value: detail?.expectedArrivalTime || `${cctv.predictedTime} (현재 시각 +30초)` },
-                    { icon: 'mdi:chart-timeline-variant', label: '경로 적합도(유사도)', value: `${detail?.routeFitScore || cctv.confidence}점` },
+                    { icon: 'mdi:account-details', label: t('predictedCCTVDetail.fields.objectAttributes'), value: detail?.objectAttributes || t('predictedCCTVDetail.noInfo') },
+                    { icon: 'mdi:map-marker-distance', label: t('predictedCCTVDetail.fields.expectedDistance'), value: detail?.expectedDistance || t('predictedCCTVDetail.distanceFallback', { distance: cctv.distance }) },
+                    { icon: 'mdi:navigation', label: t('predictedCCTVDetail.fields.movementTrend'), value: detail?.movementTrend || t('predictedCCTVDetail.trendFallback', { direction: cctv.direction }) },
+                    { icon: 'mdi:clock-outline', label: t('predictedCCTVDetail.fields.expectedArrivalTime'), value: detail?.expectedArrivalTime || t('predictedCCTVDetail.etaFallback', { time: cctv.predictedTime }) },
+                    { icon: 'mdi:chart-timeline-variant', label: t('predictedCCTVDetail.fields.routeFitScore'), value: t('predictedCCTV.score', { score: detail?.routeFitScore || cctv.confidence }) },
                   ];
                 })().map((item, idx) => (
                   <div key={idx} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
@@ -496,8 +485,8 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                   >
                     <Icon icon="mdi:map-marker-path" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-gray-400 mb-1">경로 예측 상세 근거</div>
-                      <div className="text-sm text-white">6개 항목 분석 완료</div>
+                      <div className="text-xs text-gray-400 mb-1">{t('predictedCCTVDetail.routeRationale.title')}</div>
+                      <div className="text-sm text-white">{t('predictedCCTVDetail.routeRationale.summary')}</div>
                     </div>
                     <Icon 
                       icon={isRouteScoreOpen ? "mdi:chevron-up" : "mdi:chevron-down"} 
@@ -513,22 +502,23 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
                       {/* 각 분석 항목 */}
                       <div className="p-3 space-y-2">
                         {(() => {
-                          const detail = getPredictedCCTVDetail(cctv.thumbnailUrl);
+                          void i18n.language;
+                          const detail = getPredictedCCTVDetail(cctv.thumbnailUrl, i18n.language);
                           if (!detail?.detailedAnalysis) {
                             return [
-                              { category: '이동 방향', analysis: '마지막 프레임 기준 북동 방향을 유지하며 이동 중임.' },
-                              { category: '이동 속도', analysis: '정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.' },
-                              { category: '보행로 구조', analysis: '하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.' },
-                              { category: 'CCTV 연계', analysis: '인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.' },
-                              { category: '유사 사례', analysis: '해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.' },
+                              { category: t('predictedCCTVDetail.routeRationale.categories.movementDirection'), analysis: t('predictedCCTVDetail.routeRationale.defaults.movementDirection') },
+                              { category: t('predictedCCTVDetail.routeRationale.categories.movementSpeed'), analysis: t('predictedCCTVDetail.routeRationale.defaults.movementSpeed') },
+                              { category: t('predictedCCTVDetail.routeRationale.categories.pathStructure'), analysis: t('predictedCCTVDetail.routeRationale.defaults.pathStructure') },
+                              { category: t('predictedCCTVDetail.routeRationale.categories.cctvLinkage'), analysis: t('predictedCCTVDetail.routeRationale.defaults.cctvLinkage') },
+                              { category: t('predictedCCTVDetail.routeRationale.categories.similarCases'), analysis: t('predictedCCTVDetail.routeRationale.defaults.similarCases') },
                             ];
                           }
                           return [
-                            { category: '이동 방향', analysis: detail.detailedAnalysis.movementDirection },
-                            { category: '이동 속도', analysis: detail.detailedAnalysis.movementSpeed },
-                            { category: '보행로 구조', analysis: detail.detailedAnalysis.pathStructure },
-                            { category: 'CCTV 연계', analysis: detail.detailedAnalysis.cctvLinkage },
-                            { category: '유사 사례', analysis: detail.detailedAnalysis.similarCases },
+                            { category: t('predictedCCTVDetail.routeRationale.categories.movementDirection'), analysis: detail.detailedAnalysis.movementDirection },
+                            { category: t('predictedCCTVDetail.routeRationale.categories.movementSpeed'), analysis: detail.detailedAnalysis.movementSpeed },
+                            { category: t('predictedCCTVDetail.routeRationale.categories.pathStructure'), analysis: detail.detailedAnalysis.pathStructure },
+                            { category: t('predictedCCTVDetail.routeRationale.categories.cctvLinkage'), analysis: detail.detailedAnalysis.cctvLinkage },
+                            { category: t('predictedCCTVDetail.routeRationale.categories.similarCases'), analysis: detail.detailedAnalysis.similarCases },
                           ];
                         })().map((item, idx) => (
                           <div key={idx} className="bg-[#1a1a1a]/50 rounded p-3 space-y-2">
@@ -560,10 +550,10 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
             style={{
               background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             }}
-            aria-label="대상 포착"
+            aria-label={t('candidateDetail.captureTarget')}
           >
             <Icon icon="mdi:account-check" className="w-3.5 h-3.5" />
-            대상 포착
+            {t('candidateDetail.captureTarget')}
           </button>
         </div>
       </div>
@@ -582,7 +572,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
         >
           <img
             src={flyingThumbnail.imageData}
-            alt="캡처 썸네일"
+            alt={t('candidateDetail.captureThumbnailAlt')}
             className="w-32 h-20 object-cover rounded-lg shadow-2xl"
             style={{
               boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',

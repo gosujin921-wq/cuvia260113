@@ -1,15 +1,17 @@
 import React from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 
 interface TopControlPanelProps {
   isVisible: boolean;
   onStop?: () => void;
 }
 
-const TopControlPanel: React.FC<TopControlPanelProps> = ({ 
-  isVisible, 
+const TopControlPanel: React.FC<TopControlPanelProps> = ({
+  isVisible,
   onStop
 }) => {
+  const { t } = useTranslation();
   if (!isVisible) return null;
 
   return (
@@ -43,9 +45,9 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({
       >
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-white text-sm font-semibold">고속 검색</h3>
+            <h3 className="text-white text-sm font-semibold">{t('topControl.fastSearchTitle')}</h3>
             <span className="text-gray-500">|</span>
-            <span className="text-gray-300 text-sm">인근 CCTV 8대를 모니터링 중입니다.</span>
+            <span className="text-gray-300 text-sm">{t('topControl.monitoringMessage')}</span>
           </div>
           
           <div className="flex items-center gap-4">
@@ -53,9 +55,9 @@ const TopControlPanel: React.FC<TopControlPanelProps> = ({
               <button
                 onClick={onStop}
                 className="px-4 py-1.5 bg-red-500/90 hover:bg-red-500 text-white text-sm font-semibold rounded transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                aria-label="고속검색 중지"
+                aria-label={t('topControl.stopAriaLabel')}
               >
-                고속검색 중지
+                {t('topControl.stop')}
               </button>
             )}
           </div>

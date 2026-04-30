@@ -1,6 +1,7 @@
 import { Icon } from '@iconify/react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface LeftMenuPanelProps {
   onMenuSelect?: (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => void;
@@ -11,7 +12,8 @@ interface LeftMenuPanelProps {
 
 const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, showNotification = false }: LeftMenuPanelProps) => {
   const navigate = useNavigate();
-  
+  const { t } = useTranslation();
+
   const handleMenuClick = (menuId: 'net-monitoring' | 'fast-search' | 'object-tracking' | 'capture-list' | 'propagation' | 'broadcast') => {
     onMenuSelect?.(menuId);
   };
@@ -20,28 +22,28 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
     {
       id: 'net-monitoring' as const,
       icon: 'mdi:radar',
-      label: '투망감시',
+      label: t('leftMenu.items.netMonitoring'),
     },
     {
       id: 'fast-search' as const,
       icon: 'mdi:magnify-scan',
-      label: '고속검색',
+      label: t('leftMenu.items.fastSearch'),
     },
     {
       id: 'object-tracking' as const,
       icon: 'mdi:target',
-      label: '객체추적',
+      label: t('leftMenu.items.objectTracking'),
     },
     {
       id: 'capture-list' as const,
       icon: 'mdi:camera-burst',
-      label: '포착목록',
+      label: t('leftMenu.items.captureList'),
       badge: captureCount,
     },
     {
       id: 'propagation' as const,
       icon: 'mdi:send',
-      label: '전파',
+      label: t('leftMenu.items.propagation'),
     },
   ];
 
@@ -66,7 +68,7 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
         <button
           onClick={() => { sessionStorage.clear(); window.location.reload(); }}
           className="cursor-pointer hover:opacity-80 transition-opacity"
-          aria-label="홈으로 이동"
+          aria-label={t('leftMenu.homeAriaLabel')}
           tabIndex={0}
         >
           <img
@@ -185,7 +187,7 @@ const LeftMenuPanel = ({ onMenuSelect, selectedMenuId = null, captureCount = 0, 
           <path d="M53.72,22.05c-2.08,0-3.78,1.69-3.78,3.78s1.7,3.78,3.78,3.78,3.78-1.69,3.78-3.78-1.69-3.78-3.78-3.78Z"/>
         </svg>
         <span className="text-[10px] font-medium mt-1.5 transition-all duration-200 text-gray-400 group-hover:text-white">
-          CUVIA Link
+          {t('leftMenu.cuviaLink')}
         </span>
       </button>
     </div>

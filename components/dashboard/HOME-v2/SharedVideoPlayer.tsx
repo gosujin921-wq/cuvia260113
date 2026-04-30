@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SharedVideoPlayerProps {
   src: string;
@@ -20,13 +21,15 @@ const SharedVideoPlayer: React.FC<SharedVideoPlayerProps> = ({
   videoRef,
   videoKey,
   onEnded,
-  ariaLabel = 'CCTV 영상',
+  ariaLabel,
   className = 'w-full h-full object-contain',
 }) => {
+  const { t } = useTranslation();
+  const resolvedAriaLabel = ariaLabel ?? t('video.cctvAriaLabel');
   if (!src || src === '') {
     return (
-      <div className={`${className} bg-black flex items-center justify-center`} aria-label={ariaLabel}>
-        <span className="text-gray-500 text-sm">영상 로드 중</span>
+      <div className={`${className} bg-black flex items-center justify-center`} aria-label={resolvedAriaLabel}>
+        <span className="text-gray-500 text-sm">{t('video.loading')}</span>
       </div>
     );
   }
@@ -40,7 +43,7 @@ const SharedVideoPlayer: React.FC<SharedVideoPlayerProps> = ({
       playsInline
       autoPlay
       preload="metadata"
-      aria-label={ariaLabel}
+      aria-label={resolvedAriaLabel}
       onEnded={onEnded}
     />
   );

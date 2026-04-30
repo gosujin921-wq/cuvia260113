@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import PropagationPackagePopup from './PropagationPackagePopup';
 
 interface CaptureListPanelProps {
@@ -39,6 +40,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
   captureItems = [],
   onCreatePropagationPackage,
 }) => {
+  const { t } = useTranslation();
   const [selectedCapture, setSelectedCapture] = useState<CaptureItem | null>(null);
   const [showPropagationPopup, setShowPropagationPopup] = useState(false);
 
@@ -62,7 +64,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
           className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
           role="dialog"
           aria-modal="true"
-          aria-label="포착 상세"
+          aria-label={t('captureList.detailAriaLabel')}
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedCapture(null); }}
         >
           <div
@@ -86,7 +88,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                   <span className="text-gray-300 text-sm truncate">{selectedCapture.location}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <span className="text-gray-400">포착 시각</span>
+                  <span className="text-gray-400">{t('captureList.captureTime')}</span>
                   <span className="text-gray-300">{selectedCapture.timestamp}</span>
                 </div>
               </div>
@@ -94,7 +96,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                 type="button"
                 onClick={() => setSelectedCapture(null)}
                 className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
-                aria-label="닫기"
+                aria-label={t('common.close')}
                 tabIndex={0}
               >
                 <Icon icon="mdi:close" className="w-5 h-5" />
@@ -128,28 +130,31 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                     {selectedCapture.analysisResult ? (
                       typeof selectedCapture.analysisResult === 'string' ? (
                         // 마크다운 형식의 분석결과 - 전파 패키지 팝업 스타일
-                        selectedCapture.analysisResult.includes('객체 추적') ? (
+                        // [object-tracking] 마커가 포함된 경우 객체 추적 분석 결과 카드로 렌더링.
+                        // 과거 한국어 마커('객체 추적')도 호환 유지.
+                        (selectedCapture.analysisResult.includes('[object-tracking]') ||
+                          selectedCapture.analysisResult.includes('객체 추적')) ? (
                           // 객체 추적 분석 결과
                           <div className="space-y-3">
                             {/* 예측 정보 */}
                             <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                               <div className="flex items-center gap-2 mb-3">
                                 <Icon icon="mdi:information" className="w-5 h-5 text-blue-400" />
-                                <h3 className="text-white font-semibold text-sm">예측 정보</h3>
+                                <h3 className="text-white font-semibold text-sm">{t('captureList.prediction.title')}</h3>
                               </div>
                               <div className="space-y-2 text-sm">
                                 <div className="flex items-start gap-2">
                                   <Icon icon="mdi:navigation" className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                                   <div>
-                                    <span className="text-gray-400">이동 추세: </span>
-                                    <span className="text-gray-300">남서쪽 (최근 3프레임 평균)</span>
+                                    <span className="text-gray-400">{t('captureList.prediction.trendLabel')} </span>
+                                    <span className="text-gray-300">{t('captureList.prediction.trendValue')}</span>
                                   </div>
                                 </div>
                                 <div className="flex items-start gap-2">
                                   <Icon icon="mdi:clock-outline" className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                                   <div>
-                                    <span className="text-gray-400">예상 도달 시각: </span>
-                                    <span className="text-gray-300">09:36:00 (현재 시각 +30초)</span>
+                                    <span className="text-gray-400">{t('captureList.prediction.etaLabel')} </span>
+                                    <span className="text-gray-300">{t('captureList.prediction.etaValue')}</span>
                                   </div>
                                 </div>
                               </div>
@@ -159,33 +164,15 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                             <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                               <div className="flex items-center gap-2 mb-3">
                                 <Icon icon="mdi:map-marker-path" className="w-5 h-5 text-blue-400" />
-                                <h3 className="text-white font-semibold text-sm">경로 예측 상세 근거</h3>
+                                <h3 className="text-white font-semibold text-sm">{t('captureList.routeRationale.title')}</h3>
                               </div>
                               <ul className="space-y-1.5 text-sm">
-                                <li className="flex items-start gap-2 text-gray-300">
-                                  <span className="text-gray-500 mt-1">•</span>
-                                  <span>마지막 프레임 기준 북동 방향을 유지하며 이동 중임.</span>
-                                </li>
-                                <li className="flex items-start gap-2 text-gray-300">
-                                  <span className="text-gray-500 mt-1">•</span>
-                                  <span>정지나 급가속 없이 평균 보행 속도 범위를 안정적으로 유지함.</span>
-                                </li>
-                                <li className="flex items-start gap-2 text-gray-300">
-                                  <span className="text-gray-500 mt-1">•</span>
-                                  <span>하천 산책로 및 보행자 전용 동선과 직접 연결되는 구간임.</span>
-                                </li>
-                                <li className="flex items-start gap-2 text-gray-300">
-                                  <span className="text-gray-500 mt-1">•</span>
-                                  <span>인접 CCTV 3대의 커버리지가 중첩되는 구간으로 연속 추적이 용이함.</span>
-                                </li>
-                                <li className="flex items-start gap-2 text-gray-300">
-                                  <span className="text-gray-500 mt-1">•</span>
-                                  <span>특정 지점에서 체류한 후, 기존 이동 방향을 유지하여 이탈하는 패턴을 반복함.</span>
-                                </li>
-                                <li className="flex items-start gap-2 text-gray-300">
-                                  <span className="text-gray-500 mt-1">•</span>
-                                  <span>해당 시간대 유사 사례 분석 시, 하천 방향으로 이동하는 비중이 통계적으로 높음.</span>
-                                </li>
+                                {(t('captureList.routeRationale.items', { returnObjects: true }) as string[]).map((line, i) => (
+                                  <li key={i} className="flex items-start gap-2 text-gray-300">
+                                    <span className="text-gray-500 mt-1">•</span>
+                                    <span>{line}</span>
+                                  </li>
+                                ))}
                               </ul>
                             </div>
                           </div>
@@ -203,7 +190,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                           <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                             <div className="flex items-center gap-2 mb-2">
                               <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-400" />
-                              <h4 className="text-white font-semibold text-sm">1. 한 줄 결론</h4>
+                              <h4 className="text-white font-semibold text-sm">{t('captureList.analysis.conclusionTitle')}</h4>
                             </div>
                             <p className="text-gray-300 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedCapture.analysisResult.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                           </div>
@@ -212,28 +199,28 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                           <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                             <div className="flex items-center gap-2 mb-2">
                               <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-400" />
-                              <h4 className="text-white font-semibold text-sm">2. 사건 요약</h4>
+                              <h4 className="text-white font-semibold text-sm">{t('captureList.analysis.summaryTitle')}</h4>
                             </div>
                             <div className="space-y-1.5 text-sm">
                               <div className="text-gray-300">
-                                <span className="text-gray-400">- 관측 시간대:</span> {selectedCapture.analysisResult.summary.time}
+                                <span className="text-gray-400">- {t('captureList.analysis.time')}:</span> {selectedCapture.analysisResult.summary.time}
                               </div>
                               <div className="text-gray-300">
-                                <span className="text-gray-400">- 위치/카메라:</span> {selectedCapture.analysisResult.summary.location}
+                                <span className="text-gray-400">- {t('captureList.analysis.location')}:</span> {selectedCapture.analysisResult.summary.location}
                               </div>
                               <div className="text-gray-300">
-                                <span className="text-gray-400">- 대상 인물(추정):</span> {selectedCapture.analysisResult.summary.personnel}
+                                <span className="text-gray-400">- {t('captureList.analysis.personnel')}:</span> {selectedCapture.analysisResult.summary.personnel}
                               </div>
                               {selectedCapture.analysisResult.summary.features && (
                                 <div className="text-gray-300">
-                                  <span className="text-gray-400">- 주요 특징:</span> {selectedCapture.analysisResult.summary.features}
+                                  <span className="text-gray-400">- {t('captureList.analysis.features')}:</span> {selectedCapture.analysisResult.summary.features}
                                 </div>
                               )}
                               <div className="text-gray-300">
-                                <span className="text-gray-400">- 행동 상태:</span> {selectedCapture.analysisResult.summary.status}
+                                <span className="text-gray-400">- {t('captureList.analysis.status')}:</span> {selectedCapture.analysisResult.summary.status}
                               </div>
                               <div className="text-gray-300">
-                                <span className="text-gray-400">- 위험도:</span> <span dangerouslySetInnerHTML={{ __html: selectedCapture.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                                <span className="text-gray-400">- {t('captureList.analysis.riskLevel')}:</span> <span dangerouslySetInnerHTML={{ __html: selectedCapture.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                               </div>
                             </div>
                           </div>
@@ -242,7 +229,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                           <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                             <div className="flex items-center gap-2 mb-2">
                               <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-400" />
-                              <h4 className="text-white font-semibold text-sm">3. 관측 근거 (요약)</h4>
+                              <h4 className="text-white font-semibold text-sm">{t('captureList.analysis.evidenceTitle')}</h4>
                             </div>
                             <ul className="space-y-1.5">
                               {selectedCapture.analysisResult.evidence.map((item, idx) => (
@@ -258,7 +245,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                     ) : (
                       <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-6 flex flex-col items-center justify-center text-gray-400" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                         <Icon icon="mdi:information-outline" className="w-12 h-12 mb-3 opacity-50" />
-                        <p className="text-sm">분석 결과가 없습니다.</p>
+                        <p className="text-sm">{t('captureList.noAnalysis')}</p>
                       </div>
                     )}
                   </div>
@@ -296,7 +283,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
               {/* 총 포착 개수 칩 */}
               <div className="px-4 py-2 rounded-full text-xs font-medium bg-[#0f0f0f]/50 text-gray-300 flex items-center gap-2 border border-[#31353a]" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                <span>총 포착: {captureItems.length}건</span>
+                <span>{t('captureList.totalCaptures', { count: captureItems.length })}</span>
               </div>
               
             
@@ -328,11 +315,11 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                   setShowPropagationPopup(true);
                 }}
                 className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all text-white bg-blue-500 hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-500/20 border border-blue-400/50"
-                aria-label="전파 패키지 생성"
+                aria-label={t('captureList.createBroadcastPackage')}
               >
                 <div className="flex items-center gap-1.5">
                   <Icon icon="mdi:package-variant-closed" className="w-3.5 h-3.5" />
-                  <span>전파 패키지 생성</span>
+                  <span>{t('captureList.createBroadcastPackage')}</span>
                 </div>
               </button>
             </div>
@@ -352,9 +339,9 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                   <div className="w-20 h-20 rounded-full bg-[#0f0f0f]/50 border border-[#31353a] flex items-center justify-center mb-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <Icon icon="mdi:camera-off" className="w-10 h-10 opacity-50" />
                   </div>
-                  <p className="text-sm font-medium text-gray-300">포착된 대상이 없습니다.</p>
+                  <p className="text-sm font-medium text-gray-300">{t('captureList.empty')}</p>
                   <p className="text-xs mt-2 text-gray-500 text-center max-w-xs">
-                    객체 추적 중 CCTV 라이브에서 "대상 포착" 버튼을 눌러 포착하세요.
+                    {t('captureList.emptyHint')}
                   </p>
                 </div>
               ) : (
@@ -370,7 +357,7 @@ const CaptureListPanel: React.FC<CaptureListPanelProps> = ({
                         {/* 추적 핀 번호 뱃지 */}
                         {item.trackingPinNumber && (
                           <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded text-[10px] font-bold bg-red-500/90 text-white">
-                            {item.trackingPinNumber}번 핀
+                            {t('captureList.pinNumber', { number: item.trackingPinNumber })}
                           </div>
                         )}
 

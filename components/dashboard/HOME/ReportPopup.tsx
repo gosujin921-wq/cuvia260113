@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import { Event } from '@/types';
 
 const REPORT_POPUP_IMAGE_SRC = '/people.jpg';
@@ -29,6 +30,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   imageSrc,
   infoContent,
 }) => {
+  const { t } = useTranslation();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [imageError, setImageError] = useState(false);
@@ -94,7 +96,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors focus:outline-none"
-            aria-label="닫기"
+            aria-label={t('common.close')}
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
           </button>
@@ -115,7 +117,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   <img
                     ref={imgRef}
                     src={imageSrc || REPORT_POPUP_IMAGE_SRC}
-                    alt="신고 대상 인물"
+                    alt={t('reportPopup.imageAlt')}
                     className={`w-full h-full object-cover object-center transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     fetchPriority="high"
                     onLoad={() => setImageLoaded(true)}
@@ -131,16 +133,16 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
             ) : (
               <div className="flex-1 text-gray-200 min-w-0 space-y-3">
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">이름/나이</div>
-                  <div className="text-base font-semibold text-white">김도연 / 22세 (남)</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('reportPopup.nameAge')}</div>
+                  <div className="text-base font-semibold text-white">{t('reportPopup.subjectName')}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">인상착의</div>
-                  <div className="text-sm text-gray-200 leading-relaxed">회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg.</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('reportPopup.description')}</div>
+                  <div className="text-sm text-gray-200 leading-relaxed">{t('reportPopup.subjectDescription')}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">실종 장소/시간</div>
-                  <div className="text-sm text-gray-200">은하로363번길 48, 09:30경</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('reportPopup.locationTime')}</div>
+                  <div className="text-sm text-gray-200">{t('reportPopup.subjectLocationTime')}</div>
                 </div>
               </div>
             )}
@@ -150,7 +152,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
           {!infoContent && (
             <div className="mb-3 rounded-lg p-3 bg-red-500/20 border border-red-500/60">
               <div className="text-sm font-semibold text-red-400">
-                장애 있음. 긴급 수색 요망.
+                {t('reportPopup.urgentNotice')}
               </div>
             </div>
           )}
@@ -170,7 +172,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
               }}
             >
               <Icon icon="mdi:magnify" className="w-4 h-4" />
-              <span>고속검색 시작</span>
+              <span>{t('reportPopup.startFastSearch')}</span>
             </button>
           )}
         </div>

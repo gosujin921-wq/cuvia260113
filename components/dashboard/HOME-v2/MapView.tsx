@@ -2,6 +2,7 @@ import { Event } from '@/types';
 import { Icon } from '@iconify/react';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import i18n from '@/src/i18n';
 import { getCCTVIconClassName, getCCTVLabelClassName, getPrimaryButtonClassName } from '@/components/shared/styles';
 import CCTVIcon from '@/components/common/CCTVIcon';
 import maplibregl from 'maplibre-gl';
@@ -1200,10 +1201,14 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       centerWrapper.appendChild(markerEl);
       markerContainer.appendChild(centerWrapper);
       
-      // 주소 라벨: 1번키 이벤트는 은하로363번길 48 고정, 그 외는 이벤트 주소
+      // 주소 라벨: 1번키 이벤트는 영문 모드에서 짧은 영문, 그 외는 이벤트 주소
       const isEvent1 = selectedEventId === 'A-20260107-004';
       const selectedEvent = events.find(e => e.id === selectedEventId || e.eventId === selectedEventId);
-      const labelAddress = isEvent1 ? '은하로363번길 48' : (selectedEvent?.location?.name ?? '사건 발생 지점');
+      const isEN = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+      const fallbackLabel = isEN ? 'Incident location' : '사건 발생 지점';
+      const labelAddress = isEvent1
+        ? (isEN ? '48 Galaxy St' : '은하로363번길 48')
+        : (selectedEvent?.location?.name ?? fallbackLabel);
       const labelEl = document.createElement('div');
       labelEl.style.cssText = `
         margin-top: 8px;
@@ -1215,7 +1220,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         z-index: 140;
       `;
       labelEl.innerHTML = `
-        <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">사건 발생 지점</div>
+        <div style="font-size: 10px; color: #9ca3af; margin-bottom: 2px;">${isEN ? 'Incident location' : '사건 발생 지점'}</div>
         <div style="font-size: 12px; font-weight: 600; color: white;">${labelAddress}</div>
       `;
       markerContainer.appendChild(labelEl);
@@ -1573,48 +1578,53 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       return offsets;
     };
     
-    // CCTV 그룹 정의
+    // CCTV 그룹 정의 — 영문 모드에서는 짧은 영문 prefix와 cam 라벨 사용
+    const isENMap = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+    const cctvName = (suffix: string) => isENMap ? `STAR-${suffix}` : `별빛${suffix}`;
+    const detLabel = (n: number) => isENMap ? `Det.${n}` : `검지${n}`;
+    const fixedLabel = (n: number) => isENMap ? `Cam${n}` : `고정${n}`;
+    const detStarLabel = (n: number) => isENMap ? `Det.${n}` : `검지${n} 별빛`;
     const cctvGroups = [
       {
         id: 'A-230',
-        name: '별빛A-230',
+        name: cctvName('A-230'),
         location: [126.996951819665, 37.435964588524],
-        cameras: ['고정1', '고정2', '고정3', '고정4'],
+        cameras: [fixedLabel(1), fixedLabel(2), fixedLabel(3), fixedLabel(4)],
         directions: [0, 90, 180, 270]
       },
       {
         id: 'A-444',
-        name: '별빛A-444',
+        name: cctvName('A-444'),
         location: [126.995526419665, 37.435305588524],
-        cameras: ['검지1', '검지2', '검지3'],
+        cameras: [detLabel(1), detLabel(2), detLabel(3)],
         directions: [45, 135, 225]
       },
       {
         id: 'A-481',
-        name: '별빛A-481',
+        name: cctvName('A-481'),
         location: [126.995523619665, 37.434353188524],
-        cameras: ['검지1', '검지2', '검지3', '검지4'],
+        cameras: [detLabel(1), detLabel(2), detLabel(3), detLabel(4)],
         directions: [0, 90, 180, 270]
       },
       {
         id: 'A-498',
-        name: '별빛A-498',
+        name: cctvName('A-498'),
         location: [126.997050219665, 37.434564088524],
-        cameras: ['검지1', '검지2', '검지3', '검지4'],
+        cameras: [detLabel(1), detLabel(2), detLabel(3), detLabel(4)],
         directions: [45, 135, 225, 315]
       },
       {
         id: 'A-583',
-        name: '별빛A-583',
+        name: cctvName('A-583'),
         location: [126.996643419665, 37.436018988524],
-        cameras: ['검지1 별빛', '검지2 별빛', '검지3 별빛'],
+        cameras: [detStarLabel(1), detStarLabel(2), detStarLabel(3)],
         directions: [60, 150, 240]
       },
       {
         id: 'A-604',
-        name: '별빛A-604',
+        name: cctvName('A-604'),
         location: [126.998518919665, 37.435040988524],
-        cameras: ['검지1', '검지2'],
+        cameras: [detLabel(1), detLabel(2)],
         directions: [90, 270]
       }
     ];
@@ -1857,11 +1867,17 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       oldPoliceMarkers.forEach((m: maplibregl.Marker) => m.remove());
     }
     
-    const policeStationLocations = [
-      { location: [126.997906819665, 37.436486188524] as [number, number], name: '별빛파출소' },
-      { location: [126.994206819665, 37.434286188524] as [number, number], name: '은하지구대' },
-      { location: [126.998706819665, 37.434586188524] as [number, number], name: '별빛경찰서' },
-    ];
+    const policeStationLocations = isENMap
+      ? [
+          { location: [126.997906819665, 37.436486188524] as [number, number], name: 'Star Police Box' },
+          { location: [126.994206819665, 37.434286188524] as [number, number], name: 'Galaxy Substation' },
+          { location: [126.998706819665, 37.434586188524] as [number, number], name: 'Star Police HQ' },
+        ]
+      : [
+          { location: [126.997906819665, 37.436486188524] as [number, number], name: '별빛파출소' },
+          { location: [126.994206819665, 37.434286188524] as [number, number], name: '은하지구대' },
+          { location: [126.998706819665, 37.434586188524] as [number, number], name: '별빛경찰서' },
+        ];
     
     const policeMarkerList: maplibregl.Marker[] = [];
     
@@ -1926,10 +1942,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     if (oldFireMarkers) {
       oldFireMarkers.forEach((m: maplibregl.Marker) => m.remove());
     }
-    const fireStationLocations = [
-      { location: [126.9935, 37.4375] as [number, number], name: '별빛소방서' },
-      { location: [126.9995, 37.4325] as [number, number], name: '은하소방서' },
-    ];
+    const fireStationLocations = isENMap
+      ? [
+          { location: [126.9935, 37.4375] as [number, number], name: 'Star Fire Station' },
+          { location: [126.9995, 37.4325] as [number, number], name: 'Galaxy Fire Station' },
+        ]
+      : [
+          { location: [126.9935, 37.4375] as [number, number], name: '별빛소방서' },
+          { location: [126.9995, 37.4325] as [number, number], name: '은하소방서' },
+        ];
     const fireMarkerList: maplibregl.Marker[] = [];
     fireStationLocations.forEach((station) => {
       const container = document.createElement('div');

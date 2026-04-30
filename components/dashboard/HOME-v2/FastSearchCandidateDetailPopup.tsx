@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 import {
   getCandidateDetailData,
@@ -36,6 +37,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
   onAddCapture,
   autoCapture = false,
 }) => {
+  const { t, i18n } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'timeline' | 'detail'>('timeline');
@@ -463,7 +465,9 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
     
     setIsCaptureAnimating(true);
     
-    const captureMenuButton = document.querySelector('[aria-label="포착목록"]');
+    // 포착목록 메뉴 버튼은 LeftMenuPanel에서 id="capture-list-menu" 로 마킹됨.
+    // aria-label은 다국어로 바뀔 수 있으므로 id를 우선 사용한다.
+    const captureMenuButton = document.getElementById('capture-list-menu');
     let endX = 40;
     let endY = 250;
     if (captureMenuButton) {
@@ -529,6 +533,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
 
   if (!isOpen || !candidate) return null;
 
+  // i18n.language를 클로저에 캡쳐해 언어 전환 시 detail이 재계산되도록 함
+  void i18n.language;
   const imageId = getImageIdFromCaptureItem(candidate);
   const detail = getCandidateDetailData(imageId, {
     cameraId: candidate.cctvId,
@@ -551,7 +557,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] px-6"
       role="dialog"
       aria-modal="true"
-      aria-label="고속검색 후보 상세"
+      aria-label={t('candidateDetail.dialogAriaLabel')}
       onClick={handleOverlayClick}
     >
       <div
@@ -576,10 +582,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               <span className="text-gray-300 text-sm truncate">{candidate.location}</span>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-              <span className="text-gray-400">시간 범위</span>
+              <span className="text-gray-400">{t('candidateDetail.timeRange')}</span>
               <span className="text-gray-300">{timeRange}</span>
               <span className="text-gray-500">|</span>
-              <span className="text-gray-400">유사도</span>
+              <span className="text-gray-400">{t('candidateDetail.similarity')}</span>
               <span className="text-white font-semibold">{candidate.confidence}%</span>
               <div
                 className="h-2 rounded-full bg-[#0f0f0f] overflow-hidden border border-[#31353a]"
@@ -600,7 +606,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
-            aria-label="닫기"
+            aria-label={t('common.close')}
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
           </button>
@@ -618,7 +624,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
               <SharedVideoPlayer
                 src={videoSrc}
                 videoRef={videoRef}
-                ariaLabel="캡처 구간 클립"
+                ariaLabel={t('candidateDetail.clipAriaLabel')}
                 onEnded={() => {
                   const v = videoRef.current;
                   if (!v) return;
@@ -688,7 +694,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                         left: '0px',
                       }}
                     >
-                      {scaledWidth < 100 ? '95%' : '유사도 95%'}
+                      {scaledWidth < 100 ? '95%' : t('candidateDetail.similarityLabel', { percent: 95 })}
                     </div>
                   </div>
                 );
@@ -723,7 +729,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                         type="button"
                         onClick={togglePlayPause}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label={isPlaying ? '일시정지' : '재생'}
+                        aria-label={isPlaying ? t('candidateDetail.video.pause') : t('candidateDetail.video.play')}
                       >
                         <Icon icon={isPlaying ? 'mdi:pause' : 'mdi:play'} className="w-6 h-6" />
                       </button>
@@ -733,7 +739,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                         type="button"
                         onClick={skipBackward}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label="10초 뒤로"
+                        aria-label={t('candidateDetail.video.rewind10')}
                       >
                         <Icon icon="mdi:rewind-10" className="w-5 h-5" />
                       </button>
@@ -743,7 +749,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                         type="button"
                         onClick={skipForward}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label="10초 앞으로"
+                        aria-label={t('candidateDetail.video.forward10')}
                       >
                         <Icon icon="mdi:fast-forward-10" className="w-5 h-5" />
                       </button>
@@ -778,7 +784,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                         type="button"
                         onClick={toggleFullscreen}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label={isFullscreen ? '전체화면 해제' : '전체화면'}
+                        aria-label={isFullscreen ? t('candidateDetail.video.fullscreenExit') : t('candidateDetail.video.fullscreen')}
                       >
                         <Icon icon={isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'} className="w-5 h-5" />
                       </button>
@@ -792,7 +798,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-3" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
               <div className="flex items-center gap-2 mb-2">
                 <Icon icon="mdi:eye-outline" className="w-4 h-4 text-purple-400" />
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">관찰 요약</h3>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t('candidateDetail.observationSummary')}</h3>
               </div>
               <p className="text-sm text-gray-300 leading-relaxed">{detail.observationSummary}</p>
             </div>
@@ -822,7 +828,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                       : 'text-gray-500 hover:text-gray-400'
                   }`}
                 >
-                  시간 기반 관찰 기록
+                  {t('candidateDetail.tab.timeline')}
                 </button>
                 <button
                   id="detail-tab-button"
@@ -834,7 +840,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                       : 'text-gray-500 hover:text-gray-400'
                   }`}
                 >
-                  후보 메타 정보
+                  {t('candidateDetail.tab.meta')}
                 </button>
               </div>
             </div>
@@ -904,11 +910,11 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                 <div className="space-y-2.5">
                   {/* 후보 메타정보 - 카드 형태 */}
                   {[
-                    { icon: 'mdi:cctv', label: '카메라 ID', value: detail.meta.cameraId },
-                    { icon: 'mdi:account-outline', label: '감지 객체', value: detail.meta.detectedObject },
-                    { icon: 'mdi:palette-outline', label: '주요 속성', value: detail.meta.mainAttributes },
-                    { icon: 'mdi:walk', label: '행동 특징', value: detail.meta.behavior },
-                    { icon: 'mdi:arrow-right-bold', label: '이탈 방향', value: detail.meta.exitDirection },
+                    { icon: 'mdi:cctv', label: t('candidateDetail.meta.cameraId'), value: detail.meta.cameraId },
+                    { icon: 'mdi:account-outline', label: t('candidateDetail.meta.detectedObject'), value: detail.meta.detectedObject },
+                    { icon: 'mdi:palette-outline', label: t('candidateDetail.meta.mainAttributes'), value: detail.meta.mainAttributes },
+                    { icon: 'mdi:walk', label: t('candidateDetail.meta.behavior'), value: detail.meta.behavior },
+                    { icon: 'mdi:arrow-right-bold', label: t('candidateDetail.meta.exitDirection'), value: detail.meta.exitDirection },
                   ].map((item, idx) => (
                     <div key={idx} id={idx === 0 ? 'candidate-meta-info' : undefined} className="bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg p-3 hover:bg-[#323232] transition-colors">
                       <div className="flex items-start gap-3">
@@ -930,8 +936,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                     >
                       <Icon icon="mdi:star-outline" className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs text-gray-400 mb-1">유사도</div>
-                        <div className="text-sm text-white">{detail.meta.score}점</div>
+                        <div className="text-xs text-gray-400 mb-1">{t('candidateDetail.similarity')}</div>
+                        <div className="text-sm text-white">{t('predictedCCTV.score', { score: detail.meta.score })}</div>
                       </div>
                       <Icon 
                         icon={isSimilarityOpen ? "mdi:chevron-up" : "mdi:chevron-down"} 
@@ -949,10 +955,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                           <div className="bg-[#1a1a1a]/50 rounded overflow-hidden">
                             {/* 테이블 헤더 */}
                             <div className="grid grid-cols-4 gap-2 bg-[#0f0f0f] p-3 border-b border-[#3a3a3a]">
-                              <div className="text-xs text-gray-400 font-medium">항목</div>
-                              <div className="text-xs text-gray-400 font-medium">실종자 정보</div>
-                              <div className="text-xs text-gray-400 font-medium">포착 인물 정보</div>
-                              <div className="text-xs text-gray-400 font-medium text-center">일치 여부</div>
+                              <div className="text-xs text-gray-400 font-medium">{t('candidateDetail.similarityTable.category')}</div>
+                              <div className="text-xs text-gray-400 font-medium">{t('candidateDetail.similarityTable.missing')}</div>
+                              <div className="text-xs text-gray-400 font-medium">{t('candidateDetail.similarityTable.captured')}</div>
+                              <div className="text-xs text-gray-400 font-medium text-center">{t('candidateDetail.similarityTable.match')}</div>
                             </div>
                             
                             {/* 테이블 바디 */}
@@ -969,15 +975,15 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                                 <div className="flex items-center justify-center">
                                   {item.match === 'special' ? (
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                                      특이점
+                                      {t('candidateDetail.similarityTable.special')}
                                     </span>
                                   ) : item.match ? (
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
-                                      일치
+                                      {t('candidateDetail.similarityTable.matched')}
                                     </span>
                                   ) : (
                                     <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
-                                      불일치
+                                      {t('candidateDetail.similarityTable.unmatched')}
                                     </span>
                                   )}
                                 </div>
@@ -987,8 +993,8 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                           
                           {/* 최종 유사도 */}
                           <div className="bg-blue-500/10 border border-blue-500/30 rounded p-3 flex items-center justify-between mt-3">
-                            <span className="text-sm text-blue-300 font-semibold">최종 유사도</span>
-                            <span className="text-base text-blue-400 font-bold">{detail.meta.score}점</span>
+                            <span className="text-sm text-blue-300 font-semibold">{t('candidateDetail.finalSimilarity')}</span>
+                            <span className="text-base text-blue-400 font-bold">{t('predictedCCTV.score', { score: detail.meta.score })}</span>
                           </div>
                         </div>
                       </>
@@ -1010,10 +1016,10 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
             style={{
               background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             }}
-            aria-label="대상 포착"
+            aria-label={t('candidateDetail.captureTarget')}
           >
             <Icon icon="mdi:account-check" className="w-3.5 h-3.5" />
-            대상 포착
+            {t('candidateDetail.captureTarget')}
           </button>
         </div>
       </div>
@@ -1032,7 +1038,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
         >
           <img
             src={flyingThumbnail.imageData}
-            alt="캡처 썸네일"
+            alt={t('candidateDetail.captureThumbnailAlt')}
             className="w-32 h-20 object-cover rounded-lg shadow-2xl"
             style={{
               boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',

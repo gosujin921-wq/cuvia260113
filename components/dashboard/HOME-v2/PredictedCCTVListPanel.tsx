@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import PredictedCCTVDetailPopup from './PredictedCCTVDetailPopup';
 
 interface PredictedCCTVListPanelProps {
@@ -188,11 +189,33 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
   closeCCTVPopupSignal,
   autoCapture = false,
 }) => {
+  const { t, i18n } = useTranslation();
   const [selectedCCTV, setSelectedCCTV] = useState<PredictedCCTVItem | null>(null);
   const sortOption = 'confidence' as const;
   const radius = 100;
-  
+
   const hoveredCCTVId = externalHoveredCCTVId;
+
+  // 영문 모드에서는 mock CCTV 카드 데이터의 한국어 명칭/주소를 짧은 영문으로 치환
+  const isEN = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+  const localizeCCTVName = (name: string) => isEN ? name.replace(/^별빛/, 'STAR-') : name;
+  const localizeLocation = (loc: string) => {
+    if (!isEN) return loc;
+    // 자주 등장하는 거리명 매핑
+    return loc
+      .replace(/달빛로301번길 28/g, '28 Moonlight St')
+      .replace(/달빛로301번길 54/g, '54 Moonlight St')
+      .replace(/은하로363번길 48/g, '48 Galaxy St')
+      .replace(/은하로391번길 29/g, '29 Galaxy St');
+  };
+  const PREDICTED_CCTV_DATA_LOCALIZED = React.useMemo(() => {
+    return PREDICTED_CCTV_DATA.map(item => ({
+      ...item,
+      cctvName: localizeCCTVName(item.cctvName),
+      location: localizeLocation(item.location),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
   React.useEffect(() => {
     if (closeCCTVPopupSignal && closeCCTVPopupSignal > 0) {
@@ -202,7 +225,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
 
   React.useEffect(() => {
     if (!openCCTVId || !isVisible) return;
-    const cctv = PREDICTED_CCTV_DATA.find(item => item.id === openCCTVId);
+    const cctv = PREDICTED_CCTV_DATA_LOCALIZED.find(item => item.id === openCCTVId);
     if (cctv) {
       setSelectedCCTV(cctv);
       if (onCCTVOpened) onCCTVOpened();
@@ -243,7 +266,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                   className="px-4 py-2 rounded-full text-xs font-medium bg-[#1a1a1a] text-gray-300 flex items-center gap-2 border border-[#31353a] select-none cursor-default"
                 >
                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                  <span>반경: {radius}m</span>
+                  <span>{t('predictedCCTV.radius', { radius })}</span>
                   <Icon icon="mdi:chevron-down" className="w-4 h-4" />
                 </div>
                 
@@ -255,7 +278,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                   className="px-4 py-2 rounded-full text-xs font-medium bg-[#1a1a1a] text-gray-300 flex items-center gap-2 border border-[#31353a] select-none cursor-default"
                 >
                   <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                  <span>정렬: {sortOption === 'confidence' ? '신뢰도순' : sortOption === 'distance' ? '거리순' : '시간순'}</span>
+                  <span>{t('predictedCCTV.sort', { value: sortOption === 'confidence' ? t('predictedCCTV.sortConfidence') : sortOption === 'distance' ? t('predictedCCTV.sortDistance') : t('predictedCCTV.sortTime') })}</span>
                   <Icon icon="mdi:chevron-down" className="w-4 h-4" />
                 </div>
                 
@@ -285,7 +308,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
               }}
             >
               <div className="grid grid-cols-3 gap-3" style={{ minHeight: 'min-content' }}>
-                {PREDICTED_CCTV_DATA.map((item) => (
+                {PREDICTED_CCTV_DATA_LOCALIZED.map((item) => (
                   <div
                     key={item.id}
                     id={item.id === '4' ? 'predicted-cctv-7' : undefined}
@@ -317,7 +340,7 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
                         {item.cctvName}
                       </div>
                       <span className="flex-shrink-0 px-1.5 py-0.5 rounded bg-blue-500/20 text-[10px] text-blue-400 font-semibold leading-none">
-                        {item.confidence}점
+                        {t('predictedCCTV.score', { score: item.confidence })}
                       </span>
                     </div>
                   </div>

@@ -1,6 +1,10 @@
 /**
  * 예측 CCTV 상세 정보
+ *
+ * 한/영 두 가지 언어 세트를 함께 가지고 있으며,
+ * `getPredictedCCTVDetail(thumbnailUrl, lang)`을 통해 현재 언어 기준 데이터를 반환한다.
  */
+import i18n from '@/src/i18n';
 
 /** AI 유사사유 판독 (별빛A-655 등 차량 추적 시나리오용) */
 export interface AiSimilarityAnalysis {
@@ -30,7 +34,7 @@ export interface PredictedCCTVDetail {
   aiSimilarityAnalysis?: AiSimilarityAnalysis;
 }
 
-export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
+const PREDICTED_CCTV_DETAILS_KO: Record<string, PredictedCCTVDetail> = {
   'qs_img_05_n': {
     objectAttributes: '어두운색 외투, 파란색 우산 소지, 보행자 우선도로 이동',
     expectedDistance: '약 18m (이전 위치 기준)',
@@ -194,15 +198,191 @@ export const PREDICTED_CCTV_DETAILS: Record<string, PredictedCCTVDetail> = {
   },
 };
 
-export const getPredictedCCTVDetail = (thumbnailUrl: string): PredictedCCTVDetail | null => {
+/** 영문 데이터 세트. 위 한국어 세트와 동일한 키를 가지며, 화면에 노출되는 모든 텍스트 필드를 영문으로 제공한다. */
+const PREDICTED_CCTV_DETAILS_EN: Record<string, PredictedCCTVDetail> = {
+  'qs_img_05_n': {
+    objectAttributes: 'Dark coat, blue umbrella, walking on a pedestrian-priority road',
+    expectedDistance: 'About 18m (from previous location)',
+    movementTrend: 'Northbound (toward upper edge of frame)',
+    expectedArrivalTime: '10:30:45 (now +35s)',
+    routeFitScore: 15,
+    detailedAnalysis: {
+      movementDirection: 'Pattern observed at STAR-A230 (Love Church red pedestrian-priority road): paused next to a sign, then exited toward the upper edge of the frame. Northbound exit was sustained, so the next northern segment is a likely entry. Direction fits well.',
+      movementSpeed: 'At STAR-A230, a brief pause for phone use was followed by resumed walking. If the same pattern holds, movement is expected to stay within average walking speed — reflected in the route fit.',
+      pathStructure: 'Red pedestrian-priority section near "Ibadohae" with high pedestrian friendliness.',
+      cctvLinkage: 'Coverage overlaps with 3 fixed CCTVs near Love Church, enabling continuous tracking.',
+      similarCases: 'Pedestrians at this time of day typically head toward the church main gate or Yakdae Police Box.',
+    },
+  },
+  'qs_img_11_n': {
+    objectAttributes: 'Light gray top, patterned transparent umbrella, white sneakers',
+    expectedDistance: 'About 12m',
+    movementTrend: 'Northwest (steady walk toward upper edge of frame)',
+    expectedArrivalTime: '10:31:20 (now +15s)',
+    routeFitScore: 75,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A230 (Love Church side road): walked from lower-right toward the central road with umbrella, then exited toward the upper edge of frame. Exit direction was consistent, so northwestern segment entry is likely. Direction fits.',
+      movementSpeed: 'Maintained a steady pace under umbrella at STAR-A230. ~4km/h walking pace expected to continue, matching the speed-fit criteria.',
+      pathStructure: 'Wet side road where bus and pedestrian lanes overlap.',
+      cctvLinkage: 'Adjacent fixed-cam #4 is ~15m away, enabling smooth tracking.',
+      similarCases: 'On rainy days, pedestrians prefer eaves of buildings or shortest paths.',
+    },
+  },
+  'qs_img_15_n': {
+    objectAttributes: 'White large padded jacket, black bottoms, walking while using phone',
+    expectedDistance: 'About 25m',
+    movementTrend: 'Southwest (using crosswalk at lower-left of frame)',
+    expectedArrivalTime: '10:32:30 (now +29s)',
+    routeFitScore: 30,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A230 (Love Church four-way intersection): crossed diagonally at the crosswalk in front of "Sohan Realty," then exited toward lower-left (southwest). Crossing direction and exit direction connect, so southwestern segment entry is likely. Direction fits.',
+      movementSpeed: 'Slower walking observed even while crossing, due to phone gazing. If the pattern continues, below-average speed is expected — reflected in the route fit.',
+      pathStructure: 'Four-way intersection in a dense storefront area, directly connected to the crosswalk.',
+      cctvLinkage: 'Linking with shop CCTVs (e.g., "Sohan Realty") minimizes blind spots.',
+      similarCases: 'This area is a primary pedestrian path toward Chunui Stn or large shopping centers.',
+    },
+  },
+  'qs_img_21_y': {
+    objectAttributes: 'Gray hoodie, dark pants, using phone with both hands',
+    expectedDistance: 'About 20m',
+    movementTrend: 'Northeast (moving forward along the road beside the vehicle)',
+    expectedArrivalTime: '10:33:30 (now +25s)',
+    routeFitScore: 95,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A444 (road next to a silver vehicle): used phone with both hands while exiting toward the upper edge of frame in a northeasterly direction. Northeast exit was sustained, so the next northeastern alley segment is a likely entry. Direction fits.',
+      movementSpeed: 'Below-average pace observed at STAR-A444 due to two-handed phone use. If the pattern persists, slow walking is expected to continue, matching the speed-fit criteria.',
+      pathStructure: 'Typical residential alley with resident-priority parking and small shops.',
+      cctvLinkage: 'Adjacent detector #2 (qs_img_25) connects in a straight line with the walking path.',
+      similarCases: 'Sections like this carry a higher risk of pedestrian-vehicle conflict during phone use.',
+    },
+  },
+  'qs_img_25_y': {
+    objectAttributes: 'Gray hoodie, blue jeans, head down focused on phone',
+    expectedDistance: 'About 15m',
+    movementTrend: 'Southwest (approaching the camera head-on)',
+    expectedArrivalTime: '10:34:10 (now +20s)',
+    routeFitScore: 98,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A444 (near a yellow utility post): walked slowly along the center of the road, then exited toward the lower-front (southwest) of the camera. After head-down straight-line walking, the exit direction matched, so southwestern segment entry is likely. Direction fits.',
+      movementSpeed: 'Did not look around at STAR-A444 — focus was solely on the phone screen. Stable but somewhat slow speed expected to continue, reflected in the route fit.',
+      pathStructure: 'A bottleneck where many poles and posts narrow the walkway.',
+      cctvLinkage: 'High-resolution detector enables precise extraction of clothing attributes.',
+      similarCases: 'Resembles patterns where missing persons lose orientation and continue along a straight road.',
+    },
+  },
+  'qs_img_30_y': {
+    objectAttributes: 'Gray hoodie, slim build (back view), white sneakers',
+    expectedDistance: 'About 30m',
+    movementTrend: 'Northwest (straight-line walk along a one-way road)',
+    expectedArrivalTime: '10:34:50 (now +30s)',
+    routeFitScore: 96,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A481 (28 Moonlight St): entered the bottom of detector-1 frame, then exited toward the northwest (toward Moonlight St). If straight-line walking continues, northwestern segment entry is likely. Direction fits.',
+      movementSpeed: 'Held the phone while moving forward at a steady pace at STAR-A481. With no stops or sudden acceleration, average walking speed is expected to continue, matching the speed-fit criteria.',
+      pathStructure: 'Dense multi-family residential area directly connected to a pedestrian-only path.',
+      cctvLinkage: 'Three nearby CCTVs have overlapping coverage, making continuous tracking very easy.',
+      similarCases: 'Similar cases at this time of day tend to move toward the river (Gulpo Stream).',
+    },
+  },
+  'qs_img_40_y': {
+    objectAttributes: 'Gray hoodie, walking while checking phone, white sneakers',
+    expectedDistance: 'About 22m',
+    movementTrend: 'Northeast (continuing toward the road sign)',
+    expectedArrivalTime: '10:35:30 (now +20s)',
+    routeFitScore: 96,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A498 (near 54 Moonlight St): walked straight in the direction of the one-way arrow (toward upper edge of frame), then exited toward the northeast. The one-way direction and exit direction matched, so northeastern segment entry is likely. Direction fits.',
+      movementSpeed: 'Speed dropped only minimally even while gazing at the phone. If the same pattern continues, straight-line walking pace is expected to be sustained — reflected in the route fit.',
+      pathStructure: 'Narrow side road in front of a "specialty restaurant" with no clear walkway demarcation.',
+      cctvLinkage: 'Mounted on top of a road sign, providing a strong overhead view.',
+      similarCases: 'A spot where pedestrians often check phone maps to find their way.',
+    },
+  },
+  'qs_img_47_y': {
+    objectAttributes: 'Gray hoodie, gazing at phone screen, steady pace',
+    expectedDistance: 'About 19m',
+    movementTrend: 'Northwest (passing through a road near the crosswalk)',
+    expectedArrivalTime: '10:35:45 (now +35s)',
+    routeFitScore: 97,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A583 (near a crosswalk at 41 Sky Ave): used phone while moving along the center of the road toward the upper edge of frame, then exited toward the northwest. Northwest exit was sustained, so northwestern segment entry is likely. Direction fits.',
+      movementSpeed: 'Intermittent slowdowns observed at STAR-A583 due to phone typing. If the pattern continues, walking speed is expected to stay around average — matching the speed-fit criteria.',
+      pathStructure: 'Four-way section in front of "Chicken Bup Bup" with multiple possible movement paths.',
+      cctvLinkage: 'Mounted at the center of the intersection, capturing entries and exits in all 4 directions.',
+      similarCases: 'Many pedestrians here are heading to nearby convenience stores or cafés.',
+    },
+  },
+  'qs_img_51_y': {
+    objectAttributes: 'Gray hoodie, blue jeans, focused on two-handed phone use',
+    expectedDistance: 'About 14m',
+    movementTrend: 'Southwest (exiting toward the lower-front of the camera)',
+    expectedArrivalTime: '10:36:50 (now +30s)',
+    routeFitScore: 96,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A583 (road in front of a pharmacy): moved straight toward the camera, then exited toward the lower-front (southwest). Head-down forward motion and exit direction were consistent, so southwestern segment entry is likely. Direction fits.',
+      movementSpeed: 'Maintained a very steady pace even while focused on the phone at STAR-A583. If the same goal-directed pattern persists, the same speed is expected — reflected in the route fit.',
+      pathStructure: 'Dense pharmacy/clinic area with formal walkways made of paved blocks.',
+      cctvLinkage: 'Highest linkage with the final capture point CCTV #59.',
+      similarCases: 'Matches patterns where missing persons follow brightly lit shopping streets at night.',
+    },
+  },
+  'cnc_04_1': {
+    objectAttributes: 'Type: Vehicle (SUV class)\nColor: White\nDetails: Rear plate (014-jeo 4515) identifiable. Stationary, oriented away from camera (northwest). Matches a previously flagged vehicle in the watchlist database — 98% match in model and exterior features.',
+    expectedDistance: 'About 1.5km (straight-line distance from side road exit to junction with Cloud Ave)',
+    movementTrend: '[Risk] Subject B (victim) forced into vehicle; Subject A (perpetrator) boarded; rapid acceleration / departure imminent',
+    expectedArrivalTime: '16:55:20 (estimated to leave the surveillance area and merge onto the main road within ~3 minutes)',
+    routeFitScore: 96,
+    routeFitScoreText: '96 pts (very high match with forced removal / restraint scenarios)',
+    detailedAnalysis: {
+      movementDirection: 'After pushing Subject B into the rear-right seat, the vehicle is preparing to drive toward the vanishing point in the upper frame (northwest).',
+      movementSpeed: 'Currently stationary, but engine RPM rose immediately when doors closed — rapid acceleration / overspeed exit imminent.',
+      pathStructure: 'The 28 Moonlight St area is a narrow residential block with no separation between pedestrians and vehicles. Large vehicles rarely enter, making it easy to avoid third-party witnesses if a crime occurs.',
+      cctvLinkage: 'Upon exiting the STAR-A444 zone, automatically link and hand off to 12 CCTVs along Galaxy St and Moonlight St on the projected escape path.',
+      similarCases: '[Vehicle match] Partial plate 12* 324* matches the suspect vehicle in a "forced boarding (attempted)" case reported in the area within the last 24 hours.\n[Behavior match] An adult male pushing an elderly person into the rear seat after a sudden stop in a narrow alley matches typical kidnapping/confinement patterns.',
+      previousPath: 'Inferred to have entered from the Galaxy St side and made an emergency stop in the middle of the road as soon as the target (Subject B) was spotted.',
+    },
+    aiSimilarityAnalysis: {
+      vehicleIdentity: 'Vehicle identity: This vehicle (partial plate: 12* 3***) is visually identical in plate number and rear lamp shape to a "white SUV" recorded as a suspect in past serious crime reports.',
+      behaviorMechanism: 'Behavior mechanism: With ordinary assistance, a pedestrian boards the vehicle voluntarily. In this clip, however, Subject A is physically restraining Subject B\'s upper body and pushing them in.',
+      geographicSpecificity: 'Geographic specificity: Stopping in a high-risk blind-spot location (side road) closely matches professional crime patterns.',
+    },
+  },
+  'qs_img_59_y': {
+    objectAttributes: 'Gray hoodie, dark pants, on a phone call or using phone',
+    expectedDistance: 'About 18m',
+    movementTrend: 'Southeast (entering toward emart24)',
+    expectedArrivalTime: '10:37:20 (now +30s)',
+    routeFitScore: 92,
+    detailedAnalysis: {
+      movementDirection: 'Pattern at STAR-A604 (29 Galaxy St, convenience store): paused near the convenience store entrance, then exited toward the upper-center of frame. The exit direction was sustained, so the northern segment is a likely entry. Direction fits.',
+      movementSpeed: 'After loitering at the convenience store entrance (call/entry) at STAR-A604, walking resumed. Speed is expected to remain at a similar level after the pause — no sudden acceleration, so movement should stay within average walking speed, matching the speed-fit criteria.',
+      pathStructure: 'Open area in front of emart24 allowing multi-directional movement.',
+      cctvLinkage: 'Final capture point — additional CCTV linkage is required for further tracking.',
+      similarCases: 'Resembles patterns where missing persons rest at a convenience store at night and lose direction afterwards.',
+    },
+  },
+};
+
+/**
+ * 현재 i18n 언어에 맞춰 적절한 한/영 데이터 세트에서 항목을 조회한다.
+ * @param thumbnailUrl 검색 키로 쓰일 썸네일 URL
+ * @param lang 'ko' | 'en' (옵션) — 미지정 시 i18n.resolvedLanguage 사용
+ */
+export const getPredictedCCTVDetail = (thumbnailUrl: string, lang?: string): PredictedCCTVDetail | null => {
+  const resolvedLang = (lang || i18n.resolvedLanguage || i18n.language || 'ko').slice(0, 2);
+  const map = resolvedLang === 'en' ? PREDICTED_CCTV_DETAILS_EN : PREDICTED_CCTV_DETAILS_KO;
+
   // hijacking/cnc_04_1.mp4 등 (객체추적 2키 featured 영상)
   const cncMatch = thumbnailUrl.match(/cnc_04_1/);
-  if (cncMatch) return PREDICTED_CCTV_DETAILS['cnc_04_1'] || null;
+  if (cncMatch) return map['cnc_04_1'] || null;
 
   // thumbnailUrl에서 파일명 추출 (예: /fastsearch_img/qs_img_05_n.mov -> qs_img_05_n)
   const match = thumbnailUrl.match(/qs_img_\d+_[yn]/);
   if (!match) return null;
 
   const key = match[0];
-  return PREDICTED_CCTV_DETAILS[key] || null;
+  return map[key] || null;
 };
+
+/** 외부에서 직접 KO 맵을 참조해야 하는 레거시 코드를 위해 export 유지. */
+export const PREDICTED_CCTV_DETAILS = PREDICTED_CCTV_DETAILS_KO;

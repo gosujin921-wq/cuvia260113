@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import ReportDownloadPopup from './ReportDownloadPopup';
 
 interface CaptureItem {
@@ -42,8 +43,8 @@ interface ThreadMessage {
   showCompletionButton?: boolean; // 시뮬레이션 종료 확인 버튼 표시
 }
 
-// 기본 신고 접수 내용 (하늘별빛경찰서)
-const defaultReportContent = `🚨 실종자 신고 접수
+// 기본 신고 접수 내용 (하늘별빛경찰서) — i18n 적용 전 한국어 fallback. 컴포넌트 내부에서 t()로 대체.
+const defaultReportContentKO = `🚨 실종자 신고 접수
 
 ▪ 신고 접수 정보
 
@@ -66,8 +67,8 @@ const defaultReportContent = `🚨 실종자 신고 접수
 오늘 아침 집을 나선 후 연락이 두절됨.
 휴대전화 위치추적 결과 은하로363번길 48 일대에서 마지막 신호 확인.`;
 
-// 기본 더미 전파 내용
-const defaultPropagationContent = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
+// 기본 더미 전파 내용 (한국어 fallback)
+const defaultPropagationContentKO = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
 
 
 🚨 1. 최신 포착(즉시 출동 기준)
@@ -130,8 +131,8 @@ const defaultPropagationContent = `[112요청건/협조] 실종자 김도연(남
 ※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
 관제 담당: 김쿠도 / 032-266-3454`;
 
-// 112 회신: 실종자 발견 통보 (경찰관 답신)
-const discoveryReportContent = `📢 [112 회신] 실종자 발견 통보
+// 112 회신: 실종자 발견 통보 (경찰관 답신) — 한국어 fallback
+const discoveryReportContentKO = `📢 [112 회신] 실종자 발견 통보
 
 🚨 실종자 발견 통보
 
@@ -180,6 +181,10 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   onSimulationEnd,
   resetSignal = 0,
 }) => {
+  const { t, i18n } = useTranslation();
+  const defaultReportContent = t('propagation.defaultReportContent', { defaultValue: defaultReportContentKO });
+  const defaultPropagationContent = t('propagation.defaultPropagationContent', { defaultValue: defaultPropagationContentKO });
+  const discoveryReportContent = t('propagation.discoveryReportContent', { defaultValue: discoveryReportContentKO });
   const hasAddedDiscoveryRef = useRef(false);
   const [showReportDownloadPopup, setShowReportDownloadPopup] = useState(false);
   const prevResetSignal = useRef(resetSignal);
@@ -233,10 +238,12 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     const now = new Date();
     const reportTime = new Date(now.getTime() - 3 * 60 * 60 * 1000);
     const propagationTime = new Date(now.getTime() - 10 * 60 * 1000);
+    const tsLocale = i18n.language?.startsWith('en') ? 'en-US' : 'ko-KR';
+    const tsHour12 = !i18n.language?.startsWith('en');
     return [
       {
         id: 'thread-1',
-        title: '실종자 김도연(22세) 긴급 수색',
+        title: t('propagation.threadTitle'),
         status: 'pending',
         createdAt: reportTime.toISOString(),
         messages: [
@@ -244,22 +251,24 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
             id: 'msg-report',
             role: 'agency',
             content: defaultReportContent,
-            timestamp: reportTime.toLocaleTimeString('ko-KR', {
+            timestamp: reportTime.toLocaleTimeString(tsLocale, {
               hour: '2-digit',
               minute: '2-digit',
               second: '2-digit',
+              hour12: tsHour12,
             }),
-            author: '하늘별빛경찰서',
+            author: t('propagation.agencyName'),
             status: 'read',
           },
           {
             id: 'msg-propagation',
             role: 'system',
             content: defaultPropagationContent,
-            timestamp: propagationTime.toLocaleTimeString('ko-KR', {
+            timestamp: propagationTime.toLocaleTimeString(tsLocale, {
               hour: '2-digit',
               minute: '2-digit',
               second: '2-digit',
+              hour12: tsHour12,
             }),
           },
         ],
@@ -302,12 +311,11 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                     id: discoveryId,
                     role: 'agency' as const,
                     content: discoveryReportContent,
-                    timestamp: new Date().toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    }),
-                    author: '하늘별빛경찰서',
+                    timestamp: new Date().toLocaleTimeString(
+                      i18n.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+                      { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18n.language?.startsWith('en') }
+                    ),
+                    author: t('propagation.agencyName'),
                     status: 'unread' as const,
                     showCompletionButton: true as const,
                   },
@@ -374,10 +382,12 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   }, [messageInput, isVisible]);
 
   const addMessage = (role: 'agency' | 'user', content: string, author?: string) => {
-    const timestamp = new Date().toLocaleTimeString('ko-KR', {
+    const isEN = i18n.language?.startsWith('en');
+    const timestamp = new Date().toLocaleTimeString(isEN ? 'en-US' : 'ko-KR', {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      hour12: !isEN,
     });
     const newMessage: ThreadMessage = {
       id: `msg-${Date.now()}`,
@@ -410,7 +420,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
     // 시뮬레이션: 신고기관 응답
     setTimeout(() => {
-      addMessage('agency', '전파 내용 확인했습니다. 현재 현장 파견 중입니다.', '별빛경찰서');
+      addMessage('agency', t('propagation.agencyAck'), t('propagation.agencyShortName'));
     }, 2000);
   };
 
@@ -451,7 +461,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                 {/* 전파 건수 칩 */}
                 <div className="px-4 py-2 rounded-full text-xs font-medium bg-white/90 text-gray-700 flex items-center gap-2 border border-gray-200 shadow-sm" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                  <span>전파 건수: {threads.length}건</span>
+                  <span>{t('propagation.threadCount', { count: threads.length })}</span>
                 </div>
                 
                 {/* 상태 칩 - 완료됨 또는 진행 중일 때만 표시 */}
@@ -464,7 +474,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                       currentThread.status === 'completed' ? 'bg-green-400' : 'bg-blue-400'
                     } animate-pulse`}></span>
                     <span>
-                      {currentThread.status === 'completed' ? '완료됨' : '진행 중'}
+                      {currentThread.status === 'completed' ? t('propagation.statusCompleted') : t('propagation.statusInProgress')}
                     </span>
                   </div>
                 )}
@@ -475,7 +485,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                 type="button"
                 onClick={handleClose}
                 className="flex-shrink-0 w-8 h-8 rounded-full bg-white/90 border border-gray-200 hover:border-red-300 hover:bg-red-50 flex items-center justify-center text-gray-600 hover:text-red-500 transition-all shadow-sm"
-                aria-label="닫기"
+                aria-label={t('common.close')}
               >
                 <Icon icon="mdi:close" className="w-5 h-5" />
               </button>
@@ -495,15 +505,19 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               {/* 메시지 헤더 */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0 bg-gray-50">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-gray-800 truncate">{currentThread?.title || '전파'}</h3>
+                  <h3 className="text-base font-semibold text-gray-800 truncate">{currentThread?.title || t('propagation.fallbackTitle')}</h3>
                   <p className="text-sm text-gray-600 mt-0.5">
-                    {currentThread && new Date(currentThread.createdAt).toLocaleString('ko-KR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {currentThread && new Date(currentThread.createdAt).toLocaleString(
+                      i18n.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+                      {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: !i18n.language?.startsWith('en'),
+                      }
+                    )}
                   </p>
                 </div>
                 <button
@@ -511,10 +525,10 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                   type="button"
                   onClick={() => setShowReportDownloadPopup(true)}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors flex items-center gap-1.5"
-                  aria-label="사건 처리 결과 보고서 다운로드"
+                  aria-label={t('propagation.downloadReport')}
                 >
                   <Icon icon="mdi:download" className="w-4 h-4" />
-                  <span>사건 처리 결과 보고서 다운로드</span>
+                  <span>{t('propagation.downloadReport')}</span>
                 </button>
               </div>
 
@@ -542,7 +556,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                           <div className="flex-1 min-w-0">
                             <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm p-4 shadow-sm">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-bold text-red-600">{message.author || '신고기관'}</span>
+                                <span className="text-sm font-bold text-red-600">{message.author || t('propagation.fallbackAuthor')}</span>
                                 {message.status === 'unread' && (
                                   <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">
                                     NEW
@@ -570,7 +584,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                             {message.role === 'system' && (
                               <div className="bg-blue-50 border border-blue-100 rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
                                 <div className="flex items-center justify-end gap-2 mb-2">
-                                  <span className="text-sm font-bold text-gray-800">전파 전송</span>
+                                  <span className="text-sm font-bold text-gray-800">{t('propagation.sentLabel')}</span>
                                 </div>
                                 {message.content ? (
                                   <>
@@ -592,7 +606,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
                                     {captureItems.length > 0 && (
                                       <div className="mt-4 pt-4 border-t border-blue-100">
-                                        <div className="text-xs font-semibold text-gray-600 mb-3">📎 포착 목록 ({captureItems.length}건)</div>
+                                        <div className="text-xs font-semibold text-gray-600 mb-3">📎 {t('propagation.captureListLabel', { count: captureItems.length })}</div>
                                         <div className="grid grid-cols-2 gap-2">
                                           {captureItems.map((item) => (
                                             <div key={item.id} className="relative group">
@@ -614,7 +628,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                     )}
                                   </>
                                 ) : (
-                                  <p className="text-sm text-red-400">내용이 없습니다</p>
+                                  <p className="text-sm text-red-400">{t('propagation.noContent')}</p>
                                 )}
                                 <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
                               </div>
@@ -623,7 +637,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                             {message.role === 'user' && (
                               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl rounded-tr-sm p-4 shadow-sm">
                                 <div className="flex items-center justify-end gap-2 mb-2">
-                                  <span className="text-sm font-semibold text-blue-600">담당자</span>
+                                  <span className="text-sm font-semibold text-blue-600">{t('propagation.userRole')}</span>
                                 </div>
                                 <div
                                   className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"
@@ -662,7 +676,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                           handleSendMessage();
                         }
                       }}
-                      placeholder="메시지를 입력하세요..."
+                      placeholder={t('propagation.messagePlaceholder')}
                       className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-400 focus:outline-none resize-none overflow-hidden"
                       style={{
                         minHeight: '24px',
@@ -675,13 +689,13 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                       onClick={handleSendMessage}
                       disabled={!messageInput.trim()}
                       className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95"
-                      aria-label="전송"
+                      aria-label={t('agent.send')}
                     >
                       <Icon icon="mdi:send" className="w-4 h-4 text-white" />
                     </button>
                   </div>
                   <p className="text-[10px] text-gray-500 mt-1.5 text-center">
-                    신고기관과의 채팅입니다. 상황 진행 사항을 실시간으로 확인하세요.
+                    {t('propagation.chatHint')}
                   </p>
                 </div>
               </div>
@@ -694,7 +708,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                   style={{
                     bottom: `${inputContainerHeight + 16}px`,
                   }}
-                  aria-label="맨 위로"
+                  aria-label={t('propagation.scrollToTop')}
                 >
                   <Icon icon="mdi:chevron-up" className="w-5 h-5" />
                 </button>

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import i18n from '@/src/i18n';
 
 interface ObjectTrackingMapViewProps {
   visibleTrackingPins: number; // 0~4: 보이는 핀 개수
@@ -225,13 +226,21 @@ const ObjectTrackingMapView = ({
       return;
     }
     
-    // 모든 추적 핀 정의 (과천역 근처)
-    const allTrackingPins = [
-      { location: [126.99656, 37.43527] as [number, number], address: '은하로363번길 48', name: '별빛A-230', color: 'gray' },
-      { location: [126.997050219665, 37.434564088524] as [number, number], address: '은하로363번길 46', name: '별빛A-444', color: 'gray' },
-      { location: [126.995526419665, 37.435305588524] as [number, number], address: '은하로361번길 48', name: '별빛A-481', color: 'gray' },
-      { location: [126.995523619665, 37.434353188524] as [number, number], address: '달빛로301번길 28', name: '별빛A-498', color: 'blue' },
-    ];
+    // 모든 추적 핀 정의 (과천역 근처) — 영문 모드에서는 짧은 영문 주소/CCTV명 사용
+    const isENObjMap = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+    const allTrackingPins = isENObjMap
+      ? [
+          { location: [126.99656, 37.43527] as [number, number], address: '48 Galaxy St', name: 'STAR-A230', color: 'gray' },
+          { location: [126.997050219665, 37.434564088524] as [number, number], address: '46 Galaxy St', name: 'STAR-A444', color: 'gray' },
+          { location: [126.995526419665, 37.435305588524] as [number, number], address: '48 Galaxy Ln', name: 'STAR-A481', color: 'gray' },
+          { location: [126.995523619665, 37.434353188524] as [number, number], address: '28 Moonlight St', name: 'STAR-A498', color: 'blue' },
+        ]
+      : [
+          { location: [126.99656, 37.43527] as [number, number], address: '은하로363번길 48', name: '별빛A-230', color: 'gray' },
+          { location: [126.997050219665, 37.434564088524] as [number, number], address: '은하로363번길 46', name: '별빛A-444', color: 'gray' },
+          { location: [126.995526419665, 37.435305588524] as [number, number], address: '은하로361번길 48', name: '별빛A-481', color: 'gray' },
+          { location: [126.995523619665, 37.434353188524] as [number, number], address: '달빛로301번길 28', name: '별빛A-498', color: 'blue' },
+        ];
     
     const initPins = () => {
       if (!map.loaded()) {
@@ -291,7 +300,9 @@ const ObjectTrackingMapView = ({
           const hours = String(currentTime.getHours()).padStart(2, '0');
           const minutes = String(currentTime.getMinutes()).padStart(2, '0');
           const timeString = `${hours}:${minutes}`;
-          const labelType = index === 0 ? '초기 목격 지점' : '목격 지점';
+          const labelType = isENObjMap
+            ? (index === 0 ? 'First sighting' : 'Sighting')
+            : (index === 0 ? '초기 목격 지점' : '목격 지점');
           
           labelEl.innerHTML = `<div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${labelType} · ${timeString}</div><div style="font-size: 13px; font-weight: 600; color: white;">${pin.address}</div>`;
           markerContainer.appendChild(labelEl);
@@ -669,19 +680,33 @@ const ObjectTrackingMapView = ({
           });
           
           // 블루 CCTV 마커 추가 (4번 핀 근처)
-          // CCTV 정보 배열 (예측 CCTV 리스트와 동일)
-          const cctvInfoList = [
-            { cctvName: '별빛A-583', location: '달빛로301번길 28', confidence: 92 },
-            { cctvName: '별빛A-604', location: '달빛로301번길 28', confidence: 88 },
-            { cctvName: '별빛A-621', location: '달빛로301번길 28', confidence: 85 },
-            { cctvName: '별빛A-638', location: '달빛로301번길 28', confidence: 83 },
-            { cctvName: '별빛A-655', location: '달빛로301번길 28', confidence: 80 },
-            { cctvName: '별빛A-672', location: '달빛로301번길 28', confidence: 78 },
-            { cctvName: '별빛A-689', location: '달빛로301번길 28', confidence: 75 },
-            { cctvName: '별빛A-706', location: '달빛로301번길 28', confidence: 73 },
-            { cctvName: '별빛A-723', location: '달빛로301번길 28', confidence: 70 },
-            { cctvName: '별빛A-740', location: '달빛로301번길 28', confidence: 68 },
-          ];
+          // CCTV 정보 배열 (예측 CCTV 리스트와 동일) — 영문 모드면 짧은 영문 사용
+          const isENObjLabels = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+          const cctvInfoList = isENObjLabels
+            ? [
+                { cctvName: 'STAR-A583', location: '28 Moonlight St', confidence: 92 },
+                { cctvName: 'STAR-A604', location: '28 Moonlight St', confidence: 88 },
+                { cctvName: 'STAR-A621', location: '28 Moonlight St', confidence: 85 },
+                { cctvName: 'STAR-A638', location: '28 Moonlight St', confidence: 83 },
+                { cctvName: 'STAR-A655', location: '28 Moonlight St', confidence: 80 },
+                { cctvName: 'STAR-A672', location: '28 Moonlight St', confidence: 78 },
+                { cctvName: 'STAR-A689', location: '28 Moonlight St', confidence: 75 },
+                { cctvName: 'STAR-A706', location: '28 Moonlight St', confidence: 73 },
+                { cctvName: 'STAR-A723', location: '28 Moonlight St', confidence: 70 },
+                { cctvName: 'STAR-A740', location: '28 Moonlight St', confidence: 68 },
+              ]
+            : [
+                { cctvName: '별빛A-583', location: '달빛로301번길 28', confidence: 92 },
+                { cctvName: '별빛A-604', location: '달빛로301번길 28', confidence: 88 },
+                { cctvName: '별빛A-621', location: '달빛로301번길 28', confidence: 85 },
+                { cctvName: '별빛A-638', location: '달빛로301번길 28', confidence: 83 },
+                { cctvName: '별빛A-655', location: '달빛로301번길 28', confidence: 80 },
+                { cctvName: '별빛A-672', location: '달빛로301번길 28', confidence: 78 },
+                { cctvName: '별빛A-689', location: '달빛로301번길 28', confidence: 75 },
+                { cctvName: '별빛A-706', location: '달빛로301번길 28', confidence: 73 },
+                { cctvName: '별빛A-723', location: '달빛로301번길 28', confidence: 70 },
+                { cctvName: '별빛A-740', location: '달빛로301번길 28', confidence: 68 },
+              ];
           
           blueCCTV.forEach((location, index) => {
             const cctvId = String(index + 1); // 1~10
@@ -733,7 +758,7 @@ const ObjectTrackingMapView = ({
             infoLabel.innerHTML = `
               <div style="font-size: 13px; font-weight: 600; color: white; margin-bottom: 4px;">${cctvInfo.cctvName}</div>
               <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">${cctvInfo.location}</div>
-              <div style="font-size: 11px; color: #60a5fa;">경로 적합도: ${cctvInfo.confidence}점</div>
+              <div style="font-size: 11px; color: #60a5fa;">${isENObjLabels ? `Route fit: ${cctvInfo.confidence} pts` : `경로 적합도: ${cctvInfo.confidence}점`}</div>
             `;
             markerContainer.appendChild(infoLabel);
             
@@ -780,12 +805,18 @@ const ObjectTrackingMapView = ({
           });
           
           (map as any)._nearbyCCTVMarkers = markers;
-          // 경찰서 위치 핀 추가
-          const policeStations = [
-            { location: [126.9960, 37.4347] as [number, number], name: '별빛파출소' },
-            { location: [126.9937, 37.4338] as [number, number], name: '은하지구대' },
-            { location: [126.9992, 37.4341] as [number, number], name: '별빛경찰서' },
-          ];
+          // 경찰서 위치 핀 추가 — 영문 모드는 짧은 영문 사용
+          const policeStations = isENObjLabels
+            ? [
+                { location: [126.9960, 37.4347] as [number, number], name: 'Star Police Box' },
+                { location: [126.9937, 37.4338] as [number, number], name: 'Galaxy Substation' },
+                { location: [126.9992, 37.4341] as [number, number], name: 'Star Police HQ' },
+              ]
+            : [
+                { location: [126.9960, 37.4347] as [number, number], name: '별빛파출소' },
+                { location: [126.9937, 37.4338] as [number, number], name: '은하지구대' },
+                { location: [126.9992, 37.4341] as [number, number], name: '별빛경찰서' },
+              ];
           
           const policeMarkers: maplibregl.Marker[] = [];
           

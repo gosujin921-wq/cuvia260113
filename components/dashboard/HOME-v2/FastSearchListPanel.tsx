@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v2/FastSearchCandidateDetailPopup';
 import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
 
@@ -119,6 +120,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   autoCapture = false,
   onPopupClose,
 }) => {
+  const { t } = useTranslation();
   const [radius, setRadius] = useState<number>(200); // 반경 (m) - 실제 적용된 값
   const [timeRange, setTimeRange] = useState<[number, number]>([0, 60]); // 시간 범위 (분 단위: 최소 1시간 간격, 00:00=0, 01:00=60) - 실제 적용된 값
   const [selectedZones, setSelectedZones] = useState<string[]>([]); // 다중 선택 구역 (기본값: 전체)
@@ -211,21 +213,21 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
   
   // 선택된 구역을 문자열로 변환
   const getZoneDisplayText = (): string => {
-    if (selectedZones.length === 0) return '전체';
+    if (selectedZones.length === 0) return t('fastSearchList.zoneAll');
     if (selectedZones.length <= 4) {
       return selectedZones.join(', ');
     }
     const remainingCount = selectedZones.length - 4;
     return `${selectedZones.slice(0, 4).join(', ')} +${remainingCount}`;
   };
-  
+
   // 구역 토글
   const toggleZone = (zone: string) => {
-    if (zone === '전체') {
+    if (zone === t('fastSearchList.zoneAll')) {
       setSelectedZones([]);
     } else {
       setSelectedZones(prev => {
-        const filtered = prev.filter(z => z !== '전체');
+        const filtered = prev.filter(z => z !== t('fastSearchList.zoneAll'));
         return filtered.includes(zone)
           ? filtered.filter(z => z !== zone)
           : [...filtered, zone];
@@ -480,7 +482,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span>반경: {radius}m</span>
+                <span>{t('predictedCCTV.radius', { radius })}</span>
                 <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'radius' ? 'rotate-180' : ''}`} />
               </button>
               
@@ -491,14 +493,14 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-4 shadow-xl border border-[#31353a] z-[250] min-w-[280px]"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-white text-sm font-semibold">검색 반경 설정</div>
+                    <div className="text-white text-sm font-semibold">{t('fastSearchList.radiusPopover.title')}</div>
                     <button
                       id="radius-confirm-button"
                       type="button"
                       onClick={() => {
                         setRadius(tempRadius);
                         setOpenPopover(null);
-                        
+
                         // 짧은 스켈레톤 애니메이션 (0.5초)
                         setShowRadiusSkeleton(true);
                         setTimeout(() => {
@@ -507,7 +509,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                       }}
                       className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
                     >
-                      확인
+                      {t('common.confirm')}
                     </button>
                   </div>
                   <div className="space-y-3">
@@ -532,7 +534,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                       <span>3000m</span>
                     </div>
                     <div className="text-[10px] text-gray-400">
-                      반경을 넓히면 더 많은 CCTV를 탐색하지만 분석 시간이 길어질 수 있습니다.
+                      {t('fastSearchList.radiusPopover.hint')}
                     </div>
                   </div>
                 </div>
@@ -553,7 +555,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
               >
                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                <span>시간: {formatTime(timeRange[0])}~{formatTime(timeRange[1])}</span>
+                <span>{t('fastSearchList.timeChip', { start: formatTime(timeRange[0]), end: formatTime(timeRange[1]) })}</span>
                 <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'time' ? 'rotate-180' : ''}`} />
               </button>
               
@@ -564,7 +566,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-5 shadow-xl border border-[#31353a] z-[250] min-w-[380px]"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <div className="text-white text-sm font-semibold">시간 범위 선택</div>
+                    <div className="text-white text-sm font-semibold">{t('fastSearchList.timePopover.title')}</div>
                     <button
                       type="button"
                       onClick={() => {
@@ -578,7 +580,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                       }}
                       className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded-full transition-colors"
                     >
-                      확인
+                      {t('common.confirm')}
                     </button>
                   </div>
                   <div className="space-y-2">
@@ -649,7 +651,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                       <span>23:59</span>
                     </div>
                     <div className="text-[10px] text-gray-400 mt-1">
-                      시간 범위를 조정하여 검색할 시간대를 선택할 수 있습니다.
+                      {t('fastSearchList.timePopover.hint')}
                     </div>
                   </div>
                 </div>
@@ -662,16 +664,16 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 type="button"
                 onClick={() => setOpenPopover(openPopover === 'sort' ? null : 'sort')}
                 className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-2 border border-[#31353a]"
-                aria-label="정렬 옵션"
+                aria-label={t('fastSearchList.sortAriaLabel')}
                 aria-expanded={openPopover === 'sort'}
                 aria-haspopup="listbox"
               >
                 <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                <span>정렬: {
-                  sortOption === 'confidence-desc' ? '유사도순' :
-                  sortOption === 'confidence-asc' ? '유사도 낮은순' :
-                  sortOption === 'distance-asc' ? '거리순' : '거리 먼순'
-                }</span>
+                <span>{t('predictedCCTV.sort', { value:
+                  sortOption === 'confidence-desc' ? t('fastSearchList.sort.confidenceDescChip') :
+                  sortOption === 'confidence-asc' ? t('fastSearchList.sort.confidenceAscChip') :
+                  sortOption === 'distance-asc' ? t('fastSearchList.sort.distanceAscChip') : t('fastSearchList.sort.distanceDescChip')
+                })}</span>
                 <Icon icon="mdi:chevron-down" className={`w-4 h-4 transition-transform ${openPopover === 'sort' ? 'rotate-180' : ''}`} />
               </button>
               
@@ -680,15 +682,15 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 <div
                   className="absolute top-full left-0 mt-2 bg-[#1a1a1a] rounded-lg p-3 shadow-xl border border-[#31353a] z-[250] min-w-[200px]"
                   role="listbox"
-                  aria-label="정렬 기준 선택"
+                  aria-label={t('fastSearchList.sort.popoverAriaLabel')}
                 >
-                  <div className="text-white text-sm font-semibold mb-2">정렬 기준</div>
+                  <div className="text-white text-sm font-semibold mb-2">{t('fastSearchList.sort.title')}</div>
                   <div className="space-y-1">
                     {([
-                      { value: 'confidence-desc', label: '유사도 높은 순' },
-                      { value: 'confidence-asc', label: '유사도 낮은 순' },
-                      { value: 'distance-asc', label: '신고 위치와 가까운 순' },
-                      { value: 'distance-desc', label: '신고 위치와 먼 순' },
+                      { value: 'confidence-desc', label: t('fastSearchList.sort.confidenceDesc') },
+                      { value: 'confidence-asc', label: t('fastSearchList.sort.confidenceAsc') },
+                      { value: 'distance-asc', label: t('fastSearchList.sort.distanceAsc') },
+                      { value: 'distance-desc', label: t('fastSearchList.sort.distanceDesc') },
                     ] as { value: SortOption; label: string }[]).map((opt) => (
                       <button
                         key={opt.value}
@@ -724,7 +726,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
               className="px-4 py-2 rounded-full text-xs font-medium transition-colors bg-[#1a1a1a] text-gray-300 hover:bg-[#2a2a2a] flex items-center gap-1.5 ml-auto border border-[#31353a]"
             >
               <Icon icon="mdi:filter-variant-remove" className="w-4 h-4" />
-              <span>필터 초기화</span>
+              <span>{t('fastSearchList.resetFilters')}</span>
             </button>
           </div>
         </div>
@@ -756,9 +758,9 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                 if (onReSearchClick) onReSearchClick();
               }}
               className="px-4 py-2 rounded-lg text-xs font-medium transition-colors text-white bg-[#31353a] hover:bg-[#3d4046] border border-[#31353a]"
-              aria-label="결과 재검색"
+              aria-label={t('fastSearchList.reSearch')}
             >
-              결과 재검색
+              {t('fastSearchList.reSearch')}
             </button>
           </div>
           <div
@@ -842,17 +844,17 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   {item.id === '10' && (
                     <div
                       className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-blue-500/90 text-white"
-                      aria-label="유사 후보"
+                      aria-label={t('fastSearchList.similarCandidate')}
                     >
-                      유사 후보
+                      {t('fastSearchList.similarCandidate')}
                     </div>
                   )}
                   {isMatched && (
                     <div
                       className="absolute top-2 left-2 z-10 px-2 py-1 rounded text-[10px] font-medium bg-green-500/90 text-white"
-                      aria-label="선택됨"
+                      aria-label={t('fastSearchList.selected')}
                     >
-                      선택됨
+                      {t('fastSearchList.selected')}
                     </div>
                   )}
                   <img
@@ -872,7 +874,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                   <div className="text-[11px] text-gray-400 truncate">{item.location}</div>
                   <div className="text-[11px] text-gray-500">{item.timestamp}</div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] text-gray-500">유사도</span>
+                    <span className="text-[11px] text-gray-500">{t('candidateDetail.similarity')}</span>
                     <span className="text-[11px] text-gray-600">|</span>
                     <span className="text-xs text-white font-semibold">{item.confidence}%</span>
                   </div>
@@ -906,7 +908,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     }`}
                   >
                     {isWrong && <Icon icon="mdi:close-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
-                    틀림
+                    {t('fastSearchList.wrong')}
                   </button>
                   <button
                     id={item.id === '10' ? 'match-button-10' : undefined}
@@ -934,7 +936,7 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
                     }`}
                   >
                     {isMatched && <Icon icon="mdi:check-circle" className="w-3.5 h-3.5 flex-shrink-0" aria-hidden />}
-                    맞음
+                    {t('fastSearchList.match')}
                   </button>
                 </div>
               </div>

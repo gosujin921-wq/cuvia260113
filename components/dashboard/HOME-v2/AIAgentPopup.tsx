@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
+import i18nInstance from '@/src/i18n';
 import { classifyMessage, findSimilarAttributes } from '@/lib/fast-search-attribute-utils';
 
 interface IntentPayload {
@@ -84,6 +86,7 @@ interface MessageListProps {
 }
 
 const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listCardCount, cameraCount, isExpanded, onSuggestionClick }) => {
+  const { t } = useTranslation();
   return (
     <>
       {isExpanded && (
@@ -113,9 +116,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                 {message.type === 'analyzing' ? (
                   <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
                     <div className="mb-3">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-2">AI 분석 중</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 mb-2">{t('agent.analyzing')}</h3>
                       <p className="text-sm text-gray-700 leading-relaxed">
-                        {message.content}{message.processingTime ? ` (처리 : ${message.processingTime}초, 전송 : ${message.transmissionTime}초)` : ''}
+                        {message.content}{message.processingTime ? ' ' + t('agent.timingSuffix', { processing: message.processingTime, transmission: message.transmissionTime }) : ''}
                       </p>
                     </div>
                     
@@ -124,15 +127,15 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                       <div className="space-y-2 mb-3 text-xs">
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : (message.currentStep || 0) === 1 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 1 ? 'animate-spin' : ''}`} />
-                          <span>1. 조건 필터링 {(message.currentStep || 0) === 1 && '⏳'}</span>
+                          <span>{t('agent.reSearchSteps.1')} {(message.currentStep || 0) === 1 && '⏳'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. 결과 재정렬 {(message.currentStep || 0) === 2 && '⏳'}</span>
+                          <span>{t('agent.reSearchSteps.2')} {(message.currentStep || 0) === 2 && '⏳'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 화면 업데이트 {(message.currentStep || 0) === 3 && '⏳'}</span>
+                          <span>{t('agent.reSearchSteps.3')} {(message.currentStep || 0) === 3 && '⏳'}</span>
                         </div>
                       </div>
                     )}
@@ -142,29 +145,29 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                       <div className="space-y-2 mb-3 text-xs">
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
-                          <span>1. 사건 위치 기준 검색 범위 설정 {(message.currentStep || 0) === 1 && '✅'}</span>
+                          <span>{t('agent.fastSearchSteps.1')} {(message.currentStep || 0) === 1 && '✅'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. CCTV 목록 불러오기 {(message.currentStep || 0) === 2 && '✅'}</span>
+                          <span>{t('agent.fastSearchSteps.2')} {(message.currentStep || 0) === 2 && '✅'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 특징 조건 적용(신고 내용) {(message.currentStep || 0) === 3 && '⏳'}</span>
+                          <span>{t('agent.fastSearchSteps.3')} {(message.currentStep || 0) === 3 && '⏳'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
-                          <span>4. 후보 탐색 및 유사도 점수 계산 {(message.currentStep || 0) === 4 && '…'}</span>
+                          <span>{t('agent.fastSearchSteps.4')} {(message.currentStep || 0) === 4 && '…'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 5 ? 'mdi:check-circle' : (message.currentStep || 0) === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 5 ? 'animate-spin' : ''}`} />
-                          <span>5. 결과 정렬 및 화면 준비 {(message.currentStep || 0) === 5 && '…'}</span>
+                          <span>{t('agent.fastSearchSteps.5')} {(message.currentStep || 0) === 5 && '…'}</span>
                         </div>
                         
                         {/* 5단계에서 카메라 카운트 표시 */}
                         {(message.currentStep || 0) === 5 && cameraCount > 0 && (
                           <div className="mt-2 text-blue-600 font-medium">
-                            후보를 탐색하고 있습니다… (카메라 {cameraCount}대 확인 중)
+                            {t('agent.searchingCandidates', { count: cameraCount })}
                           </div>
                         )}
                       </div>
@@ -175,23 +178,23 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                       <div className="space-y-2 mb-3 text-xs">
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 1 ? 'mdi:check-circle' : 'mdi:circle-outline'} className="w-4 h-4" />
-                          <span>1. 대표 후보 기준점 설정 {(message.currentStep || 0) === 1 && '✅'}</span>
+                          <span>{t('agent.objectTrackingSteps.1')} {(message.currentStep || 0) === 1 && '✅'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 2 ? 'mdi:check-circle' : (message.currentStep || 0) === 2 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 2 ? 'animate-spin' : ''}`} />
-                          <span>2. 경로 적합도 기반 재탐색 {(message.currentStep || 0) === 2 && '⏳'}</span>
+                          <span>{t('agent.objectTrackingSteps.2')} {(message.currentStep || 0) === 2 && '⏳'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 3 ? 'mdi:check-circle' : (message.currentStep || 0) === 3 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 3 ? 'animate-spin' : ''}`} />
-                          <span>3. 시간순 정렬 및 경로 연결 {(message.currentStep || 0) === 3 && '…'}</span>
+                          <span>{t('agent.objectTrackingSteps.3')} {(message.currentStep || 0) === 3 && '…'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 4 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 4 ? 'mdi:check-circle' : (message.currentStep || 0) === 4 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 4 ? 'animate-spin' : ''}`} />
-                          <span>4. 이동 방향/시간대 반영 {(message.currentStep || 0) === 4 && '…'}</span>
+                          <span>{t('agent.objectTrackingSteps.4')} {(message.currentStep || 0) === 4 && '…'}</span>
                         </div>
                         <div className={`flex items-center gap-2 ${(message.currentStep || 0) >= 5 ? 'text-blue-600' : 'text-gray-400'}`}>
                           <Icon icon={(message.currentStep || 0) > 5 ? 'mdi:check-circle' : (message.currentStep || 0) === 5 ? 'mdi:loading' : 'mdi:circle-outline'} className={`w-4 h-4 ${(message.currentStep || 0) === 5 ? 'animate-spin' : ''}`} />
-                          <span>5. 다음 포착 후보 CCTV 생성 {(message.currentStep || 0) === 5 && '…'}</span>
+                          <span>{t('agent.objectTrackingSteps.5')} {(message.currentStep || 0) === 5 && '…'}</span>
                         </div>
                       </div>
                     )}
@@ -218,7 +221,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                         <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
                           <div className="flex items-center gap-2 mb-2">
                             <Icon icon="mdi:lightbulb-on" className="w-4 h-4 text-blue-600" />
-                            <h4 className="text-gray-900 font-semibold text-sm">1. 한 줄 결론</h4>
+                            <h4 className="text-gray-900 font-semibold text-sm">{t('captureList.analysis.conclusionTitle')}</h4>
                           </div>
                           <p className="text-gray-700 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: message.analysisResult.conclusion.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                         </div>
@@ -227,23 +230,23 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                         <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
                           <div className="flex items-center gap-2 mb-2">
                             <Icon icon="mdi:file-document-outline" className="w-4 h-4 text-blue-600" />
-                            <h4 className="text-gray-900 font-semibold text-sm">2. 사건 요약</h4>
+                            <h4 className="text-gray-900 font-semibold text-sm">{t('captureList.analysis.summaryTitle')}</h4>
                           </div>
                           <div className="space-y-1.5 text-sm">
                             <div className="text-gray-700">
-                              <span className="text-gray-500">- 발생 시각:</span> {message.analysisResult.summary.time}
+                              <span className="text-gray-500">- {t('agent.summary.eventTime')}:</span> {message.analysisResult.summary.time}
                             </div>
                             <div className="text-gray-700">
-                              <span className="text-gray-500">- 위치/카메라:</span> {message.analysisResult.summary.location}
+                              <span className="text-gray-500">- {t('captureList.analysis.location')}:</span> {message.analysisResult.summary.location}
                             </div>
                             <div className="text-gray-700">
-                              <span className="text-gray-500">- 관여 인원(추정):</span> {message.analysisResult.summary.personnel}
+                              <span className="text-gray-500">- {t('agent.summary.personnel')}:</span> {message.analysisResult.summary.personnel}
                             </div>
                             <div className="text-gray-700">
-                              <span className="text-gray-500">- 진행 상태:</span> {message.analysisResult.summary.status}
+                              <span className="text-gray-500">- {t('agent.summary.progressStatus')}:</span> {message.analysisResult.summary.status}
                             </div>
                             <div className="text-gray-700">
-                              <span className="text-gray-500">- 위험도:</span> <span dangerouslySetInnerHTML={{ __html: message.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+                              <span className="text-gray-500">- {t('captureList.analysis.riskLevel')}:</span> <span dangerouslySetInnerHTML={{ __html: message.analysisResult.summary.riskLevel.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
                             </div>
                           </div>
                         </div>
@@ -252,7 +255,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                         <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
                           <div className="flex items-center gap-2 mb-2">
                             <Icon icon="mdi:clipboard-text" className="w-4 h-4 text-blue-600" />
-                            <h4 className="text-gray-900 font-semibold text-sm">3. 근거</h4>
+                            <h4 className="text-gray-900 font-semibold text-sm">{t('agent.summary.evidenceTitle')}</h4>
                           </div>
                           <ul className="space-y-1.5">
                             {message.analysisResult.evidence.map((item, idx) => (
@@ -268,7 +271,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                         <div className="bg-white border border-gray-200 rounded-lg p-4" style={{ borderWidth: '1px' }}>
                           <div className="flex items-center gap-2 mb-3">
                             <Icon icon="mdi:shield-check" className="w-4 h-4 text-blue-600" />
-                            <h4 className="text-gray-900 font-semibold text-sm">4. 대응 추천</h4>
+                            <h4 className="text-gray-900 font-semibold text-sm">{t('agent.summary.recommendationsTitle')}</h4>
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {message.analysisResult.recommendations.map((rec, idx) => {
@@ -301,7 +304,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                     <div className={`${isExpanded ? 'max-w-[70%] px-4 py-2 rounded-2xl border bg-gray-100 text-gray-900 border-gray-200' : 'rounded-xl border border-gray-200 bg-gray-50 p-4'}`} style={isExpanded ? { borderWidth: '1px' } : {}}>
                       <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">
                         {message.id === 'welcome-msg'
-                          ? `고속검색 결과 ${listCardCount}건이 검색되었습니다.\n조건을 추가해 후보를 좁힐 수 있습니다.`
+                          ? t('agent.welcome', { count: listCardCount })
                           : (message.isTyping ? message.displayedContent : message.content)}
                         {message.isTyping && <span className="inline-block w-1 h-4 bg-gray-700 ml-0.5 animate-pulse" />}
                       </p>
@@ -314,7 +317,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, isResponding, listC
                               onClick={() => onSuggestionClick?.(s)}
                               className="text-xs px-2.5 py-1 rounded-full border border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100 hover:border-blue-400 transition-colors cursor-pointer"
                               tabIndex={0}
-                              aria-label={`${s} 조건 적용`}
+                              aria-label={t('agent.applyConditionAria', { suggestion: s })}
                             >
                               {s}
                             </button>
@@ -393,8 +396,10 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
   inputKey,
   ignoreNextChangeRef,
   isExpanded,
-  placeholder = "검색 조건을 자연어로 입력해 주세요.",
+  placeholder,
 }) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('agent.placeholder.fastSearch');
   return (
     <div className={isExpanded ? 'bg-white flex-shrink-0' : 'p-4 border-t border-gray-200 flex-shrink-0 bg-white'}>
       <div className={isExpanded ? 'p-4' : ''}>
@@ -405,7 +410,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
                 // 도구 팝업 (나중에 구현)
               }}
               className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors self-center"
-              aria-label="도구 열기"
+              aria-label={t('agent.tools.open')}
             >
               <Icon icon="mdi:plus" className="w-5 h-5" />
             </button>
@@ -428,7 +433,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
                 handleSendMessage();
               }
             }}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             className={`flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-500 focus:outline-none resize-none ${
               isExpanded ? 'overflow-hidden self-center' : 'overflow-y-auto'
             }`}
@@ -447,7 +452,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
                 isExpanded ? 'self-center' : ''
               }`}
               style={{ background: AGENT_GRADIENT }}
-              aria-label="답변 취소"
+              aria-label={t('agent.cancelResponse')}
             >
               <Icon icon="mdi:close" className="w-5 h-5 text-white" />
             </button>
@@ -461,11 +466,11 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
                 isExpanded ? 'self-center' : ''
               }`}
               style={{ background: AGENT_GRADIENT }}
-              aria-label="전송"
+              aria-label={t('agent.send')}
             >
               <img
                 src="/simbol.svg"
-                alt="전송"
+                alt={t('agent.send')}
                 className="w-5 h-5"
                 style={{ filter: 'brightness(0) saturate(100%) invert(100%)' }}
               />
@@ -473,7 +478,7 @@ const ChatInputForm: React.FC<ChatInputFormProps> = ({
           )}
         </div>
         <p className="text-xs text-gray-500 mt-2 text-center">
-          <span className="font-semibold">{isExpanded ? 'CUVIA Agent' : 'CUVIA Link'}</span>는 실수를 할 수 있습니다. 중요한 정보는 재차 확인하세요.
+          <span className="font-semibold">{isExpanded ? 'CUVIA Agent' : 'CUVIA Link'}</span>{' '}{t('agent.disclaimer')}
         </p>
       </div>
     </div>
@@ -500,6 +505,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   onReSearchComplete,
   captureNotificationMessage = '',
 }) => {
+  const { t } = useTranslation();
   const [chatInput, setChatInput] = useState('');
   const [inputKey, setInputKey] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -523,12 +529,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         const progressMessage: ChatMessage = {
           id: 'object-tracking-progress',
           role: 'assistant',
-          content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV를 예측하겠습니다.',
-          timestamp: new Date().toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          }),
+          content: t('agent.objectTracking.startMessage'),
+          timestamp: new Date().toLocaleTimeString(
+            i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+            { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+          ),
           type: 'analyzing',
           progress: 0,
           currentStep: 1,
@@ -574,11 +579,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       id: 'welcome-msg',
       role: 'assistant',
       content: '',
-      timestamp: new Date().toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }),
+      timestamp: new Date().toLocaleTimeString(
+        i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+        { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+      ),
     },
   ]);
   const [isResponding, setIsResponding] = useState(false);
@@ -688,11 +692,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       id: `capture-notification-${Date.now()}`,
       role: 'assistant',
       content: captureNotificationMessage,
-      timestamp: new Date().toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }),
+      timestamp: new Date().toLocaleTimeString(
+        i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+        { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+      ),
       type: 'normal',
       isTyping: true,
       displayedContent: '',
@@ -749,12 +752,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       const progressMessage: ChatMessage = {
         id: 'fast-search-progress',
         role: 'assistant',
-        content: '고속검색을 시작합니다.',
-        timestamp: new Date().toLocaleTimeString('ko-KR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
+        content: t('agent.fastSearch.starting'),
+        timestamp: new Date().toLocaleTimeString(
+          i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+          { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+        ),
         type: 'analyzing',
         progress: 0,
         currentStep: 1,
@@ -817,11 +819,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                     id: 'welcome-msg',
                     role: 'assistant',
                     content: '',
-                    timestamp: new Date().toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                    }),
+                    timestamp: new Date().toLocaleTimeString(
+                      i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+                      { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+                    ),
                   };
                   
                   return [...withoutProgress, welcomeMessage];
@@ -863,12 +864,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         const completionMessage: ChatMessage = {
           id: `assistant-complete-${Date.now()}`,
           role: 'assistant',
-          content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV 예측을 완료 했습니다.',
-          timestamp: new Date().toLocaleTimeString('ko-KR', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          }),
+          content: t('agent.objectTracking.completeMessage'),
+          timestamp: new Date().toLocaleTimeString(
+            i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+            { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+          ),
           type: 'normal',
           isTyping: true,
           displayedContent: '',
@@ -878,7 +878,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       });
       
       // 타이핑 애니메이션
-      const fullContent = '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV 예측을 완료 했습니다.';
+      const fullContent = t('agent.objectTracking.completeMessage');
       let currentIndex = 0;
       
       const typingInterval = setInterval(() => {
@@ -917,24 +917,24 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     if (reSearchResult && reSearchResult !== lastReSearchResultRef.current) {
       lastReSearchResultRef.current = reSearchResult;
       const { excludedAttributes, deletedCount, visibleCount } = reSearchResult;
-      const isResultReSearchButton = excludedAttributes.some((a) => a.includes('대표 후보'));
+      const isResultReSearchButton = excludedAttributes.some((a) => a.includes('대표 후보') || a.toLowerCase().includes('top candidate'));
       const isRestore = deletedCount < 0;
-      const isRestoreAttr = excludedAttributes.some((a) => a.includes('복원'));
+      const isRestoreAttr = excludedAttributes.some((a) => a.includes('복원') || a.toLowerCase().includes('restored'));
 
       const summarizeAttrs = (attrs: string[], max = 2): string => {
         if (attrs.length <= max) return attrs.join(', ');
-        return `${attrs.slice(0, max).join(', ')} 외 ${attrs.length - max}개`;
+        return t('agent.attributeOverflow', { list: attrs.slice(0, max).join(', '), more: attrs.length - max });
       };
 
       let fullContent: string;
       if (isResultReSearchButton) {
-        fullContent = `대표 후보 기반 재분석이 완료되었습니다.\n현재 결과를 토대로 객체 추적을 진행하거나 조건을 추가 입력해 후보를 정밀화하세요.`;
+        fullContent = t('agent.reSearchResult.byCandidate');
       } else if (isRestore || isRestoreAttr) {
-        const names = excludedAttributes.map((a) => a.replace(/ 복원$/, ''));
-        fullContent = `${summarizeAttrs(names)} 조건이 복원되었습니다.`;
+        const names = excludedAttributes.map((a) => a.replace(/ 복원$/, '').replace(/^Restored /i, ''));
+        fullContent = t('agent.reSearchResult.restored', { names: summarizeAttrs(names) });
       } else {
         const count = visibleCount ?? Math.max(0, (listCardCount ?? 0) - deletedCount);
-        fullContent = `조건이 적용되어 유사후보를 포함한 총 ${count}건을 표시합니다.`;
+        fullContent = t('agent.reSearchResult.applied', { count });
       }
       
       const messageId = `assistant-research-${Date.now()}`;
@@ -942,11 +942,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         id: messageId,
         role: 'assistant',
         content: fullContent,
-        timestamp: new Date().toLocaleTimeString('ko-KR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
+        timestamp: new Date().toLocaleTimeString(
+          i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+          { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+        ),
         type: 'normal',
         isTyping: true,
         displayedContent: '',
@@ -994,7 +993,15 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   }, [chatInput, inputKey]);
 
   const isObjectTrackingMessage = (text: string): boolean => {
-    return text.includes('객체 추적을 시작해 주세요') || text.includes('객체 추적');
+    // Object tracking trigger detection: keep Korean keywords for backward compatibility,
+    // and also accept English equivalents for users who type in English.
+    const lower = text.toLowerCase();
+    return (
+      text.includes('객체 추적을 시작해 주세요') ||
+      text.includes('객체 추적') ||
+      lower.includes('start object tracking') ||
+      lower.includes('object tracking')
+    );
   };
 
   const generateAssistantReply = (prompt: string): ChatMessage => {
@@ -1003,11 +1010,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         id: `assistant-${Date.now()}`,
         role: 'assistant',
         content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV를 예측하겠습니다.',
-        timestamp: new Date().toLocaleTimeString('ko-KR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
+        timestamp: new Date().toLocaleTimeString(
+          i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+          { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+        ),
         type: 'analyzing',
         progress: 0,
         currentStep: 1,
@@ -1016,17 +1022,16 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
     }
     const similar = findSimilarAttributes(prompt);
     const content = similar.length > 0
-      ? `"${prompt}"에 대한 정확한 조건을 찾지 못했습니다.\n아래 유사 조건을 선택해 보세요.`
-      : `"${prompt}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
+      ? t('agent.unknownPromptWithSuggestions', { prompt })
+      : t('agent.unknownPrompt', { prompt });
     return {
       id: `assistant-${Date.now()}`,
       role: 'assistant',
       content,
-      timestamp: new Date().toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      }),
+      timestamp: new Date().toLocaleTimeString(
+        i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+        { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+      ),
       type: 'normal',
       suggestions: similar.length > 0 ? similar : undefined,
     };
@@ -1035,8 +1040,8 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   const showNoMatchMessage = useCallback((text: string) => {
     const similar = findSimilarAttributes(text);
     const fullContent = similar.length > 0
-      ? `"${text}"에 대한 정확한 조건을 찾지 못했습니다.\n아래 유사 조건을 선택해 보세요.`
-      : `"${text}"에 대한 조건이 없습니다. 구체적인 조건을 입력해 주세요.`;
+      ? t('agent.unknownPromptWithSuggestions', { prompt: text })
+      : t('agent.unknownPrompt', { prompt: text });
 
     setIsResponding(true);
     setTimeout(() => {
@@ -1045,7 +1050,10 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
         id: msgId,
         role: 'assistant',
         content: fullContent,
-        timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        timestamp: new Date().toLocaleTimeString(
+          i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+          { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+        ),
         type: 'normal',
         isTyping: true,
         displayedContent: '',
@@ -1074,7 +1082,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
   }, []);
 
   const handleSuggestionClick = useCallback((suggestion: string) => {
-    setChatInput(`${suggestion}만 보여줘`);
+    setChatInput(t('agent.showOnlyTemplate', { suggestion }));
   }, []);
 
   const showReSearchProgress = useCallback(() => {
@@ -1086,12 +1094,11 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
       const progressMessage: ChatMessage = {
         id: 're-search-progress',
         role: 'assistant',
-        content: '조건에 맞는 결과를 재검색하고 있습니다.',
-        timestamp: new Date().toLocaleTimeString('ko-KR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        }),
+        content: t('agent.reSearchProgress'),
+        timestamp: new Date().toLocaleTimeString(
+          i18nInstance.language?.startsWith('en') ? 'en-US' : 'ko-KR',
+          { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18nInstance.language?.startsWith('en') }
+        ),
         type: 'analyzing',
         progress: 0,
         currentStep: 1,
@@ -1245,7 +1252,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 const completionMessage: ChatMessage = {
                   id: `assistant-complete-${Date.now()}`,
                   role: 'assistant',
-                  content: '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV 예측을 완료 했습니다.',
+                  content: t('agent.objectTracking.completeMessage'),
                   timestamp: new Date().toLocaleTimeString('ko-KR', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -1260,7 +1267,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               });
               
               // 타이핑 애니메이션
-              const fullContent = '마지막 포착 이후 이동 경로를 기준으로 다음 포착 가능 CCTV 예측을 완료 했습니다.';
+              const fullContent = t('agent.objectTracking.completeMessage');
               let currentIndex = 0;
               
               const typingInterval = setInterval(() => {
@@ -1369,7 +1376,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 type="button"
                 onClick={() => setIsExpanded(false)}
                 className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
-                aria-label="축소"
+                aria-label={t('agent.collapse')}
               >
                 <Icon icon="mdi:window-restore" className="w-5 h-5" />
               </button>
@@ -1400,7 +1407,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
               isExpanded={true}
-              placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
+              placeholder={isObjectTracking ? t('agent.placeholder.objectTracking') : t('agent.placeholder.fastSearch')}
             />
           </div>
         </div>
@@ -1426,7 +1433,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
                 type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
-                aria-label={isExpanded ? '축소' : '확장'}
+                aria-label={isExpanded ? t('agent.collapse') : t('agent.expand')}
               >
                 <Icon icon={isExpanded ? 'mdi:window-restore' : 'mdi:window-maximize'} className="w-5 h-5" />
               </button>
@@ -1457,7 +1464,7 @@ const AIAgentPopup: React.FC<AIAgentPopupProps> = ({
               inputKey={inputKey}
               ignoreNextChangeRef={ignoreNextChangeRef}
               isExpanded={false}
-              placeholder={isObjectTracking ? "검색된 내용으로 객체 추적을 시작해 주세요." : "검색 조건을 자연어로 입력해 주세요."}
+              placeholder={isObjectTracking ? t('agent.placeholder.objectTracking') : t('agent.placeholder.fastSearch')}
             />
           </div>
         </div>

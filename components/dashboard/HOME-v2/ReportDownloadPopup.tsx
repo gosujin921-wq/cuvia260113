@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 
 interface ReportDownloadPopupProps {
   isOpen: boolean;
@@ -13,20 +14,21 @@ interface ReportDownloadPopupProps {
 
 type FormatType = 'hwp' | 'jpg' | 'docx' | 'pdf';
 
-const FORMAT_BUTTONS: { type: FormatType; label: string }[] = [
-  { type: 'hwp', label: '한글(.hwp)' },
-  { type: 'jpg', label: '이미지(.jpg)' },
-  { type: 'docx', label: 'Word(.docx)' },
-  { type: 'pdf', label: 'PDF(.pdf)' },
-];
-
 const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
   isOpen,
   onClose,
   onSimulationEnd,
 }) => {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 3;
+
+  const FORMAT_BUTTONS: { type: FormatType; label: string }[] = [
+    { type: 'hwp', label: t('reportDownload.formats.hwp') },
+    { type: 'jpg', label: t('reportDownload.formats.jpg') },
+    { type: 'docx', label: t('reportDownload.formats.docx') },
+    { type: 'pdf', label: t('reportDownload.formats.pdf') },
+  ];
 
   const handlePrevPage = () => {
     setCurrentPage((prev) => Math.max(1, prev - 1));
@@ -40,7 +42,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
     if (format === 'pdf') {
       const link = document.createElement('a');
       link.href = '/report.pdf';
-      link.download = '사건처리결과보고서.pdf';
+      link.download = t('reportDownload.fileName');
       link.click();
       onClose();
       onSimulationEnd?.();
@@ -76,13 +78,13 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
         {/* 헤더 */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#31353a] flex-shrink-0">
           <h3 className="text-white font-semibold text-base">
-            문서 미리보기 및 파일 다운로드
+            {t('reportDownload.title')}
           </h3>
           <button
             type="button"
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-[#0f0f0f]/50 border border-[#31353a] hover:border-red-500/50 hover:bg-red-500/10 flex items-center justify-center text-gray-400 hover:text-red-400 transition-all"
-            aria-label="닫기"
+            aria-label={t('common.close')}
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
           </button>
@@ -97,7 +99,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
             <div className="flex-1 flex items-center justify-center bg-[#0f0f0f]/50 relative overflow-hidden">
               <iframe
                 src={`/report.pdf#page=${currentPage}&navpanes=0`}
-                title="사건 처리 결과 보고서"
+                title={t('reportDownload.previewTitle')}
                 className="w-full h-full border-0"
                 style={{ minHeight: '400px' }}
               />
@@ -108,7 +110,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
                 onClick={handlePrevPage}
                 disabled={currentPage <= 1}
                 className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-[#31353a] hover:bg-black/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors z-10"
-                aria-label="이전 페이지"
+                aria-label={t('reportDownload.prevPage')}
               >
                 <Icon icon="mdi:chevron-left" className="w-6 h-6" />
               </button>
@@ -117,7 +119,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
                 onClick={handleNextPage}
                 disabled={currentPage >= totalPages}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-[#31353a] hover:bg-black/80 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors z-10"
-                aria-label="다음 페이지"
+                aria-label={t('reportDownload.nextPage')}
               >
                 <Icon icon="mdi:chevron-right" className="w-6 h-6" />
               </button>
@@ -134,7 +136,7 @@ const ReportDownloadPopup: React.FC<ReportDownloadPopupProps> = ({
           {/* 우측: 저장 형식 선택 */}
           <div className="flex flex-col w-[180px] flex-shrink-0 p-3 bg-[#0f0f0f]/30">
             <h4 className="text-sm font-semibold text-gray-200 mb-4">
-              다음형식으로 저장
+              {t('reportDownload.saveAs')}
             </h4>
             <div className="flex flex-col gap-3">
               {FORMAT_BUTTONS.map(({ type, label }) => (

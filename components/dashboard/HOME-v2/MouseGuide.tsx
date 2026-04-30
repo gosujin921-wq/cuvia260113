@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 
 const Tooltip = ({ label, children }: { label: string; children: ReactNode }) => {
   const [visible, setVisible] = useState(false);
@@ -80,6 +81,7 @@ export const MouseGuide = ({
   navigationDisabled = false,
   nextDisabled = false,
 }: MouseGuideProps) => {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [bodyHeight, setBodyHeight] = useState<number | 'auto'>('auto');
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -170,37 +172,37 @@ export const MouseGuide = ({
               </div>
 
               <div className="flex items-center gap-1">
-                <Tooltip label="이전">
+                <Tooltip label={t('common.previous')}>
                   <button
                     type="button"
                     onClick={onPrev}
                     disabled={isFirst || navigationDisabled}
                     className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    aria-label="이전 단계"
+                    aria-label={t('common.step.previous')}
                     tabIndex={0}
                   >
                     <Icon icon="mdi:chevron-left" className="w-4 h-4 text-gray-700" />
                   </button>
                 </Tooltip>
-                <Tooltip label="다음">
+                <Tooltip label={t('common.next')}>
                   <button
                     type="button"
                     onClick={onNext}
                     disabled={navigationDisabled || nextDisabled}
                     className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    aria-label="다음 단계"
+                    aria-label={t('common.step.next')}
                     tabIndex={0}
                   >
                     <Icon icon="mdi:chevron-right" className="w-4 h-4 text-gray-700" />
                   </button>
                 </Tooltip>
                 <div className="w-px h-3.5 bg-gray-500 mx-0.5" />
-                <Tooltip label={collapsed ? '펼치기' : '접기'}>
+                <Tooltip label={collapsed ? t('common.expand') : t('common.collapse')}>
                   <button
                     type="button"
                     onClick={handleToggleCollapse}
                     className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 transition-colors"
-                    aria-label={collapsed ? '가이드 펼치기' : '가이드 접기'}
+                    aria-label={collapsed ? t('common.guide.expand') : t('common.guide.collapse')}
                     tabIndex={0}
                   >
                   <Icon

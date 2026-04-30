@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '@iconify/react';
+import { useTranslation } from 'react-i18next';
 import type { CaptureItem } from './CaptureListPanel';
 
 interface PropagationPackagePopupProps {
@@ -15,6 +16,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
   selectedItems,
   onSendPropagation,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'summary' | 'preview'>('preview');
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -26,8 +28,8 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
 
-  // 초기 컨텐츠 설정
-  const initialContent = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
+  // 초기 컨텐츠 설정 (i18n 적용 후 영문 모드에서는 translated content 사용)
+  const initialContent = t('propagation.defaultPropagationContent', { defaultValue: `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
 
 
 🚨 1. 최신 포착(즉시 출동 기준)
@@ -88,7 +90,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 
 
 ※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
-관제 담당: 김쿠도 / 032-266-3454`;
+관제 담당: 김쿠도 / 032-266-3454` });
 
   const [editableContent, setEditableContent] = useState(initialContent);
 
@@ -279,7 +281,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
       style={{ zIndex: 10003 }}
       role="dialog"
       aria-modal="true"
-      aria-label="전파 패키지"
+      aria-label={t('propagationPackage.dialogAriaLabel')}
       onClick={handleOverlayClick}
     >
       <div
@@ -301,16 +303,16 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
         <div className="flex flex-wrap items-start justify-between gap-3 p-4 flex-shrink-0 border-b border-[#31353a]">
           <div className="flex flex-col gap-1.5 min-w-0">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <span className="text-white font-semibold text-sm">전파 패키지</span>
+              <span className="text-white font-semibold text-sm">{t('propagationPackage.title')}</span>
               <span className="text-gray-400 text-sm">·</span>
-              <span className="text-gray-300 text-sm">{selectedItems.length}건 선택됨</span>
+              <span className="text-gray-300 text-sm">{t('propagationPackage.selectedCount', { count: selectedItems.length })}</span>
             </div>
           </div>
           <button
             type="button"
             onClick={handleClose}
             className="text-gray-400 hover:text-white transition-colors focus:outline-none flex-shrink-0"
-            aria-label="닫기"
+            aria-label={t('common.close')}
           >
             <Icon icon="mdi:close" className="w-5 h-5" />
           </button>
@@ -334,7 +336,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                 muted
                 playsInline
                 autoPlay
-                aria-label="포착 영상"
+                aria-label={t('propagationPackage.captureVideo')}
               />
               
               {/* 비디오 컨트롤 오버레이 */}
@@ -364,7 +366,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                         type="button"
                         onClick={togglePlayPause}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label={isPlaying ? '일시정지' : '재생'}
+                        aria-label={isPlaying ? t('candidateDetail.video.pause') : t('candidateDetail.video.play')}
                       >
                         <Icon icon={isPlaying ? 'mdi:pause' : 'mdi:play'} className="w-6 h-6" />
                       </button>
@@ -379,7 +381,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                         type="button"
                         onClick={toggleFullscreen}
                         className="hover:text-blue-400 transition-colors"
-                        aria-label="전체화면"
+                        aria-label={t('candidateDetail.video.fullscreen')}
                       >
                         <Icon icon={isFullscreen ? 'mdi:fullscreen-exit' : 'mdi:fullscreen'} className="w-5 h-5" />
                       </button>
@@ -435,7 +437,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       : 'text-gray-500 hover:text-gray-400'
                   }`}
                 >
-                  전파 내용 미리보기
+                  {t('propagationPackage.tab.preview')}
                 </button>
                 <button
                   id="propagation-detail-tab"
@@ -447,7 +449,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       : 'text-gray-500 hover:text-gray-400'
                   }`}
                 >
-                  상세 보기
+                  {t('propagationPackage.tab.detail')}
                 </button>
               </div>
             </div>
@@ -468,7 +470,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 flex items-start gap-2">
                     <Icon icon="mdi:information" className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                     <p className="text-blue-300 text-xs leading-relaxed">
-                      AI 로 생성된 전파문 초안입니다. 상세내용을 확인하신 후 필요 사항 수정·보완 후 전파해 주세요.
+                      {t('propagationPackage.aiHint')}
                     </p>
                   </div>
                   
@@ -482,7 +484,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                         scrollbarWidth: 'thin',
                         scrollbarColor: '#31353a #0f0f0f',
                       }}
-                      placeholder="전파 내용을 입력하세요..."
+                      placeholder={t('propagationPackage.contentPlaceholder')}
                     />
                   </div>
                 </div>
@@ -493,11 +495,11 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:alert-circle" className="w-5 h-5 text-red-400" />
-                      <h3 className="text-white font-semibold text-sm">최신 포착(즉시 출동 기준)</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.latestCapture.title')}</h3>
                     </div>
                     <div className="space-y-1.5 text-sm">
-                      <div className="text-gray-300">10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%</div>
-                      <div className="text-gray-400 text-xs">편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측</div>
+                      <div className="text-gray-300">{t('propagationPackage.detail.latestCapture.line')}</div>
+                      <div className="text-gray-400 text-xs">{t('propagationPackage.detail.latestCapture.note')}</div>
                     </div>
                   </div>
 
@@ -505,19 +507,19 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:police-badge" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">최인근 파출소(출동 거점)</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.nearestStation.title')}</h3>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div>
-                        <span className="text-gray-400">기준 지점(최신 포착지): </span>
-                        <span className="text-gray-300">10:35:56 / 별빛A-230 / 은하로363번길 48</span>
+                        <span className="text-gray-400">{t('propagationPackage.detail.nearestStation.referenceLabel')} </span>
+                        <span className="text-gray-300">{t('propagationPackage.detail.nearestStation.referenceValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">최인근 파출소: </span>
-                        <span className="text-gray-300">(파출소명) / 약 (거리)km</span>
+                        <span className="text-gray-400">{t('propagationPackage.detail.nearestStation.stationLabel')} </span>
+                        <span className="text-gray-300">{t('propagationPackage.detail.nearestStation.stationValue')}</span>
                       </div>
                       <div className="text-gray-400 text-xs pt-1">
-                        참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
+                        {t('propagationPackage.detail.nearestStation.note')}
                       </div>
                     </div>
                   </div>
@@ -526,20 +528,20 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:account-alert" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">대상자 정보</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.subject.title')}</h3>
                     </div>
                     <div className="space-y-1.5 text-sm">
                       <div>
-                        <span className="text-gray-400">성명/나이: </span>
-                        <span className="text-gray-300">김도연 / 22세(남)</span>
+                        <span className="text-gray-400">{t('propagationPackage.detail.subject.nameAgeLabel')} </span>
+                        <span className="text-gray-300">{t('propagationPackage.detail.subject.nameAgeValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">인상착의: </span>
-                        <span className="text-gray-300">회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg</span>
+                        <span className="text-gray-400">{t('propagationPackage.detail.subject.descLabel')} </span>
+                        <span className="text-gray-300">{t('propagationPackage.detail.subject.descValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">실종 접수: </span>
-                        <span className="text-gray-300">09:30경 은하로363번길 48 일원</span>
+                        <span className="text-gray-400">{t('propagationPackage.detail.subject.intakeLabel')} </span>
+                        <span className="text-gray-300">{t('propagationPackage.detail.subject.intakeValue')}</span>
                       </div>
                     </div>
                   </div>
@@ -548,21 +550,15 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:navigation" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">추적 판단 요약(방향/가능 동선)</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.trackingSummary.title')}</h3>
                     </div>
                     <ul className="space-y-1.5 text-sm">
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>남서 방향 이동 지속 추정(경로 적합도 83)</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>체류 후 동일 방향 이탈 패턴 반복 관측</span>
-                      </li>
+                      {(t('propagationPackage.detail.trackingSummary.items', { returnObjects: true }) as string[]).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2 text-gray-300">
+                          <span className="text-gray-500 mt-1">•</span>
+                          <span>{line}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -570,19 +566,19 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:radar" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">관제 확인 범위(현재 탐색 상태)</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.surveillance.title')}</h3>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div>
-                        <span className="text-gray-400">시간: </span>
-                        <span className="text-gray-300">09:30~현재</span>
+                        <span className="text-gray-400">{t('propagationPackage.detail.surveillance.timeLabel')} </span>
+                        <span className="text-gray-300">{t('propagationPackage.detail.surveillance.timeValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">범위: </span>
-                        <span className="text-gray-300">은하로363번길 48 인근 및 인접 구간 반경 10km 확인</span>
+                        <span className="text-gray-400">{t('propagationPackage.detail.surveillance.rangeLabel')} </span>
+                        <span className="text-gray-300">{t('propagationPackage.detail.surveillance.rangeValue')}</span>
                       </div>
                       <div className="text-gray-400 text-xs pt-1">
-                        상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
+                        {t('propagationPackage.detail.surveillance.note')}
                       </div>
                     </div>
                   </div>
@@ -591,37 +587,25 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:cctv" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">포착 현황(근거 상세)</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.captureTimeline.title')}</h3>
                     </div>
                     <div className="space-y-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <Icon icon="mdi:magnify" className="w-4 h-4 text-blue-400" />
-                          <span className="text-blue-400 font-semibold text-xs">(고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%</span>
+                          <span className="text-blue-400 font-semibold text-xs">{t('propagationPackage.detail.captureTimeline.fastSearchLine')}</span>
                         </div>
-                        <div className="text-gray-400 text-xs ml-6">· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측</div>
+                        <div className="text-gray-400 text-xs ml-6">{t('propagationPackage.detail.captureTimeline.fastSearchNote')}</div>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
-                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48</span>
+                      {(t('propagationPackage.detail.captureTimeline.linkedItems', { returnObjects: true }) as { line: string; note: string }[]).map((item, i) => (
+                        <div key={i}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
+                            <span className="text-purple-400 font-semibold text-xs">{item.line}</span>
+                          </div>
+                          <div className="text-gray-400 text-xs ml-6">{item.note}</div>
                         </div>
-                        <div className="text-gray-400 text-xs ml-6">· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단</div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
-                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54</span>
-                        </div>
-                        <div className="text-gray-400 text-xs ml-6">· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단</div>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
-                          <span className="text-purple-400 font-semibold text-xs">(추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28</span>
-                        </div>
-                        <div className="text-gray-400 text-xs ml-6">· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단</div>
-                      </div>
+                      ))}
                     </div>
                   </div>
 
@@ -629,11 +613,12 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:handshake" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">상호 협조(112 회신 요청)</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.cooperation.title')}</h3>
                     </div>
                     <div className="space-y-2 text-sm text-gray-300">
-                      <p>112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면 해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행</p>
-                      <p>추가 포착 또는 동선 변경 확인 시 바로 재전파</p>
+                      {(t('propagationPackage.detail.cooperation.lines', { returnObjects: true }) as string[]).map((line, i) => (
+                        <p key={i}>{line}</p>
+                      ))}
                     </div>
                   </div>
 
@@ -641,17 +626,15 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:paperclip" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">첨부</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.attachments.title')}</h3>
                     </div>
                     <ul className="space-y-1.5 text-sm">
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>별빛A-230/444/498/604 포착 썸네일 및 클립</span>
-                      </li>
-                      <li className="flex items-start gap-2 text-gray-300">
-                        <span className="text-gray-500 mt-1">•</span>
-                        <span>동선 지도(4지점 표시)</span>
-                      </li>
+                      {(t('propagationPackage.detail.attachments.items', { returnObjects: true }) as string[]).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2 text-gray-300">
+                          <span className="text-gray-500 mt-1">•</span>
+                          <span>{line}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
@@ -661,10 +644,10 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       <Icon icon="mdi:information" className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                       <div className="text-sm">
                         <p className="text-gray-300 leading-relaxed mb-2">
-                          ※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
+                          {t('propagationPackage.detail.disclaimer')}
                         </p>
                         <p className="text-gray-400 text-xs">
-                          관제 담당: 김쿠도 / 032-266-3454
+                          {t('propagationPackage.detail.dispatcher')}
                         </p>
                       </div>
                     </div>
@@ -682,7 +665,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
             onClick={handleClose}
             className="px-4 py-2 rounded-lg text-xs font-medium text-gray-300 bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-colors"
           >
-            취소
+            {t('common.cancel')}
           </button>
           <button
             id="send-propagation-package-button"
@@ -706,7 +689,7 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
           >
             <div className="flex items-center gap-1.5">
               <Icon icon="mdi:send" className="w-4 h-4" />
-              <span>전파 패키지 전송</span>
+              <span>{t('propagationPackage.send')}</span>
             </div>
           </button>
         </div>

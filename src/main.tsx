@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "../app/globals.css";
+import "./i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 window.addEventListener("unhandledrejection", (event) => {
     // react-unity-webgl 관련 에러인 경우에만 로깅 (undefined 에러 방지)
