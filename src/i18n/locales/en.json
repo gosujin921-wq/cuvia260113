@@ -176,46 +176,98 @@
       "unknown": ""
     },
     "labels": {
-      "0": ["Gwacheon ↔ Dongjak", "→ Dongjak"],
-      "1": ["Gwacheon ↔ Dongjak", "→ Gwacheon"],
-      "2": ["Umyeon ↔ Banpo", "→ Gwacheon"],
-      "3": ["Umyeon ↔ Banpo", "→ Seoul"]
+      "0": [
+        "Gwacheon ↔ Dongjak",
+        "→ Dongjak"
+      ],
+      "1": [
+        "Gwacheon ↔ Dongjak",
+        "→ Gwacheon"
+      ],
+      "2": [
+        "Umyeon ↔ Banpo",
+        "→ Gwacheon"
+      ],
+      "3": [
+        "Umyeon ↔ Banpo",
+        "→ Seoul"
+      ]
     },
     "sets": {
       "0": {
         "segments": {
-          "0": { "location": "Dongjak Br" },
-          "1": { "location": "Sadang Stn" },
-          "2": { "location": "Sadang IC" },
-          "3": { "location": "Namtae Pass" },
-          "4": { "location": "Gwanmun 4" }
+          "0": {
+            "location": "Dongjak Br"
+          },
+          "1": {
+            "location": "Sadang Stn"
+          },
+          "2": {
+            "location": "Sadang IC"
+          },
+          "3": {
+            "location": "Namtae Pass"
+          },
+          "4": {
+            "location": "Gwanmun 4"
+          }
         }
       },
       "1": {
         "segments": {
-          "0": { "location": "Gwanmun 4" },
-          "1": { "location": "Namtae Pass" },
-          "2": { "location": "Sadang IC" },
-          "3": { "location": "Sadang Stn" },
-          "4": { "location": "Dongjak Br" }
+          "0": {
+            "location": "Gwanmun 4"
+          },
+          "1": {
+            "location": "Namtae Pass"
+          },
+          "2": {
+            "location": "Sadang IC"
+          },
+          "3": {
+            "location": "Sadang Stn"
+          },
+          "4": {
+            "location": "Dongjak Br"
+          }
         }
       },
       "2": {
         "segments": {
-          "0": { "location": "Banpo Br" },
-          "1": { "location": "St. Mary's Hosp." },
-          "2": { "location": "Seocho Stn X" },
-          "3": { "location": "Umyeon Tunnel" },
-          "4": { "location": "Seonam IC" }
+          "0": {
+            "location": "Banpo Br"
+          },
+          "1": {
+            "location": "St. Mary's Hosp."
+          },
+          "2": {
+            "location": "Seocho Stn X"
+          },
+          "3": {
+            "location": "Umyeon Tunnel"
+          },
+          "4": {
+            "location": "Seonam IC"
+          }
         }
       },
       "3": {
         "segments": {
-          "0": { "location": "Seonam IC" },
-          "1": { "location": "Umyeon Tunnel" },
-          "2": { "location": "Seocho Stn X" },
-          "3": { "location": "St. Mary's Hosp." },
-          "4": { "location": "Banpo Br" }
+          "0": {
+            "location": "Seonam IC"
+          },
+          "1": {
+            "location": "Umyeon Tunnel"
+          },
+          "2": {
+            "location": "Seocho Stn X"
+          },
+          "3": {
+            "location": "St. Mary's Hosp."
+          },
+          "4": {
+            "location": "Banpo Br"
+          }
         }
       }
     }
@@ -288,24 +340,63 @@
     }
   },
   "mockEvents": {
-    "mock-1": { "title": "Parking lot noise complaint", "location": "Moonlight Underground Parking" },
-    "mock-2": { "title": "Elderly fall injury", "location": "Central Park, North Gate" },
-    "mock-3": { "title": "Crosswalk signal violation", "location": "Gwanmun Crossroads" },
-    "mock-4": { "title": "AI behavior anomaly detected", "location": "Sky Station, Exit 2" },
-    "mock-5": { "title": "Traffic jam from vehicle accident", "location": "Cloud Ave, toward Sadang Station" },
-    "mock-6": { "title": "Missing child — urgent search", "location": "Moonlight Elementary, Front Gate" },
-    "mock-7": { "title": "Vehicle collision", "location": "City Hall Intersection" },
-    "mock-8": { "title": "Argument escalating to a fight", "location": "Cloud Station, storefront" },
-    "mock-9": { "title": "Fire in a trash bin", "location": "Moonlight Apartments — trash bin" },
-    "mock-10": { "title": "Suspected theft attempt", "location": "Moonlight District, storefront" }
+    "mock-1": {
+      "title": "Parking lot noise complaint",
+      "location": "Moonlight Underground Parking"
+    },
+    "mock-2": {
+      "title": "Elderly fall injury",
+      "location": "Central Park, North Gate"
+    },
+    "mock-3": {
+      "title": "Crosswalk signal violation",
+      "location": "Gwanmun Crossroads"
+    },
+    "mock-4": {
+      "title": "AI behavior anomaly detected",
+      "location": "Sky Station, Exit 2"
+    },
+    "mock-5": {
+      "title": "Traffic jam from vehicle accident",
+      "location": "Cloud Ave, toward Sadang Station"
+    },
+    "mock-6": {
+      "title": "Missing child — urgent search",
+      "location": "Moonlight Elementary, Front Gate"
+    },
+    "mock-7": {
+      "title": "Vehicle collision",
+      "location": "City Hall Intersection"
+    },
+    "mock-8": {
+      "title": "Argument escalating to a fight",
+      "location": "Cloud Station, storefront"
+    },
+    "mock-9": {
+      "title": "Fire in a trash bin",
+      "location": "Moonlight Apartments — trash bin"
+    },
+    "mock-10": {
+      "title": "Suspected theft attempt",
+      "location": "Moonlight District, storefront"
+    }
   },
   "candidateDetailMock": {
     "04": {
       "summary": "Man in gray hoodie loiters in front of the convenience store, enters and exits repeatedly, then exits toward the upper-center.",
       "timeline": [
-        { "time": "00:00", "label": "Gray-hoodie man appears, pauses near convenience store entrance" },
-        { "time": "00:20", "label": "Appears to be on a call, moving toward entrance" },
-        { "time": "00:25", "label": "Passerby in dark clothing with umbrella moves along the road" }
+        {
+          "time": "00:00",
+          "label": "Gray-hoodie man appears, pauses near convenience store entrance"
+        },
+        {
+          "time": "00:20",
+          "label": "Appears to be on a call, moving toward entrance"
+        },
+        {
+          "time": "00:25",
+          "label": "Passerby in dark clothing with umbrella moves along the road"
+        }
       ]
     },
     "21": {
@@ -343,9 +434,18 @@
       "behavior": "Loitering at entrance, on a call, moving inside",
       "exitDirection": "Upper-center",
       "timeline": [
-        { "time": "00:00", "label": "Gray-hoodie man appears, loitering near convenience store entrance" },
-        { "time": "00:20", "label": "Appears to be on a call, moving toward the entrance" },
-        { "time": "00:25", "label": "Passerby in dark clothing with umbrella moves along the road" }
+        {
+          "time": "00:00",
+          "label": "Gray-hoodie man appears, loitering near convenience store entrance"
+        },
+        {
+          "time": "00:20",
+          "label": "Appears to be on a call, moving toward the entrance"
+        },
+        {
+          "time": "00:25",
+          "label": "Passerby in dark clothing with umbrella moves along the road"
+        }
       ]
     },
     "11": {
@@ -432,9 +532,18 @@
         "fastSearchLine": "(Fast Search) 10:35:56 / STAR-A230 / 48 Galaxy St / Similarity 95%",
         "fastSearchNote": "· Loitered in front of convenience store, entered/exited repeatedly, observed making a call before exiting toward upper-center",
         "linkedItems": [
-          { "line": "(Tracking) 10:35:54 / STAR-A444 / 48 Galaxy St", "note": "· Linked based on appearance / behavior matching the fast-search candidate." },
-          { "line": "(Tracking) 10:35:51 / STAR-A498 / 54 Moonlight St", "note": "· Linked based on appearance / behavior matching the fast-search candidate." },
-          { "line": "(Tracking) 10:12:31 / STAR-A604 / 28 Moonlight St", "note": "· Linked based on appearance / behavior matching the fast-search candidate." }
+          {
+            "line": "(Tracking) 10:35:54 / STAR-A444 / 48 Galaxy St",
+            "note": "· Linked based on appearance / behavior matching the fast-search candidate."
+          },
+          {
+            "line": "(Tracking) 10:35:51 / STAR-A498 / 54 Moonlight St",
+            "note": "· Linked based on appearance / behavior matching the fast-search candidate."
+          },
+          {
+            "line": "(Tracking) 10:12:31 / STAR-A604 / 28 Moonlight St",
+            "note": "· Linked based on appearance / behavior matching the fast-search candidate."
+          }
         ]
       },
       "cooperation": {

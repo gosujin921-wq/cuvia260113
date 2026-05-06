@@ -210,24 +210,63 @@
     }
   },
   "mockEvents": {
-    "mock-1": { "title": "주차장 소음 민원 신고", "location": "하늘시 별빛구 달빛동 지하주차장" },
-    "mock-2": { "title": "노인 낙상 부상 신고", "location": "하늘시 별빛구 별양동 중앙공원 북문 인근" },
-    "mock-3": { "title": "횡단보도 신호 위반", "location": "하늘시 별빛구 막계동 관문사거리" },
-    "mock-4": { "title": "이상 행동 AI 탐지", "location": "하늘시 별빛구 문원동 하늘역 2번 출구" },
-    "mock-5": { "title": "차량 사고 교통 정체", "location": "하늘시 별빛구 중앙동 구름대로 사당역 방향" },
-    "mock-6": { "title": "미아 발생 긴급 수색", "location": "하늘시 별빛구 별양동 달빛초등학교 정문 앞" },
-    "mock-7": { "title": "차량 충돌 사고 발생", "location": "하늘시 별빛구 중앙동 하늘시청 앞 교차로" },
-    "mock-8": { "title": "말다툼 주먹다짐 발생", "location": "하늘시 별빛구 중앙동 구름역 인근 상가 앞" },
-    "mock-9": { "title": "쓰레기 수거함 화재 발생", "location": "하늘시 별빛구 막계동 달빛동 아파트 단지 쓰레기 수거함" },
-    "mock-10": { "title": "절도 시도 의심 행동", "location": "하늘시 별빛구 달빛동 상가 앞" }
+    "mock-1": {
+      "title": "주차장 소음 민원 신고",
+      "location": "하늘시 별빛구 달빛동 지하주차장"
+    },
+    "mock-2": {
+      "title": "노인 낙상 부상 신고",
+      "location": "하늘시 별빛구 별양동 중앙공원 북문 인근"
+    },
+    "mock-3": {
+      "title": "횡단보도 신호 위반",
+      "location": "하늘시 별빛구 막계동 관문사거리"
+    },
+    "mock-4": {
+      "title": "이상 행동 AI 탐지",
+      "location": "하늘시 별빛구 문원동 하늘역 2번 출구"
+    },
+    "mock-5": {
+      "title": "차량 사고 교통 정체",
+      "location": "하늘시 별빛구 중앙동 구름대로 사당역 방향"
+    },
+    "mock-6": {
+      "title": "미아 발생 긴급 수색",
+      "location": "하늘시 별빛구 별양동 달빛초등학교 정문 앞"
+    },
+    "mock-7": {
+      "title": "차량 충돌 사고 발생",
+      "location": "하늘시 별빛구 중앙동 하늘시청 앞 교차로"
+    },
+    "mock-8": {
+      "title": "말다툼 주먹다짐 발생",
+      "location": "하늘시 별빛구 중앙동 구름역 인근 상가 앞"
+    },
+    "mock-9": {
+      "title": "쓰레기 수거함 화재 발생",
+      "location": "하늘시 별빛구 막계동 달빛동 아파트 단지 쓰레기 수거함"
+    },
+    "mock-10": {
+      "title": "절도 시도 의심 행동",
+      "location": "하늘시 별빛구 달빛동 상가 앞"
+    }
   },
   "candidateDetailMock": {
     "04": {
       "summary": "회색 후드 남성이 편의점 앞에 체류하다가 입장·퇴장 후 상단 중앙 방향으로 화면을 이탈함",
       "timeline": [
-        { "time": "00:00", "label": "회색 후드티 착용 남성 등장, 편의점 입구 근처 체류" },
-        { "time": "00:20", "label": "전화하는 듯한 모습, 입구 쪽으로 이동" },
-        { "time": "00:25", "label": "검은색 옷 + 우산 착용 행인 도로 이동" }
+        {
+          "time": "00:00",
+          "label": "회색 후드티 착용 남성 등장, 편의점 입구 근처 체류"
+        },
+        {
+          "time": "00:20",
+          "label": "전화하는 듯한 모습, 입구 쪽으로 이동"
+        },
+        {
+          "time": "00:25",
+          "label": "검은색 옷 + 우산 착용 행인 도로 이동"
+        }
       ]
     }
   },
@@ -304,9 +343,18 @@
         "fastSearchLine": "(고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%",
         "fastSearchNote": "· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측",
         "linkedItems": [
-          { "line": "(추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48", "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단" },
-          { "line": "(추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54", "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단" },
-          { "line": "(추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28", "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단" }
+          {
+            "line": "(추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48",
+            "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단"
+          },
+          {
+            "line": "(추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54",
+            "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단"
+          },
+          {
+            "line": "(추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28",
+            "note": "· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단"
+          }
         ]
       },
       "cooperation": {
@@ -575,6 +623,364 @@
       "propagation": "전파 패키지를 바탕으로 전파문을 작성하세요.<br/>CUVIA는 지금까지 선택한 클립, 포착 정보, 대상 정보를 종합해<br/>전파문 초안을 자동으로 생성합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• AI 생성 전파문 초안 확인 및 수정</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 최인근 파출소 / 소방서 정보 확인</span><br/><br/><b>[전파 패키지 전송]</b> 버튼을 누르면 다음 단계인 전파 스레드로 이동합니다.",
       "report-download": "전파 스레드에서 신고 및 전파 내역을 확인하세요.<br/>수신한 신고 정보와 보낸 전파 내용을 대화형 스레드 형태로 확인할 수 있습니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 수신한 신고 정보, 보낸 전파 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 추가 요청 / 회신 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 경찰서 처리 결과 확인</span><br/><br/><b>[사건 처리 결과 보고서 다운로드]</b> 버튼을 누르면 다음 단계로 진행됩니다.",
       "report-result": "AI가 사건 대응 전 과정을 종합해 최종 보고서를 생성합니다.<br/>지금까지의 모든 단계에서 확인한 내용과<br/>사용자가 선택한 정보, 수신·전송된 전파 내역을 바탕으로<br/>사건 처리 결과 보고서를 자동으로 작성합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• AI가 작성한 최종 보고서 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 원하는 저장 형식 선택</span><br/><br/><b>[저장 형식]</b>을 선택하면 튜토리얼이 종료됩니다."
+    }
+  },
+  "sk": {
+    "mockEvents": {
+      "mock-1": {
+        "title": "비인가 구역 진입 시도",
+        "location": "M16 동 4F 클린룸 출입구"
+      },
+      "mock-2": {
+        "title": "야간 무단 잔류 감지",
+        "location": "R&D 빌딩 5F 설계실"
+      },
+      "mock-3": {
+        "title": "USB 연결 알림",
+        "location": "본관 2F 회의실 PC"
+      },
+      "mock-4": {
+        "title": "AI 배회 행동 탐지",
+        "location": "B2 임직원 주차장"
+      },
+      "mock-5": {
+        "title": "외부 메일 첨부 알림",
+        "location": "사내 메일 게이트웨이"
+      },
+      "mock-6": {
+        "title": "사원증 도용 의심",
+        "location": "정문 출입 게이트"
+      },
+      "mock-7": {
+        "title": "화물 반출 검색 누락",
+        "location": "서측 화물 게이트"
+      },
+      "mock-8": {
+        "title": "보안 위반 시비 발생",
+        "location": "본관 1F 카페테리아"
+      },
+      "mock-9": {
+        "title": "비상구 무단 개방",
+        "location": "M16 동 3F 동측 비상구"
+      },
+      "mock-10": {
+        "title": "보안 카메라 가림 의심",
+        "location": "R&D 빌딩 1F 로비"
+      }
+    },
+    "events": {
+      "S-20260107-001": {
+        "listTitle": "박지훈(35세, 남) 기밀문서 반출 의심 - 다크 자켓·블랙백팩, DLP 차단 후 추적 필요",
+        "listLocation": "M16 동 3F 설계실, 14:08경"
+      },
+      "A-20260107-004": {
+        "listTitle": "김도연(22세, 남) 실종 - 회색 후드·청바지, 장애 있음. 긴급 수색 요망",
+        "listLocation": "은하로363번길 48, 09:30경"
+      }
+    },
+    "eventList": {
+      "agency": {
+        "security": "산업보안센터",
+        "112": "112 상황실",
+        "119": "119 지휘센터",
+        "ai": "AI 시스템"
+      },
+      "empty": "표시할 이벤트가 없습니다.",
+      "tabs": {
+        "all": "전체"
+      },
+      "priority": {
+        "긴급": "긴급",
+        "경계": "경계",
+        "주의": "주의",
+        "일반": "일반"
+      },
+      "status": {
+        "new": "NEW",
+        "monitoring": "모니터링",
+        "evidence": "증거"
+      },
+      "type": {
+        "112 치안": "112 치안",
+        "112 실종": "112 실종",
+        "119 화재": "119 화재",
+        "119 구조": "119 구조",
+        "AI 탐지": "AI 탐지",
+        "NDMS": "NDMS"
+      }
+    },
+    "reportPopup": {
+      "imageAlt": "기밀문서 반출 의심 대상",
+      "nameAge": "이름/나이",
+      "description": "인상착의",
+      "locationTime": "발생 위치/시각",
+      "subjectName": "박지훈 / 35세 (남)",
+      "subjectDescription": "다크 자켓, 블랙 슬랙스, 검정 백팩, 사원증 패용, 175cm, 70kg.",
+      "subjectLocationTime": "M16 동 3F 설계실, 14:08경",
+      "urgentNotice": "인가 등급 외 설계문서 외장 매체 복사 시도 감지. 즉시 동선 추적 요망.",
+      "startFastSearch": "고속검색 시작",
+      "intakeLabel": "DLP 알림 접수:"
+    },
+    "propagation": {
+      "agencyName": "산업보안센터",
+      "agencyShortName": "보안센터",
+      "threadTitle": "기밀문서 반출 의심 박지훈(35세) 긴급 추적",
+      "defaultReportContent": "🚨 기밀문서 반출 의심 알림\n\n▪ 알림 접수 정보\n\n알림 채널: DLP 모니터링\n접수 시각: 오후 02:08:31\n담당자: 정OO 보안실장\n\n▪ 대상자 정보\n\n이름/나이: 박지훈 / 35세 (남)\n소속/직급: 메모리 설계팀 / 책임연구원\n인상착의: 다크 자켓, 블랙 슬랙스, 검정 백팩, 사원증 패용, 175cm, 70kg\n발생 위치: M16 동 3F 설계실\n발생 시각: 오후 02:08경\n\n▪ 특이사항\n\n⚠️ 인가 등급 외 설계문서(반도체 회로도) 외장 매체 복사 시도 감지.\nDLP 차단 후 즉시 사내 CCTV 동선 추적 및 출입 통제팀 협조 요망.\n\n비인가 구역 진입 패턴 4건, 외장 USB 연결 이력 1건이 추가로 확인됨.",
+      "defaultPropagationContent": "[보안요청건/협조] 기밀문서 반출 의심 박지훈(남/35) 동일인물 추정 연속포착 4건 공유드립니다.\n\n\n🚨 1. 최신 포착(즉시 대응 기준)\n14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%\n사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인\n\n\n🚓 2. 최인접 통제 거점(대응 거점)\n기준 지점(최신 포착지): 14:35:56 / GATE-WEST-07 / 서측 출입 게이트\n최인접 거점: 본관 1F 통합관제실 / 약 0.4km\n\n참고: 현장 출동·차단 시 통합관제실 우선 연계 부탁드립니다.\n\n\n👤 3. 대상자 정보\n성명/나이: 박지훈 / 35세(남)\n소속/직급: 메모리 설계팀 / 책임연구원\n인상착의: 다크 자켓, 블랙 슬랙스, 검정 백팩, 사원증, 175cm / 70kg\nDLP 알림: 14:08경 M16 동 3F 설계실\n\n🧭 4. 추적 판단 요약(방향/가능 동선)\n설계실 → 3F 복도 → 서측/정문 게이트 방향 이동 추정(경로 적합도 83)\n인접 사내 CCTV 커버리지 중첩 구간으로 연속 추적 가능\n체류 후 동일 방향 이탈 패턴 반복 관측\n\n\n📡 5. 관제 확인 범위(현재 탐색 상태)\n시간: 14:08~현재\n범위: M16 동 3F ~ 서측/정문 게이트 ~ 본관 1F 로비 동선 확인\n상기 범위 외 카메라는 아직 미확인 상태이며, 출입 통제팀에서 최신 위치/우선 확인 구역 회신 주시면 즉시 확대 확인 가능\n\n\n🎯 6. 포착 현황(근거 상세)\n\n🔎 (고속검색) 14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%\n\n· 사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인\n🔗 (추적연계) 14:35:54 / M16-EXIT-A03 / M16 동 3F 설계실 출구\n\n· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단\n🔗 (추적연계) 14:35:51 / GATE-MAIN-02 / 정문 출입 게이트\n\n· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단\n🔗 (추적연계) 14:12:31 / LOBBY-MAIN-01 / 본관 1F 메인 로비\n\n· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단\n\n\n🤝 7. 상호 협조(보안팀 회신 요청)\n출입 통제팀에서 최신 인증 시각/위치, 차량 이동 여부, 외형변동(겉옷·가방 등), 우선 차단 게이트 회신 주시면\n해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행\n\n추가 포착 또는 동선 변경 확인 시 바로 재전파\n\n\n📎 8. 첨부\nM16-LAB-CAM-12 / M16-EXIT-A03 / GATE-WEST-07 / GATE-MAIN-02 / LOBBY-MAIN-01 포착 썸네일 및 클립\n사내 동선도(4지점 표시)\n\n\n※ AI 분석 기반 추정 결과이며 최종 확인은 보안실장 판단 기준입니다.\n관제 담당: 김쿠도 / 사내 02-XXXX-XXXX",
+      "discoveryReportContent": "📢 [보안 회신] 용의자 확보 통보\n\n🚨 용의자 확보 통보\n\n▪ 사건번호: 2026-01-07-M16-기밀유출\n▪ 대상자: 박지훈 / 35세(남) / 메모리 설계팀\n\n\n✅ 1. 확보 결과\n\n확보 시각: 14:48:14\n확보 장소: 정문 출입 게이트 인근\n상태: 외장 매체 1건 봉인 / 사원증 회수 / 사내 조사관 인계\n\n📍 2. 조치 사항\n\n게이트 출입 차단\n인근 CCTV 백업\n외장 매체 디지털 포렌식 의뢰\n\n\n📡 3. 관제 협조 요청\n\n관련 영상 백업 요청 (13:50~15:00 구간)\n포착 지점 5건 자료 보존 요청\n\n\n🔒 4. 상태 전환\n\n해당 건 추적 종료 처리 요청드립니다.\n추가 특이사항 발생 시 재통보 예정.\n\n담당: 정OO 보안실장\n산업보안센터",
+      "agencyAck": "전파 내용 확인했습니다. 출입 통제팀이 현재 게이트 차단 중입니다.",
+      "chatHint": "산업보안센터와의 채팅입니다. 상황 진행 사항을 실시간으로 확인하세요.",
+      "threadCount": "전파 건수: {{count}}건",
+      "statusCompleted": "완료됨",
+      "statusInProgress": "진행 중",
+      "fallbackTitle": "전파",
+      "fallbackAuthor": "신고기관",
+      "downloadReport": "사건 처리 결과 보고서 다운로드",
+      "sentLabel": "전파 전송",
+      "userRole": "담당자",
+      "noContent": "내용이 없습니다",
+      "captureListLabel": "포착 목록 ({{count}}건)",
+      "messagePlaceholder": "메시지를 입력하세요...",
+      "scrollToTop": "맨 위로"
+    },
+    "guide": {
+      "steps": {
+        "intro": "기밀문서 반출 의심 알림이 접수되었습니다.<br/>대상자 정보를 바탕으로 사내 CCTV 영상에서 동선을 빠르게 탐색할 수 있습니다.<br/><b>[고속검색 시작]</b> 버튼을 클릭해주세요.",
+        "review-candidates": "대상자 외형·소지품 정보를 기반으로 유사 후보를 탐색했습니다.<br/>검색 결과는 조건 조정과 사용자 피드백을 통해 더욱 정교하게 개선될 수 있습니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 상단 반경을 클릭해 탐색 범위를 변경하기</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• CUVIA Link에 비정형 조건 입력하기</span><br/><span style=\"opacity:0.5\">&nbsp;&nbsp;&nbsp;&nbsp;예 : \"다크 자켓 입은 사람만 보여줘\", \"백팩 안 든 사람은 제외해줘\"</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 후보 카드에서 맞음 / 틀림 선택하기</span><br/><br/><b>[후보 카드]</b>를 클릭하면 다음 단계로 넘어갑니다.",
+        "candidate-detail": "후보가 포착된 클립 영상을 확인하세요.<br/>CUVIA는 영상의 주요 장면을 VLM 기반 텍스트로 요약하고,<br/>알림 정보와 영상 정보를 비교해 유사도 점수를 제공합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 후보 클립 영상 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 후보 메타 정보 확인 및 유사도 점수 확인</span><br/><br/><b>[대상 포착]</b> 버튼을 누르면 해당 인물을 용의자로 확정하고 다음 단계로 진행됩니다.",
+        "route-analysis": "포착된 대상을 기반으로 객체추적이 진행됩니다.<br/>대상이 나타난 사내 CCTV와 포착 시각을 분석하여<br/>시간 흐름에 따른 이동 경로를 생성하고 지도 위에 표시합니다.<br/><br/>이 단계는 별도 조작 없이 자동으로 진행되며, 잠시 후 다음 단계로 넘어갑니다.",
+        "predicted-cctv": "마지막 포착 지점을 중심으로 주변 사내 CCTV를 투망감시합니다.<br/>CUVIA는 마지막으로 포착된 CCTV와 이전 포착 지점의 영상을 함께 분석하여,<br/>VLM 기반으로 이동 방향, 동선, 통로 구조를 파악합니다.<br/><br/><b>[CCTV 카드]</b> 중 하나를 클릭하면 다음 단계로 이동합니다.",
+        "predicted-cctv-detail": "추천된 CCTV 영상에서 대상을 찾아보세요.<br/>CUVIA는 대상이 나타날 가능성이 높은 CCTV를 재생하고,<br/>찾아야 하는 객체의 속성과 함께 이 CCTV를 추천한 상세 근거를 제공합니다.<br/><br/><b>[대상 포착]</b> 버튼을 누르면 전파할 수 있는 전파 목록으로 이동합니다.",
+        "capture-list-review": "포착된 정보를 확인하고 전파 패키지를 생성하세요.<br/>CUVIA는 이전 단계에서 확보한 대상 정보를 모아<br/>공유할 정보를 선택하고 전파할 수 있도록 지원합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 포착된 대상 카드를 클릭해 시간대별 캡션 설명, 후보 메타 정보 등 상세 내용 확인</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 공유할 정보 선택</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 전파 패키지 생성 버튼 클릭</span><br/><br/><b>[전파 패키지 생성]</b> 버튼을 누르면 다음 단계로 진행됩니다.",
+        "propagation": "전파 패키지를 바탕으로 전파문을 작성하세요.<br/>CUVIA는 지금까지 선택한 클립, 포착 정보, 대상 정보를 종합해<br/>전파문 초안을 자동으로 생성합니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• AI 생성 전파문 초안 확인 및 수정</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 출입 통제팀 / 통합관제실 정보 확인</span><br/><br/><b>[전파]</b> 버튼을 누르면 다음 단계로 진행됩니다.",
+        "report-download": "사건 처리 결과를 산업보안센터에 회신하면 사건이 종료됩니다.<br/>관제 활동의 결과를 정리해 보고서로 다운로드할 수 있습니다.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">직접 해볼 수 있는 기능</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 보고서 다운로드</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• 시뮬레이션 종료 확인</span><br/><br/><b>[종료 확인]</b> 버튼을 누르면 다음 단계로 진행됩니다.",
+        "report-result": "수고하셨습니다. 사건이 성공적으로 종료되었습니다."
+      }
+    },
+    "home": {
+      "startDialog": {
+        "title": "기밀문서 반출 추적 시뮬레이션",
+        "description1": "기밀문서 반출 의심 알림 접수 상황을 바탕으로",
+        "description2": "사내 CCTV로 용의자 동선을 추적하는 시연입니다.",
+        "flow": "고속검색 → 후보 검토 → 동선 분석 → 게이트 차단 → 전파 → 종료",
+        "duration": "약 5분",
+        "shortcutsTitle": "단축키",
+        "shortcutHToggle": "가이드 토글",
+        "shortcutResetGuide": "메인으로 돌아가기",
+        "footerStart": "시작 버튼을 눌러 진행하세요.",
+        "footerDisclaimer": "본 시뮬레이션은 가상의 데이터로 진행됩니다.",
+        "startButton": "시작",
+        "startAriaLabel": "시뮬레이션 시작"
+      },
+      "endDialog": {
+        "title": "CUVIA 튜토리얼이 종료되었습니다.",
+        "thanks": "체험해주셔서 감사합니다.",
+        "returnHome": "확인 버튼을 누르면 초기 화면으로 돌아갑니다.",
+        "confirmAriaLabel": "확인"
+      },
+      "guideDialog": {
+        "title": "안내",
+        "linkOnly": "<b>CUVIA Link는 별도 체험존에서 제공됩니다.</b><br/>CUVIA Link 체험존에서 이용해주세요.",
+        "demoOnly": "이 페이지는 고속 검색, 객체 추적,<br/>포착 목록, 전파 기능을 체험하는 데모 화면입니다.<br/>해당 메뉴를 선택하여 기능을 확인해 보세요."
+      },
+      "objectTrackingConfirm": {
+        "title": "객체 추적 검사",
+        "message": "현재 고속 검색 결과 {{count}}건이 있습니다.<br/>객체 추적 검사를 시작하시겠습니까?",
+        "confirm": "시작",
+        "cancel": "취소"
+      },
+      "captureMenu": {
+        "label": "포착목록"
+      },
+      "capture": {
+        "addedNotification": "{{cctvName}} | {{location}}의 클립을 포착 목록에 추가했습니다.\n전파 패키지를 생성하여 전파를 보내세요."
+      },
+      "agent": {
+        "showOnlyAttribute": "{{attribute}}만 표시",
+        "restoredAttribute": "{{attribute}} 복원",
+        "reSearchByCandidate": "대표 후보 기반 유사도 재검색"
+      }
+    },
+    "candidateDetail": {
+      "similarityTable": {
+        "missing": "대상자 정보",
+        "category": "항목",
+        "captured": "포착 인물 정보",
+        "match": "일치 여부",
+        "matched": "일치",
+        "unmatched": "불일치",
+        "special": "특이점"
+      },
+      "dialogAriaLabel": "고속검색 후보 상세",
+      "timeRange": "시간 범위",
+      "similarity": "유사도",
+      "similarityLabel": "유사도 {{percent}}%",
+      "clipAriaLabel": "캡처 구간 클립",
+      "observationSummary": "관찰 요약",
+      "captureTarget": "대상 포착",
+      "captureThumbnailAlt": "캡처 썸네일",
+      "finalSimilarity": "최종 유사도",
+      "tab": {
+        "timeline": "시간 기반 관찰 기록",
+        "meta": "후보 메타 정보"
+      },
+      "meta": {
+        "cameraId": "카메라 ID",
+        "detectedObject": "감지 객체",
+        "mainAttributes": "주요 속성",
+        "behavior": "행동 특징",
+        "exitDirection": "이탈 방향"
+      },
+      "video": {
+        "play": "재생",
+        "pause": "일시정지",
+        "rewind10": "10초 뒤로",
+        "forward10": "10초 앞으로",
+        "fullscreen": "전체화면",
+        "fullscreenExit": "전체화면 해제"
+      }
+    },
+    "candidateDetailMock": {
+      "04": {
+        "summary": "다크 자켓 남성이 게이트 앞에 체류하다가 사원증 인증 시도 후 우회 동선으로 이탈함",
+        "timeline": [
+          {
+            "time": "00:00",
+            "label": "다크 자켓 착용 남성 등장, 게이트 앞 체류"
+          },
+          {
+            "time": "00:20",
+            "label": "사원증 태깅 시도, 인증 실패 후 측면 이동"
+          },
+          {
+            "time": "00:25",
+            "label": "검정 백팩 휴대 동행 없음, 단독 이동 확인"
+          }
+        ]
+      }
+    },
+    "propagationPackage": {
+      "detail": {
+        "latestCapture": {
+          "title": "최신 포착(즉시 대응 기준)",
+          "line": "14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%",
+          "note": "사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인"
+        },
+        "nearestStation": {
+          "title": "최인접 통제 거점(대응 거점)",
+          "referenceLabel": "기준 지점(최신 포착지)",
+          "referenceValue": "14:35:56 / GATE-WEST-07 / 서측 출입 게이트",
+          "stationLabel": "최인접 거점",
+          "stationValue": "본관 1F 통합관제실 / 약 0.4km",
+          "note": "참고: 현장 출동·차단 시 통합관제실 우선 연계 부탁드립니다."
+        },
+        "subject": {
+          "title": "대상자 정보",
+          "nameAgeLabel": "성명/나이",
+          "nameAgeValue": "박지훈 / 35세(남)",
+          "descLabel": "인상착의",
+          "descValue": "다크 자켓, 블랙 슬랙스, 검정 백팩, 사원증, 175cm / 70kg",
+          "intakeLabel": "DLP 알림:",
+          "intakeValue": "14:08경 M16 동 3F 설계실"
+        },
+        "trackingSummary": {
+          "title": "추적 판단 요약(방향/가능 동선)",
+          "items": [
+            "설계실 → 3F 복도 → 서측/정문 게이트 방향 이동 추정(경로 적합도 83)",
+            "인접 사내 CCTV 커버리지 중첩 구간으로 연속 추적 가능",
+            "체류 후 동일 방향 이탈 패턴 반복 관측"
+          ]
+        },
+        "surveillance": {
+          "title": "관제 확인 범위(현재 탐색 상태)",
+          "timeLabel": "시간",
+          "timeValue": "14:08~현재",
+          "rangeLabel": "범위",
+          "rangeValue": "M16 동 3F ~ 서측/정문 게이트 ~ 본관 1F 로비 동선 확인",
+          "note": "상기 범위 외 카메라는 아직 미확인 상태이며, 출입 통제팀에서 최신 위치/우선 확인 구역 회신 주시면 즉시 확대 확인 가능"
+        },
+        "captureTimeline": {
+          "title": "포착 현황(근거 상세)",
+          "fastSearchLine": "(고속검색) 14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%",
+          "fastSearchNote": "· 사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인",
+          "linkedItems": [
+            {
+              "line": "(추적연계) 14:35:54 / M16-EXIT-A03 / M16 동 3F 설계실 출구",
+              "note": "· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단"
+            },
+            {
+              "line": "(추적연계) 14:35:51 / GATE-MAIN-02 / 정문 출입 게이트",
+              "note": "· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단"
+            },
+            {
+              "line": "(추적연계) 14:12:31 / LOBBY-MAIN-01 / 본관 1F 메인 로비",
+              "note": "· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단"
+            }
+          ]
+        },
+        "cooperation": {
+          "title": "상호 협조(보안팀 회신 요청)",
+          "lines": [
+            "출입 통제팀에서 최신 인증 시각/위치, 차량 이동 여부, 외형변동(겉옷·가방 등), 우선 차단 게이트 회신 주시면",
+            "해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행",
+            "추가 포착 또는 동선 변경 확인 시 바로 재전파"
+          ]
+        },
+        "attachments": {
+          "title": "첨부",
+          "items": [
+            "M16-LAB-CAM-12 / M16-EXIT-A03 / GATE-WEST-07 / GATE-MAIN-02 / LOBBY-MAIN-01 포착 썸네일 및 클립",
+            "사내 동선도(4지점 표시)"
+          ],
+          "note": "※ AI 분석 기반 추정 결과이며 최종 확인은 보안실장 판단 기준입니다.\n관제 담당: 김쿠도 / 사내 02-XXXX-XXXX"
+        },
+        "disclaimer": "※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.",
+        "dispatcher": "관제 담당: 김쿠도 / 032-266-3454"
+      },
+      "dialogAriaLabel": "전파 패키지",
+      "title": "전파 패키지",
+      "selectedCount": "{{count}}건 선택됨",
+      "captureVideo": "포착 영상",
+      "tab": {
+        "preview": "전파 내용 미리보기",
+        "detail": "상세 보기"
+      },
+      "aiHint": "AI 로 생성된 전파문 초안입니다. 상세내용을 확인하신 후 필요 사항 수정·보완 후 전파해 주세요.",
+      "contentPlaceholder": "전파 내용을 입력하세요...",
+      "send": "전파 패키지 전송"
+    },
+    "leftPanel": {
+      "airQuality": {
+        "title": "실시간 대기질 모니터링",
+        "lastUpdate": "마지막 업데이트",
+        "basedOn": "{{location}} 기준",
+        "temperature": "온도",
+        "humidity": "습도",
+        "precipitation": "강수량",
+        "cumulative": "(누적량)",
+        "windSpeed": "풍속"
+      },
+      "safety": {
+        "title": "사내 보안·시설 관리 현황",
+        "floodRisk": "출입통제 시스템 가동률",
+        "facilityRiskLine1": "보안 카메라",
+        "facilityRiskLine2": "점검 필요도",
+        "statusNormal": "정상",
+        "statusCaution": "주의",
+        "statusDanger": "위험",
+        "levelLow": "낮음",
+        "levelMedium": "보통",
+        "levelHigh": "높음",
+        "floodRiskLine1": "출입통제",
+        "floodRiskLine2": "시스템 가동률"
+      },
+      "facility": {
+        "streetLight": "출입 게이트",
+        "trafficSignal": "사내 CCTV",
+        "emergencyBell": "비상 알람",
+        "normal": "정상",
+        "error": "장애"
+      }
     }
   }
 }

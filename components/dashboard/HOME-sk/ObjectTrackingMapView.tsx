@@ -1,0 +1,1119 @@
+import { useRef, useEffect, useState } from 'react';
+import { Icon } from '@iconify/react';
+import maplibregl from 'maplibre-gl';
+import 'maplibre-gl/dist/maplibre-gl.css';
+import i18n from '@/src/i18n';
+
+interface ObjectTrackingMapViewProps {
+  visibleTrackingPins: number; // 0~4: 보이는 핀 개수
+  flyToLocation: [number, number] | null; // 지도 이동 좌표
+  initialMapState: { center: [number, number]; zoom: number; pitch: number; bearing: number }; // 초기 지도 상태
+  onTrackingComplete?: () => void; // 추적 애니메이션 완료 시 콜백
+  onCCTVHover?: (cctvId: string | null, showLabel?: boolean) => void; // CCTV 마커 호버 시 콜백
+  hoveredCCTVId?: string | null; // 외부에서 전달받은 호버 CCTV ID
+  showCCTVLabel?: boolean; // CCTV 정보 라벨 표시 여부
+  pulseRadius?: number; // 펄스 반경 (m)
+  showMapControls?: boolean; // 맵 컨트롤 버튼 표시 여부 (CCTV 예측 패널과 함께 페이드인)
+  resetSignal?: number; // 값이 변경되면 초기 맵 상태로 리셋
+}
+
+const ObjectTrackingMapView = ({ 
+  visibleTrackingPins, 
+  flyToLocation,
+  initialMapState,
+  onTrackingComplete,
+  onCCTVHover,
+  hoveredCCTVId,
+  showCCTVLabel = false,
+  pulseRadius = 100,
+  showMapControls = false,
+  resetSignal = 0,
+}: ObjectTrackingMapViewProps) => {
+  const [is3DMode, setIs3DMode] = useState(true);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const zoomOutTriggeredRef = useRef<boolean>(false);
+  const initialMapStateRef = useRef(initialMapState);
+  const cctvMarkersRef = useRef<Map<string, { container: HTMLElement; el: HTMLElement; iconEl: HTMLElement; infoLabel: HTMLElement }>>(new Map());
+
+  // 지도 초기화 (한 번만)
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    const map = new maplibregl.Map({
+      container: mapContainerRef.current,
+      style: 'https://api.maptiler.com/maps/019cd585-7992-7faa-9a87-243ab5ce8247/style.json?key=WPWmpNf4y5nzKDA7mQXe',
+      center: initialMapStateRef.current.center,
+      zoom: initialMapStateRef.current.zoom,
+      pitch: initialMapStateRef.current.pitch,
+      bearing: initialMapStateRef.current.bearing,
+      attributionControl: false,
+      interactive: true
+    });
+
+    mapRef.current = map;
+
+    map.on('styleimagemissing', (e: { id: string }) => {
+      if (map.hasImage(e.id)) return;
+      map.addImage(e.id, { width: 1, height: 1, data: new Uint8ClampedArray([0, 0, 0, 0]) });
+    });
+
+    map.on('load', () => {
+      // terrain 비활성화 (활성 시 먼 거리 3D 건물 렌더링 안 됨)
+      map.setTerrain(null);
+
+      const layers = map.getStyle().layers;
+      if (layers) {
+        layers.forEach((layer) => {
+          if (layer.type === 'symbol') {
+            map.setLayoutProperty(layer.id, 'visibility', 'none');
+          }
+        });
+      }
+
+      // Construction 레이어 색상 변경
+      if (map.getLayer('Construction')) {
+        map.setPaintProperty('Construction', 'fill-color', '#514C3E');
+        map.setPaintProperty('Construction', 'fill-opacity', 1);
+      }
+
+      // Residential(Built-up) 레이어 색상 변경
+      if (map.getLayer('Residential')) {
+        map.setPaintProperty('Residential', 'fill-color', '#514C3E');
+      }
+
+      // Heliport 레이어 색상 변경
+      if (map.getLayer('Heliport')) {
+        map.setPaintProperty('Heliport', 'fill-color', '#4C4E56');
+      }
+
+      // Building 3D 렌더링 안정화
+      if (map.getLayer('Building 3D')) {
+        map.setLayerZoomRange('Building 3D', 12, 24);
+      }
+      if (map.getLayer('Building')) {
+        map.setLayerZoomRange('Building', 12, 24);
+      }
+
+      // Background 컬러 오버라이드
+      if (map.getLayer('Background')) {
+        map.setPaintProperty('Background', 'background-color', '#3F3E47');
+      }
+
+      // 산/숲/공원 컬러 오버라이드
+      ['Wood', 'Forest'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#3C4142');
+          map.setPaintProperty(layerId, 'fill-opacity', 1);
+        }
+      });
+      ['Farmland', 'Grass'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#444F4A');
+        }
+      });
+
+      // Residential / Construction / Industrial 컬러 오버라이드
+      ['Residential', 'Construction', 'Industrial'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'fill-color', '#3F3E47');
+          map.setPaintProperty(layerId, 'fill-opacity', 1);
+        }
+      });
+
+      // Minor road 컬러 오버라이드
+      ['Minor road', 'Minor road outline', 'Minor road bridge', 'Service road', 'Service road outline', 'Pathway outline'].forEach((layerId) => {
+        if (map.getLayer(layerId)) {
+          map.setPaintProperty(layerId, 'line-color', '#585861');
+        }
+      });
+    });
+
+    return () => {
+      map.remove();
+    };
+  }, []);
+
+  // resetSignal 변경 시 초기 맵 상태로 리셋
+  useEffect(() => {
+    if (!resetSignal || !mapRef.current) return;
+    const map = mapRef.current;
+    if (!map.loaded()) return;
+    const { center, zoom, pitch, bearing } = initialMapStateRef.current;
+    map.flyTo({ center, zoom, pitch, bearing, duration: 1400, essential: true });
+  }, [resetSignal]);
+
+  // flyToLocation 변경 시 지도 이동
+  useEffect(() => {
+    if (!mapRef.current || !flyToLocation) return;
+    
+    const map = mapRef.current;
+    
+    if (map.loaded()) {
+      const currentZoom = map.getZoom();
+      
+      if (currentZoom >= 18) {
+        map.easeTo({
+          center: flyToLocation as [number, number],
+          duration: 1000,
+          essential: true
+        });
+      } else {
+        map.flyTo({
+          center: flyToLocation as [number, number],
+          zoom: 18,
+          pitch: 60,
+          bearing: -17.6 + 165,
+          duration: 1000,
+          essential: true
+        });
+      }
+    }
+  }, [flyToLocation]);
+
+  // 객체 추적 핀 생성 및 visibility 제어
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    
+    // visibleTrackingPins가 0이면 기존 마커 제거
+    if (visibleTrackingPins === 0) {
+      const existingMarkers = (map as any)._trackingPinsMarkers;
+      if (existingMarkers) {
+        existingMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
+        (map as any)._trackingPinsMarkers = null;
+      }
+      
+      // 펄스 마커 제거
+      const pulseMarker = (map as any)._pin4PulseMarker;
+      if (pulseMarker) {
+        pulseMarker.remove();
+        (map as any)._pin4PulseMarker = null;
+        (map as any)._pin4PulseWrapper = null;
+        (map as any)._pin4PulseSvg = null;
+        (map as any)._pin4PulseCircle = null;
+        
+        // zoom 핸들러 제거
+        const zoomHandler = (map as any)._pin4PulseZoomHandler;
+        if (zoomHandler) {
+          map.off('zoom', zoomHandler);
+          (map as any)._pin4PulseZoomHandler = null;
+        }
+      }
+      
+      // 경찰서 마커 제거
+      const policeMarkers = (map as any)._policeStationMarkers;
+      if (policeMarkers) {
+        policeMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
+        (map as any)._policeStationMarkers = null;
+      }
+
+      // CCTV 마커 제거
+      const cctvMarkers = (map as any)._nearbyCCTVMarkers;
+      if (cctvMarkers) {
+        cctvMarkers.forEach((marker: maplibregl.Marker) => marker.remove());
+        (map as any)._nearbyCCTVMarkers = null;
+      }
+      cctvMarkersRef.current.clear();
+
+      // 추적 라인/포인트 레이어 및 소스 제거
+      if (map.getLayer('tracking-line-layer')) map.removeLayer('tracking-line-layer');
+      if (map.getSource('tracking-line')) map.removeSource('tracking-line');
+      if (map.getLayer('tracking-points-layer')) map.removeLayer('tracking-points-layer');
+      if (map.getSource('tracking-points')) map.removeSource('tracking-points');
+      
+      zoomOutTriggeredRef.current = false;
+      return;
+    }
+    
+    // 모든 추적 핀 정의 (과천역 근처) — 영문 모드에서는 짧은 영문 주소/CCTV명 사용
+    const isENObjMap = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+    const allTrackingPins = isENObjMap
+      ? [
+          { location: [126.99656, 37.43527] as [number, number], address: 'M16 / 3F Design Lab', name: 'M16-LAB-CAM-12', color: 'gray' },
+          { location: [126.997050219665, 37.434564088524] as [number, number], address: 'M16 / 3F Lab Exit', name: 'M16-EXIT-A03', color: 'gray' },
+          { location: [126.995526419665, 37.435305588524] as [number, number], address: 'M16 / 3F Corridor', name: 'M16-3F-CORR-07', color: 'gray' },
+          { location: [126.995523619665, 37.434353188524] as [number, number], address: 'West Gate', name: 'GATE-WEST-07', color: 'blue' },
+        ]
+      : [
+          { location: [126.99656, 37.43527] as [number, number], address: 'M16 동 3F 설계실', name: 'M16-LAB-CAM-12', color: 'gray' },
+          { location: [126.997050219665, 37.434564088524] as [number, number], address: 'M16 동 3F 설계실 출구', name: 'M16-EXIT-A03', color: 'gray' },
+          { location: [126.995526419665, 37.435305588524] as [number, number], address: 'M16 동 3F 복도', name: 'M16-3F-CORR-07', color: 'gray' },
+          { location: [126.995523619665, 37.434353188524] as [number, number], address: '서측 출입 게이트', name: 'GATE-WEST-07', color: 'blue' },
+        ];
+    
+    const initPins = () => {
+      if (!map.loaded()) {
+        setTimeout(initPins, 100);
+        return;
+      }
+      
+      // 이미 초기화되었는지 확인
+      let markers = (map as any)._trackingPinsMarkers;
+      
+      if (!markers) {
+        // 처음 생성
+        markers = [];
+        
+        allTrackingPins.forEach((pin, index) => {
+          // 핀 컬러 설정
+          let bgGradient, borderColor, shadowColor, ringColor, iconColor;
+          
+          if (pin.color === 'gray') {
+            bgGradient = 'linear-gradient(135deg, rgba(100, 100, 100, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+            borderColor = '#6b7280';
+            shadowColor = '0 0 20px rgba(107, 114, 128, 0.5), 0 0 40px rgba(107, 114, 128, 0.3)';
+            ringColor = 'rgba(107, 114, 128, 0.3)';
+            iconColor = '#9ca3af';
+          } else {
+            bgGradient = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+            borderColor = '#3b82f6';
+            shadowColor = '0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.3)';
+            ringColor = 'rgba(59, 130, 246, 0.3)';
+            iconColor = '#60a5fa';
+          }
+          
+          const markerContainer = document.createElement('div');
+          markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
+          
+          const centerWrapper = document.createElement('div');
+          centerWrapper.style.cssText = 'position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; z-index: 1;';
+          
+          const el = document.createElement('div');
+          el.style.cssText = `width: 28px; height: 28px; background: ${bgGradient}; border: 2px solid ${borderColor}; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: ${shadowColor}; cursor: pointer; backdrop-filter: blur(4px); position: relative; z-index: 10;`;
+          
+          const ringEl = document.createElement('div');
+          ringEl.style.cssText = `position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border: 2px solid ${ringColor}; border-radius: 14px; pointer-events: none;`;
+          el.appendChild(ringEl);
+          
+          const iconEl = document.createElement('div');
+          iconEl.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color: ${iconColor};"><path d="M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z" /></svg>`;
+          el.appendChild(iconEl);
+          
+          centerWrapper.appendChild(el);
+          markerContainer.appendChild(centerWrapper);
+          
+          const labelEl = document.createElement('div');
+          labelEl.style.cssText = 'margin-top: 8px; padding: 6px 8px; border-radius: 8px; background: rgba(15, 15, 15, 0.95); border: 1px solid #31353a; white-space: nowrap; z-index: 140;';
+          
+          const currentTime = new Date();
+          const hours = String(currentTime.getHours()).padStart(2, '0');
+          const minutes = String(currentTime.getMinutes()).padStart(2, '0');
+          const timeString = `${hours}:${minutes}`;
+          const labelType = isENObjMap
+            ? (index === 0 ? 'First sighting' : 'Sighting')
+            : (index === 0 ? '초기 목격 지점' : '목격 지점');
+          
+          labelEl.innerHTML = `<div style="font-size: 11px; color: #9ca3af; margin-bottom: 2px;">${labelType} · ${timeString}</div><div style="font-size: 13px; font-weight: 600; color: white;">${pin.address}</div>`;
+          markerContainer.appendChild(labelEl);
+          
+          const marker = new maplibregl.Marker({ element: markerContainer, anchor: 'center' }).setLngLat(pin.location).addTo(map);
+          
+          const markerElement = marker.getElement();
+          if (markerElement) {
+            markerElement.style.opacity = '0';
+            markerElement.style.visibility = 'hidden';
+            markerElement.style.transition = 'opacity 0.5s ease';
+            markerElement.style.zIndex = '99999';
+          }
+          
+          markers.push(marker);
+        });
+        
+        (map as any)._trackingPinsMarkers = markers;
+      }
+      
+      // visibility 업데이트
+      markers.forEach((marker: maplibregl.Marker, index: number) => {
+        const markerElement = marker.getElement();
+        if (!markerElement) return;
+        
+        if (index < visibleTrackingPins) {
+          markerElement.style.opacity = '1';
+          markerElement.style.visibility = 'visible';
+        }
+      });
+      
+      // 선 애니메이션
+      if (visibleTrackingPins >= 2) {
+        const fromIndex = visibleTrackingPins - 2;
+        const toIndex = visibleTrackingPins - 1;
+        const fromLocation = allTrackingPins[fromIndex].location;
+        const toLocation = allTrackingPins[toIndex].location;
+        
+        // 선 애니메이션 (0.5초 동안)
+        const animationDuration = 500;
+        const startTime = Date.now();
+        
+        const animateLine = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / animationDuration, 1);
+          
+          // 현재까지의 모든 좌표 + 애니메이션 중인 선
+          const allCoordinates = allTrackingPins.slice(0, visibleTrackingPins - 1).map(p => p.location);
+          
+          // 현재 애니메이션 중인 선의 끝점 계산
+          const currentLng = fromLocation[0] + (toLocation[0] - fromLocation[0]) * progress;
+          const currentLat = fromLocation[1] + (toLocation[1] - fromLocation[1]) * progress;
+          allCoordinates.push([currentLng, currentLat]);
+          
+          const lineSource = map.getSource('tracking-line') as maplibregl.GeoJSONSource;
+          
+          if (lineSource) {
+            lineSource.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: allCoordinates } });
+          } else {
+            map.addSource('tracking-line', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: allCoordinates } } });
+            map.addLayer({ id: 'tracking-line-layer', type: 'line', source: 'tracking-line', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#3b82f6', 'line-width': 4, 'line-dasharray': [2, 4], 'line-opacity': 0.8 } });
+          }
+          
+          if (progress < 1) {
+            requestAnimationFrame(animateLine);
+          } else {
+            // 애니메이션 완료 후 최종 좌표로 업데이트
+            const finalCoordinates = allTrackingPins.slice(0, visibleTrackingPins).map(p => p.location);
+            lineSource.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: finalCoordinates } });
+            
+            // 연결점 추가
+            const pointsSource = map.getSource('tracking-points') as maplibregl.GeoJSONSource;
+            if (pointsSource) {
+              pointsSource.setData({ type: 'FeatureCollection', features: finalCoordinates.map(coord => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: coord } })) });
+            } else {
+              map.addSource('tracking-points', { type: 'geojson', data: { type: 'FeatureCollection', features: finalCoordinates.map(coord => ({ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: coord } })) } });
+              map.addLayer({ id: 'tracking-points-layer', type: 'circle', source: 'tracking-points', paint: { 'circle-radius': 6, 'circle-color': '#3b82f6', 'circle-stroke-width': 2, 'circle-stroke-color': '#1e40af', 'circle-opacity': 0.9 } });
+            }
+          }
+        };
+        
+        animateLine();
+      }
+    };
+    
+    initPins();
+  }, [visibleTrackingPins]);
+
+
+  // 4번 핀까지 모두 표시되면 범위 펄스 추가 + 줌 아웃 + 평면으로 전환
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+    if (visibleTrackingPins !== 4) {
+      return;
+    }
+    if (zoomOutTriggeredRef.current) {
+      return;
+    }
+    
+    zoomOutTriggeredRef.current = true;
+    
+    const pin4Location: [number, number] = [126.995523619665, 37.434353188524]; // 4번 핀 위치
+    
+    // 지도 로드 대기 후 펄스 추가
+    const waitForMapAndAddPulse = () => {
+      if (!map.loaded()) {
+        setTimeout(waitForMapAndAddPulse, 100);
+        return;
+      }
+      
+      // 펄스 마커 추가 (고속검색과 동일한 스타일)
+      if (!(map as any)._pin4PulseMarker) {
+        // 현재 줌 레벨에서 반경을 픽셀로 변환
+        const zoom = map.getZoom();
+        const lat = pin4Location[1];
+        const metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+        const radiusInPixels = pulseRadius / metersPerPixel;
+        const diameter = radiusInPixels * 2;
+        
+        // 반경 원 컨테이너
+        const radiusContainer = document.createElement('div');
+        radiusContainer.style.cssText = `
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+          z-index: 1;
+        `;
+        
+        const radiusWrapper = document.createElement('div');
+        radiusWrapper.style.cssText = `
+          position: relative;
+          width: ${diameter}px;
+          height: ${diameter}px;
+        `;
+        
+        // radius-pulse 애니메이션 keyframes 추가 (아직 없으면)
+        if (!document.getElementById('radius-pulse-style-tracking')) {
+          const styleEl = document.createElement('style');
+          styleEl.id = 'radius-pulse-style-tracking';
+          styleEl.textContent = `
+            @keyframes radius-pulse-tracking {
+              0% {
+                transform: translate(-50%, -50%) translateZ(0) scale(0.5);
+                opacity: 1;
+              }
+              100% {
+                transform: translate(-50%, -50%) translateZ(0) scale(1);
+                opacity: 0;
+              }
+            }
+          `;
+          document.head.appendChild(styleEl);
+        }
+        
+        // 블루 펄스 3개
+        for (let i = 0; i < 3; i++) {
+          const pulse = document.createElement('div');
+          pulse.style.cssText = `
+            position: absolute;
+            width: ${diameter - 4}px;
+            height: ${diameter - 4}px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateZ(0) scale(0.5);
+            animation: radius-pulse-tracking 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            animation-delay: ${i * 0.4}s;
+            will-change: transform, opacity;
+            pointer-events: none;
+            z-index: 1;
+          `;
+          const pulseInner = document.createElement('div');
+          pulseInner.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(59, 130, 246, ${0.4 - i * 0.08});
+          `;
+          pulse.appendChild(pulseInner);
+          radiusWrapper.appendChild(pulse);
+        }
+        
+        // 반경 원 SVG (대시 라인)
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', `${diameter}px`);
+        svg.setAttribute('height', `${diameter}px`);
+        svg.style.cssText = `
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 2;
+        `;
+        
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '50%');
+        circle.setAttribute('cy', '50%');
+        circle.setAttribute('r', `${radiusInPixels - 2}px`);
+        circle.setAttribute('fill', 'none');
+        circle.setAttribute('stroke', 'rgba(59, 130, 246, 0.8)');
+        circle.setAttribute('stroke-width', '4');
+        circle.setAttribute('stroke-dasharray', '8 4');
+        
+        svg.appendChild(circle);
+        radiusWrapper.appendChild(svg);
+        radiusContainer.appendChild(radiusWrapper);
+        
+        // 마커 생성 - pitchAlignment: 'map'으로 바닥에 눕힘
+        const radiusMarker = new maplibregl.Marker({
+          element: radiusContainer,
+          anchor: 'center',
+          pitchAlignment: 'map',
+          rotationAlignment: 'map'
+        })
+          .setLngLat(pin4Location)
+          .addTo(map);
+        
+        // z-index 설정
+        const markerElement = radiusMarker.getElement();
+        if (markerElement) {
+          markerElement.style.zIndex = '1';
+        }
+        
+        // 저장
+        (map as any)._pin4PulseMarker = radiusMarker;
+        (map as any)._pin4PulseWrapper = radiusWrapper;
+        (map as any)._pin4PulseSvg = svg;
+        (map as any)._pin4PulseCircle = circle;
+        
+        // zoom 변경 시 크기 업데이트
+        const zoomHandler = () => {
+          const newZoom = map.getZoom();
+          const newMetersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, newZoom);
+          const newRadiusInPixels = pulseRadius / newMetersPerPixel;
+          const newDiameter = newRadiusInPixels * 2;
+          
+          radiusWrapper.style.width = `${newDiameter}px`;
+          radiusWrapper.style.height = `${newDiameter}px`;
+          
+          const pulses = radiusWrapper.querySelectorAll('div[style*="animation"]');
+          pulses.forEach((pulse: any) => {
+            pulse.style.width = `${newDiameter - 4}px`;
+            pulse.style.height = `${newDiameter - 4}px`;
+          });
+          
+          svg.setAttribute('width', `${newDiameter}px`);
+          svg.setAttribute('height', `${newDiameter}px`);
+          circle.setAttribute('r', `${newRadiusInPixels - 2}px`);
+        };
+        
+        map.on('zoom', zoomHandler);
+        (map as any)._pin4PulseZoomHandler = zoomHandler;
+        
+      }
+      
+      // 4번 핀 표시 후 이동 애니메이션 완료를 기다린 후 줌 아웃 + 2D 전환
+      setTimeout(() => {
+        const currentBearing = map.getBearing();
+        // 1~4번 핀 좌표
+        const allPinLocations = [
+          [126.99656, 37.43527],                // 1번
+          [126.997050219665, 37.434564088524],  // 2번
+          [126.995526419665, 37.435305588524],  // 3번
+          [126.995523619665, 37.434353188524],  // 4번
+        ];
+        
+        // 모든 핀을 포함하는 bounds 계산
+        const bounds = new maplibregl.LngLatBounds();
+        allPinLocations.forEach(location => {
+          bounds.extend(location as [number, number]);
+        });
+        
+        // 2D 전환하면서 모든 핀이 보이도록 (우측 패널 고려하여 좌측으로 250px 이동)
+        map.fitBounds(bounds, {
+          padding: { top: 100, bottom: 100, left: 150, right: 500 },
+          pitch: 0,
+          bearing: currentBearing,
+          duration: 1200,
+          essential: true,
+          offset: [-50, 0] // 좌측으로 50px 추가 이동
+        });
+        
+        // 2D 전환 완료 후 CCTV 핀 추가
+        map.once('moveend', () => {
+          const newPitch = map.getPitch();
+          // 이미 추가되었는지 확인
+          if ((map as any)._nearbyCCTVMarkers) {
+            return;
+          }
+          
+          // 1번 핀(과천역) 근처 CCTV 좌표 - 초기 목격 지점
+          const nearbyCCTV1 = [
+            [126.9967, 37.4353], // 동쪽 약 15m
+            [126.9964, 37.4352], // 서쪽 약 15m
+            [126.9966, 37.4351], // 남동쪽 약 20m
+          ];
+          
+          // 2번 핀 근처 CCTV 좌표 - 목격 지점
+          const nearbyCCTV2 = [
+            [126.9972, 37.4346], // 동쪽 약 15m
+            [126.9969, 37.4345], // 서쪽 약 15m
+            [126.9971, 37.4344], // 남동쪽 약 20m
+          ];
+          
+          // 3번 핀 근처 CCTV 좌표 - 목격 지점
+          const nearbyCCTV3 = [
+            [126.9957, 37.4354], // 북동쪽 약 20m
+            [126.9953, 37.4353], // 서쪽 약 15m
+            [126.9956, 37.4352], // 남동쪽 약 15m
+          ];
+          
+          // 4번 핀 근처 CCTV 좌표 - 목격 지점 (붉은 원 60m 반경 안)
+          const predictedCCTV4 = [
+            [126.9956, 37.4345],   // 북동쪽 약 15m
+            [126.9953, 37.4344],   // 북서쪽 약 20m
+            [126.9957, 37.4343],   // 동쪽 약 18m
+            [126.9954, 37.4342],   // 남서쪽 약 22m
+            [126.9956, 37.4341],   // 남동쪽 약 25m
+            [126.9952, 37.4343],   // 서쪽 약 25m
+            [126.9958, 37.4344],   // 동쪽 약 28m
+            [126.9955, 37.4346],   // 북쪽 약 30m
+            [126.9953, 37.4341],   // 남서쪽 약 32m
+            [126.9957, 37.4342],   // 남동쪽 약 30m
+          ];
+          
+          // 1,2,3번은 그레이, 4번은 블루로 구분
+          const grayCCTV = [...nearbyCCTV1, ...nearbyCCTV2, ...nearbyCCTV3];
+          const blueCCTV = [...predictedCCTV4];
+          const markers: maplibregl.Marker[] = [];
+          
+          // 그레이 CCTV 마커 추가
+          grayCCTV.forEach((location) => {
+            const markerContainer = document.createElement('div');
+            markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
+            
+            const el = document.createElement('div');
+            el.style.cssText = `
+              width: 24px;
+              height: 24px;
+              background: linear-gradient(135deg, rgba(100, 100, 100, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+              border: 2px solid #6b7280;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 0 15px rgba(107, 114, 128, 0.4), 0 0 30px rgba(107, 114, 128, 0.2);
+              backdrop-filter: blur(4px);
+              position: relative;
+              z-index: 50;
+            `;
+            
+            const iconEl = document.createElement('div');
+            iconEl.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #9ca3af;">
+                <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
+              </svg>
+            `;
+            el.appendChild(iconEl);
+            
+            markerContainer.appendChild(el);
+            
+            const marker = new maplibregl.Marker({ element: markerContainer, anchor: 'center' })
+              .setLngLat(location as [number, number])
+              .addTo(map);
+            
+            const markerElement = marker.getElement();
+            if (markerElement) {
+              markerElement.style.zIndex = '50';
+            }
+            
+            markers.push(marker);
+          });
+          
+          // 블루 CCTV 마커 추가 (4번 핀 근처)
+          // CCTV 정보 배열 (예측 CCTV 리스트와 동일) — 영문 모드면 짧은 영문 사용
+          const isENObjLabels = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+          const cctvInfoList = isENObjLabels
+            ? [
+                { cctvName: 'GATE-MAIN-02', location: 'Main Gate', confidence: 92 },
+                { cctvName: 'LOBBY-MAIN-01', location: 'HQ / 1F Lobby', confidence: 88 },
+                { cctvName: 'GATE-EAST-04', location: 'East Gate', confidence: 85 },
+                { cctvName: 'GATE-WEST-08', location: 'West Gate (B)', confidence: 83 },
+                { cctvName: 'CORR-1F-09', location: 'HQ / 1F Corridor', confidence: 80 },
+                { cctvName: 'ELEV-1F-03', location: 'HQ / 1F Elevator Hall', confidence: 78 },
+                { cctvName: 'STAIR-1F-A', location: 'HQ / 1F Stairs A', confidence: 75 },
+                { cctvName: 'PARK-EXIT-B2', location: 'B2 Parking Exit', confidence: 73 },
+                { cctvName: 'PARK-RAMP-B1', location: 'B1 Parking Ramp', confidence: 70 },
+                { cctvName: 'GATE-CARGO-W', location: 'West Cargo Gate', confidence: 68 },
+              ]
+            : [
+                { cctvName: 'GATE-MAIN-02', location: '정문 출입 게이트', confidence: 92 },
+                { cctvName: 'LOBBY-MAIN-01', location: '본관 1F 메인 로비', confidence: 88 },
+                { cctvName: 'GATE-EAST-04', location: '동측 출입 게이트', confidence: 85 },
+                { cctvName: 'GATE-WEST-08', location: '서측 출입 게이트 (B)', confidence: 83 },
+                { cctvName: 'CORR-1F-09', location: '본관 1F 복도', confidence: 80 },
+                { cctvName: 'ELEV-1F-03', location: '본관 1F 엘리베이터 홀', confidence: 78 },
+                { cctvName: 'STAIR-1F-A', location: '본관 1F 비상계단 A', confidence: 75 },
+                { cctvName: 'PARK-EXIT-B2', location: 'B2 주차장 출구', confidence: 73 },
+                { cctvName: 'PARK-RAMP-B1', location: 'B1 주차장 램프', confidence: 70 },
+                { cctvName: 'GATE-CARGO-W', location: '서측 화물 게이트', confidence: 68 },
+              ];
+          
+          blueCCTV.forEach((location, index) => {
+            const cctvId = String(index + 1); // 1~10
+            const cctvInfo = cctvInfoList[index];
+            
+            const markerContainer = document.createElement('div');
+            markerContainer.style.cssText = 'display: flex; flex-direction: column; align-items: center;';
+            
+            const el = document.createElement('div');
+            el.style.cssText = `
+              width: 24px;
+              height: 24px;
+              background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+              border: 2px solid #3b82f6;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 0 15px rgba(59, 130, 246, 0.4), 0 0 30px rgba(59, 130, 246, 0.2);
+              backdrop-filter: blur(4px);
+              position: relative;
+              z-index: 50;
+              cursor: pointer;
+              transition: all 0.2s ease;
+            `;
+            
+            const iconEl = document.createElement('div');
+            iconEl.innerHTML = `
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="color: #60a5fa; transition: all 0.2s ease;">
+                <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
+              </svg>
+            `;
+            el.appendChild(iconEl);
+            
+            // 정보 라벨 생성 (처음에는 숨김)
+            const infoLabel = document.createElement('div');
+            infoLabel.style.cssText = `
+              margin-top: 8px;
+              padding: 8px 12px;
+              border-radius: 8px;
+              background: rgba(15, 15, 15, 0.95);
+              border: 1px solid #31353a;
+              white-space: nowrap;
+              z-index: 9999;
+              opacity: 0;
+              pointer-events: none;
+              transition: opacity 0.2s ease;
+            `;
+            infoLabel.innerHTML = `
+              <div style="font-size: 13px; font-weight: 600; color: white; margin-bottom: 4px;">${cctvInfo.cctvName}</div>
+              <div style="font-size: 11px; color: #9ca3af; margin-bottom: 4px;">${cctvInfo.location}</div>
+              <div style="font-size: 11px; color: #60a5fa;">${isENObjLabels ? `Route fit: ${cctvInfo.confidence} pts` : `경로 적합도: ${cctvInfo.confidence}점`}</div>
+            `;
+            markerContainer.appendChild(infoLabel);
+            
+            // 호버 이벤트 추가
+            markerContainer.addEventListener('mouseenter', () => {
+              el.style.transform = 'scale(1.5)';
+              el.style.zIndex = '9999';
+              el.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)';
+              iconEl.querySelector('svg')!.style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))';
+              iconEl.querySelector('svg')!.style.color = '#3b82f6';
+              infoLabel.style.opacity = '1';
+              if (onCCTVHover) {
+                onCCTVHover(cctvId, true); // showLabel = true
+              }
+            });
+            
+            markerContainer.addEventListener('mouseleave', () => {
+              el.style.transform = 'scale(1)';
+              el.style.zIndex = '50';
+              el.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+              iconEl.querySelector('svg')!.style.filter = 'none';
+              iconEl.querySelector('svg')!.style.color = '#60a5fa';
+              infoLabel.style.opacity = '0';
+              if (onCCTVHover) {
+                onCCTVHover(null, false);
+              }
+            });
+            
+            markerContainer.appendChild(el);
+            
+            const marker = new maplibregl.Marker({ element: markerContainer, anchor: 'center' })
+              .setLngLat(location as [number, number])
+              .addTo(map);
+            
+            const markerElement = marker.getElement();
+            if (markerElement) {
+              markerElement.style.zIndex = '50';
+            }
+            
+            // 마커 참조 저장 (외부 호버용)
+            cctvMarkersRef.current.set(cctvId, { container: markerContainer, el, iconEl, infoLabel });
+            
+            markers.push(marker);
+          });
+          
+          (map as any)._nearbyCCTVMarkers = markers;
+          // 경찰서 위치 핀 추가 — 영문 모드는 짧은 영문 사용
+          const policeStations = isENObjLabels
+            ? [
+                { location: [126.9960, 37.4347] as [number, number], name: 'Star Police Box' },
+                { location: [126.9937, 37.4338] as [number, number], name: 'Galaxy Substation' },
+                { location: [126.9992, 37.4341] as [number, number], name: 'Star Police HQ' },
+              ]
+            : [
+                { location: [126.9960, 37.4347] as [number, number], name: '별빛파출소' },
+                { location: [126.9937, 37.4338] as [number, number], name: '은하지구대' },
+                { location: [126.9992, 37.4341] as [number, number], name: '별빛경찰서' },
+              ];
+          
+          const policeMarkers: maplibregl.Marker[] = [];
+          
+          policeStations.forEach((station) => {
+            const container = document.createElement('div');
+            container.style.cssText = 'display: flex; flex-direction: column; align-items: center; pointer-events: auto;';
+            
+            const iconWrapper = document.createElement('div');
+            iconWrapper.style.cssText = `
+              width: 32px;
+              height: 32px;
+              background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%);
+              border: 2px solid #16a34a;
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 0 12px rgba(22, 163, 74, 0.4), 0 0 24px rgba(22, 163, 74, 0.15);
+              backdrop-filter: blur(4px);
+              z-index: 40;
+            `;
+            
+            const img = document.createElement('img');
+            img.src = '/police.svg';
+            img.alt = station.name;
+            img.style.cssText = 'width: 18px; height: 18px; filter: brightness(0) saturate(100%) invert(67%) sepia(61%) saturate(459%) hue-rotate(93deg) brightness(95%) contrast(92%);';
+            iconWrapper.appendChild(img);
+            
+            const label = document.createElement('div');
+            label.style.cssText = `
+              margin-top: 6px;
+              padding: 3px 8px;
+              border-radius: 6px;
+              background: rgba(15, 15, 15, 0.9);
+              border: 1px solid rgba(22, 163, 74, 0.4);
+              white-space: nowrap;
+              font-size: 11px;
+              font-weight: 600;
+              color: #4ade80;
+            `;
+            label.textContent = station.name;
+            
+            container.appendChild(iconWrapper);
+            container.appendChild(label);
+            
+            const policeMarker = new maplibregl.Marker({ element: container, anchor: 'center' })
+              .setLngLat(station.location)
+              .addTo(map);
+            
+            const markerEl = policeMarker.getElement();
+            if (markerEl) {
+              markerEl.style.zIndex = '40';
+            }
+            
+            policeMarkers.push(policeMarker);
+          });
+          
+          (map as any)._policeStationMarkers = policeMarkers;
+          // 추적 애니메이션 완료 콜백 호출
+          if (onTrackingComplete) {
+            onTrackingComplete();
+          }
+        });
+      }, 2000);
+    };
+    
+    waitForMapAndAddPulse();
+  }, [visibleTrackingPins, onTrackingComplete]);
+
+  // 외부 호버 상태에 따라 CCTV 마커 하이라이트
+  useEffect(() => {
+    // 모든 마커 초기화
+    cctvMarkersRef.current.forEach((marker, id) => {
+      if (id !== hoveredCCTVId) {
+        marker.el.style.transform = 'scale(1)';
+        marker.el.style.zIndex = '50';
+        marker.el.style.background = 'linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(26, 26, 26, 1) 50%, rgba(15, 15, 15, 1) 100%)';
+        marker.infoLabel.style.opacity = '0';
+        const svg = marker.iconEl.querySelector('svg');
+        if (svg) {
+          (svg as unknown as HTMLElement).style.filter = 'none';
+          (svg as unknown as HTMLElement).style.color = '#60a5fa';
+        }
+      }
+    });
+
+    // 호버된 마커 하이라이트
+    if (hoveredCCTVId) {
+      const marker = cctvMarkersRef.current.get(hoveredCCTVId);
+      if (marker) {
+        marker.el.style.transform = 'scale(1.5)';
+        marker.el.style.zIndex = '9999';
+        marker.el.style.background = 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%)';
+        // showCCTVLabel이 true일 때만 라벨 표시
+        marker.infoLabel.style.opacity = showCCTVLabel ? '1' : '0';
+        const svg = marker.iconEl.querySelector('svg');
+        if (svg) {
+          (svg as unknown as HTMLElement).style.filter = 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.8))';
+          (svg as unknown as HTMLElement).style.color = '#3b82f6';
+        }
+      }
+    }
+  }, [hoveredCCTVId, showCCTVLabel]);
+
+  // pulseRadius 변경 시 반경 업데이트
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.loaded() || visibleTrackingPins !== 4) return;
+    
+    const pin4Location: [number, number] = [126.995523619665, 37.434353188524];
+    const radiusWrapper = (map as any)._pin4PulseWrapper;
+    const svg = (map as any)._pin4PulseSvg;
+    const circle = (map as any)._pin4PulseCircle;
+    
+    if (radiusWrapper && svg && circle) {
+      const zoom = map.getZoom();
+      const lat = pin4Location[1];
+      const metersPerPixel = 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+      const radiusInPixels = pulseRadius / metersPerPixel;
+      const diameter = radiusInPixels * 2;
+      
+      radiusWrapper.style.width = `${diameter}px`;
+      radiusWrapper.style.height = `${diameter}px`;
+      
+      const pulses = radiusWrapper.querySelectorAll('div[style*="animation"]');
+      pulses.forEach((pulse: any) => {
+        pulse.style.width = `${diameter - 4}px`;
+        pulse.style.height = `${diameter - 4}px`;
+      });
+      
+      svg.setAttribute('width', `${diameter}px`);
+      svg.setAttribute('height', `${diameter}px`);
+      circle.setAttribute('r', `${radiusInPixels - 2}px`);
+    }
+  }, [pulseRadius, visibleTrackingPins]);
+
+  const tooltipCls = "absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50";
+  const tooltipInnerStyle = { background: 'rgba(15, 15, 15, 0.95)', border: '1px solid #31353a' } as const;
+  const btnBase = "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300";
+  const btnDefault = `${btnBase} bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm`;
+  const btnActive = `${btnBase} bg-blue-600 hover:bg-blue-700 text-white shadow-sm`;
+
+  return (
+    <div 
+      className="relative bg-[#0f0f0f] overflow-hidden" 
+      style={{ 
+        width: '100%', 
+        height: '100%',
+        position: 'relative',
+      }}
+    >
+      <div
+        ref={mapContainerRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ zIndex: 1 }}
+      />
+      <div 
+        className="absolute inset-0 bg-black/5 pointer-events-none" 
+        style={{ zIndex: 2 }}
+      />
+
+      {/* 맵 컨트롤 버튼 - CCTV 예측 패널(80+700=780px) 우측에 위치, 패널과 함께 페이드인 */}
+      <div
+        className={`absolute top-4 flex flex-col gap-2 transition-all duration-500 ease-out ${
+          showMapControls ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
+        }`}
+        style={{ left: '804px', zIndex: 250 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 확대 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ zoom: Math.min(map.getMaxZoom(), map.getZoom() + 1), duration: 300, essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="확대"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:plus" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>확대</div>
+          </div>
+        </div>
+
+        {/* 축소 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ zoom: Math.max(map.getMinZoom(), map.getZoom() - 1), duration: 300, essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="축소"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:minus" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>축소</div>
+          </div>
+        </div>
+
+        <div className="w-full h-px bg-gray-300 my-1" />
+
+        {/* 2D */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIs3DMode(false);
+              mapRef.current?.easeTo({ pitch: 0, duration: 500 });
+            }}
+            className={!is3DMode ? btnActive : btnDefault}
+            aria-label="2D"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:view-dashboard" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>2D 보기</div>
+          </div>
+        </div>
+
+        {/* 3D */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIs3DMode(true);
+              mapRef.current?.easeTo({ pitch: 60, duration: 500 });
+            }}
+            className={is3DMode ? btnActive : btnDefault}
+            aria-label="3D"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:cube" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>3D 보기</div>
+          </div>
+        </div>
+
+        <div className="w-full h-px bg-gray-300 my-1" />
+
+        {/* 왼쪽 회전 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ bearing: map.getBearing() - 15, duration: 500, easing: (t) => 1 - Math.pow(1 - t, 3), essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="회전 왼쪽"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:rotate-left" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>왼쪽으로 회전</div>
+          </div>
+        </div>
+
+        {/* 오른쪽 회전 */}
+        <div className="relative group">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (mapRef.current) {
+                const map = mapRef.current;
+                map.easeTo({ bearing: map.getBearing() + 15, duration: 500, easing: (t) => 1 - Math.pow(1 - t, 3), essential: true });
+              }
+            }}
+            className={btnDefault}
+            aria-label="회전 오른쪽"
+            tabIndex={0}
+          >
+            <Icon icon="mdi:rotate-right" className="w-5 h-5" />
+          </button>
+          <div className={tooltipCls} role="tooltip">
+            <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={tooltipInnerStyle}>오른쪽으로 회전</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ObjectTrackingMapView;

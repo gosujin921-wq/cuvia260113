@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import HomeV2 from "./pages/Home-v2";
+import HomeSk from "./pages/Home-sk";
 import HomeV3 from "./pages/Home-v3";
 import HomeV4 from "./pages/Home-v4";
 import HomeAgent from "./pages/Home-agent";
@@ -18,6 +19,7 @@ function App() {
             <Route path="/" element={<Navigate to="/tutorial" replace />} />
             <Route path="/live" element={<Home />} />
             <Route path="/tutorial" element={<HomeV2 />} />
+            <Route path="/sk" element={<HomeSk />} />
             <Route path="/demo-v2" element={<HomeV3 />} />
             <Route path="/demo-v1" element={<HomeV4 />} />
             <Route path="/agent" element={<HomeAgent />} />
