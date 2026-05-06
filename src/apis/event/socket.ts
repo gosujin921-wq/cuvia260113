@@ -46,7 +46,7 @@ export class EventSocket {
     private readonly options: Required<Omit<EventSocketOptions, keyof EventSocketCallbacks>> & EventSocketCallbacks;
 
     constructor(options: EventSocketOptions = {}) {
-        const baseUrl = import.meta.env.VITE_WS_BASE_URL ?? import.meta.env.VITE_API_BASE_URL ?? "http://192.168.102.102:16000";
+        const baseUrl = import.meta.env.VITE_WS_BASE_URL ?? import.meta.env.VITE_API_BASE_URL ?? "http://112.216.247.186:16000";
         const wsProtocol = baseUrl.startsWith("https") ? "wss" : "ws";
         const host = baseUrl.replace(/^https?:\/\//, "");
         this.url = `${wsProtocol}://${host}/v1/cuvia-was/selecive-event/event`;
