@@ -77,7 +77,8 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     // const { mutate: postVlmRequest } = usePostVlmRequest();
 
     // VLM 웹소켓 훅
-    const { analysisStatus, progressMessage, progressSequence, result: vlmResult, subscribeToAnalysis, unsubscribe: unsubscribeVlm, processingTime } = useVlmSocket({ autoConnect: false });
+    // autoConnect: true로 마운트 시 미리 STOMP 연결 → REST 응답 후 구독만 하면 메시지 유실 없음
+    const { analysisStatus, progressMessage, progressSequence, result: vlmResult, subscribeToAnalysis, unsubscribe: unsubscribeVlm, processingTime } = useVlmSocket({ autoConnect: true });
 
     const handleClickPropagationButton = () => {
         onChangeShowPropagationModal(true);

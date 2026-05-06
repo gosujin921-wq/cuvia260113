@@ -199,7 +199,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                             console.error("[Demo] 이벤트 종료 API 실패:", err);
                         });
                     setDemoMeshTrackingActive(false);
-                }, 10000);
+                }, 12000);
             }, 3000);
         };
 
