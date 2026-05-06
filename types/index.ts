@@ -7,7 +7,10 @@ export type EventType =
   | '112 치안'
   | 'AI 탐지'
   | 'NDMS'
-  | '소방서';
+  | '소방서'
+  | '기밀문서 반출'
+  | '비인가 출입'
+  | 'DLP 알림';
 
 export type ProcessingStage =
   | '생성'

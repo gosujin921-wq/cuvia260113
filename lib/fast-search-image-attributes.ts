@@ -6,6 +6,8 @@
  * - 리스트 아이템은 item.id 기준 1~10 → 이미지 05, 11, 15, 21, 25, 30, 40, 47, 51, 59 (1:1 매핑)
  */
 
+import i18n from '@/src/i18n';
+
 export type ImageId =
   | '01' | '02' | '03' | '04' | '05' | '06' | '07' | '08' | '09' | '10'
   | '11' | '12' | '13' | '14' | '15' | '16' | '17' | '18' | '19' | '20'
@@ -133,7 +135,7 @@ export const IMAGE_CONFIDENCE: Partial<Record<ImageId, number>> = {
   '15': 75,
 };
 
-/** 이미지 ID별 CCTV명 */
+/** 이미지 ID별 CCTV명 — 한국어 원본. 영문 모드는 IMAGE_CCTV_NAME_EN을 사용. */
 export const IMAGE_CCTV_NAME: Partial<Record<ImageId, string>> = {
   '05': '별빛A-230',
   '11': '별빛A-230',
@@ -147,7 +149,24 @@ export const IMAGE_CCTV_NAME: Partial<Record<ImageId, string>> = {
   '59': '별빛A-604',
 };
 
-/** 이미지 ID별 위치 */
+/**
+ * 영문 시연용 짧은 CCTV명. 한국어 코드("별빛")를 영문 prefix("STAR")로 매핑하되,
+ * 외국 클라이언트에 친숙한 짧은 형태("STAR-A230")로 유지한다.
+ */
+export const IMAGE_CCTV_NAME_EN: Partial<Record<ImageId, string>> = {
+  '05': 'STAR-A230',
+  '11': 'STAR-A230',
+  '15': 'STAR-A230',
+  '21': 'STAR-A444',
+  '25': 'STAR-A444',
+  '30': 'STAR-A481',
+  '40': 'STAR-A498',
+  '47': 'STAR-A583',
+  '51': 'STAR-A583',
+  '59': 'STAR-A604',
+};
+
+/** 이미지 ID별 위치 — 한국어 원본 */
 export const IMAGE_LOCATION: Partial<Record<ImageId, string>> = {
   '05': '은하로363번길 48',
   '11': '은하로363번길 48',
@@ -159,6 +178,25 @@ export const IMAGE_LOCATION: Partial<Record<ImageId, string>> = {
   '47': '별빛구 하늘로 245번길 41',
   '51': '별빛구 하늘로 245번길 41',
   '59': '은하로391번길 29 (검지2, 하늘파출소)',
+};
+
+/**
+ * 영문 시연용 짧은 위치명. UI 폭에 맞춰 한 줄에 들어가도록 간결하게 작성.
+ *  - 은하로 → Galaxy St
+ *  - 달빛로 → Moonlight St
+ *  - 별빛구 하늘로 → Sky Ave
+ */
+export const IMAGE_LOCATION_EN: Partial<Record<ImageId, string>> = {
+  '05': '48 Galaxy St',
+  '11': '48 Galaxy St',
+  '15': '48 Galaxy St',
+  '21': '48 Galaxy St',
+  '25': '48 Galaxy St',
+  '30': '28 Moonlight St',
+  '40': '54 Moonlight St',
+  '47': '41 Sky Ave',
+  '51': '41 Sky Ave',
+  '59': '29 Galaxy St (Det. 2, Sky Police Box)',
 };
 
 /**
@@ -273,15 +311,27 @@ export const getConfidenceForCaptureItem = (item: { id: string }): number => {
   return IMAGE_CONFIDENCE[imageId] ?? 50;
 };
 
-/** 캡처 아이템의 CCTV명 */
+/** 현재 i18n 언어가 영문인지 판정 */
+const isEnglish = (): boolean => {
+  const lang = (i18n.resolvedLanguage || i18n.language || 'ko').slice(0, 2);
+  return lang === 'en';
+};
+
+/** 캡처 아이템의 CCTV명. 영문 모드에서는 짧은 영문명을 반환. */
 export const getCctvNameForCaptureItem = (item: { id: string }): string => {
   const imageId = getImageIdFromCaptureItem(item);
+  if (isEnglish()) {
+    return IMAGE_CCTV_NAME_EN[imageId] ?? 'STAR-A230';
+  }
   return IMAGE_CCTV_NAME[imageId] ?? '별빛A-230';
 };
 
-/** 캡처 아이템의 위치 */
+/** 캡처 아이템의 위치. 영문 모드에서는 짧은 영문 주소를 반환. */
 export const getLocationForCaptureItem = (item: { id: string }): string => {
   const imageId = getImageIdFromCaptureItem(item);
+  if (isEnglish()) {
+    return IMAGE_LOCATION_EN[imageId] ?? '48 Galaxy St';
+  }
   return IMAGE_LOCATION[imageId] ?? '은하로363번길 48';
 };
 

@@ -738,7 +738,10 @@ export default function HomeV2({ trafficLayerMode }: HomeWithLinkProps = {}) {
     );
 
     const handleAgentHubClick = useCallback(() => {
-        window.open("http://192.168.102.101:7000/cuvia-link.html", "_blank");
+        const url = import.meta.env.DEV
+            ? "http://192.168.102.101:7000/cuvia-link.html"
+            : "http://112.216.247.186:7000/cuvia-link.html";
+        window.open(url, "_blank");
     }, []);
     return (
         <div className="relative bg-[#0a0e14] overflow-hidden w-full h-full" style={{ width: "100%", height: "100%", minHeight: "100dvh" }}>

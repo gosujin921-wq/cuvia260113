@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
-import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-v2/FastSearchCandidateDetailPopup';
-import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes';
+import FastSearchCandidateDetailPopup from '@/components/dashboard/HOME-sk/FastSearchCandidateDetailPopup';
+import { shouldHideCaptureItem, getPathForCaptureItem, getConfidenceForCaptureItem, getCctvNameForCaptureItem, getLocationForCaptureItem } from '@/lib/fast-search-image-attributes-sk';
 
 interface FastSearchListPanelProps {
   isVisible: boolean;
@@ -52,13 +52,13 @@ interface CaptureItem {
 
 /** 신고 위치로부터의 거리(m) 계산 (mock) - 위치별 가상 거리 */
 const LOCATION_DISTANCE_MAP: Record<string, number> = {
-  '은하로363번길 48': 0,
-  '별빛구 하늘로 245번길 41': 30,
+  'M16 동 3F 설계실': 0,
+  '정문 출입 게이트': 30,
   '길주로363번길 48': 150,
   '길주로391번길 29': 280,
   '길주로395번길 12': 310,
-  '달빛로301번길 28': 420,
-  '달빛로301번길 54': 450,
+  '본관 1F 메인 로비': 420,
+  '본관 1F 메인 로비': 450,
 };
 
 const getDistanceFromReportLocation = (location: string): number => {
@@ -372,9 +372,9 @@ const FastSearchListPanel: React.FC<FastSearchListPanelProps> = ({
         const cctvName = getCctvNameForCaptureItem(item);
         
         if (radius <= 200) {
-          return ['별빛A-498', '별빛A-583'].includes(cctvName);
+          return ['GATE-WEST-07', 'GATE-MAIN-02'].includes(cctvName);
         } else if (radius < 400) {
-          return ['별빛A-498', '별빛A-583', '별빛A-444', '별빛A-481'].includes(cctvName);
+          return ['GATE-WEST-07', 'GATE-MAIN-02', 'M16-EXIT-A03', 'M16-3F-CORR-07'].includes(cctvName);
         } else {
           return true;
         }

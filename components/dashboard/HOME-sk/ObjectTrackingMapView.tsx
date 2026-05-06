@@ -230,16 +230,16 @@ const ObjectTrackingMapView = ({
     const isENObjMap = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
     const allTrackingPins = isENObjMap
       ? [
-          { location: [126.99656, 37.43527] as [number, number], address: '48 Galaxy St', name: 'STAR-A230', color: 'gray' },
-          { location: [126.997050219665, 37.434564088524] as [number, number], address: '46 Galaxy St', name: 'STAR-A444', color: 'gray' },
-          { location: [126.995526419665, 37.435305588524] as [number, number], address: '48 Galaxy Ln', name: 'STAR-A481', color: 'gray' },
-          { location: [126.995523619665, 37.434353188524] as [number, number], address: '28 Moonlight St', name: 'STAR-A498', color: 'blue' },
+          { location: [126.99656, 37.43527] as [number, number], address: 'M16 / 3F Design Lab', name: 'M16-LAB-CAM-12', color: 'gray' },
+          { location: [126.997050219665, 37.434564088524] as [number, number], address: 'M16 / 3F Lab Exit', name: 'M16-EXIT-A03', color: 'gray' },
+          { location: [126.995526419665, 37.435305588524] as [number, number], address: 'M16 / 3F Corridor', name: 'M16-3F-CORR-07', color: 'gray' },
+          { location: [126.995523619665, 37.434353188524] as [number, number], address: 'West Gate', name: 'GATE-WEST-07', color: 'blue' },
         ]
       : [
-          { location: [126.99656, 37.43527] as [number, number], address: '은하로363번길 48', name: '별빛A-230', color: 'gray' },
-          { location: [126.997050219665, 37.434564088524] as [number, number], address: '은하로363번길 46', name: '별빛A-444', color: 'gray' },
-          { location: [126.995526419665, 37.435305588524] as [number, number], address: '은하로361번길 48', name: '별빛A-481', color: 'gray' },
-          { location: [126.995523619665, 37.434353188524] as [number, number], address: '달빛로301번길 28', name: '별빛A-498', color: 'blue' },
+          { location: [126.99656, 37.43527] as [number, number], address: 'M16 동 3F 설계실', name: 'M16-LAB-CAM-12', color: 'gray' },
+          { location: [126.997050219665, 37.434564088524] as [number, number], address: 'M16 동 3F 설계실 출구', name: 'M16-EXIT-A03', color: 'gray' },
+          { location: [126.995526419665, 37.435305588524] as [number, number], address: 'M16 동 3F 복도', name: 'M16-3F-CORR-07', color: 'gray' },
+          { location: [126.995523619665, 37.434353188524] as [number, number], address: '서측 출입 게이트', name: 'GATE-WEST-07', color: 'blue' },
         ];
     
     const initPins = () => {
@@ -684,28 +684,28 @@ const ObjectTrackingMapView = ({
           const isENObjLabels = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
           const cctvInfoList = isENObjLabels
             ? [
-                { cctvName: 'STAR-A583', location: '28 Moonlight St', confidence: 92 },
-                { cctvName: 'STAR-A604', location: '28 Moonlight St', confidence: 88 },
-                { cctvName: 'STAR-A621', location: '28 Moonlight St', confidence: 85 },
-                { cctvName: 'STAR-A638', location: '28 Moonlight St', confidence: 83 },
-                { cctvName: 'STAR-A655', location: '28 Moonlight St', confidence: 80 },
-                { cctvName: 'STAR-A672', location: '28 Moonlight St', confidence: 78 },
-                { cctvName: 'STAR-A689', location: '28 Moonlight St', confidence: 75 },
-                { cctvName: 'STAR-A706', location: '28 Moonlight St', confidence: 73 },
-                { cctvName: 'STAR-A723', location: '28 Moonlight St', confidence: 70 },
-                { cctvName: 'STAR-A740', location: '28 Moonlight St', confidence: 68 },
+                { cctvName: 'GATE-MAIN-02', location: 'Main Gate', confidence: 92 },
+                { cctvName: 'LOBBY-MAIN-01', location: 'HQ / 1F Lobby', confidence: 88 },
+                { cctvName: 'GATE-EAST-04', location: 'East Gate', confidence: 85 },
+                { cctvName: 'GATE-WEST-08', location: 'West Gate (B)', confidence: 83 },
+                { cctvName: 'CORR-1F-09', location: 'HQ / 1F Corridor', confidence: 80 },
+                { cctvName: 'ELEV-1F-03', location: 'HQ / 1F Elevator Hall', confidence: 78 },
+                { cctvName: 'STAIR-1F-A', location: 'HQ / 1F Stairs A', confidence: 75 },
+                { cctvName: 'PARK-EXIT-B2', location: 'B2 Parking Exit', confidence: 73 },
+                { cctvName: 'PARK-RAMP-B1', location: 'B1 Parking Ramp', confidence: 70 },
+                { cctvName: 'GATE-CARGO-W', location: 'West Cargo Gate', confidence: 68 },
               ]
             : [
-                { cctvName: '별빛A-583', location: '달빛로301번길 28', confidence: 92 },
-                { cctvName: '별빛A-604', location: '달빛로301번길 28', confidence: 88 },
-                { cctvName: '별빛A-621', location: '달빛로301번길 28', confidence: 85 },
-                { cctvName: '별빛A-638', location: '달빛로301번길 28', confidence: 83 },
-                { cctvName: '별빛A-655', location: '달빛로301번길 28', confidence: 80 },
-                { cctvName: '별빛A-672', location: '달빛로301번길 28', confidence: 78 },
-                { cctvName: '별빛A-689', location: '달빛로301번길 28', confidence: 75 },
-                { cctvName: '별빛A-706', location: '달빛로301번길 28', confidence: 73 },
-                { cctvName: '별빛A-723', location: '달빛로301번길 28', confidence: 70 },
-                { cctvName: '별빛A-740', location: '달빛로301번길 28', confidence: 68 },
+                { cctvName: 'GATE-MAIN-02', location: '정문 출입 게이트', confidence: 92 },
+                { cctvName: 'LOBBY-MAIN-01', location: '본관 1F 메인 로비', confidence: 88 },
+                { cctvName: 'GATE-EAST-04', location: '동측 출입 게이트', confidence: 85 },
+                { cctvName: 'GATE-WEST-08', location: '서측 출입 게이트 (B)', confidence: 83 },
+                { cctvName: 'CORR-1F-09', location: '본관 1F 복도', confidence: 80 },
+                { cctvName: 'ELEV-1F-03', location: '본관 1F 엘리베이터 홀', confidence: 78 },
+                { cctvName: 'STAIR-1F-A', location: '본관 1F 비상계단 A', confidence: 75 },
+                { cctvName: 'PARK-EXIT-B2', location: 'B2 주차장 출구', confidence: 73 },
+                { cctvName: 'PARK-RAMP-B1', location: 'B1 주차장 램프', confidence: 70 },
+                { cctvName: 'GATE-CARGO-W', location: '서측 화물 게이트', confidence: 68 },
               ];
           
           blueCCTV.forEach((location, index) => {

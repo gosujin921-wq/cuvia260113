@@ -117,7 +117,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   <img
                     ref={imgRef}
                     src={imageSrc || REPORT_POPUP_IMAGE_SRC}
-                    alt={t('reportPopup.imageAlt')}
+                    alt={t('sk.reportPopup.imageAlt')}
                     className={`w-full h-full object-cover object-center transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
                     fetchPriority="high"
                     onLoad={() => setImageLoaded(true)}
@@ -133,16 +133,16 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
             ) : (
               <div className="flex-1 text-gray-200 min-w-0 space-y-3">
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">{t('reportPopup.nameAge')}</div>
-                  <div className="text-base font-semibold text-white">{t('reportPopup.subjectName')}</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('sk.reportPopup.nameAge')}</div>
+                  <div className="text-base font-semibold text-white">{t('sk.reportPopup.subjectName')}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">{t('reportPopup.description')}</div>
-                  <div className="text-sm text-gray-200 leading-relaxed">{t('reportPopup.subjectDescription')}</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('sk.reportPopup.description')}</div>
+                  <div className="text-sm text-gray-200 leading-relaxed">{t('sk.reportPopup.subjectDescription')}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">{t('reportPopup.locationTime')}</div>
-                  <div className="text-sm text-gray-200">{t('reportPopup.subjectLocationTime')}</div>
+                  <div className="text-xs text-gray-400 mb-1">{t('sk.reportPopup.locationTime')}</div>
+                  <div className="text-sm text-gray-200">{t('sk.reportPopup.subjectLocationTime')}</div>
                 </div>
               </div>
             )}
@@ -152,7 +152,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
           {!infoContent && (
             <div className="mb-3 rounded-lg p-3 bg-red-500/20 border border-red-500/60">
               <div className="text-sm font-semibold text-red-400">
-                {t('reportPopup.urgentNotice')}
+                {t('sk.reportPopup.urgentNotice')}
               </div>
             </div>
           )}
@@ -172,7 +172,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
               }}
             >
               <Icon icon="mdi:magnify" className="w-4 h-4" />
-              <span>{t('reportPopup.startFastSearch')}</span>
+              <span>{t('sk.reportPopup.startFastSearch')}</span>
             </button>
           )}
         </div>

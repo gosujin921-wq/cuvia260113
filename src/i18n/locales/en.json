@@ -1,0 +1,817 @@
+{
+  "common": {
+    "confirm": "OK",
+    "cancel": "Cancel",
+    "start": "Start",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close",
+    "expand": "Expand",
+    "collapse": "Collapse",
+    "guide": {
+      "expand": "Expand guide",
+      "collapse": "Collapse guide"
+    },
+    "step": {
+      "previous": "Previous step",
+      "next": "Next step"
+    }
+  },
+  "language": {
+    "modalTitle": "Please select a language",
+    "modalDescription": "튜토리얼을 시작할 언어를 선택해주세요.",
+    "korean": "한국어",
+    "english": "English",
+    "switchToKorean": "한국어로 보기",
+    "switchToEnglish": "View in English"
+  },
+  "home": {
+    "endDialog": {
+      "title": "The CUVIA tutorial has ended.",
+      "thanks": "Thank you for trying it out.",
+      "returnHome": "Click OK to return to the home screen.",
+      "confirmAriaLabel": "OK"
+    },
+    "startDialog": {
+      "title": "Start the CUVIA tutorial",
+      "description1": "Based on a missing-person case scenario,",
+      "description2": "you can experience CUVIA's full response workflow firsthand.",
+      "flow": "Case intake → Fast Search → Object Tracking → Broadcast → Auto-generated report",
+      "duration": "Estimated time: about 3–5 minutes",
+      "shortcutsTitle": "Keyboard shortcuts",
+      "shortcutHToggle": "Hide or reopen the tutorial guide",
+      "shortcutResetGuide": "Reset the tutorial",
+      "footerStart": "Click Start to begin the tutorial right away.",
+      "footerDisclaimer": "All cases, people, and data shown are fictional and unrelated to real events.",
+      "startButton": "Start",
+      "startAriaLabel": "Start"
+    },
+    "guideDialog": {
+      "title": "Notice",
+      "linkOnly": "<b>CUVIA Link is offered in a separate demo zone.</b><br/>Please try it in the CUVIA Link demo zone.",
+      "demoOnly": "This page is a demo for the Fast Search, Object Tracking,<br/>Capture List, and Broadcast features.<br/>Please select one of these menus to explore."
+    },
+    "objectTrackingConfirm": {
+      "title": "Object Tracking",
+      "message": "There are currently {{count}} fast search results.<br/>Do you want to start object tracking?",
+      "confirm": "Start",
+      "cancel": "Cancel"
+    },
+    "captureMenu": {
+      "label": "Capture List"
+    },
+    "capture": {
+      "addedNotification": "Clip from {{cctvName}} | {{location}} has been added to the capture list.\nCreate a broadcast package to send out an alert."
+    },
+    "agent": {
+      "showOnlyAttribute": "Show only {{attribute}}",
+      "restoredAttribute": "Restored {{attribute}}",
+      "reSearchByCandidate": "Re-search by similarity to top candidate"
+    }
+  },
+  "leftMenu": {
+    "homeAriaLabel": "Go to home",
+    "items": {
+      "netMonitoring": "Net Watch",
+      "fastSearch": "Fast Search",
+      "objectTracking": "Object Tracking",
+      "captureList": "Capture List",
+      "propagation": "Broadcast"
+    },
+    "cuviaLink": "CUVIA Link"
+  },
+  "video": {
+    "loading": "Loading video",
+    "cctvAriaLabel": "CCTV footage"
+  },
+  "topControl": {
+    "fastSearchTitle": "Fast Search",
+    "monitoringMessage": "Monitoring 8 nearby CCTVs.",
+    "stop": "Stop Fast Search",
+    "stopAriaLabel": "Stop Fast Search"
+  },
+  "reportDownload": {
+    "title": "Document Preview & File Download",
+    "previewTitle": "Case Outcome Report",
+    "saveAs": "Save as",
+    "fileName": "case-outcome-report.pdf",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "formats": {
+      "hwp": "Hangul (.hwp)",
+      "jpg": "Image (.jpg)",
+      "docx": "Word (.docx)",
+      "pdf": "PDF (.pdf)"
+    }
+  },
+  "trackingBox": {
+    "title": "Tracking Box Control",
+    "position": "Position",
+    "size": "Size",
+    "width": "Width",
+    "height": "Height",
+    "up": "Up",
+    "down": "Down",
+    "left": "Left",
+    "right": "Right",
+    "widthDecrease": "Decrease width",
+    "widthIncrease": "Increase width",
+    "heightDecrease": "Decrease height",
+    "heightIncrease": "Increase height",
+    "positionLabel": "Position: X: {{x}}px, Y: {{y}}px",
+    "sizeLabel": "Size: {{width}}px × {{height}}px",
+    "modeLabel": "Mode: {{mode}}",
+    "modeAuto": "Auto",
+    "modeManual": "Manual"
+  },
+  "trafficIncident": {
+    "title": "Traffic incidents",
+    "content": "Details",
+    "occurrenceTime": "Occurred",
+    "endTime": "Ends",
+    "control": "Closure",
+    "videoAriaLabel": "Traffic situation video",
+    "cards": {
+      "0": {
+        "roadDirection": "Riverside → Ilsan",
+        "roadName": "Riverside Hwy",
+        "section": "Jamsil Br → Jamsil Grand Br",
+        "content": "Bus accident",
+        "endTime": "TBD",
+        "control": "Lanes 3–4"
+      },
+      "1": {
+        "roadDirection": "Gyeongbu → Seoul",
+        "roadName": "Gyeongbu Expwy",
+        "section": "Anseong IC → Anseong JC",
+        "content": "Truck accident",
+        "endTime": "TBD",
+        "control": "Lane 5"
+      },
+      "2": {
+        "roadDirection": "Osan → Hwaseong",
+        "roadName": "Osan West Rd",
+        "section": "Geumam X → Gajang X",
+        "content": "Road subsidence",
+        "endTime": "TBD",
+        "control": "All lanes"
+      },
+      "3": {
+        "roadDirection": "Bongdam → Gwacheon",
+        "roadName": "Bongdam-Gwacheon Rd",
+        "section": "Gwacheon Tunnel → Gwacheon IC",
+        "content": "Overpass demolition closure",
+        "endTime": "TBD",
+        "control": "All lanes"
+      }
+    }
+  },
+  "trafficRoute": {
+    "title": "Route status",
+    "videoAriaLabel": "Traffic video for {{location}}",
+    "statusLabel": {
+      "congestion": "Heavy",
+      "slow": "Slow",
+      "smooth": "Smooth",
+      "unknown": ""
+    },
+    "labels": {
+      "0": [
+        "Gwacheon ↔ Dongjak",
+        "→ Dongjak"
+      ],
+      "1": [
+        "Gwacheon ↔ Dongjak",
+        "→ Gwacheon"
+      ],
+      "2": [
+        "Umyeon ↔ Banpo",
+        "→ Gwacheon"
+      ],
+      "3": [
+        "Umyeon ↔ Banpo",
+        "→ Seoul"
+      ]
+    },
+    "sets": {
+      "0": {
+        "segments": {
+          "0": {
+            "location": "Dongjak Br"
+          },
+          "1": {
+            "location": "Sadang Stn"
+          },
+          "2": {
+            "location": "Sadang IC"
+          },
+          "3": {
+            "location": "Namtae Pass"
+          },
+          "4": {
+            "location": "Gwanmun 4"
+          }
+        }
+      },
+      "1": {
+        "segments": {
+          "0": {
+            "location": "Gwanmun 4"
+          },
+          "1": {
+            "location": "Namtae Pass"
+          },
+          "2": {
+            "location": "Sadang IC"
+          },
+          "3": {
+            "location": "Sadang Stn"
+          },
+          "4": {
+            "location": "Dongjak Br"
+          }
+        }
+      },
+      "2": {
+        "segments": {
+          "0": {
+            "location": "Banpo Br"
+          },
+          "1": {
+            "location": "St. Mary's Hosp."
+          },
+          "2": {
+            "location": "Seocho Stn X"
+          },
+          "3": {
+            "location": "Umyeon Tunnel"
+          },
+          "4": {
+            "location": "Seonam IC"
+          }
+        }
+      },
+      "3": {
+        "segments": {
+          "0": {
+            "location": "Seonam IC"
+          },
+          "1": {
+            "location": "Umyeon Tunnel"
+          },
+          "2": {
+            "location": "Seocho Stn X"
+          },
+          "3": {
+            "location": "St. Mary's Hosp."
+          },
+          "4": {
+            "location": "Banpo Br"
+          }
+        }
+      }
+    }
+  },
+  "heatmap": {
+    "title": "Events by area",
+    "last24h": "Last 24 hours",
+    "cellLabel": "{{area}} · {{start}}~{{end}}h · {{count}} events",
+    "hourSuffix": "(hr)"
+  },
+  "leftPanel": {
+    "airQuality": {
+      "title": "Air quality",
+      "lastUpdate": "Updated",
+      "basedOn": "Reading from {{location}}",
+      "temperature": "Temp",
+      "humidity": "Humidity",
+      "precipitation": "Rainfall",
+      "cumulative": "(total)",
+      "windSpeed": "Wind"
+    },
+    "safety": {
+      "title": "City safety",
+      "floodRisk": "Flood risk",
+      "facilityRiskLine1": "At-risk facilities",
+      "facilityRiskLine2": "",
+      "statusNormal": "Normal",
+      "statusCaution": "Caution",
+      "statusDanger": "Danger",
+      "levelLow": "Low",
+      "levelMedium": "Medium",
+      "levelHigh": "High"
+    },
+    "facility": {
+      "streetLight": "Street lights",
+      "trafficSignal": "Traffic signals",
+      "emergencyBell": "E-bells",
+      "normal": "Normal",
+      "error": "Fault"
+    }
+  },
+  "eventList": {
+    "empty": "No events to show.",
+    "tabs": {
+      "all": "All"
+    },
+    "priority": {
+      "긴급": "Urgent",
+      "경계": "Alert",
+      "주의": "Caution",
+      "일반": "Normal"
+    },
+    "status": {
+      "new": "NEW",
+      "monitoring": "Monitoring",
+      "evidence": "Evidence"
+    },
+    "type": {
+      "112 치안": "112 Public Safety",
+      "112 실종": "112 Missing Person",
+      "119 화재": "119 Fire",
+      "119 구조": "119 Rescue",
+      "AI 탐지": "AI Detection",
+      "NDMS": "NDMS"
+    },
+    "agency": {
+      "112": "112 Operations",
+      "119": "119 Command",
+      "ai": "AI System"
+    }
+  },
+  "mockEvents": {
+    "mock-1": {
+      "title": "Parking lot noise complaint",
+      "location": "Moonlight Underground Parking"
+    },
+    "mock-2": {
+      "title": "Elderly fall injury",
+      "location": "Central Park, North Gate"
+    },
+    "mock-3": {
+      "title": "Crosswalk signal violation",
+      "location": "Gwanmun Crossroads"
+    },
+    "mock-4": {
+      "title": "AI behavior anomaly detected",
+      "location": "Sky Station, Exit 2"
+    },
+    "mock-5": {
+      "title": "Traffic jam from vehicle accident",
+      "location": "Cloud Ave, toward Sadang Station"
+    },
+    "mock-6": {
+      "title": "Missing child — urgent search",
+      "location": "Moonlight Elementary, Front Gate"
+    },
+    "mock-7": {
+      "title": "Vehicle collision",
+      "location": "City Hall Intersection"
+    },
+    "mock-8": {
+      "title": "Argument escalating to a fight",
+      "location": "Cloud Station, storefront"
+    },
+    "mock-9": {
+      "title": "Fire in a trash bin",
+      "location": "Moonlight Apartments — trash bin"
+    },
+    "mock-10": {
+      "title": "Suspected theft attempt",
+      "location": "Moonlight District, storefront"
+    }
+  },
+  "candidateDetailMock": {
+    "04": {
+      "summary": "Man in gray hoodie loiters in front of the convenience store, enters and exits repeatedly, then exits toward the upper-center.",
+      "timeline": [
+        {
+          "time": "00:00",
+          "label": "Gray-hoodie man appears, pauses near convenience store entrance"
+        },
+        {
+          "time": "00:20",
+          "label": "Appears to be on a call, moving toward entrance"
+        },
+        {
+          "time": "00:25",
+          "label": "Passerby in dark clothing with umbrella moves along the road"
+        }
+      ]
+    },
+    "21": {
+      "summary": "Slim man, short black hair, gray hoodie, dark jeans, white sneakers. Appears next to a silver vehicle, walks slowly along the road using his phone with both hands, then exits to the northeast (upper edge).",
+      "behavior": "Holding phone with both hands while walking",
+      "exitDirection": "Northeast (upper edge)"
+    },
+    "25": {
+      "summary": "Gray hoodie, dark jeans, white sneakers. Appears at the upper-center of detector 2 near a yellow post; walks slowly through the road center with head down on phone, then exits southwest.",
+      "behavior": "Head down, both hands on phone",
+      "exitDirection": "Southwest (lower-center)"
+    },
+    "30": {
+      "summary": "Slim, short black hair, gray hoodie, dark jeans, white sneakers. Appears at the bottom of STAR-A481 detector 1; phone in hand, moves forward at steady pace along road center, then exits northwest.",
+      "behavior": "Phone in hand, walking away from camera",
+      "exitDirection": "Northwest (upper edge)"
+    },
+    "40": {
+      "summary": "Profile match (gray hoodie, dark jeans, white sneakers, black hair, ~176cm/65kg). Near 54 Moonlight St; checks phone while walking straight toward the upper edge along the one-way arrow, exits northeast.",
+      "behavior": "Pulls out and checks phone occasionally",
+      "exitDirection": "Northeast (upper edge)"
+    },
+    "47": {
+      "summary": "Slim, short black hair (profile match). Near crosswalk at STAR-A583 detector 3; uses phone with both hands while walking along road center toward upper edge, exits northwest.",
+      "behavior": "Both hands on phone, gaze on screen",
+      "exitDirection": "Northwest (upper edge)"
+    },
+    "51": {
+      "summary": "Slim, short black hair, gray hoodie, dark jeans, white sneakers. At upper edge of STAR-A583 detector 3 (pharmacy). Walks toward camera, head down, focused on phone, then exits southwest.",
+      "behavior": "Head down, both hands on phone, walking toward camera",
+      "exitDirection": "Southwest (lower-center)"
+    },
+    "59": {
+      "summary": "Man in gray hoodie loiters at the convenience store entrance, repeatedly enters and exits, then exits toward the upper-center.",
+      "behavior": "Loitering at entrance, on a call, moving inside",
+      "exitDirection": "Upper-center",
+      "timeline": [
+        {
+          "time": "00:00",
+          "label": "Gray-hoodie man appears, loitering near convenience store entrance"
+        },
+        {
+          "time": "00:20",
+          "label": "Appears to be on a call, moving toward the entrance"
+        },
+        {
+          "time": "00:25",
+          "label": "Passerby in dark clothing with umbrella moves along the road"
+        }
+      ]
+    },
+    "11": {
+      "summary": "Slim figure in a light-gray/white top, dark bottoms, white sneakers, holding a clear patterned umbrella on a side road near Love Church. Walks from lower-right toward the road center at a steady pace, then exits the opposite way of the camera (upper edge).",
+      "behavior": "Steady pace under umbrella",
+      "exitDirection": "Upper edge"
+    },
+    "15": {
+      "summary": "Person in a white/very-light-gray padded top, dark bottoms, white sneakers at a 4-way crossing near Love Church. Crosses diagonally at the \"Sohan Realty\" crosswalk while staring at phone, then exits southwest (lower-left).",
+      "behavior": "Continuously gazes at phone while crossing",
+      "exitDirection": "Southwest (lower-left)"
+    }
+  },
+  "reportPopup": {
+    "imageAlt": "Subject of the report",
+    "nameAge": "Name / Age",
+    "description": "Description",
+    "locationTime": "Last seen / Time",
+    "subjectName": "Kim Do-yeon / 22 (M)",
+    "subjectDescription": "Gray hoodie, blue jeans, short black hair, 176cm, 65kg.",
+    "subjectLocationTime": "48 Galaxy St, around 09:30",
+    "urgentNotice": "Has a disability. Urgent search required.",
+    "startFastSearch": "Start Fast Search"
+  },
+  "events": {
+    "A-20260107-004": {
+      "listTitle": "Missing: Kim Do-yeon (22, M) — gray hoodie, jeans, urgent",
+      "listLocation": "48 Galaxy St, around 09:30"
+    }
+  },
+  "propagationPackage": {
+    "dialogAriaLabel": "Broadcast package",
+    "title": "Broadcast package",
+    "selectedCount": "{{count}} selected",
+    "captureVideo": "Capture video",
+    "tab": {
+      "preview": "Preview broadcast",
+      "detail": "Details"
+    },
+    "aiHint": "This is an AI-generated broadcast draft. Review the details, edit if needed, then send it out.",
+    "contentPlaceholder": "Type the broadcast content...",
+    "send": "Send broadcast package",
+    "detail": {
+      "latestCapture": {
+        "title": "Latest capture (immediate dispatch)",
+        "line": "10:35:56 / STAR-A230 / 48 Galaxy St / Similarity 95%",
+        "note": "Loitered in front of convenience store, entered/exited repeatedly, observed making a call before exiting toward upper-center"
+      },
+      "nearestStation": {
+        "title": "Nearest police box (dispatch base)",
+        "referenceLabel": "Reference (latest capture):",
+        "referenceValue": "10:35:56 / STAR-A230 / 48 Galaxy St",
+        "stationLabel": "Nearest box:",
+        "stationValue": "(name) / approx. (distance) km",
+        "note": "Note: please coordinate with this base first when dispatching."
+      },
+      "subject": {
+        "title": "Subject information",
+        "nameAgeLabel": "Name / Age:",
+        "nameAgeValue": "Kim Do-yeon / 22 (M)",
+        "descLabel": "Description:",
+        "descValue": "Gray hoodie, blue jeans, short black hair, 176cm / 65kg",
+        "intakeLabel": "Report intake:",
+        "intakeValue": "~09:30 near 48 Galaxy St"
+      },
+      "trackingSummary": {
+        "title": "Tracking summary (direction / possible path)",
+        "items": [
+          "Estimated continued movement to the southwest (route fit 83)",
+          "Continuous tracking feasible thanks to overlapping CCTV coverage",
+          "Observed repeating pattern of pausing then leaving in the same direction"
+        ]
+      },
+      "surveillance": {
+        "title": "Surveillance scope (current search)",
+        "timeLabel": "Time:",
+        "timeValue": "09:30 ~ now",
+        "rangeLabel": "Range:",
+        "rangeValue": "Confirmed within ~10km of 48 Galaxy St and adjacent segments",
+        "note": "Cameras outside this range are not yet checked. We'll expand the check immediately on receipt of latest sightings or priority zones from 112."
+      },
+      "captureTimeline": {
+        "title": "Capture timeline (evidence)",
+        "fastSearchLine": "(Fast Search) 10:35:56 / STAR-A230 / 48 Galaxy St / Similarity 95%",
+        "fastSearchNote": "· Loitered in front of convenience store, entered/exited repeatedly, observed making a call before exiting toward upper-center",
+        "linkedItems": [
+          {
+            "line": "(Tracking) 10:35:54 / STAR-A444 / 48 Galaxy St",
+            "note": "· Linked based on appearance / behavior matching the fast-search candidate."
+          },
+          {
+            "line": "(Tracking) 10:35:51 / STAR-A498 / 54 Moonlight St",
+            "note": "· Linked based on appearance / behavior matching the fast-search candidate."
+          },
+          {
+            "line": "(Tracking) 10:12:31 / STAR-A604 / 28 Moonlight St",
+            "note": "· Linked based on appearance / behavior matching the fast-search candidate."
+          }
+        ]
+      },
+      "cooperation": {
+        "title": "Mutual cooperation (request to 112)",
+        "lines": [
+          "If 112 sends back the latest sighting / time, transport mode, appearance changes (jacket, hat, bag, etc.), and priority zones, we'll immediately update the search range and continue checking.",
+          "Will rebroadcast on any new captures or path changes."
+        ]
+      },
+      "attachments": {
+        "title": "Attachments",
+        "items": [
+          "STAR-A230 / A444 / A498 / A604 capture thumbnails and clips",
+          "Movement map (4 plotted points)"
+        ]
+      },
+      "disclaimer": "※ Estimated using AI analysis. Final determination is at the field officer's discretion.",
+      "dispatcher": "Dispatcher: Cudo Kim / 032-266-3454"
+    }
+  },
+  "propagation": {
+    "agencyName": "Skyline Police HQ",
+    "agencyShortName": "Skyline Police",
+    "threadTitle": "Urgent search: missing person Kim Do-yeon (22)",
+    "threadCount": "Broadcasts: {{count}}",
+    "statusCompleted": "Completed",
+    "statusInProgress": "In progress",
+    "fallbackTitle": "Broadcast",
+    "fallbackAuthor": "Reporting agency",
+    "downloadReport": "Download case outcome report",
+    "sentLabel": "Broadcast sent",
+    "userRole": "Officer in charge",
+    "noContent": "No content",
+    "captureListLabel": "Capture list ({{count}})",
+    "agencyAck": "Broadcast received. Officers are being dispatched to the scene.",
+    "messagePlaceholder": "Type a message...",
+    "chatHint": "Chat with the reporting agency. Track real-time updates here.",
+    "scrollToTop": "Scroll to top",
+    "defaultReportContent": "🚨 Missing Person Report Received\n\n▪ Report intake\n\nAgency: Skyline Police HQ\nReceived: 09:45:23 AM\nOfficer in charge: Lt. Kim Min-su\n\n▪ Missing person\n\nName/Age: Kim Do-yeon / 22 (male)\nDescription: Gray hoodie, blue jeans, short black hair, 176cm, 65kg\nLast known location: 48 Galaxy St\nTime missing: ~09:30 AM\n\n▪ Notes\n\n⚠️ Has a disability. Urgent search required.\n\nPer guardian's statement, the subject usually doesn't deviate from familiar routes,\nbut has been unreachable since leaving home this morning.\nMobile location trace shows the last signal near 48 Galaxy St.",
+    "defaultPropagationContent": "[112 request / cooperation] Sharing 4 consecutive captures believed to be the same person — missing person Kim Do-yeon (M/22).\n\n\n🚨 1. Latest capture (immediate dispatch reference)\n10:35:56 / STAR-A230 / 48 Galaxy St / Similarity 95%\nLoitered in front of a convenience store, repeatedly entering and exiting; observed making a phone call before leaving toward the upper-center of the frame.\n\n\n🚓 2. Nearest police box (dispatch base)\nReference (latest capture): 10:35:56 / STAR-A230 / 48 Galaxy St\nNearest box: (name) / approx. (distance) km\n\nNote: Please coordinate with this base first when dispatching.\n\n\n👤 3. Subject information\nName/Age: Kim Do-yeon / 22 (M)\nDescription: Gray hoodie, blue jeans, short black hair, 176cm / 65kg\nReport intake: ~09:30 near 48 Galaxy St\n\n🧭 4. Tracking summary (direction / possible path)\nEstimated continued movement to the southwest (route fit 83)\nContinuous tracking feasible thanks to overlapping CCTV coverage\nObserved repeating pattern of pausing then leaving in the same direction\n\n\n📡 5. Surveillance scope (current search)\nTime: 09:30 ~ now\nRange: confirmed within ~10km of 48 Galaxy St and adjacent segments\nCameras outside this range are not yet checked. Please send latest sightings or priority zones from 112 — we'll expand the check immediately.\n\n\n🎯 6. Capture timeline (evidence)\n\n🔎 (Fast Search) 10:35:56 / STAR-A230 / 48 Galaxy St / Similarity 95%\n\n· Loitered in front of a convenience store, repeatedly entering and exiting; observed making a phone call before leaving toward the upper-center of the frame.\n🔗 (Tracking) 10:35:54 / STAR-A444 / 48 Galaxy St\n\n· Linked based on appearance / behavior matching the fast search candidate.\n🔗 (Tracking) 10:35:51 / STAR-A498 / 54 Moonlight St\n\n· Linked based on appearance / behavior matching the fast search candidate.\n🔗 (Tracking) 10:12:31 / STAR-A604 / 28 Moonlight St\n\n· Linked based on appearance / behavior matching the fast search candidate.\n\n\n🤝 7. Mutual cooperation (request to 112)\nIf 112 sends back the latest sighting / time, transport mode, appearance changes (jacket, hat, bag, etc.), and priority zones,\nwe'll immediately update the search range and continue checking.\n\nWill rebroadcast on any new captures or path changes.\n\n\n📎 8. Attachments\nSTAR-A230 / A444 / A498 / A604 capture thumbnails and clips\nMovement map (4 plotted points)\n\n\n※ Estimated using AI analysis. Final determination is at the field officer's discretion.\nDispatcher: Cudo Kim / 032-266-3454",
+    "discoveryReportContent": "📢 [112 reply] Missing person found — notification\n\n🚨 Subject located\n\n▪ Case ID: 2026-02-23-Skyline-Missing\n▪ Subject: Kim Do-yeon / 22 (M)\n\n\n✅ 1. Discovery\n\nFound at: 11:02:14\nLocation: alley near 54 Moonlight St\nCondition: Vital signs normal, no visible injuries\n\nGuardian handover scheduled\nField officer confirmed.\n\n\n📍 2. Actions taken\n\nNeighborhood search ended\nRequest to halt additional CCTV searches\n119 transport not required\n\n\n📡 3. Surveillance request\n\nRequest video backup (10:10–11:10 segment)\nRequest preservation of materials for the 4 capture points\n\n\n🔒 4. Status change\n\nPlease close this case as 'search ended.'\nWill notify again if any further developments arise.\n\nIn charge: Lt. Kim Min-su\nSkyline Police HQ"
+  },
+  "fastSearchList": {
+    "zoneAll": "All",
+    "timeChip": "Time: {{start}}~{{end}}",
+    "radiusPopover": {
+      "title": "Set search radius",
+      "hint": "A wider radius searches more CCTVs but may take longer to analyze."
+    },
+    "timePopover": {
+      "title": "Pick time range",
+      "hint": "Adjust the time range to filter the time window of your search."
+    },
+    "sortAriaLabel": "Sort options",
+    "sort": {
+      "popoverAriaLabel": "Choose sort order",
+      "title": "Sort by",
+      "confidenceDesc": "Highest similarity first",
+      "confidenceAsc": "Lowest similarity first",
+      "distanceAsc": "Closest to report location",
+      "distanceDesc": "Farthest from report location",
+      "confidenceDescChip": "By similarity",
+      "confidenceAscChip": "Similarity (asc)",
+      "distanceAscChip": "By distance",
+      "distanceDescChip": "Distance (desc)"
+    },
+    "resetFilters": "Reset filters",
+    "reSearch": "Re-search results",
+    "similarCandidate": "Similar candidate",
+    "selected": "Selected",
+    "wrong": "Wrong",
+    "match": "Match"
+  },
+  "agent": {
+    "analyzing": "AI is analyzing",
+    "timingSuffix": "(processing: {{processing}}s, transmission: {{transmission}}s)",
+    "welcome": "Found {{count}} fast search results.\nYou can narrow candidates further by adding conditions.",
+    "searchingCandidates": "Searching candidates… (checking {{count}} cameras)",
+    "applyConditionAria": "Apply condition: {{suggestion}}",
+    "tools": {
+      "open": "Open tools"
+    },
+    "send": "Send",
+    "cancelResponse": "Cancel response",
+    "disclaimer": "may make mistakes. Please double-check important information.",
+    "placeholder": {
+      "fastSearch": "Type your search condition in natural language.",
+      "objectTracking": "Start object tracking with the searched results."
+    },
+    "fastSearchSteps": {
+      "1": "1. Set the search area around the case location",
+      "2": "2. Load the CCTV list",
+      "3": "3. Apply trait conditions from the report",
+      "4": "4. Score candidates by similarity",
+      "5": "5. Sort results and prepare the view"
+    },
+    "reSearchSteps": {
+      "1": "1. Filter by conditions",
+      "2": "2. Reorder results",
+      "3": "3. Update the view"
+    },
+    "objectTrackingSteps": {
+      "1": "1. Set the top-candidate anchor point",
+      "2": "2. Re-search by route fit",
+      "3": "3. Sort chronologically and stitch the route",
+      "4": "4. Account for direction and time of day",
+      "5": "5. Generate next-capture CCTV candidates"
+    },
+    "summary": {
+      "eventTime": "Event time",
+      "personnel": "People involved (estimated)",
+      "progressStatus": "Progress",
+      "evidenceTitle": "3. Evidence",
+      "recommendationsTitle": "4. Response recommendations"
+    },
+    "objectTracking": {
+      "startMessage": "I will predict the next likely CCTV based on the movement path since the last sighting.",
+      "completeMessage": "Prediction of the next likely CCTV based on the movement path is complete."
+    },
+    "fastSearch": {
+      "starting": "Starting fast search."
+    },
+    "reSearchProgress": "Re-searching results that match your conditions.",
+    "reSearchResult": {
+      "byCandidate": "Top-candidate-based re-analysis is complete.\nFrom these results, you can run object tracking or add more conditions to refine candidates.",
+      "restored": "Restored conditions: {{names}}.",
+      "applied": "Applied conditions. Showing {{count}} results including similar candidates."
+    },
+    "attributeOverflow": "{{list}} and {{more}} more",
+    "unknownPrompt": "I couldn't find a condition for \"{{prompt}}\". Please enter a more specific condition.",
+    "unknownPromptWithSuggestions": "I couldn't find an exact condition for \"{{prompt}}\".\nTry one of the similar conditions below.",
+    "showOnlyTemplate": "Show only {{suggestion}}",
+    "collapse": "Collapse",
+    "expand": "Expand"
+  },
+  "predictedCCTV": {
+    "radius": "Radius: {{radius}}m",
+    "sort": "Sort: {{value}}",
+    "sortConfidence": "By confidence",
+    "sortDistance": "By distance",
+    "sortTime": "By time",
+    "score": "{{score}} pts"
+  },
+  "captureList": {
+    "detailAriaLabel": "Capture detail",
+    "captureTime": "Captured at",
+    "totalCaptures": "Total captures: {{count}}",
+    "createBroadcastPackage": "Create Broadcast Package",
+    "empty": "No captured targets yet.",
+    "emptyHint": "While object tracking is running, click \"Mark as Target\" on a CCTV live feed to capture.",
+    "pinNumber": "Pin #{{number}}",
+    "noAnalysis": "No analysis available.",
+    "prediction": {
+      "title": "Prediction",
+      "trendLabel": "Movement trend:",
+      "trendValue": "Southwest (avg of last 3 frames)",
+      "etaLabel": "Expected arrival:",
+      "etaValue": "09:36:00 (now +30s)"
+    },
+    "routeRationale": {
+      "title": "Route prediction rationale",
+      "items": [
+        "Continues moving northeast based on the last frame.",
+        "Maintains an average walking pace with no stops or sudden acceleration.",
+        "Section directly connects to riverside trails and pedestrian-only paths.",
+        "3 nearby CCTVs have overlapping coverage, enabling continuous tracking.",
+        "Repeats a pattern of pausing at certain points, then continuing in the same direction.",
+        "Statistically high proportion of similar cases at this time of day move toward the river."
+      ]
+    },
+    "analysis": {
+      "conclusionTitle": "1. One-line conclusion",
+      "summaryTitle": "2. Case summary",
+      "evidenceTitle": "3. Observation evidence (summary)",
+      "time": "Observation window",
+      "location": "Location/Camera",
+      "personnel": "Person of interest (estimated)",
+      "features": "Key features",
+      "status": "Behavior",
+      "riskLevel": "Risk level"
+    }
+  },
+  "candidateDetail": {
+    "dialogAriaLabel": "Fast search candidate detail",
+    "timeRange": "Time range",
+    "similarity": "Similarity",
+    "similarityLabel": "Similarity {{percent}}%",
+    "clipAriaLabel": "Capture clip",
+    "observationSummary": "Observation summary",
+    "captureTarget": "Mark as Target",
+    "captureThumbnailAlt": "Capture thumbnail",
+    "finalSimilarity": "Final similarity",
+    "tab": {
+      "timeline": "Timeline observations",
+      "meta": "Candidate metadata"
+    },
+    "meta": {
+      "cameraId": "Camera ID",
+      "detectedObject": "Detected object",
+      "mainAttributes": "Main attributes",
+      "behavior": "Behavior",
+      "exitDirection": "Exit direction"
+    },
+    "similarityTable": {
+      "category": "Item",
+      "missing": "Missing person info",
+      "captured": "Captured person info",
+      "match": "Match",
+      "matched": "Match",
+      "unmatched": "No match",
+      "special": "Notable"
+    },
+    "video": {
+      "play": "Play",
+      "pause": "Pause",
+      "rewind10": "Rewind 10 seconds",
+      "forward10": "Forward 10 seconds",
+      "fullscreen": "Fullscreen",
+      "fullscreenExit": "Exit fullscreen"
+    }
+  },
+  "predictedCCTVDetail": {
+    "dialogAriaLabel": "Predicted CCTV detail",
+    "channel": "Channel",
+    "routeFit": "Route fit",
+    "currentTime": "Current time",
+    "noInfo": "No information",
+    "distanceFallback": "About {{distance}}m (from previous location)",
+    "trendFallback": "{{direction}} (avg of last 3 frames)",
+    "etaFallback": "{{time}} (now +30s)",
+    "fields": {
+      "objectAttributes": "Object attributes",
+      "expectedDistance": "Expected distance",
+      "movementTrend": "Movement trend",
+      "expectedArrivalTime": "Expected arrival",
+      "routeFitScore": "Route fit (similarity)"
+    },
+    "routeRationale": {
+      "title": "Route prediction rationale",
+      "summary": "6 factors analyzed",
+      "categories": {
+        "movementDirection": "Movement direction",
+        "movementSpeed": "Movement speed",
+        "pathStructure": "Walkway structure",
+        "cctvLinkage": "CCTV linkage",
+        "similarCases": "Similar cases"
+      },
+      "defaults": {
+        "movementDirection": "Continues moving northeast based on the last frame.",
+        "movementSpeed": "Maintains an average walking pace with no stops or sudden acceleration.",
+        "pathStructure": "Section directly connects to riverside trails and pedestrian-only paths.",
+        "cctvLinkage": "3 nearby CCTVs have overlapping coverage, enabling continuous tracking.",
+        "similarCases": "Statistically high proportion of similar cases at this time of day move toward the river."
+      }
+    }
+  },
+  "guide": {
+    "steps": {
+      "intro": "A missing person report has been received.<br/>You can quickly search nearby CCTV footage based on the missing person's information.<br/>Click the <b>[Start Fast Search]</b> button.",
+      "review-candidates": "We searched for similar candidates based on the missing person's traits.<br/>Search results can be refined further by adjusting filters and providing user feedback.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">Things you can try</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Click the radius at the top to change the search range</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Enter free-form conditions in CUVIA Link</span><br/><span style=\"opacity:0.5\">&nbsp;&nbsp;&nbsp;&nbsp;e.g. \"Show only people in a gray hoodie\", \"Exclude anyone holding an umbrella\"</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Mark candidate cards as match / not match</span><br/><br/>Click a <b>[Candidate Card]</b> to move to the next step.",
+      "candidate-detail": "Review the clip in which the candidate was captured.<br/>CUVIA summarizes the key scenes of the video using a VLM-based caption,<br/>and provides a similarity score by comparing the report and video information.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">Things you can try</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Watch the candidate's clip</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Review candidate metadata and similarity score</span><br/><br/>Click <b>[Mark as Target]</b> to confirm this person as the target and move on.",
+      "route-analysis": "Object tracking will run on the confirmed target.<br/>CUVIA analyzes the CCTVs where the target appeared and the timestamps,<br/>then plots the movement path on the map over time.<br/><br/>This step runs automatically with no user input. The next step will start shortly.",
+      "predicted-cctv": "Net-watching surrounding CCTVs centered on the last sighting.<br/>CUVIA jointly analyzes the last seen CCTV and earlier sighting footage,<br/>and uses VLM to infer movement direction, walking path, and street layout.<br/><br/>Click one of the <b>[CCTV Cards]</b> to move on.",
+      "predicted-cctv-detail": "Find the target in the recommended CCTV clip.<br/>CUVIA plays the CCTV most likely to show the target<br/>and provides the target's attributes alongside the rationale for the recommendation.<br/><br/>Click <b>[Mark as Target]</b> to move to the broadcast list where you can send out alerts.",
+      "capture-list-review": "Review the captured information and create a broadcast package.<br/>CUVIA gathers everything you've gathered so far<br/>and lets you choose what to share before sending it out.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">Things you can try</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Click captured-target cards to inspect timeline captions and candidate metadata</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Choose what to share</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Click the Create Broadcast Package button</span><br/><br/>Click <b>[Create Broadcast Package]</b> to move on.",
+      "propagation": "Draft the broadcast message from the package.<br/>CUVIA combines the clips, capture details, and target information you selected<br/>and automatically generates a broadcast draft.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">Things you can try</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Review and edit the AI-generated broadcast draft</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Check nearby police / fire station details</span><br/><br/>Click <b>[Send Broadcast Package]</b> to move on to the broadcast thread.",
+      "report-download": "Review the report and broadcast history in the broadcast thread.<br/>Incoming reports and outgoing broadcasts appear as a conversational thread.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">Things you can try</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Review incoming reports and outgoing broadcasts</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Check follow-up requests and replies</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Confirm the police outcome</span><br/><br/>Click <b>[Download Case Outcome Report]</b> to move on.",
+      "report-result": "AI compiles the entire incident response into a final report.<br/>Based on everything reviewed in each step,<br/>the information you selected, and the broadcasts sent and received,<br/>a case outcome report is generated automatically.<br/><br/><span style=\"opacity:0.7; font-weight:600;\">Things you can try</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Review the final AI-generated report</span><br/><span style=\"opacity:0.6\">&nbsp;&nbsp;• Pick your preferred export format</span><br/><br/>Choose a <b>[Save Format]</b> to finish the tutorial."
+    }
+  }
+}

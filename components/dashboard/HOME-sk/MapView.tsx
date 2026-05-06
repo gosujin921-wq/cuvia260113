@@ -1202,12 +1202,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
       markerContainer.appendChild(centerWrapper);
       
       // 주소 라벨: 1번키 이벤트는 영문 모드에서 짧은 영문, 그 외는 이벤트 주소
-      const isEvent1 = selectedEventId === 'A-20260107-004';
+      const isEvent1 = selectedEventId === 'S-20260107-001';
       const selectedEvent = events.find(e => e.id === selectedEventId || e.eventId === selectedEventId);
       const isEN = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
       const fallbackLabel = isEN ? 'Incident location' : '사건 발생 지점';
       const labelAddress = isEvent1
-        ? (isEN ? '48 Galaxy St' : '은하로363번길 48')
+        ? (isEN ? 'M16 / 3F Design Lab' : 'M16 동 3F 설계실')
         : (selectedEvent?.location?.name ?? fallbackLabel);
       const labelEl = document.createElement('div');
       labelEl.style.cssText = `
@@ -1630,15 +1630,15 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     ];
     
     // 반경에 따라 CCTV 필터링
-    // 200m: 별빛A-498, 별빛A-583만 보임
-    // 200m 초과~400m 미만: 별빛A-498, 별빛A-583, 별빛A-444, 별빛A-481 보임
-    // 400m 이상: 모든 CCTV 보임 (별빛A-604 추가)
+    // 200m: GATE-WEST-07, GATE-MAIN-02만 보임
+    // 200m 초과~400m 미만: GATE-WEST-07, GATE-MAIN-02, M16-EXIT-A03, M16-3F-CORR-07 보임
+    // 400m 이상: 모든 CCTV 보임 (LOBBY-MAIN-01 추가)
     const filteredCctvGroups = cctvGroups.filter(group => {
       if (appliedSearchRadius <= 200) {
-        // 200m 이하: 별빛A-498, 별빛A-583만
+        // 200m 이하: GATE-WEST-07, GATE-MAIN-02만
         return ['A-498', 'A-583'].includes(group.id);
       } else if (appliedSearchRadius < 400) {
-        // 200m 초과~399m: 별빛A-498, 별빛A-583, 별빛A-444, 별빛A-481
+        // 200m 초과~399m: GATE-WEST-07, GATE-MAIN-02, M16-EXIT-A03, M16-3F-CORR-07
         return ['A-498', 'A-583', 'A-444', 'A-481'].includes(group.id);
       } else {
         // 400m 이상: 모든 CCTV
@@ -2305,6 +2305,12 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
         return 'mdi:walk';
       case 'NDMS':
         return 'mdi:alert';
+      case '기밀문서 반출':
+        return 'mdi:file-document-alert';
+      case '비인가 출입':
+        return 'mdi:shield-key';
+      case 'DLP 알림':
+        return 'mdi:shield-lock-outline';
       default:
         return 'mdi:alert-circle';
     }
@@ -2526,7 +2532,8 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
     
     // 이벤트 타입에 따라 소방서 또는 경찰서 결정
     const needsFireStation = selectedEvent.type === '119 화재' || selectedEvent.type === '119 구조';
-    const needsPoliceStation = selectedEvent.type === '112 실종' || selectedEvent.type === '112 치안';
+    const needsPoliceStation = selectedEvent.type === '112 실종' || selectedEvent.type === '112 치안'
+      || selectedEvent.type === '기밀문서 반출' || selectedEvent.type === '비인가 출입' || selectedEvent.type === 'DLP 알림';
     
     // 둘 다 필요한 경우도 있음 (기본적으로 둘 다 표시)
     const showBoth = !needsFireStation && !needsPoliceStation;

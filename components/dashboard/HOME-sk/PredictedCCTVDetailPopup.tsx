@@ -228,7 +228,7 @@ const PredictedCCTVDetailPopup: React.FC<PredictedCCTVDetailPopupProps> = ({
       });
     });
 
-    const analysisResult = (cctv.cctvName === '별빛A-638' || cctv.cctvName === '원미A-638') ? generateAnalysisMarkdown(cctv) : undefined;
+    const analysisResult = (cctv.cctvName === 'GATE-WEST-08' || cctv.cctvName === 'GATE-WEST-08-B') ? generateAnalysisMarkdown(cctv) : undefined;
 
     setTimeout(() => {
       if (onAddCapture) {

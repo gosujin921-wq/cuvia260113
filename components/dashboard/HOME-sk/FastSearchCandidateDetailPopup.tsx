@@ -10,7 +10,7 @@ import {
   getSimilarityTableForImageId,
   type TimelineEntry,
 } from '@/lib/fast-search-candidate-detail';
-import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes';
+import { getImageIdFromCaptureItem, getPathForCaptureItem, getVideoPathForImageId } from '@/lib/fast-search-image-attributes-sk';
 import SharedVideoPlayer from './SharedVideoPlayer';
 
 export interface CandidateCard {
@@ -956,7 +956,7 @@ const FastSearchCandidateDetailPopup: React.FC<FastSearchCandidateDetailPopupPro
                             {/* 테이블 헤더 */}
                             <div className="grid grid-cols-4 gap-2 bg-[#0f0f0f] p-3 border-b border-[#3a3a3a]">
                               <div className="text-xs text-gray-400 font-medium">{t('candidateDetail.similarityTable.category')}</div>
-                              <div className="text-xs text-gray-400 font-medium">{t('candidateDetail.similarityTable.missing')}</div>
+                              <div className="text-xs text-gray-400 font-medium">{t('sk.candidateDetail.similarityTable.missing')}</div>
                               <div className="text-xs text-gray-400 font-medium">{t('candidateDetail.similarityTable.captured')}</div>
                               <div className="text-xs text-gray-400 font-medium text-center">{t('candidateDetail.similarityTable.match')}</div>
                             </div>

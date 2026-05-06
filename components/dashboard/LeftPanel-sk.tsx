@@ -505,21 +505,21 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
         const now = typeof window !== "undefined" ? new Date().toISOString() : "";
         const lang = (i18n.resolvedLanguage || i18n.language || 'ko').slice(0, 2);
         const zoneNames = lang === 'en'
-            ? { byeolbit: 'Starlight', mujigae: 'Rainbow', haetsal: 'Sunshine', dalbit: 'Moonlight' }
-            : { byeolbit: '별빛동', mujigae: '무지개동', haetsal: '햇살동', dalbit: '달빛동' };
+            ? { byeolbit: 'M16 / 3F', mujigae: 'HQ / 1F', haetsal: 'R&D Bldg', dalbit: 'Main Gate' }
+            : { byeolbit: 'M16 / 3F', mujigae: '본관 1F', haetsal: 'R&D 빌딩', dalbit: '정문 게이트' };
         return {
             waterLeakage: { status: "error", lastUpdate: now },
             powerSupply: { status: "normal", lastUpdate: now },
             streetLightRate: 92,
             iotSensorRate: 95.5,
             alert: true,
-            alertMessage: lang === 'en' ? "Water network anomaly" : "상수도 관망 이상 징후",
-            // 도로 조명 운영 상태
-            streetLight: { normalCount: 1245, errorCount: 8 },
-            // 교통신호 운영 상태
-            trafficSignal: { normalCount: 892, errorCount: 3 },
-            // 안전 비상벨 운영 상태
-            emergencyBell: { normalCount: 456, errorCount: 2 },
+            alertMessage: lang === 'en' ? "Multiple unauthorized access attempts detected" : "비인가 출입 시도 다수 감지",
+            // 출입 게이트 운영 상태 (도로 조명 자리)
+            streetLight: { normalCount: 38, errorCount: 1 },
+            // 사내 CCTV 운영 상태 (교통신호 자리)
+            trafficSignal: { normalCount: 412, errorCount: 3 },
+            // 비상 출입 알람 운영 상태 (비상벨 자리)
+            emergencyBell: { normalCount: 96, errorCount: 0 },
             floodRiskZones: [
                 { zone: zoneNames.byeolbit, currentLevel: 1.2, warningLevel: 3.5, percentage: 35 },
                 { zone: zoneNames.mujigae, currentLevel: 2.1, warningLevel: 3.5, percentage: 60 },
@@ -1005,17 +1005,17 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                 {/* 실시간 대기질 모니터링 - 3x1 롤링 */}
                 <div className="rounded-lg px-4 pt-4 pb-3 gradient-border-left-top" style={{ flexShrink: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
                     <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-white font-semibold text-sm">{t('leftPanel.airQuality.title')}</h3>
+                        <h3 className="text-white font-semibold text-sm">{t('sk.leftPanel.airQuality.title')}</h3>
                         <span className="text-gray-400 text-xs flex items-center gap-1.5">
                             {/* 영문 모드는 "Reading from..." 텍스트가 길어 한 줄을 넘기므로 location은 한국어 모드에서만 표기. 영문은 시각만 노출. */}
                             {!i18n.language?.startsWith('en') && (
                                 <>
-                                    {t('leftPanel.airQuality.lastUpdate')}: <span>{t('leftPanel.airQuality.basedOn', { location: sensorLocations[Math.floor(airQualitySlideIndex / 2)] })}</span>
+                                    {t('sk.leftPanel.airQuality.lastUpdate')}: <span>{t('sk.leftPanel.airQuality.basedOn', { location: sensorLocations[Math.floor(airQualitySlideIndex / 2)] })}</span>
                                     <span className="text-gray-400">·</span>
                                 </>
                             )}
                             {i18n.language?.startsWith('en') && (
-                                <span className="text-gray-500">{t('leftPanel.airQuality.lastUpdate')} ·</span>
+                                <span className="text-gray-500">{t('sk.leftPanel.airQuality.lastUpdate')} ·</span>
                             )}
                             <span>{weatherData1?.fcst_time || "--:--"}</span>
                         </span>
@@ -1059,7 +1059,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                 <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
                                     <div className="flex items-center gap-1 min-w-0" style={{ height: "20px", marginBottom: "6px" }}>
                                         <Icon icon="mdi:thermometer" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                        <span className="text-gray-400 text-xs truncate">{t('leftPanel.airQuality.temperature')}</span>
+                                        <span className="text-gray-400 text-xs truncate">{t('sk.leftPanel.airQuality.temperature')}</span>
                                     </div>
                                     <div className="text-white text-base font-semibold transition-all duration-300">
                                         {weatherData1?.current_temp}
@@ -1073,7 +1073,7 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                 <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
                                     <div className="flex items-center gap-1 min-w-0" style={{ height: "20px", marginBottom: "6px" }}>
                                         <Icon icon="mdi:water-percent" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                        <span className="text-gray-400 text-xs truncate">{t('leftPanel.airQuality.humidity')}</span>
+                                        <span className="text-gray-400 text-xs truncate">{t('sk.leftPanel.airQuality.humidity')}</span>
                                     </div>
                                     <div className="text-white text-base font-semibold transition-all duration-300">
                                         {weatherData1?.current_humidity}
@@ -1084,19 +1084,19 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                 <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
                                     <div className="flex items-center gap-1 min-w-0" style={{ height: "20px", marginBottom: "6px" }}>
                                         <Icon icon="mdi:weather-rainy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                        <span className="text-gray-400 text-xs truncate">{t('leftPanel.airQuality.precipitation')}</span>
+                                        <span className="text-gray-400 text-xs truncate">{t('sk.leftPanel.airQuality.precipitation')}</span>
                                     </div>
                                     <div className="text-white text-sm font-semibold transition-all duration-300">
                                         {weatherData1?.precipitation}
                                         <span className="text-gray-400 text-[10px] ml-0.5">mm</span>
-                                        <span className="text-gray-400 text-[10px] ml-1">{t('leftPanel.airQuality.cumulative')}</span>
+                                        <span className="text-gray-400 text-[10px] ml-1">{t('sk.leftPanel.airQuality.cumulative')}</span>
                                     </div>
                                 </div>
                                 {/* 풍속 */}
                                 <div className="bg-[#393a42] p-3 min-w-0 overflow-hidden rounded-lg">
                                     <div className="flex items-center gap-1 min-w-0" style={{ height: "20px", marginBottom: "6px" }}>
                                         <Icon icon="mdi:weather-windy" className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                        <span className="text-gray-400 text-xs truncate">{t('leftPanel.airQuality.windSpeed')}</span>
+                                        <span className="text-gray-400 text-xs truncate">{t('sk.leftPanel.airQuality.windSpeed')}</span>
                                     </div>
                                     <div className="text-white text-base font-semibold transition-all duration-300">
                                         {weatherData1?.wind_speed}
@@ -1114,14 +1114,19 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
 
                 {/* 도시 안전·시설 관리 현황 */}
                 <div className="rounded-lg px-4 pt-4 pb-4 flex flex-col gap-3 gradient-border-left-top" style={{ flexShrink: 0, background: "linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)", backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)" }}>
-                    <h3 className="text-white font-semibold text-sm">{t('leftPanel.safety.title')}</h3>
+                    <h3 className="text-white font-semibold text-sm">{t('sk.leftPanel.safety.title')}</h3>
 
                     {/* 침수 위험 & 노후·위험 시설 */}
                     <div className="grid grid-cols-2 gap-3 min-w-0">
                         {/* 침수 위험 관리 수준 */}
                         <div className="bg-[#393a42] px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg">
                             <div className="flex items-start justify-between mb-1" style={{ minHeight: "32px" }}>
-                                <span className="text-gray-400 text-xs font-semibold">{t('leftPanel.safety.floodRisk')}</span>
+                                <div className="text-gray-400 text-xs font-semibold">
+                                    <div>{t('sk.leftPanel.safety.floodRiskLine1')}</div>
+                                    {!i18n.language?.startsWith('en') && (
+                                        <div>{t('sk.leftPanel.safety.floodRiskLine2')}</div>
+                                    )}
+                                </div>
                                 <span className="text-white text-xs">{infrastructureStatus.floodRiskZones[floodRiskZoneIndex]?.zone}</span>
                             </div>
                             <div className="flex flex-col items-center">
@@ -1154,19 +1159,19 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                             if (percentage < 33) {
                                                 return (
                                                     <div className="px-2 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                                                        <span className="text-green-400 text-[10px] font-medium leading-none">{t('leftPanel.safety.statusNormal')}</span>
+                                                        <span className="text-green-400 text-[10px] font-medium leading-none">{t('sk.leftPanel.safety.statusNormal')}</span>
                                                     </div>
                                                 );
                                             } else if (percentage < 66) {
                                                 return (
                                                     <div className="px-2 py-1.5 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 flex items-center justify-center">
-                                                        <span className="text-yellow-400 text-[10px] font-medium leading-none">{t('leftPanel.safety.statusCaution')}</span>
+                                                        <span className="text-yellow-400 text-[10px] font-medium leading-none">{t('sk.leftPanel.safety.statusCaution')}</span>
                                                     </div>
                                                 );
                                             } else {
                                                 return (
                                                     <div className="px-2 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30 flex items-center justify-center">
-                                                        <span className="text-red-400 text-[10px] font-medium leading-none">{t('leftPanel.safety.statusDanger')}</span>
+                                                        <span className="text-red-400 text-[10px] font-medium leading-none">{t('sk.leftPanel.safety.statusDanger')}</span>
                                                     </div>
                                                 );
                                             }
@@ -1180,10 +1185,10 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         <div className="bg-[#393a42] px-3 pt-3 pb-0 min-w-0 overflow-hidden rounded-lg">
                             <div className="flex items-start justify-between mb-1">
                                 <div className="text-gray-400 text-xs font-semibold">
-                                    <div>{t('leftPanel.safety.facilityRiskLine1')}</div>
+                                    <div>{t('sk.leftPanel.safety.facilityRiskLine1')}</div>
                                     {/* 영문 모드에서는 두 번째 줄(관리 필요도) 생략 — line1만으로 충분히 의미 전달됨 */}
                                     {!i18n.language?.startsWith('en') && (
-                                        <div>{t('leftPanel.safety.facilityRiskLine2')}</div>
+                                        <div>{t('sk.leftPanel.safety.facilityRiskLine2')}</div>
                                     )}
                                 </div>
                                 <span className="text-white text-xs">{infrastructureStatus.facilityRiskZones[facilityRiskZoneIndex]?.zone}</span>
@@ -1218,19 +1223,19 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                                             if (percentage < 35) {
                                                 return (
                                                     <div className="px-2 py-1.5 rounded-full bg-green-500/20 backdrop-blur-sm border border-green-500/30 flex items-center justify-center">
-                                                        <span className="text-green-400 text-[10px] font-medium leading-none">{t('leftPanel.safety.levelLow')}</span>
+                                                        <span className="text-green-400 text-[10px] font-medium leading-none">{t('sk.leftPanel.safety.levelLow')}</span>
                                                     </div>
                                                 );
                                             } else if (percentage < 70) {
                                                 return (
                                                     <div className="px-2 py-1.5 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30 flex items-center justify-center">
-                                                        <span className="text-yellow-400 text-[10px] font-medium leading-none">{t('leftPanel.safety.levelMedium')}</span>
+                                                        <span className="text-yellow-400 text-[10px] font-medium leading-none">{t('sk.leftPanel.safety.levelMedium')}</span>
                                                     </div>
                                                 );
                                             } else {
                                                 return (
                                                     <div className="px-2 py-1.5 rounded-full bg-red-500/20 backdrop-blur-sm border border-red-500/30 flex items-center justify-center">
-                                                        <span className="text-red-400 text-[10px] font-medium leading-none">{t('leftPanel.safety.levelHigh')}</span>
+                                                        <span className="text-red-400 text-[10px] font-medium leading-none">{t('sk.leftPanel.safety.levelHigh')}</span>
                                                     </div>
                                                 );
                                             }
@@ -1246,17 +1251,17 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         {/* 도로 조명 */}
                         <div className="bg-[#393a42] px-3 py-3 rounded-lg">
                             <div className="flex items-center justify-between gap-4 mb-2">
-                                <span className="text-gray-400 text-xs font-semibold">{t('leftPanel.facility.streetLight')}</span>
+                                <span className="text-gray-400 text-xs font-semibold">{t('sk.leftPanel.facility.streetLight')}</span>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('leftPanel.facility.normal')}</span>
+                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('sk.leftPanel.facility.normal')}</span>
                                     <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.normalCount.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('leftPanel.facility.error')}</span>
+                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('sk.leftPanel.facility.error')}</span>
                                     <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.streetLight.errorCount}</span>
                                 </div>
                             </div>
@@ -1265,17 +1270,17 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         {/* 교통신호 */}
                         <div className="bg-[#393a42] px-3 py-3 rounded-lg">
                             <div className="flex items-center justify-between gap-4 mb-2">
-                                <span className="text-gray-400 text-xs font-semibold">{t('leftPanel.facility.trafficSignal')}</span>
+                                <span className="text-gray-400 text-xs font-semibold">{t('sk.leftPanel.facility.trafficSignal')}</span>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('leftPanel.facility.normal')}</span>
+                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('sk.leftPanel.facility.normal')}</span>
                                     <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.normalCount.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('leftPanel.facility.error')}</span>
+                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('sk.leftPanel.facility.error')}</span>
                                     <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.trafficSignal.errorCount}</span>
                                 </div>
                             </div>
@@ -1284,17 +1289,17 @@ const LeftPanel = ({ onCollapsedChange }: LeftPanelProps = {}) => {
                         {/* 안전 비상벨 */}
                         <div className="bg-[#393a42] px-3 py-3 rounded-lg">
                             <div className="flex items-center justify-between gap-4 mb-2">
-                                <span className="text-gray-400 text-xs font-semibold">{t('leftPanel.facility.emergencyBell')}</span>
+                                <span className="text-gray-400 text-xs font-semibold">{t('sk.leftPanel.facility.emergencyBell')}</span>
                             </div>
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('leftPanel.facility.normal')}</span>
+                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('sk.leftPanel.facility.normal')}</span>
                                     <span className="text-green-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.normalCount.toLocaleString()}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />
-                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('leftPanel.facility.error')}</span>
+                                    <span className="text-gray-400 text-xs whitespace-nowrap">{t('sk.leftPanel.facility.error')}</span>
                                     <span className="text-red-400 text-xs font-medium ml-auto">{infrastructureStatus.emergencyBell.errorCount}</span>
                                 </div>
                             </div>

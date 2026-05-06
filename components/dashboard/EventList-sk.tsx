@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Icon } from '@iconify/react';
 import { useTranslation } from 'react-i18next';
 import { Event, EventPriority } from '@/types';
-import { getEventById, getEventCategory, getAIInsightKeywords, formatEventDateTime } from '@/lib/events-data';
+import { getEventById, getEventCategory, getAIInsightKeywords, formatEventDateTime } from '@/lib/events-data-sk';
 
 interface EventListProps {
   events: Event[];
@@ -24,6 +24,9 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
     if (typeStr === '112 치안' || typeStr === '112 실종') return t('eventList.agency.112');
     if (typeStr === '119 화재' || typeStr === '119 구조') return t('eventList.agency.119');
     if (typeStr === 'AI 탐지') return t('eventList.agency.ai');
+    if (typeStr === '기밀문서 반출' || typeStr === '비인가 출입' || typeStr === 'DLP 알림') {
+      return t('sk.eventList.agency.security', { defaultValue: '산업보안센터' });
+    }
     return typeStr;
   };
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -143,6 +146,9 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
     if (type.includes('화재') || type.includes('구조')) {
       return 'bg-red-500/20 text-red-400';
     }
+    if (type.includes('기밀') || type.includes('반출') || type.includes('DLP') || type.includes('비인가')) {
+      return 'bg-purple-500/20 text-purple-300';
+    }
     if (type.includes('실종') || type.includes('치안')) {
       return 'bg-blue-500/20 text-blue-400';
     }
@@ -166,6 +172,12 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
         return 'mdi:walk';
       case 'NDMS':
         return 'mdi:alert';
+      case '기밀문서 반출':
+        return 'mdi:file-document-alert';
+      case '비인가 출입':
+        return 'mdi:shield-key';
+      case 'DLP 알림':
+        return 'mdi:shield-lock-outline';
       default:
         return 'mdi:alert-circle';
     }
@@ -297,7 +309,7 @@ const EventList = ({ events, selectedEventId, onEventSelect, onEventHover }: Eve
                     onEventSelect?.(main.id);
                     return;
                   }
-                  const noLinkEvents = ['A-20260107-004', 'A-20251210-003'];
+                  const noLinkEvents = ['S-20260107-001'];
                   const isNoLink = noLinkEvents.some(id => main.eventId === id || main.id === id);
                   if (main.eventId && !isNoLink) {
                     navigate(`/event/${main.eventId}`);

@@ -43,133 +43,131 @@ interface ThreadMessage {
   showCompletionButton?: boolean; // 시뮬레이션 종료 확인 버튼 표시
 }
 
-// 기본 신고 접수 내용 (하늘별빛경찰서) — i18n 적용 전 한국어 fallback. 컴포넌트 내부에서 t()로 대체.
-const defaultReportContentKO = `🚨 실종자 신고 접수
+// 기본 신고 접수 내용 (산업보안센터) — i18n 적용 전 한국어 fallback. 컴포넌트 내부에서 t()로 대체.
+const defaultReportContentKO = `🚨 기밀문서 반출 의심 알림
 
-▪ 신고 접수 정보
+▪ 알림 접수 정보
 
-신고 기관: 하늘별빛경찰서
-접수 시각: 오전 09:45:23
-담당자: 김민수 경위
+알림 채널: DLP 모니터링
+접수 시각: 오후 02:08:31
+담당자: 정OO 보안실장
 
-▪ 실종자 정보
+▪ 대상자 정보
 
-이름/나이: 김도연 / 22세 (남)
-인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm, 65kg
-실종 장소: 은하로363번길 48 일원
-실종 시각: 오전 09:30경
+이름/나이: 박지훈 / 35세 (남)
+소속/직급: 메모리 설계팀 / 책임연구원
+인상착의: 다크 자켓, 블랙 슬랙스, 검정 백팩, 사원증 패용, 175cm, 70kg
+발생 위치: M16 동 3F 설계실
+발생 시각: 오후 02:08경
 
 ▪ 특이사항
 
-⚠️ 장애 있음. 긴급 수색 요망.
+⚠️ 인가 등급 외 설계문서(반도체 회로도) 외장 매체 복사 시도 감지.
+DLP 차단 후 즉시 사내 CCTV 동선 추적 및 출입 통제팀 협조 요망.
 
-보호자 진술에 따르면 평소 익숙한 경로를 벗어나지 않는 편이나, 
-오늘 아침 집을 나선 후 연락이 두절됨.
-휴대전화 위치추적 결과 은하로363번길 48 일대에서 마지막 신호 확인.`;
+비인가 구역 진입 패턴 4건, 외장 USB 연결 이력 1건이 추가로 확인됨.`;
 
 // 기본 더미 전파 내용 (한국어 fallback)
-const defaultPropagationContentKO = `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
+const defaultPropagationContentKO = `[보안요청건/협조] 기밀문서 반출 의심 박지훈(남/35) 동일인물 추정 연속포착 4건 공유드립니다.
 
 
-🚨 1. 최신 포착(즉시 출동 기준)
-10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%
-편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
+🚨 1. 최신 포착(즉시 대응 기준)
+14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%
+사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인
 
 
-🚓 2. 최인근 파출소(출동 거점)
-기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하로363번길 48
-최인근 파출소: (파출소명) / 약 (거리)km
+🚓 2. 최인접 통제 거점(대응 거점)
+기준 지점(최신 포착지): 14:35:56 / GATE-WEST-07 / 서측 출입 게이트
+최인접 거점: 본관 1F 통합관제실 / 약 0.4km
 
-참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
+참고: 현장 출동·차단 시 통합관제실 우선 연계 부탁드립니다.
 
 
 👤 3. 대상자 정보
-성명/나이: 김도연 / 22세(남)
-인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg
-실종 접수: 09:30경 은하로363번길 48 일원
+성명/나이: 박지훈 / 35세(남)
+소속/직급: 메모리 설계팀 / 책임연구원
+인상착의: 다크 자켓, 블랙 슬랙스, 검정 백팩, 사원증, 175cm / 70kg
+DLP 알림: 14:08경 M16 동 3F 설계실
 
 🧭 4. 추적 판단 요약(방향/가능 동선)
-남서 방향 이동 지속 추정(경로 적합도 83)
-인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능
+설계실 → 3F 복도 → 서측/정문 게이트 방향 이동 추정(경로 적합도 83)
+인접 사내 CCTV 커버리지 중첩 구간으로 연속 추적 가능
 체류 후 동일 방향 이탈 패턴 반복 관측
 
 
 📡 5. 관제 확인 범위(현재 탐색 상태)
-시간: 09:30~현재
-범위: 은하로363번길 48 인근 및 인접 구간 반경 10km 확인
-상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
+시간: 14:08~현재
+범위: M16 동 3F ~ 서측/정문 게이트 ~ 본관 1F 로비 동선 확인
+상기 범위 외 카메라는 아직 미확인 상태이며, 출입 통제팀에서 최신 위치/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
 
 
 🎯 6. 포착 현황(근거 상세)
 
-🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%
+🔎 (고속검색) 14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%
 
-· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
-🔗 (추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48
+· 사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인
+🔗 (추적연계) 14:35:54 / M16-EXIT-A03 / M16 동 3F 설계실 출구
 
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54
+· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단
+🔗 (추적연계) 14:35:51 / GATE-MAIN-02 / 정문 출입 게이트
 
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28
+· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단
+🔗 (추적연계) 14:12:31 / LOBBY-MAIN-01 / 본관 1F 메인 로비
 
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
+· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단
 
 
-🤝 7. 상호 협조(112 회신 요청)
-112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면
+🤝 7. 상호 협조(보안팀 회신 요청)
+출입 통제팀에서 최신 인증 시각/위치, 차량 이동 여부, 외형변동(겉옷·가방 등), 우선 차단 게이트 회신 주시면
 해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행
 
 추가 포착 또는 동선 변경 확인 시 바로 재전파
 
 
 📎 8. 첨부
-별빛A-230/444/498/604 포착 썸네일 및 클립
-동선 지도(4지점 표시)
+M16-LAB-CAM-12 / M16-EXIT-A03 / GATE-WEST-07 / GATE-MAIN-02 / LOBBY-MAIN-01 포착 썸네일 및 클립
+사내 동선도(4지점 표시)
 
 
-※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
-관제 담당: 김쿠도 / 032-266-3454`;
+※ AI 분석 기반 추정 결과이며 최종 확인은 보안실장 판단 기준입니다.
+관제 담당: 김쿠도 / 사내 02-XXXX-XXXX`;
 
-// 112 회신: 실종자 발견 통보 (경찰관 답신) — 한국어 fallback
-const discoveryReportContentKO = `📢 [112 회신] 실종자 발견 통보
+// 보안 회신: 용의자 확보 통보 (보안실장 답신) — 한국어 fallback
+const discoveryReportContentKO = `📢 [보안 회신] 용의자 확보 통보
 
-🚨 실종자 발견 통보
+🚨 용의자 확보 통보
 
-▪ 사건번호: 2026-02-23-별빛구-실종
-▪ 대상자: 김도연 / 22세(남)
+▪ 사건번호: 2026-01-07-M16-기밀유출
+▪ 대상자: 박지훈 / 35세(남) / 메모리 설계팀
 
 
-✅ 1. 발견 결과
+✅ 1. 확보 결과
 
-발견 시각: 11:02:14
-발견 장소: 달빛로301번길 54 인근 골목
-발견 상태: 생명 징후 정상, 외상 없음
-
-보호자 인계 예정
-현장 출동 경찰관 확인 완료.
+확보 시각: 14:48:14
+확보 장소: 정문 출입 게이트 인근
+상태: 외장 매체 1건 봉인 / 사원증 회수 / 사내 조사관 인계
 
 
 📍 2. 조치 사항
 
-인근 수색 종료
-추가 CCTV 탐색 중지 요청
-119 이송 필요 없음
+게이트 출입 차단
+인근 CCTV 백업
+외장 매체 디지털 포렌식 의뢰
 
 
 📡 3. 관제 협조 요청
 
-관련 영상 백업 요청 (10:10~11:10 구간)
-포착 지점 4건 자료 보존 요청
+관련 영상 백업 요청 (13:50~15:00 구간)
+포착 지점 5건 자료 보존 요청
 
 
 🔒 4. 상태 전환
 
-해당 건 수색 종료 처리 요청드립니다.
+해당 건 추적 종료 처리 요청드립니다.
 추가 특이사항 발생 시 재통보 예정.
 
-담당: 김민수 경위
-하늘별빛경찰서`;
+담당: 정OO 보안실장
+산업보안센터`;
 
 const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   isVisible,
@@ -182,9 +180,9 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
   resetSignal = 0,
 }) => {
   const { t, i18n } = useTranslation();
-  const defaultReportContent = t('propagation.defaultReportContent', { defaultValue: defaultReportContentKO });
-  const defaultPropagationContent = t('propagation.defaultPropagationContent', { defaultValue: defaultPropagationContentKO });
-  const discoveryReportContent = t('propagation.discoveryReportContent', { defaultValue: discoveryReportContentKO });
+  const defaultReportContent = t('sk.propagation.defaultReportContent', { defaultValue: defaultReportContentKO });
+  const defaultPropagationContent = t('sk.propagation.defaultPropagationContent', { defaultValue: defaultPropagationContentKO });
+  const discoveryReportContent = t('sk.propagation.discoveryReportContent', { defaultValue: discoveryReportContentKO });
   const hasAddedDiscoveryRef = useRef(false);
   const [showReportDownloadPopup, setShowReportDownloadPopup] = useState(false);
   const prevResetSignal = useRef(resetSignal);
@@ -243,7 +241,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
     return [
       {
         id: 'thread-1',
-        title: t('propagation.threadTitle'),
+        title: t('sk.propagation.threadTitle'),
         status: 'pending',
         createdAt: reportTime.toISOString(),
         messages: [
@@ -257,7 +255,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               second: '2-digit',
               hour12: tsHour12,
             }),
-            author: t('propagation.agencyName'),
+            author: t('sk.propagation.agencyName'),
             status: 'read',
           },
           {
@@ -315,7 +313,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                       i18n.language?.startsWith('en') ? 'en-US' : 'ko-KR',
                       { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: !i18n.language?.startsWith('en') }
                     ),
-                    author: t('propagation.agencyName'),
+                    author: t('sk.propagation.agencyName'),
                     status: 'unread' as const,
                     showCompletionButton: true as const,
                   },
@@ -420,7 +418,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
     // 시뮬레이션: 신고기관 응답
     setTimeout(() => {
-      addMessage('agency', t('propagation.agencyAck'), t('propagation.agencyShortName'));
+      addMessage('agency', t('sk.propagation.agencyAck'), t('sk.propagation.agencyShortName'));
     }, 2000);
   };
 
@@ -461,7 +459,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                 {/* 전파 건수 칩 */}
                 <div className="px-4 py-2 rounded-full text-xs font-medium bg-white/90 text-gray-700 flex items-center gap-2 border border-gray-200 shadow-sm" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                   <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                  <span>{t('propagation.threadCount', { count: threads.length })}</span>
+                  <span>{t('sk.propagation.threadCount', { count: threads.length })}</span>
                 </div>
                 
                 {/* 상태 칩 - 완료됨 또는 진행 중일 때만 표시 */}
@@ -474,7 +472,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                       currentThread.status === 'completed' ? 'bg-green-400' : 'bg-blue-400'
                     } animate-pulse`}></span>
                     <span>
-                      {currentThread.status === 'completed' ? t('propagation.statusCompleted') : t('propagation.statusInProgress')}
+                      {currentThread.status === 'completed' ? t('sk.propagation.statusCompleted') : t('sk.propagation.statusInProgress')}
                     </span>
                   </div>
                 )}
@@ -505,7 +503,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
               {/* 메시지 헤더 */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0 bg-gray-50">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-semibold text-gray-800 truncate">{currentThread?.title || t('propagation.fallbackTitle')}</h3>
+                  <h3 className="text-base font-semibold text-gray-800 truncate">{currentThread?.title || t('sk.propagation.fallbackTitle')}</h3>
                   <p className="text-sm text-gray-600 mt-0.5">
                     {currentThread && new Date(currentThread.createdAt).toLocaleString(
                       i18n.language?.startsWith('en') ? 'en-US' : 'ko-KR',
@@ -525,10 +523,10 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                   type="button"
                   onClick={() => setShowReportDownloadPopup(true)}
                   className="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-blue-500 hover:bg-blue-600 transition-colors flex items-center gap-1.5"
-                  aria-label={t('propagation.downloadReport')}
+                  aria-label={t('sk.propagation.downloadReport')}
                 >
                   <Icon icon="mdi:download" className="w-4 h-4" />
-                  <span>{t('propagation.downloadReport')}</span>
+                  <span>{t('sk.propagation.downloadReport')}</span>
                 </button>
               </div>
 
@@ -556,7 +554,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                           <div className="flex-1 min-w-0">
                             <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm p-4 shadow-sm">
                               <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm font-bold text-red-600">{message.author || t('propagation.fallbackAuthor')}</span>
+                                <span className="text-sm font-bold text-red-600">{message.author || t('sk.propagation.fallbackAuthor')}</span>
                                 {message.status === 'unread' && (
                                   <span className="px-2 py-0.5 rounded-full bg-red-500 text-white text-xs font-bold">
                                     NEW
@@ -584,7 +582,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                             {message.role === 'system' && (
                               <div className="bg-blue-50 border border-blue-100 rounded-2xl rounded-tr-sm p-4 shadow-sm w-full">
                                 <div className="flex items-center justify-end gap-2 mb-2">
-                                  <span className="text-sm font-bold text-gray-800">{t('propagation.sentLabel')}</span>
+                                  <span className="text-sm font-bold text-gray-800">{t('sk.propagation.sentLabel')}</span>
                                 </div>
                                 {message.content ? (
                                   <>
@@ -606,7 +604,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
 
                                     {captureItems.length > 0 && (
                                       <div className="mt-4 pt-4 border-t border-blue-100">
-                                        <div className="text-xs font-semibold text-gray-600 mb-3">📎 {t('propagation.captureListLabel', { count: captureItems.length })}</div>
+                                        <div className="text-xs font-semibold text-gray-600 mb-3">📎 {t('sk.propagation.captureListLabel', { count: captureItems.length })}</div>
                                         <div className="grid grid-cols-2 gap-2">
                                           {captureItems.map((item) => (
                                             <div key={item.id} className="relative group">
@@ -628,7 +626,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                                     )}
                                   </>
                                 ) : (
-                                  <p className="text-sm text-red-400">{t('propagation.noContent')}</p>
+                                  <p className="text-sm text-red-400">{t('sk.propagation.noContent')}</p>
                                 )}
                                 <div className="text-xs text-gray-500 mt-2 text-right">{message.timestamp}</div>
                               </div>
@@ -637,7 +635,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                             {message.role === 'user' && (
                               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl rounded-tr-sm p-4 shadow-sm">
                                 <div className="flex items-center justify-end gap-2 mb-2">
-                                  <span className="text-sm font-semibold text-blue-600">{t('propagation.userRole')}</span>
+                                  <span className="text-sm font-semibold text-blue-600">{t('sk.propagation.userRole')}</span>
                                 </div>
                                 <div
                                   className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap"
@@ -676,7 +674,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                           handleSendMessage();
                         }
                       }}
-                      placeholder={t('propagation.messagePlaceholder')}
+                      placeholder={t('sk.propagation.messagePlaceholder')}
                       className="flex-1 bg-transparent border-none text-gray-900 text-sm placeholder-gray-400 focus:outline-none resize-none overflow-hidden"
                       style={{
                         minHeight: '24px',
@@ -695,7 +693,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                     </button>
                   </div>
                   <p className="text-[10px] text-gray-500 mt-1.5 text-center">
-                    {t('propagation.chatHint')}
+                    {t('sk.propagation.chatHint')}
                   </p>
                 </div>
               </div>
@@ -708,7 +706,7 @@ const PropagationListPanel: React.FC<PropagationListPanelProps> = ({
                   style={{
                     bottom: `${inputContainerHeight + 16}px`,
                   }}
-                  aria-label={t('propagation.scrollToTop')}
+                  aria-label={t('sk.propagation.scrollToTop')}
                 >
                   <Icon icon="mdi:chevron-up" className="w-5 h-5" />
                 </button>

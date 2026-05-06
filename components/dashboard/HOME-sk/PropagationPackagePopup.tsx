@@ -29,68 +29,69 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
   const [isClosing, setIsClosing] = useState(false);
 
   // 초기 컨텐츠 설정 (i18n 적용 후 영문 모드에서는 translated content 사용)
-  const initialContent = t('propagation.defaultPropagationContent', { defaultValue: `[112요청건/협조] 실종자 김도연(남/22) 동일인물 추정 연속포착 4건 공유드립니다.
+  const initialContent = t('sk.propagation.defaultPropagationContent', { defaultValue: `[보안요청건/협조] 기밀문서 반출 의심 박지훈(남/35) 동일인물 추정 연속포착 4건 공유드립니다.
 
 
-🚨 1. 최신 포착(즉시 출동 기준)
-10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%
-편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
+🚨 1. 최신 포착(즉시 대응 기준)
+14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%
+사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인
 
 
-🚓 2. 최인근 파출소(출동 거점)
-기준 지점(최신 포착지): 10:35:56 / 별빛A-230 / 은하로363번길 48
-최인근 파출소: (파출소명) / 약 (거리)km
+🚓 2. 최인접 통제 거점(대응 거점)
+기준 지점(최신 포착지): 14:35:56 / GATE-WEST-07 / 서측 출입 게이트
+최인접 거점: 본관 1F 통합관제실 / 약 0.4km
 
-참고: 현장 출동·탐문 협조 시 해당 거점 우선 연계 부탁드립니다.
+참고: 현장 출동·차단 시 통합관제실 우선 연계 부탁드립니다.
 
 
 👤 3. 대상자 정보
-성명/나이: 김도연 / 22세(남)
-인상착의: 회색 후드, 청바지, 흑색 짧은 머리, 176cm / 65kg
-실종 접수: 09:30경 은하로363번길 48 일원
+성명/나이: 박지훈 / 35세(남)
+소속/직급: 메모리 설계팀 / 책임연구원
+인상착의: 다크 자켓, 블랙 슬랙스, 검정 백팩, 사원증, 175cm / 70kg
+DLP 알림: 14:08경 M16 동 3F 설계실
 
 🧭 4. 추적 판단 요약(방향/가능 동선)
-남서 방향 이동 지속 추정(경로 적합도 83)
-인접 CCTV 커버리지 중첩 구간으로 연속 추적 가능
+설계실 → 3F 복도 → 서측/정문 게이트 방향 이동 추정(경로 적합도 83)
+인접 사내 CCTV 커버리지 중첩 구간으로 연속 추적 가능
 체류 후 동일 방향 이탈 패턴 반복 관측
 
 
 📡 5. 관제 확인 범위(현재 탐색 상태)
-시간: 09:30~현재
-범위: 은하로363번길 48 인근 및 인접 구간 반경 10km 확인
-상기 범위 외 카메라는 아직 미확인 상태이며, 112에서 최신 목격정보/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
+시간: 14:08~현재
+범위: M16 동 3F ~ 서측/정문 게이트 ~ 본관 1F 로비 동선 확인
+상기 범위 외 카메라는 아직 미확인 상태이며, 출입 통제팀에서 최신 위치/우선 확인 구역 회신 주시면 즉시 확대 확인 가능
 
 
 🎯 6. 포착 현황(근거 상세)
 
-🔎 (고속검색) 10:35:56 / 별빛A-230 / 은하로363번길 48 / 유사도 95%
+🔎 (고속검색) 14:35:56 / GATE-WEST-07 / 서측 출입 게이트 / 유사도 95%
 
-· 편의점 앞 체류 후 출입 반복, 전화 행동 확인 후 화면 상단 중앙 방향 이탈 관측
-🔗 (추적연계) 10:35:54 / 별빛A-444 / 은하로363번길 48
+· 사원증 미인증 시도 후 게이트 우회 동선 관측, 검정 백팩 휴대 확인
+🔗 (추적연계) 14:35:54 / M16-EXIT-A03 / M16 동 3F 설계실 출구
 
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:35:51 / 별빛A-498 / 달빛로301번길 54
+· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단
+🔗 (추적연계) 14:35:51 / GATE-MAIN-02 / 정문 출입 게이트
 
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
-🔗 (추적연계) 10:12:31 / 별빛A-604 / 달빛로301번길 28
+· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단
+🔗 (추적연계) 14:12:31 / LOBBY-MAIN-01 / 본관 1F 메인 로비
 
-· 고속검색 후보와 외형·행동 패턴 일치로 연계 판단
+· 고속검색 후보와 외형·소지품 패턴 일치로 연계 판단
 
 
-🤝 7. 상호 협조(112 회신 요청)
-112에서 최신 목격지/시간, 이동수단 여부, 외형변동(겉옷·모자·가방 등), 우선 확인 구역 회신 주시면
+🤝 7. 상호 협조(보안팀 회신 요청)
+출입 통제팀에서 최신 인증 시각/위치, 차량 이동 여부, 외형변동(겉옷·가방 등), 우선 차단 게이트 회신 주시면
 해당 조건으로 탐색 범위 즉시 갱신해 추가 확인 진행
 
 추가 포착 또는 동선 변경 확인 시 바로 재전파
 
 
 📎 8. 첨부
-별빛A-230/444/498/604 포착 썸네일 및 클립
-동선 지도(4지점 표시)
+M16-LAB-CAM-12 / M16-EXIT-A03 / GATE-WEST-07 / GATE-MAIN-02 / LOBBY-MAIN-01 포착 썸네일 및 클립
+사내 동선도(4지점 표시)
 
 
-※ AI 분석 기반 추정 결과이며 최종 확인은 현장 판단 기준입니다.
-관제 담당: 김쿠도 / 032-266-3454` });
+※ AI 분석 기반 추정 결과이며 최종 확인은 보안실장 판단 기준입니다.
+관제 담당: 김쿠도 / 사내 02-XXXX-XXXX` });
 
   const [editableContent, setEditableContent] = useState(initialContent);
 
@@ -224,10 +225,10 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
 
     let content = '📡 전파 요약 (객체 추적 연계)\n\n';
     content += '▪ 전파 대상\n\n';
-    content += `별빛구 일대 동일 인물 추정 객체 (총 ${selectedItems.length}건 포착)\n\n`;
-    
+    content += `사내 동일 인물 추정 객체 (총 ${selectedItems.length}건 포착)\n\n`;
+
     content += '▪ 주요 포착 내용 요약\n\n';
-    
+
     // 1차 포착 (고속검색 기준)
     if (fastSearchItem) {
       content += '1차 포착(고속검색 기준)\n\n';
@@ -236,34 +237,34 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
       content += `포착 시각: ${fastSearchItem.timestamp}\n\n`;
       content += '유사도: 95%\n\n';
       content += '행동 요약:\n';
-      content += '편의점 앞 체류 → 입·퇴장 반복 → 전화 행동 후 화면 상단 중앙 방향 이탈\n\n';
+      content += '게이트 앞 체류 → 사원증 미인증 시도 → 우회 동선 관측, 검정 백팩 휴대 확인\n\n';
     }
-    
+
     // 2차 포착 (객체 추적 연계)
     if (trackingItem) {
       content += '2차 포착(객체 추적 연계)\n\n';
       content += `카메라: ${trackingItem.cctvName}\n\n`;
       content += `위치: ${trackingItem.location}\n\n`;
       content += `포착 시각: ${trackingItem.timestamp}\n\n`;
-      content += '연계 판단: 고속검색 후보와 외형·행동 패턴 일치\n\n';
+      content += '연계 판단: 고속검색 후보와 외형·소지품 패턴 일치\n\n';
     }
-    
+
     content += '▪ 객체 추적 분석 결과\n\n';
     content += '예상 이동 거리: 약 22m (이전 위치 기준)\n\n';
-    content += '이동 추세: 남서 방향 이동 지속 (최근 3프레임 평균)\n\n';
-    content += '예상 도달 시각: 09:36:00 (현재 시각 기준 +30초)\n\n';
+    content += '이동 추세: 정문/서측 게이트 방향 이동 지속 (최근 3프레임 평균)\n\n';
+    content += '예상 도달 시각: 14:36:00 (현재 시각 기준 +30초)\n\n';
     content += '경로 적합도: 83점\n\n';
-    
+
     content += '▪ 추적 근거 요약\n\n';
     content += '평균 보행 속도로 방향 유지 이동 중\n\n';
-    content += '하천 산책로 및 보행자 동선과 직접 연결된 구간\n\n';
-    content += '인접 CCTV 3대 커버리지 중첩 구간으로 연속 추적 가능\n\n';
+    content += 'M16 동 3F 복도 → 본관 1F 로비 → 정문 게이트 동선과 직접 연결된 구간\n\n';
+    content += '인접 사내 CCTV 3대 커버리지 중첩 구간으로 연속 추적 가능\n\n';
     content += '체류 후 동일 방향 이탈 패턴 반복 관측\n\n';
-    content += '유사 시간대 사례 분석 결과, 하천 방향 이동 비중 높음\n\n';
-    
+    content += '유사 시간대 사례 분석 결과, 게이트 방향 이동 비중 높음\n\n';
+
     content += '▪ 종합 판단\n\n';
-    content += '고속검색으로 확보된 후보 객체가 인접 CCTV에서 연속 포착됨.\n';
-    content += '동일 외형·행동 패턴 기반 연계 추적 신뢰도 높음으로 판단됨.';
+    content += '고속검색으로 확보된 후보 객체가 인접 사내 CCTV에서 연속 포착됨.\n';
+    content += '동일 외형·소지품 패턴 기반 연계 추적 신뢰도 높음으로 판단됨.';
     
     return content;
   };
@@ -495,11 +496,11 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:alert-circle" className="w-5 h-5 text-red-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.latestCapture.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.latestCapture.title')}</h3>
                     </div>
                     <div className="space-y-1.5 text-sm">
-                      <div className="text-gray-300">{t('propagationPackage.detail.latestCapture.line')}</div>
-                      <div className="text-gray-400 text-xs">{t('propagationPackage.detail.latestCapture.note')}</div>
+                      <div className="text-gray-300">{t('sk.propagationPackage.detail.latestCapture.line')}</div>
+                      <div className="text-gray-400 text-xs">{t('sk.propagationPackage.detail.latestCapture.note')}</div>
                     </div>
                   </div>
 
@@ -507,19 +508,19 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:police-badge" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.nearestStation.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.nearestStation.title')}</h3>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div>
-                        <span className="text-gray-400">{t('propagationPackage.detail.nearestStation.referenceLabel')} </span>
-                        <span className="text-gray-300">{t('propagationPackage.detail.nearestStation.referenceValue')}</span>
+                        <span className="text-gray-400">{t('sk.propagationPackage.detail.nearestStation.referenceLabel')} </span>
+                        <span className="text-gray-300">{t('sk.propagationPackage.detail.nearestStation.referenceValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">{t('propagationPackage.detail.nearestStation.stationLabel')} </span>
-                        <span className="text-gray-300">{t('propagationPackage.detail.nearestStation.stationValue')}</span>
+                        <span className="text-gray-400">{t('sk.propagationPackage.detail.nearestStation.stationLabel')} </span>
+                        <span className="text-gray-300">{t('sk.propagationPackage.detail.nearestStation.stationValue')}</span>
                       </div>
                       <div className="text-gray-400 text-xs pt-1">
-                        {t('propagationPackage.detail.nearestStation.note')}
+                        {t('sk.propagationPackage.detail.nearestStation.note')}
                       </div>
                     </div>
                   </div>
@@ -528,20 +529,20 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:account-alert" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.subject.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.subject.title')}</h3>
                     </div>
                     <div className="space-y-1.5 text-sm">
                       <div>
-                        <span className="text-gray-400">{t('propagationPackage.detail.subject.nameAgeLabel')} </span>
-                        <span className="text-gray-300">{t('propagationPackage.detail.subject.nameAgeValue')}</span>
+                        <span className="text-gray-400">{t('sk.propagationPackage.detail.subject.nameAgeLabel')} </span>
+                        <span className="text-gray-300">{t('sk.propagationPackage.detail.subject.nameAgeValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">{t('propagationPackage.detail.subject.descLabel')} </span>
-                        <span className="text-gray-300">{t('propagationPackage.detail.subject.descValue')}</span>
+                        <span className="text-gray-400">{t('sk.propagationPackage.detail.subject.descLabel')} </span>
+                        <span className="text-gray-300">{t('sk.propagationPackage.detail.subject.descValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">{t('propagationPackage.detail.subject.intakeLabel')} </span>
-                        <span className="text-gray-300">{t('propagationPackage.detail.subject.intakeValue')}</span>
+                        <span className="text-gray-400">{t('sk.propagationPackage.detail.subject.intakeLabel')} </span>
+                        <span className="text-gray-300">{t('sk.propagationPackage.detail.subject.intakeValue')}</span>
                       </div>
                     </div>
                   </div>
@@ -550,10 +551,10 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:navigation" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.trackingSummary.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.trackingSummary.title')}</h3>
                     </div>
                     <ul className="space-y-1.5 text-sm">
-                      {(t('propagationPackage.detail.trackingSummary.items', { returnObjects: true }) as string[]).map((line, i) => (
+                      {(t('sk.propagationPackage.detail.trackingSummary.items', { returnObjects: true }) as string[]).map((line, i) => (
                         <li key={i} className="flex items-start gap-2 text-gray-300">
                           <span className="text-gray-500 mt-1">•</span>
                           <span>{line}</span>
@@ -566,19 +567,19 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:radar" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.surveillance.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.surveillance.title')}</h3>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div>
-                        <span className="text-gray-400">{t('propagationPackage.detail.surveillance.timeLabel')} </span>
-                        <span className="text-gray-300">{t('propagationPackage.detail.surveillance.timeValue')}</span>
+                        <span className="text-gray-400">{t('sk.propagationPackage.detail.surveillance.timeLabel')} </span>
+                        <span className="text-gray-300">{t('sk.propagationPackage.detail.surveillance.timeValue')}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">{t('propagationPackage.detail.surveillance.rangeLabel')} </span>
-                        <span className="text-gray-300">{t('propagationPackage.detail.surveillance.rangeValue')}</span>
+                        <span className="text-gray-400">{t('sk.propagationPackage.detail.surveillance.rangeLabel')} </span>
+                        <span className="text-gray-300">{t('sk.propagationPackage.detail.surveillance.rangeValue')}</span>
                       </div>
                       <div className="text-gray-400 text-xs pt-1">
-                        {t('propagationPackage.detail.surveillance.note')}
+                        {t('sk.propagationPackage.detail.surveillance.note')}
                       </div>
                     </div>
                   </div>
@@ -587,17 +588,17 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:cctv" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.captureTimeline.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.captureTimeline.title')}</h3>
                     </div>
                     <div className="space-y-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <Icon icon="mdi:magnify" className="w-4 h-4 text-blue-400" />
-                          <span className="text-blue-400 font-semibold text-xs">{t('propagationPackage.detail.captureTimeline.fastSearchLine')}</span>
+                          <span className="text-blue-400 font-semibold text-xs">{t('sk.propagationPackage.detail.captureTimeline.fastSearchLine')}</span>
                         </div>
-                        <div className="text-gray-400 text-xs ml-6">{t('propagationPackage.detail.captureTimeline.fastSearchNote')}</div>
+                        <div className="text-gray-400 text-xs ml-6">{t('sk.propagationPackage.detail.captureTimeline.fastSearchNote')}</div>
                       </div>
-                      {(t('propagationPackage.detail.captureTimeline.linkedItems', { returnObjects: true }) as { line: string; note: string }[]).map((item, i) => (
+                      {(t('sk.propagationPackage.detail.captureTimeline.linkedItems', { returnObjects: true }) as { line: string; note: string }[]).map((item, i) => (
                         <div key={i}>
                           <div className="flex items-center gap-2 mb-1">
                             <Icon icon="mdi:link-variant" className="w-4 h-4 text-purple-400" />
@@ -613,10 +614,10 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:handshake" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.cooperation.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.cooperation.title')}</h3>
                     </div>
                     <div className="space-y-2 text-sm text-gray-300">
-                      {(t('propagationPackage.detail.cooperation.lines', { returnObjects: true }) as string[]).map((line, i) => (
+                      {(t('sk.propagationPackage.detail.cooperation.lines', { returnObjects: true }) as string[]).map((line, i) => (
                         <p key={i}>{line}</p>
                       ))}
                     </div>
@@ -626,10 +627,10 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                   <div className="bg-[#0f0f0f]/50 border border-[#31353a] rounded-lg p-4" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}>
                     <div className="flex items-center gap-2 mb-3">
                       <Icon icon="mdi:paperclip" className="w-5 h-5 text-blue-400" />
-                      <h3 className="text-white font-semibold text-sm">{t('propagationPackage.detail.attachments.title')}</h3>
+                      <h3 className="text-white font-semibold text-sm">{t('sk.propagationPackage.detail.attachments.title')}</h3>
                     </div>
                     <ul className="space-y-1.5 text-sm">
-                      {(t('propagationPackage.detail.attachments.items', { returnObjects: true }) as string[]).map((line, i) => (
+                      {(t('sk.propagationPackage.detail.attachments.items', { returnObjects: true }) as string[]).map((line, i) => (
                         <li key={i} className="flex items-start gap-2 text-gray-300">
                           <span className="text-gray-500 mt-1">•</span>
                           <span>{line}</span>
@@ -644,10 +645,10 @@ const PropagationPackagePopup: React.FC<PropagationPackagePopupProps> = ({
                       <Icon icon="mdi:information" className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
                       <div className="text-sm">
                         <p className="text-gray-300 leading-relaxed mb-2">
-                          {t('propagationPackage.detail.disclaimer')}
+                          {t('sk.propagationPackage.detail.disclaimer')}
                         </p>
                         <p className="text-gray-400 text-xs">
-                          {t('propagationPackage.detail.dispatcher')}
+                          {t('sk.propagationPackage.detail.dispatcher')}
                         </p>
                       </div>
                     </div>

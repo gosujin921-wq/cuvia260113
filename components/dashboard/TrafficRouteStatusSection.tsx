@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/react';
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getRandomCCTVVideo } from '@/lib/cctv-video-utils';
 
 const SCROLL_DURATION_MS = 3500;
@@ -79,10 +80,19 @@ const statusTextColor: Record<TrafficStatusType, string> = {
 
 /** 노선별 소통정보: 롤링으로 4개 노선 교차 표시. 스크롤 가능 시 자동 스크롤 후 다음 노선으로 전환. 마우스 호버 시 일시정지 */
 export const TrafficRouteStatusSection = () => {
+  const { t } = useTranslation();
   const [routeIndex, setRouteIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isHoveredRef = useRef(false);
-  const segments = ROUTE_SETS[routeIndex];
+  // segments도 i18n으로 변환된 location/statusLabel을 사용
+  const segmentsRaw = ROUTE_SETS[routeIndex];
+  const segments = segmentsRaw.map((seg, idx) => ({
+    ...seg,
+    location: t(`trafficRoute.sets.${routeIndex}.segments.${idx}.location`, { defaultValue: seg.location }),
+    statusLabel: seg.statusLabel
+      ? t(`trafficRoute.statusLabel.${seg.status}`, { defaultValue: seg.statusLabel })
+      : seg.statusLabel,
+  }));
 
   const goToNextRoute = () => {
     setRouteIndex((prev) => (prev + 1) % ROUTE_SETS.length);
@@ -182,10 +192,10 @@ export const TrafficRouteStatusSection = () => {
       }}
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white text-sm font-semibold">노선별 소통정보</h3>
+        <h3 className="text-white text-sm font-semibold">{t('trafficRoute.title')}</h3>
         <div className="flex items-center gap-2">
-          <span className="text-amber-400 text-xs font-medium">{ROUTE_LABELS[routeIndex][0]}</span>
-          <span className="text-amber-400 text-xs font-medium">{ROUTE_LABELS[routeIndex][1]}</span>
+          <span className="text-amber-400 text-xs font-medium">{t(`trafficRoute.labels.${routeIndex}.0`, { defaultValue: ROUTE_LABELS[routeIndex][0] })}</span>
+          <span className="text-amber-400 text-xs font-medium">{t(`trafficRoute.labels.${routeIndex}.1`, { defaultValue: ROUTE_LABELS[routeIndex][1] })}</span>
         </div>
       </div>
       <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-auto">
@@ -232,7 +242,7 @@ export const TrafficRouteStatusSection = () => {
                       loop
                       playsInline
                       autoPlay
-                      aria-label={`${seg.location} 교통 영상`}
+                      aria-label={t('trafficRoute.videoAriaLabel', { location: seg.location })}
                     />
                   ) : (
                     <Icon icon="mdi:cctv-off" className="w-5 h-5 text-gray-500" aria-hidden="true" />

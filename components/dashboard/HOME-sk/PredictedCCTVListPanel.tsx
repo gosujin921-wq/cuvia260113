@@ -37,12 +37,12 @@ export interface PredictedCCTVItem {
   posterUrl?: string;
 }
 
-// Mock 데이터 - 4번 핀(달빛로301번길 28) 근처 CCTV 10개
+// Mock 데이터 - 4번 핀(본관 1F 메인 로비) 근처 CCTV 10개
 const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   {
     id: '1',
-    cctvName: '별빛A-583',
-    location: '달빛로301번길 28',
+    cctvName: 'GATE-MAIN-02',
+    location: '본관 1F 메인 로비',
     distance: 15,
     predictedTime: '09:35:15',
     confidence: 15,
@@ -52,8 +52,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '2',
-    cctvName: '별빛A-604',
-    location: '달빛로301번길 28',
+    cctvName: 'LOBBY-MAIN-01',
+    location: '본관 1F 메인 로비',
     distance: 20,
     predictedTime: '09:35:30',
     confidence: 75,
@@ -63,8 +63,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '3',
-    cctvName: '별빛A-621',
-    location: '달빛로301번길 28',
+    cctvName: 'GATE-EAST-04',
+    location: '본관 1F 메인 로비',
     distance: 18,
     predictedTime: '09:35:45',
     confidence: 30,
@@ -74,8 +74,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '4',
-    cctvName: '별빛A-638',
-    location: '달빛로301번길 28',
+    cctvName: 'GATE-WEST-08',
+    location: '본관 1F 메인 로비',
     distance: 22,
     predictedTime: '09:36:00',
     confidence: 95,
@@ -85,8 +85,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '5',
-    cctvName: '별빛A-655',
-    location: '달빛로301번길 28',
+    cctvName: 'CORR-1F-09',
+    location: '본관 1F 메인 로비',
     distance: 25,
     predictedTime: '09:36:15',
     confidence: 98,
@@ -96,8 +96,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '6',
-    cctvName: '별빛A-672',
-    location: '달빛로301번길 28',
+    cctvName: 'ELEV-1F-03',
+    location: '본관 1F 메인 로비',
     distance: 25,
     predictedTime: '09:36:30',
     confidence: 96,
@@ -107,8 +107,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '7',
-    cctvName: '별빛A-689',
-    location: '달빛로301번길 28',
+    cctvName: 'STAIR-1F-A',
+    location: '본관 1F 메인 로비',
     distance: 28,
     predictedTime: '09:36:45',
     confidence: 96,
@@ -118,8 +118,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '8',
-    cctvName: '별빛A-706',
-    location: '달빛로301번길 28',
+    cctvName: 'PARK-EXIT-B2',
+    location: '본관 1F 메인 로비',
     distance: 30,
     predictedTime: '09:37:00',
     confidence: 97,
@@ -129,8 +129,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '9',
-    cctvName: '별빛A-723',
-    location: '달빛로301번길 28',
+    cctvName: 'PARK-RAMP-B1',
+    location: '본관 1F 메인 로비',
     distance: 32,
     predictedTime: '09:37:15',
     confidence: 96,
@@ -140,8 +140,8 @@ const PREDICTED_CCTV_DATA: PredictedCCTVItem[] = [
   },
   {
     id: '10',
-    cctvName: '별빛A-740',
-    location: '달빛로301번길 28',
+    cctvName: 'GATE-CARGO-W',
+    location: '본관 1F 메인 로비',
     distance: 30,
     predictedTime: '09:37:30',
     confidence: 92,
@@ -203,10 +203,10 @@ const PredictedCCTVListPanel: React.FC<PredictedCCTVListPanelProps> = ({
     if (!isEN) return loc;
     // 자주 등장하는 거리명 매핑
     return loc
-      .replace(/달빛로301번길 28/g, '28 Moonlight St')
-      .replace(/달빛로301번길 54/g, '54 Moonlight St')
-      .replace(/은하로363번길 48/g, '48 Galaxy St')
-      .replace(/은하로391번길 29/g, '29 Galaxy St');
+      .replace(/본관 1F 메인 로비/g, 'HQ / 1F Lobby')
+      .replace(/본관 1F 메인 로비/g, 'HQ / 1F Lobby')
+      .replace(/M16 동 3F 설계실/g, 'M16 / 3F Design Lab')
+      .replace(/서측 출입 게이트/g, '29 Galaxy St');
   };
   const PREDICTED_CCTV_DATA_LOCALIZED = React.useMemo(() => {
     return PREDICTED_CCTV_DATA.map(item => ({

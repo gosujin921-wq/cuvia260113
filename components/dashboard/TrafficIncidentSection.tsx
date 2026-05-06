@@ -1,5 +1,6 @@
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 /** 도시 교통 돌발정보 섹션 - 카드 롤링 */
 const TRAFFIC_INCIDENT_VIDEOS = [
@@ -79,8 +80,19 @@ interface TrafficIncidentSectionProps {
 }
 
 export const TrafficIncidentSection = ({ videoSrc }: TrafficIncidentSectionProps) => {
+  const { t } = useTranslation();
   const [cardIndex, setCardIndex] = useState(0);
-  const incident = INCIDENT_CARDS[cardIndex];
+  // i18n으로 mock card 데이터 변환 — JSON에 영문이 있으면 사용, 없으면 KO fallback
+  const incidentRaw = INCIDENT_CARDS[cardIndex];
+  const incident = {
+    ...incidentRaw,
+    roadDirection: t(`trafficIncident.cards.${cardIndex}.roadDirection`, { defaultValue: incidentRaw.roadDirection }),
+    roadName: t(`trafficIncident.cards.${cardIndex}.roadName`, { defaultValue: incidentRaw.roadName }),
+    section: t(`trafficIncident.cards.${cardIndex}.section`, { defaultValue: incidentRaw.section }),
+    content: t(`trafficIncident.cards.${cardIndex}.content`, { defaultValue: incidentRaw.content }),
+    endTime: t(`trafficIncident.cards.${cardIndex}.endTime`, { defaultValue: incidentRaw.endTime }),
+    control: t(`trafficIncident.cards.${cardIndex}.control`, { defaultValue: incidentRaw.control }),
+  };
   const videoUrl = videoSrc ?? TRAFFIC_INCIDENT_VIDEOS[cardIndex % TRAFFIC_INCIDENT_VIDEOS.length];
 
   useEffect(() => {
@@ -101,7 +113,7 @@ export const TrafficIncidentSection = ({ videoSrc }: TrafficIncidentSectionProps
       }}
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-white text-sm font-semibold">도시 교통 돌발 정보</h3>
+        <h3 className="text-white text-sm font-semibold">{t('trafficIncident.title')}</h3>
         <span className="text-amber-400 text-xs font-medium">{incident.roadDirection}</span>
       </div>
 
@@ -125,19 +137,19 @@ export const TrafficIncidentSection = ({ videoSrc }: TrafficIncidentSectionProps
           {/* 상세 정보 */}
           <div className="flex flex-col gap-1">
             <div className="flex gap-2 text-xs">
-              <span className="text-blue-400 flex-shrink-0">내용</span>
+              <span className="text-blue-400 flex-shrink-0">{t('trafficIncident.content')}</span>
               <span className="text-gray-300 truncate">{incident.content}</span>
             </div>
             <div className="flex gap-2 text-xs">
-              <span className="text-blue-400 flex-shrink-0">발생시각</span>
+              <span className="text-blue-400 flex-shrink-0">{t('trafficIncident.occurrenceTime')}</span>
               <span className="text-gray-300 truncate">{incident.occurrenceTime}</span>
             </div>
             <div className="flex gap-2 text-xs">
-              <span className="text-blue-400 flex-shrink-0">종료시각</span>
+              <span className="text-blue-400 flex-shrink-0">{t('trafficIncident.endTime')}</span>
               <span className="text-gray-300 truncate">{incident.endTime}</span>
             </div>
             <div className="flex gap-2 text-xs">
-              <span className="text-blue-400 flex-shrink-0">통제</span>
+              <span className="text-blue-400 flex-shrink-0">{t('trafficIncident.control')}</span>
               <span className="text-gray-300 truncate">{incident.control}</span>
             </div>
           </div>
@@ -154,7 +166,7 @@ export const TrafficIncidentSection = ({ videoSrc }: TrafficIncidentSectionProps
               loop
               playsInline
               autoPlay
-              aria-label="교통 상황 영상"
+              aria-label={t('trafficIncident.videoAriaLabel')}
             />
           ) : (
             <Icon icon="mdi:cctv-off" className="w-10 h-10 text-gray-500" aria-hidden="true" />

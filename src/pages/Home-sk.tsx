@@ -1,28 +1,27 @@
 import { useState, useMemo, useEffect, useRef, useCallback, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LANGUAGE_STORAGE_KEY, SupportedLanguage } from '@/src/i18n';
-import EventList from '@/components/dashboard/EventList';
-import MapView from '@/components/dashboard/HOME-v2/MapView';
-import ObjectTrackingMapView from '@/components/dashboard/HOME-v2/ObjectTrackingMapView';
-import LeftPanel from '@/components/dashboard/LeftPanel';
-import LeftMenuPanel from '@/components/dashboard/HOME-v2/LeftMenuPanel';
+import EventList from '@/components/dashboard/EventList-sk';
+import MapView from '@/components/dashboard/HOME-sk/MapView';
+import ObjectTrackingMapView from '@/components/dashboard/HOME-sk/ObjectTrackingMapView';
+import LeftPanel from '@/components/dashboard/LeftPanel-sk';
+import LeftMenuPanel from '@/components/dashboard/HOME-sk/LeftMenuPanel';
 import HeatmapPanel from '@/components/dashboard/HeatmapPanel';
 import BottomPanel from '@/components/dashboard/BottomPanel';
-import ReportPopup from '@/components/dashboard/HOME/ReportPopup';
-import FastSearchListPanel from '@/components/dashboard/HOME-v2/FastSearchListPanel';
-import PredictedCCTVListPanel from '@/components/dashboard/HOME-v2/PredictedCCTVListPanel';
-import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-v2/CaptureListPanel';
-import PropagationListPanel from '@/components/dashboard/HOME-v2/PropagationListPanel';
-import PropagationPackagePopup from '@/components/dashboard/HOME-v2/PropagationPackagePopup';
-import AIAgentPopup from '@/components/dashboard/HOME-v2/AIAgentPopup';
-import ConfirmDialog from '@/components/dashboard/HOME-v2/ConfirmDialog';
-import { MouseGuide } from '@/components/dashboard/HOME-v2/MouseGuide';
-import { useMouseGuide } from '@/src/pages/useMouseGuide';
+import ReportPopup from '@/components/dashboard/HOME-sk/ReportPopup';
+import FastSearchListPanel from '@/components/dashboard/HOME-sk/FastSearchListPanel';
+import PredictedCCTVListPanel from '@/components/dashboard/HOME-sk/PredictedCCTVListPanel';
+import CaptureListPanel, { CaptureItem } from '@/components/dashboard/HOME-sk/CaptureListPanel';
+import PropagationListPanel from '@/components/dashboard/HOME-sk/PropagationListPanel';
+import PropagationPackagePopup from '@/components/dashboard/HOME-sk/PropagationPackagePopup';
+import AIAgentPopup from '@/components/dashboard/HOME-sk/AIAgentPopup';
+import ConfirmDialog from '@/components/dashboard/HOME-sk/ConfirmDialog';
+import { MouseGuide } from '@/components/dashboard/HOME-sk/MouseGuide';
+import { useMouseGuide } from '@/src/pages/useMouseGuide-sk';
 import { Event } from '@/types';
-import { allEvents, convertToDashboardEvent } from '@/lib/events-data';
+import { allEvents, convertToDashboardEvent } from '@/lib/events-data-sk';
 import { getCanonicalDisplayNames } from '@/lib/fast-search-attribute-utils';
-import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes';
+import { computeExcludeForShowOnly } from '@/lib/fast-search-image-attributes-sk';
 
 const EndDialog = ({ onConfirm }: { onConfirm: () => void }) => {
   const { t } = useTranslation();
@@ -198,7 +197,7 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
         showAIAgentPopup: true,
         hideControls: true,
         selectedMenuId: 'object-tracking',
-        selectedEventId: 'A-20260107-004', // 신고 팝업을 위한 이벤트 선택
+        selectedEventId: 'S-20260107-001', // 신고 팝업을 위한 이벤트 선택
         panelsSlidOut: true, // 좌우 패널 숨김
         showCCTV: false, // CCTV 패널 숨김
       };
@@ -302,21 +301,9 @@ const uiReducer = (state: UIState, action: UIAction): UIState => {
   }
 };
 
-export default function HomeV2() {
+export default function HomeSk() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-
-  // 시작 안내 모달 안에서 언어를 전환할 때 사용. 선택 즉시 localStorage에 저장한다.
-  const currentLang = (i18n.resolvedLanguage || i18n.language || 'ko').slice(0, 2) as SupportedLanguage;
-  const handleLanguageChange = useCallback((lang: SupportedLanguage) => {
-    if (currentLang === lang) return;
-    i18n.changeLanguage(lang);
-    try {
-      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-    } catch {
-      // localStorage가 막혀 있어도 in-memory로 적용된 상태이므로 무시
-    }
-  }, [currentLang, i18n]);
 
   // UI 상태를 reducer로 통합 관리
   const [uiState, dispatch] = useReducer(uiReducer, {
@@ -443,42 +430,42 @@ export default function HomeV2() {
     const formatTime = (hours: number, minutes: number) => {
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
     };
-    const trans = (key: string) => t(`mockEvents.${key}`);
+    const trans = (key: string) => t(`sk.mockEvents.${key}`);
 
     return [
       // 일반 5개
       {
         id: 'mock-1',
-        type: '112 치안',
+        type: '비인가 출입',
         title: trans('mock-1.title'),
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 15)),
         location: { name: trans('mock-1.location'), coordinates: [127.192706819665, 37.350286188524] as [number, number] },
         processingStage: '생성',
-        resolution: { category: '112', code: '001', description: '' },
+        resolution: { category: 'AI', code: '001', description: '' },
       },
       {
         id: 'mock-2',
-        type: '119 구조',
+        type: '비인가 출입',
         title: trans('mock-2.title'),
         priority: '일반' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 25)),
         location: { name: trans('mock-2.location'), coordinates: [127.202706819665, 37.360286188524] as [number, number] },
         processingStage: '선별',
-        resolution: { category: '119', code: '002', description: '' },
+        resolution: { category: 'AI', code: '002', description: '' },
       },
       {
         id: 'mock-3',
-        type: '112 치안',
+        type: 'DLP 알림',
         title: trans('mock-3.title'),
         priority: '일반' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 35)),
         location: { name: trans('mock-3.location'), coordinates: [127.182706819665, 37.340286188524] as [number, number] },
         processingStage: '착수',
-        resolution: { category: '112', code: '003', description: '' },
+        resolution: { category: 'AI', code: '003', description: '' },
       },
       {
         id: 'mock-4',
@@ -493,37 +480,37 @@ export default function HomeV2() {
       },
       {
         id: 'mock-5',
-        type: '112 치안',
+        type: 'DLP 알림',
         title: trans('mock-5.title'),
         priority: '일반' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 55)),
         location: { name: trans('mock-5.location'), coordinates: [127.162706819665, 37.320286188524] as [number, number] },
         processingStage: '선별',
-        resolution: { category: '112', code: '005', description: '' },
+        resolution: { category: 'AI', code: '005', description: '' },
       },
       // 주의 3개
       {
         id: 'mock-6',
-        type: '112 실종',
+        type: '비인가 출입',
         title: trans('mock-6.title'),
         priority: '주의' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 10)),
         location: { name: trans('mock-6.location'), coordinates: [127.192706819665, 37.350286188524] as [number, number] },
         processingStage: '착수',
-        resolution: { category: '112', code: '006', description: '' },
+        resolution: { category: 'AI', code: '006', description: '' },
       },
       {
         id: 'mock-7',
-        type: '119 구조',
+        type: '비인가 출입',
         title: trans('mock-7.title'),
         priority: '주의' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 20)),
         location: { name: trans('mock-7.location'), coordinates: [127.202706819665, 37.360286188524] as [number, number] },
         processingStage: '생성',
-        resolution: { category: '119', code: '007', description: '' },
+        resolution: { category: 'AI', code: '007', description: '' },
       },
       {
         id: 'mock-8',
@@ -539,36 +526,36 @@ export default function HomeV2() {
       // 경계 2개
       {
         id: 'mock-9',
-        type: '119 화재',
+        type: '비인가 출입',
         title: trans('mock-9.title'),
         priority: '경계' as const,
         status: 'MONITORING' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 5)),
         location: { name: trans('mock-9.location'), coordinates: [127.172706819665, 37.330286188524] as [number, number] },
         processingStage: '착수',
-        resolution: { category: '119', code: '009', description: '' },
+        resolution: { category: 'AI', code: '009', description: '' },
       },
       {
         id: 'mock-10',
-        type: '112 치안',
+        type: 'AI 탐지',
         title: trans('mock-10.title'),
         priority: '경계' as const,
         status: 'NEW' as const,
         timestamp: formatTime(now.getHours(), Math.max(0, now.getMinutes() - 12)),
         location: { name: trans('mock-10.location'), coordinates: [127.162706819665, 37.320286188524] as [number, number] },
         processingStage: '선별',
-        resolution: { category: '112', code: '010', description: '' },
+        resolution: { category: 'AI', code: '010', description: '' },
       },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language]);
 
-  const isKimDoyeonEvent = (event: Event) => event.eventId === "A-20260107-004" || event.id === "A-20260107-004";
+  const isTargetEvent = (event: Event) => event.eventId === "S-20260107-001" || event.id === "S-20260107-001";
 
-  // 보이는 이벤트만 필터링: 김도연(A-20260107-004)만 1키 입력 시 노출, 나머지는 항상 노출
+  // 보이는 이벤트만 필터링: 박지훈(S-20260107-001)만 1키 입력 시 노출, 나머지는 항상 노출
   const visibleEvents: Event[] = useMemo(() => {
-    const alwaysVisibleReal = allConvertedEvents.filter((event) => !isKimDoyeonEvent(event));
-    const kimDoyeon = allConvertedEvents.filter((event) => isKimDoyeonEvent(event) && visibleEventIds.has(event.id));
+    const alwaysVisibleReal = allConvertedEvents.filter((event) => !isTargetEvent(event));
+    const kimDoyeon = allConvertedEvents.filter((event) => isTargetEvent(event) && visibleEventIds.has(event.id));
     return [...mockEvents, ...alwaysVisibleReal, ...kimDoyeon];
   }, [allConvertedEvents, visibleEventIds, mockEvents]);
 
@@ -688,7 +675,7 @@ export default function HomeV2() {
   const handleEventAction = useCallback((eventId: string) => {
     const event = visibleEvents.find((e) => e.id === eventId);
     if (!event) return;
-    const isEvent1 = event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004';
+    const isEvent1 = event.eventId === 'S-20260107-001' || event.id === 'S-20260107-001';
     if (event.eventId && !isEvent1) {
       navigate(`/event/${event.eventId}`);
       return;
@@ -749,7 +736,7 @@ export default function HomeV2() {
   }, [resetGuide]);
 
   // 재검색 완료 후 가이드 이동 (에이전트 팝업 결과 표시 후)
-  // - 우산 삭제(에이전트): 별빛A-604 가이드
+  // - 우산 삭제(에이전트): LOBBY-MAIN-01 가이드
   // - 결과재검색 버튼: 객체 추적 메뉴 가이드
   useEffect(() => {
     if (!showMouseGuide || !reSearchResult || uiState.showReSearchProgress) return;
@@ -854,7 +841,7 @@ export default function HomeV2() {
     const PHASE_PROPAGATION = ['report-download', 'report-result'];
 
     const missingEvent = allConvertedEvents.find(
-      e => e.eventId === 'A-20260107-004' || e.id === 'A-20260107-004'
+      e => e.eventId === 'S-20260107-001' || e.id === 'S-20260107-001'
     );
 
     if (PHASE_INTRO.includes(targetStepId)) {
@@ -968,7 +955,7 @@ export default function HomeV2() {
       setObjectTrackingCompleted(false);
       setVisibleTrackingPins(0);
       const missingEvent = allConvertedEvents.find(event =>
-        event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+        event.eventId === 'S-20260107-001' || event.id === 'S-20260107-001'
       );
       if (missingEvent) {
         dispatch({ type: 'SET_SELECTED_EVENT', payload: missingEvent.id });
@@ -1022,7 +1009,7 @@ export default function HomeV2() {
   // 시작 버튼 핸들러
   const handleStartSimulation = useCallback(() => {
     const missingEvent = allConvertedEvents.find(event => 
-      event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+      event.eventId === 'S-20260107-001' || event.id === 'S-20260107-001'
     );
     
     if (missingEvent) {
@@ -1054,7 +1041,7 @@ export default function HomeV2() {
     }
     
     const missingEvent = allConvertedEvents.find(event => 
-      event.eventId === 'A-20260107-004' || event.id === 'A-20260107-004'
+      event.eventId === 'S-20260107-001' || event.id === 'S-20260107-001'
     );
     
     if (e.key === '0') {
@@ -1161,23 +1148,23 @@ export default function HomeV2() {
       >
         <HeatmapPanel
           areaLabels={i18n.language?.startsWith('en') ? {
-            zone1: 'Moonlight',
-            zone2: 'Daylight',
-            zone3: 'Breeze',
-            zone4: 'Rainbow',
-            zone5: 'Nebula',
-            zone6: 'Cloud',
-            zone7: 'Sunshine',
-            zone8: 'Dawn',
+            zone1: 'M16 / 3F',
+            zone2: 'M16 / 4F',
+            zone3: 'R&D Bldg',
+            zone4: 'HQ / 1F',
+            zone5: 'Main Gate',
+            zone6: 'West Gate',
+            zone7: 'East Gate',
+            zone8: 'B2 Parking',
           } : {
-            zone1: '달빛동',
-            zone2: '해빛동',
-            zone3: '바람동',
-            zone4: '무지개동',
-            zone5: '성운동',
-            zone6: '구름동',
-            zone7: '햇살동',
-            zone8: '여명동',
+            zone1: 'M16 / 3F',
+            zone2: 'M16 / 4F',
+            zone3: 'R&D 빌딩',
+            zone4: '본관 1F',
+            zone5: '정문 게이트',
+            zone6: '서측 게이트',
+            zone7: '동측 게이트',
+            zone8: 'B2 주차장',
           }}
         />
         <div className="rounded-lg p-4 flex-1 overflow-hidden gradient-border-right-bottom" style={{ minHeight: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(23,23,23,0.6) 100%)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
@@ -1553,68 +1540,32 @@ export default function HomeV2() {
             }}
           >
             <div className="px-6 pt-5 pb-3 text-left">
-              {/* 헤더: 타이틀 + 우측 상단 언어 전환 토글 (KR / EN) */}
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-gray-900 font-bold leading-relaxed flex-1" style={{ fontSize: '18px' }}>
-                  {t('home.startDialog.title')}
-                </p>
-                <div
-                  className="flex items-center rounded-full overflow-hidden border border-gray-400/70 shrink-0 mt-0.5"
-                  role="group"
-                  aria-label="Language switcher"
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleLanguageChange('ko')}
-                    className={`px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                      currentLang === 'ko'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-transparent text-gray-600 hover:text-gray-900'
-                    }`}
-                    aria-pressed={currentLang === 'ko'}
-                    aria-label="한국어로 보기"
-                    tabIndex={0}
-                  >
-                    KR
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleLanguageChange('en')}
-                    className={`px-2.5 py-1 text-[11px] font-bold transition-colors ${
-                      currentLang === 'en'
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-transparent text-gray-600 hover:text-gray-900'
-                    }`}
-                    aria-pressed={currentLang === 'en'}
-                    aria-label="View in English"
-                    tabIndex={0}
-                  >
-                    EN
-                  </button>
-                </div>
-              </div>
+              {/* 헤더: 타이틀 (sk 시나리오는 한국어 전용 — 언어 토글 제거) */}
+              <p className="text-gray-900 font-bold leading-relaxed" style={{ fontSize: '18px' }}>
+                {t('sk.home.startDialog.title')}
+              </p>
               <p className="text-gray-700 text-sm leading-relaxed mt-2">
-                {t('home.startDialog.description1')}<br />
-                {t('home.startDialog.description2')}
+                {t('sk.home.startDialog.description1')}<br />
+                {t('sk.home.startDialog.description2')}
               </p>
               <div className="mt-3 px-3 py-2.5 rounded-md border border-gray-300/60 bg-white/40">
                 <p className="text-gray-800 text-xs font-semibold leading-relaxed">
-                  {t('home.startDialog.flow')}
+                  {t('sk.home.startDialog.flow')}
                 </p>
                 <p className="text-gray-600 text-[11px] leading-relaxed mt-1">
-                  {t('home.startDialog.duration')}
+                  {t('sk.home.startDialog.duration')}
                 </p>
               </div>
               {/* 단축키 안내 */}
               <div className="mt-3 px-3 py-2.5 rounded-md border border-gray-300/60 bg-white/40">
-                <p className="text-gray-800 text-sm font-semibold leading-relaxed mb-2">{t('home.startDialog.shortcutsTitle')}</p>
+                <p className="text-gray-800 text-sm font-semibold leading-relaxed mb-2">{t('sk.home.startDialog.shortcutsTitle')}</p>
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-3">
                     <kbd className="inline-flex items-center justify-center min-w-[32px] h-[28px] px-2 rounded-md bg-gray-100 border border-gray-300 shadow-[0_1px_0_1px_rgba(0,0,0,0.08)] text-gray-700 text-xs font-bold leading-none">
                       0
                     </kbd>
                     <span className="text-gray-600 text-[13px] leading-relaxed">
-                      {t('home.startDialog.shortcutHToggle')}
+                      {t('sk.home.startDialog.shortcutHToggle')}
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1622,17 +1573,17 @@ export default function HomeV2() {
                       ESC
                     </kbd>
                     <span className="text-gray-600 text-[13px] leading-relaxed">
-                      {t('home.startDialog.shortcutResetGuide')}
+                      {t('sk.home.startDialog.shortcutResetGuide')}
                     </span>
                   </div>
                 </div>
               </div>
 
               <p className="text-gray-700 text-sm leading-relaxed mt-3">
-                {t('home.startDialog.footerStart')}
+                {t('sk.home.startDialog.footerStart')}
               </p>
               <p className="text-gray-700 text-[11px] leading-relaxed mt-2">
-                {t('home.startDialog.footerDisclaimer')}
+                {t('sk.home.startDialog.footerDisclaimer')}
               </p>
             </div>
 
@@ -1652,10 +1603,10 @@ export default function HomeV2() {
                 <button
                   onClick={handleStartSimulation}
                   className="px-8 py-2.5 rounded-lg text-sm font-semibold bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-                  aria-label={t('home.startDialog.startAriaLabel')}
+                  aria-label={t('sk.home.startDialog.startAriaLabel')}
                   tabIndex={0}
                 >
-                  {t('home.startDialog.startButton')}
+                  {t('sk.home.startDialog.startButton')}
                 </button>
               )}
             </div>

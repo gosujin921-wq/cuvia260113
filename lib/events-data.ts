@@ -1,5 +1,6 @@
 import type { ProcessingStage, ResolutionCategory, EventType } from '@/types';
 import { MOCK_EVENTS } from './mock-data/events';
+import i18n from '@/src/i18n';
 
 /**
  * ============================================================================
@@ -99,9 +100,10 @@ const eventSpecificData: Record<string, {
     },
     // 1키 시나리오용 실제 사건 위치 (과천역 근처) [lng, lat]
     coordinates: [126.99656, 37.43527] as [number, number],
-    /** EventList용: 신고팝업 내용 축약 (이름/나이, 인상착의, 장애·긴급) */
-    listTitle: '김도연(22세, 남) 실종 - 회색 후드·청바지, 장애 있음. 긴급 수색 요망',
-    listLocation: '은하로363번길 48, 09:30경',
+    /** EventList용: 신고팝업 내용 축약 (이름/나이, 인상착의, 장애·긴급).
+     *  i18n key로 위임하기 위해 빈 문자열로 두고, convertToDashboardEvent에서 i18n.t()로 채움. */
+    listTitle: '',
+    listLocation: '',
   },
 };
 
@@ -205,8 +207,14 @@ export const convertToDashboardEvent = (event: BaseEvent, index: number) => {
   );
 
   const coordinates = eventData.coordinates ?? generateCoordinates(index);
-  const listTitle = eventData.listTitle ?? event.title;
-  const listLocation = eventData.listLocation ?? event.location;
+  // 이벤트별 i18n 키가 정의되어 있으면 우선 사용. 키가 없으면 fallback으로 hardcode 또는 event.title 사용.
+  const eventKey = event.id || event.eventId;
+  const listTitleKey = `events.${eventKey}.listTitle`;
+  const listLocationKey = `events.${eventKey}.listLocation`;
+  const i18nTitle = i18n.exists(listTitleKey) ? i18n.t(listTitleKey) : '';
+  const i18nLocation = i18n.exists(listLocationKey) ? i18n.t(listLocationKey) : '';
+  const listTitle = i18nTitle || eventData.listTitle || event.title;
+  const listLocation = i18nLocation || eventData.listLocation || event.location;
 
   return {
     id: event.id,

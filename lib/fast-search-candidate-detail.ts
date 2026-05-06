@@ -1,10 +1,14 @@
 /**
  * 고속검색 후보 상세 팝업용 mock 데이터.
  * 관찰 카드 톤(판단·단정 없음). API 연동 시 이 모듈만 교체하면 됨.
+ *
+ * i18n: 본문은 한국어 fallback. EN 모드에서 JSON에 `candidateDetailMock.{imageId}.{field}`
+ * 키가 있으면 그것을 우선 사용한다. 없으면 KO fallback이 그대로 표시된다.
  */
 
 import type { ImageId } from './fast-search-image-attributes';
 import { getAttributesForImageId } from './fast-search-image-attributes';
+import i18n from '@/src/i18n';
 
 /** v2/v4 별빛 시티: observationSummary·timeline·markdown 내 원미 시티 CCTV명을 별빛으로 치환 */
 const ORIGINAL_TO_STARLIGHT: Record<string, string> = {
@@ -268,7 +272,84 @@ const SIMILARITY_TABLES: Partial<Record<ImageId, SimilarityTableRow[]>> = {
   ],
 };
 
+/**
+ * 영문 시연용 유사도 테이블. 같은 ImageId 기준으로 동일한 행 구조를 영문으로 제공.
+ * UI 폭에 맞춰 짧게 작성.
+ */
+const SIMILARITY_TABLES_EN: Partial<Record<ImageId, SimilarityTableRow[]>> = {
+  '05': [
+    { category: 'Top', missing: 'Red hoodie', captured: 'Red hoodie', match: true },
+    { category: 'Bottom', missing: 'Black pants', captured: 'Black pants', match: true },
+    { category: 'Footwear/Items', missing: 'Black shoes', captured: 'Black shoes', match: true },
+    { category: 'Behavior', missing: 'Back view, walking', captured: 'Walking from lower-right to upper edge', match: 'special' },
+  ],
+  '11': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Light gray / white top', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Black bottoms', match: false },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Items', missing: '-', captured: 'Clear patterned umbrella', match: 'special' },
+    { category: 'Build', missing: 'Slim', captured: 'Slim (back view)', match: true },
+  ],
+  '15': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'White padded jacket', match: false },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Black bottoms', match: false },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Behavior', missing: '-', captured: 'Diagonal crosswalk crossing', match: 'special' },
+  ],
+  '21': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Gray hoodie', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Dark jeans', match: true },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Hair', missing: 'Short black hair', captured: 'Short black hair', match: true },
+    { category: 'Build', missing: 'Slim', captured: 'Slim', match: true },
+  ],
+  '25': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Gray hoodie', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Dark jeans', match: true },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Behavior', missing: '-', captured: 'Head down, walking road center', match: 'special' },
+  ],
+  '30': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Gray hoodie', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Dark jeans', match: true },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Hair', missing: 'Short black hair', captured: 'Short black hair', match: true },
+    { category: 'Build', missing: 'Slim', captured: 'Slim (back view)', match: true },
+  ],
+  '40': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Gray hoodie', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Dark jeans', match: true },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Hair', missing: 'Black hair', captured: 'Black hair', match: true },
+    { category: 'Build', missing: '176cm, 65kg', captured: 'Slim (likely match)', match: true },
+  ],
+  '47': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Gray hoodie', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Dark pants', match: true },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Hair', missing: 'Short black hair', captured: 'Short black hair', match: true },
+    { category: 'Build', missing: 'Slim', captured: 'Slim (matches missing)', match: true },
+  ],
+  '51': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Gray hoodie', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Dark jeans', match: true },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'White sneakers', match: true },
+    { category: 'Hair', missing: 'Short black hair', captured: 'Short black hair', match: true },
+    { category: 'Build', missing: 'Slim', captured: 'Slim', match: true },
+  ],
+  '59': [
+    { category: 'Top', missing: 'Gray hoodie', captured: 'Gray hoodie', match: true },
+    { category: 'Bottom', missing: 'Jeans', captured: 'Dark pants', match: true },
+    { category: 'Footwear', missing: 'White sneakers', captured: 'Hard to tell', match: false },
+    { category: 'Behavior', missing: '-', captured: 'Loitering / entering convenience store', match: 'special' },
+  ],
+};
+
 export const getSimilarityTableForImageId = (imageId: ImageId): SimilarityTableRow[] => {
+  const lang = (i18n.resolvedLanguage || i18n.language || 'ko').slice(0, 2);
+  if (lang === 'en') {
+    return SIMILARITY_TABLES_EN[imageId] ?? SIMILARITY_TABLES[imageId] ?? [];
+  }
   return SIMILARITY_TABLES[imageId] ?? [];
 };
 
@@ -292,13 +373,66 @@ export const addMinutesToTime = (time: string, minutes: number): string => {
  * 이미지 ID(01~10) 기준으로 후보 상세 mock 반환.
  * score·cameraId·location 등은 호출부에서 캡처 아이템 정보로 덮어쓸 수 있음.
  */
+/** 한국어 속성명 → 짧은 영문 표시명 매핑 (시연용) */
+const ATTRIBUTE_EN_MAP: Record<string, string> = {
+  '남성': 'Male',
+  '여성': 'Female',
+  '성별미상': 'Unknown gender',
+  '청년': 'Young adult',
+  '그레이후드티': 'Gray hoodie',
+  '회색후드': 'Gray hoodie',
+  '회색티': 'Gray top',
+  '데님팬츠': 'Denim pants',
+  '청바지': 'Jeans',
+  '블랙팬츠': 'Black pants',
+  '화이트패딩': 'White padded jacket',
+  '그레이패딩': 'Gray padded jacket',
+  '화이트볼캡': 'White cap',
+  '화이트쇼핑백': 'White shopping bag',
+  '화이트스니커즈': 'White sneakers',
+  '후면': 'Back view',
+  '정면': 'Front view',
+  '측면': 'Side view',
+  '주간': 'Daytime',
+  '야간': 'Night',
+  '도로위': 'On road',
+  '아스팔트': 'On asphalt',
+  '횡단보도': 'Crosswalk',
+  '편의점앞': 'In front of convenience store',
+  '폰화면주시': 'Phone-gazing',
+  '보행중': 'Walking',
+  '정지상태': 'Stationary',
+  '인도': 'Sidewalk',
+  '투명우산': 'Clear umbrella',
+};
+
+const localizeAttribute = (attr: string, isEN: boolean): string => {
+  if (!isEN) return attr;
+  return ATTRIBUTE_EN_MAP[attr] ?? attr;
+};
+
 export const getCandidateDetailData = (
   imageId: ImageId,
   overrides: { cameraId: string; score: number } | null
 ): CandidateDetailData => {
+  // i18n에 EN 번역이 있으면 사용, 없으면 KO fallback
+  const tr = (suffix: string, fallback: string) =>
+    i18n.t(`candidateDetailMock.${imageId}.${suffix}`, { defaultValue: fallback });
+  const isEN = (i18n.resolvedLanguage || i18n.language || 'ko').startsWith('en');
+
   const attrs = getAttributesForImageId(imageId);
-  const mainAttributes = MOCK_MAIN_ATTRIBUTES[imageId] ?? (attrs.length ? attrs.slice(0, 3).join(', ') : '-');
-  const timelineData = MOCK_TIMELINES[imageId] ?? DEFAULT_TIMELINE;
+  const localizedAttrs = attrs.map(a => localizeAttribute(a, isEN));
+  const mainAttributesKO = MOCK_MAIN_ATTRIBUTES[imageId] ?? (attrs.length ? attrs.slice(0, 3).join(', ') : '-');
+  const mainAttributesFromAttrs = localizedAttrs.length ? localizedAttrs.slice(0, 3).join(', ') : '-';
+  const mainAttributes = tr('mainAttributes', isEN ? mainAttributesFromAttrs : mainAttributesKO);
+
+  const timelineDataKO = MOCK_TIMELINES[imageId] ?? DEFAULT_TIMELINE;
+  // 영문 timeline이 JSON에 배열로 정의되어 있으면 우선 사용
+  const enTimelineKey = `candidateDetailMock.${imageId}.timeline`;
+  const enTimeline = i18n.exists(enTimelineKey)
+    ? (i18n.t(enTimelineKey, { returnObjects: true }) as Omit<TimelineEntry, 'seconds'>[] | undefined)
+    : undefined;
+  const timelineData = (enTimeline && Array.isArray(enTimeline) && enTimeline.length > 0) ? enTimeline : timelineDataKO;
   const timeline = timelineData.map((t) => ({
     ...t,
     seconds: parseTimeToSeconds(t.time),
@@ -307,7 +441,8 @@ export const getCandidateDetailData = (
   const score = overrides?.score ?? 85;
   const cameraId = overrides?.cameraId ?? 'CCTV-V-1';
 
-  const rawSummary = MOCK_SUMMARIES[imageId] ?? '인도에 등장한 뒤 체류하였고, 이후 화면을 이탈함.';
+  const rawSummaryKO = MOCK_SUMMARIES[imageId] ?? '인도에 등장한 뒤 체류하였고, 이후 화면을 이탈함.';
+  const rawSummary = tr('summary', rawSummaryKO);
   const observationSummary = replaceCctvNameInText(rawSummary);
 
   const timelineWithReplacedLabels = timeline.map((t) => ({
@@ -320,10 +455,10 @@ export const getCandidateDetailData = (
     timeline: timelineWithReplacedLabels,
     meta: {
       cameraId,
-      detectedObject: '사람',
+      detectedObject: tr('detectedObject', isEN ? 'Person' : '사람'),
       mainAttributes,
-      behavior: MOCK_BEHAVIORS[imageId] ?? '체류 후 이동',
-      exitDirection: MOCK_EXIT_DIRECTIONS[imageId] ?? '상단 중앙',
+      behavior: tr('behavior', MOCK_BEHAVIORS[imageId] ?? '체류 후 이동'),
+      exitDirection: tr('exitDirection', MOCK_EXIT_DIRECTIONS[imageId] ?? '상단 중앙'),
       score,
     },
   };
