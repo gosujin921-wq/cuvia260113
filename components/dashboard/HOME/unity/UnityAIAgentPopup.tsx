@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Icon } from "@iconify/react";
-import { usePostVlmRequest, useVlmSocket } from "@/src/apis/vlm/hooks";
+// import { usePostVlmRequest } from "@/src/apis/vlm/hooks";
+import { useVlmSocket } from "@/src/apis/vlm/hooks";
 import { VlmRequest } from "@/src/apis/vlm/types";
+import { startVlmAnalysis } from "@/src/apis/dummy/service";
 import Markdown from "react-markdown";
 import { EventType } from "@/src/apis/event/types";
 
@@ -72,7 +74,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const ignoreNextChangeRef = useRef(false);
-    const { mutate: postVlmRequest } = usePostVlmRequest();
+    // const { mutate: postVlmRequest } = usePostVlmRequest();
 
     // VLM 웹소켓 훅
     const { analysisStatus, progressMessage, progressSequence, result: vlmResult, subscribeToAnalysis, unsubscribe: unsubscribeVlm, processingTime } = useVlmSocket({ autoConnect: false });
@@ -102,7 +104,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                   progress: progressSequence / 100,
                                   processingTime: processingTime,
                               }
-                            : msg
+                            : msg,
                     );
                 }
                 return prev;
@@ -126,7 +128,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                   progress: 1,
                                   analysisResult: result,
                               }
-                            : msg
+                            : msg,
                     );
                 }
                 return prev;
@@ -147,7 +149,7 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                   type: "normal" as const,
                                   progress: undefined,
                               }
-                            : msg
+                            : msg,
                     );
                 }
                 return prev;
@@ -219,13 +221,6 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
 
         // Unity 모드에서는 VLM API 호출 및 웹소켓 구독
         if (isUnityMode && isPositiveResponse(text)) {
-            const vlmRequest: VlmRequest = {
-                event_id: vlmRequestInfo?.event_id ?? 0,
-                vms_id: vlmRequestInfo?.vms_id ?? 0,
-                camera_id: vlmRequestInfo?.camera_id ?? "",
-                occurred_at: occurredTime,
-            };
-
             // 분석 중 메시지 추가
             const analyzingMessage: ChatMessage = {
                 id: `assistant-${Date.now()}`,
@@ -246,15 +241,15 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
             setIsAnalyzing(true);
             setHasReceivedFirstVlmResponse(false);
 
-            // VLM 요청 후 웹소켓 구독
-            postVlmRequest(vlmRequest, {
-                onSuccess: () => {
-                    console.log("[VLM] 요청 성공, 웹소켓 구독 시작");
-                    // 분석 결과 구독 시작
-                    subscribeToAnalysis(vlmRequest.event_id, vlmRequest.vms_id, vlmRequest.camera_id);
-                },
-                onError: (error) => {
-                    console.error("[VLM] 요청 실패:", error);
+            // 더미 VLM 분석 요청 API 호출 → 응답(eventId, vmsId, cameraId)으로 웹소켓 구독
+            startVlmAnalysis()
+                .then((res) => {
+                    console.log("[VLM] 더미 분석 요청 성공:", res.data);
+                    const { eventId, vmsId, cameraId } = res.data.data;
+                    subscribeToAnalysis(eventId, vmsId, cameraId);
+                })
+                .catch((err) => {
+                    console.error("[VLM] 더미 분석 요청 실패:", err);
                     setIsAnalyzing(false);
                     setHasReceivedFirstVlmResponse(true);
                     setMessages((prev) =>
@@ -266,11 +261,34 @@ const UnityAIAgentPopup: React.FC<UnityAIAgentPopupProps> = ({ isOpen, mainCamer
                                       type: "normal" as const,
                                       progress: undefined,
                                   }
-                                : msg
-                        )
+                                : msg,
+                        ),
                     );
-                },
-            });
+                });
+
+            // postVlmRequest(vlmRequest, {
+            //     onSuccess: () => {
+            //         console.log("[VLM] 요청 성공, 웹소켓 구독 시작");
+            //         subscribeToAnalysis(vlmRequest.event_id, vlmRequest.vms_id, vlmRequest.camera_id);
+            //     },
+            //     onError: (error) => {
+            //         console.error("[VLM] 요청 실패:", error);
+            //         setIsAnalyzing(false);
+            //         setHasReceivedFirstVlmResponse(true);
+            //         setMessages((prev) =>
+            //             prev.map((msg, idx) =>
+            //                 idx === prev.length - 1 && msg.type === "analyzing"
+            //                     ? {
+            //                           ...msg,
+            //                           content: "분석 요청에 실패했습니다.",
+            //                           type: "normal" as const,
+            //                           progress: undefined,
+            //                       }
+            //                     : msg
+            //             )
+            //         );
+            //     },
+            // });
             return;
         }
     };

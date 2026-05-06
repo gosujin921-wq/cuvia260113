@@ -24,7 +24,11 @@ interface BottomPanelCCTVItemProps {
     iceServerList: IceServerInfo[];
 }
 
-const BottomPanelCCTVItem = ({ cctv, width, height, mediaAgentUrl, iceServerList }: BottomPanelCCTVItemProps) => {
+interface BottomPanelCCTVItemProps2 extends BottomPanelCCTVItemProps {
+    play: boolean;
+}
+
+const BottomPanelCCTVItem = ({ cctv, width, height, mediaAgentUrl, iceServerList, play }: BottomPanelCCTVItemProps2) => {
     const [isConnected, setIsConnected] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
@@ -52,7 +56,7 @@ const BottomPanelCCTVItem = ({ cctv, width, height, mediaAgentUrl, iceServerList
 
     return (
         <div className="relative rounded overflow-hidden border-2 border-[#31353a] hover:border-blue-500/50 flex-shrink-0" style={{ width: `${width}px`, height: `${height}px` }}>
-            <WebRTCVideo key={retryKey} iceServerList={iceServerList ?? []} mediaAgentUrl={mediaAgentUrl} rtspUrl={cctv.rtsp_url} className="w-full h-full" autoConnect={true} onConnectionChange={handleConnectionChange} onError={handleError} />
+            <WebRTCVideo key={retryKey} iceServerList={iceServerList ?? []} mediaAgentUrl={mediaAgentUrl} rtspUrl={cctv.rtsp_url} className="w-full h-full" autoConnect={true} play={play} onConnectionChange={handleConnectionChange} onError={handleError} />
             <div className="absolute top-2 left-2" style={{ zIndex: 10 }}>
                 <span className={`px-2 py-0.5 ${isConnected ? "bg-red-500/90" : connectionError ? "bg-orange-500/90" : "bg-gray-500/90"} text-white text-xs font-semibold rounded flex items-center gap-1`}>
                     {isConnected && <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>}
@@ -69,6 +73,18 @@ const BottomPanelCCTVItem = ({ cctv, width, height, mediaAgentUrl, iceServerList
 };
 
 const UnityBottomPanel = ({ iceServerList, showCCTV, hideControls, leftPanelWidth, windowWidth, cctvScrollContainerRef, isUserScrollingRef, userScrollTimeoutRef, autoScrollIntervalRef, cctvList, mediaAgentUrl }: UnityBottomPanelProps) => {
+    const [play, setPlay] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "2") {
+                setPlay((prev) => !prev);
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
     const rightPanelWidth = 370;
     const verticalPadding = 16;
     const gap = 12;
@@ -223,7 +239,7 @@ const UnityBottomPanel = ({ iceServerList, showCCTV, hideControls, leftPanelWidt
                         }
                     }}>
                     {cctvList?.map((cctv, index) => (
-                        <BottomPanelCCTVItem key={`bottom-cctv-${index}-${cctv.camera_id}`} cctv={cctv} width={itemWidth} height={itemHeight} mediaAgentUrl={mediaAgentUrl} iceServerList={iceServerList ?? []} />
+                        <BottomPanelCCTVItem key={`bottom-cctv-${index}-${cctv.camera_id}`} cctv={cctv} width={itemWidth} height={itemHeight} mediaAgentUrl={mediaAgentUrl} iceServerList={iceServerList ?? []} play={play} />
                     ))}
                 </div>
             </div>

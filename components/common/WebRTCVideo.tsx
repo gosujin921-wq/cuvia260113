@@ -15,6 +15,8 @@ export interface WebRTCVideoProps {
     onFallbackPlaybackChange?: (usingFallback: boolean) => void;
     /** true면 컴포넌트 내부 폴백 안내 문구를 렌더하지 않음 (부모가 비디오 아래에 둘 때) */
     hideFallbackDisclaimer?: boolean;
+    /** 영상 재생 여부 제어 (true면 재생, false면 정지) */
+    play?: boolean;
 }
 
 const WebRTCVideo = ({
@@ -28,6 +30,7 @@ const WebRTCVideo = ({
     onError,
     onFallbackPlaybackChange,
     hideFallbackDisclaimer = false,
+    play = true,
 }: WebRTCVideoProps) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const wsRef = useRef<WebSocket | null>(null);
@@ -282,48 +285,72 @@ const WebRTCVideo = ({
         };
     }, [mediaAgentUrl, createPeerConnection, handleSdpAnswer, handleIceCandidate]);
 
-    const canTryWebRtc = Boolean(mediaAgentUrl && rtspUrl && iceServerList && iceServerList.length > 0);
+    // const canTryWebRtc = Boolean(mediaAgentUrl && rtspUrl && iceServerList && iceServerList.length > 0);
 
+    // useEffect(() => {
+    //     fallbackAfterErrorRef.current = false;
+    // }, [mediaAgentUrl, rtspUrl, iceServerList?.length, fallbackVideoSrc]);
+
+    // useEffect(() => {
+    //     if (!autoConnect) return;
+    //
+    //     if (!canTryWebRtc) {
+    //         if (fallbackVideoSrc) {
+    //             clearFallbackVideo();
+    //             attachFallbackFile(fallbackVideoSrc);
+    //         }
+    //         return () => {
+    //             if (fallbackVideoSrc) {
+    //                 clearFallbackVideo();
+    //             }
+    //         };
+    //     }
+    //
+    //     clearFallbackVideo();
+    //     const timer = setTimeout(() => {
+    //         startStreaming();
+    //     }, 100);
+    //
+    //     return () => {
+    //         clearTimeout(timer);
+    //         stopStreaming();
+    //     };
+    //     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // }, [autoConnect, canTryWebRtc, fallbackVideoSrc, mediaAgentUrl, rtspUrl, iceServerList?.length]);
+
+    // useEffect(() => {
+    //     if (!connectionError || !fallbackVideoSrc || fallbackAfterErrorRef.current || !canTryWebRtc) return;
+    //
+    //     fallbackAfterErrorRef.current = true;
+    //     stopStreaming();
+    //     requestAnimationFrame(() => {
+    //         attachFallbackFile(fallbackVideoSrc);
+    //     });
+    // }, [connectionError, fallbackVideoSrc, canTryWebRtc, stopStreaming, attachFallbackFile]);
+
+    // play prop으로 로컬 mp4 재생 제어
     useEffect(() => {
-        fallbackAfterErrorRef.current = false;
-    }, [mediaAgentUrl, rtspUrl, iceServerList?.length, fallbackVideoSrc]);
+        const v = videoRef.current;
+        if (!v) return;
 
-    useEffect(() => {
-        if (!autoConnect) return;
-
-        if (!canTryWebRtc) {
-            if (fallbackVideoSrc) {
-                clearFallbackVideo();
-                attachFallbackFile(fallbackVideoSrc);
-            }
-            return () => {
-                if (fallbackVideoSrc) {
-                    clearFallbackVideo();
-                }
-            };
+        if (play) {
+            v.srcObject = null;
+            v.src = "/cctv_img/test1.mp4";
+            v.loop = true;
+            v.muted = true;
+            v.playsInline = true;
+            void v.play().catch(() => {});
+            setIsConnected(true);
+            setConnectionError(null);
+            onConnectionChangeRef.current?.(true);
+        } else {
+            v.pause();
+            v.removeAttribute("src");
+            v.load();
+            setIsConnected(false);
+            onConnectionChangeRef.current?.(false);
         }
-
-        clearFallbackVideo();
-        const timer = setTimeout(() => {
-            startStreaming();
-        }, 100);
-
-        return () => {
-            clearTimeout(timer);
-            stopStreaming();
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [autoConnect, canTryWebRtc, fallbackVideoSrc, mediaAgentUrl, rtspUrl, iceServerList?.length]);
-
-    useEffect(() => {
-        if (!connectionError || !fallbackVideoSrc || fallbackAfterErrorRef.current || !canTryWebRtc) return;
-
-        fallbackAfterErrorRef.current = true;
-        stopStreaming();
-        requestAnimationFrame(() => {
-            attachFallbackFile(fallbackVideoSrc);
-        });
-    }, [connectionError, fallbackVideoSrc, canTryWebRtc, stopStreaming, attachFallbackFile]);
+    }, [play]);
 
     const isWaitingForIceServer = !!mediaAgentUrl && !!rtspUrl && (!iceServerList || iceServerList.length === 0) && !usingFallbackFile;
 

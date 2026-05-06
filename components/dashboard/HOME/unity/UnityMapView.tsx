@@ -13,6 +13,7 @@ import UnityCCTVMeshTracking from "./UnityCCTVMeshTracking";
 import { useGetCamera, useGetCameraAssignCameraInfo, useGetIceServerList } from "@/src/apis/camera/hooks";
 import { useGetAgentList } from "@/src/apis/agent/hooks";
 import UnityBottomPanel from "./UnityBottomPanel";
+import { startEvent, endEvent } from "@/src/apis/dummy/service";
 
 interface UnityMapViewProps {
     events: Event[];
@@ -116,6 +117,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
     }, [bridgeSlots, availableCCTVs]);
 
     const [openedCCTVPopups, setOpenedCCTVPopups] = useState<Set<string>>(new Set());
+    const [demoMeshTrackingActive, setDemoMeshTrackingActive] = useState(false);
     const [toggleCctvSetting, setToggleCctvSetting] = useState(false);
     const cctvScrollContainerRef = useRef<HTMLDivElement | null>(null);
     const autoScrollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -129,7 +131,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
     // 투망감시 모드: 그룹 CCTV 팝업 열기/닫기 (한꺼번에 마운트/언마운트되지 않도록 단계적 처리)
     useEffect(() => {
         const isEvent1Selected = selectedEventId && events.find((e) => e.id === selectedEventId && (e.eventId === "A-20260107-004" || e.id === "A-20260107-004"));
-        const shouldOpen = !!(isEvent1Selected || aiDetectionEventId);
+        const shouldOpen = !!(isEvent1Selected || aiDetectionEventId || demoMeshTrackingActive);
         const blueCCTVIndices = cctvList.filter((cctv) => cctv.isGrouped).map((cctv) => cctv.bridgeId);
 
         cctvStaggerTimeoutRef.current.forEach((id) => clearTimeout(id));
@@ -155,7 +157,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
             cctvStaggerTimeoutRef.current.forEach((id) => clearTimeout(id));
             cctvStaggerTimeoutRef.current = [];
         };
-    }, [selectedEventId, events, cctvList, aiDetectionEventId]);
+    }, [selectedEventId, events, cctvList, aiDetectionEventId, demoMeshTrackingActive]);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -166,6 +168,47 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
 
         window.addEventListener("resize", handleResize);
         return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    // 키보드 "2" → 3초 후 이벤트 시작 + 투망감시 시작, 7초 후 이벤트 종료
+    useEffect(() => {
+        let startTimer: ReturnType<typeof setTimeout> | null = null;
+        let endTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== "2") return;
+
+            // 3초 후 이벤트 시작 API + 투망감시 시작
+            startTimer = setTimeout(() => {
+                startEvent()
+                    .then(() => {
+                        console.log("[Demo] 이벤트 시작 API 호출 완료");
+                    })
+                    .catch((err) => {
+                        console.error("[Demo] 이벤트 시작 API 실패:", err);
+                    });
+                setDemoMeshTrackingActive(true);
+
+                // 투망감시 시작으로부터 7초 후 이벤트 종료
+                endTimer = setTimeout(() => {
+                    endEvent()
+                        .then(() => {
+                            console.log("[Demo] 이벤트 종료 API 호출 완료");
+                        })
+                        .catch((err) => {
+                            console.error("[Demo] 이벤트 종료 API 실패:", err);
+                        });
+                    setDemoMeshTrackingActive(false);
+                }, 10000);
+            }, 3000);
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            if (startTimer) clearTimeout(startTimer);
+            if (endTimer) clearTimeout(endTimer);
+        };
     }, []);
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -637,9 +680,7 @@ const UnityMapView = ({ events, selectedEventId, aiDetectionEventId, onAiDetecti
                                 zIndex: 1000,
                             }}>
                             {gridItems.map(({ cctv, isMain }, idx) => {
-                                const cctvCameraInfo = isMain
-                                    ? (activeEventCameraInfo ?? { rtsp_url: cctv.rtsp_url })
-                                    : { rtsp_url: cctv.rtsp_url };
+                                const cctvCameraInfo = isMain ? (activeEventCameraInfo ?? { rtsp_url: cctv.rtsp_url }) : { rtsp_url: cctv.rtsp_url };
                                 return (
                                     <div
                                         key={`${cctv.bridgeId}-${idx}`}

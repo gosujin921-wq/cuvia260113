@@ -125,7 +125,7 @@ const UnityCCTVMeshTrackingComponent: React.FC<UnityCCTVMeshTrackingProps> = ({ 
                 <div className="flex-shrink-0">
                     <div className="px-3 pb-3">
                         <div className="w-full bg-[#0f0f0f] border border-[#31353a] rounded-md overflow-hidden relative" style={{ borderWidth: "1px", aspectRatio: "16/9" }}>
-                            <WebRTCVideo key={retryKey} iceServerList={iceServerList ?? []} mediaAgentUrl={mediaAgentUrl} rtspUrl={cameraInfo?.rtsp_url} className="w-full h-full" autoConnect={true} onConnectionChange={handleConnectionChange} onError={handleError} />
+                            <WebRTCVideo key={retryKey} iceServerList={iceServerList ?? []} mediaAgentUrl={mediaAgentUrl} rtspUrl={cameraInfo?.rtsp_url} className="w-full h-full" autoConnect={true} play={true} onConnectionChange={handleConnectionChange} onError={handleError} />
 
                             <div className="absolute top-2 left-2" style={{ zIndex: 10 }}>
                                 <span className={`px-2 py-0.5 ${isConnected ? "bg-red-500/90" : "bg-gray-500/90"} text-white text-xs font-semibold rounded flex items-center gap-1`}>
