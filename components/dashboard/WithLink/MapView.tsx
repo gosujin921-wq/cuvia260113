@@ -5,14 +5,14 @@ import { createRoot } from "react-dom/client";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCCTVViewAngle as getCCTVViewAngleUtil, getCCTVConfigMap } from "@/lib/cctv-view-angle-utils";
-import type { GeoJsonFeatureProperties, MapStreamData, MapStreamMarker, MapStreamWmsLayer } from "@/types/streamJson.types";
+import type { GeoJsonFeature, GeoJsonFeatureCollection, GeoJsonFeatureProperties, MapStreamData, MapStreamMarker, MapStreamWmsLayer } from "@/types/streamJson.types";
 import { mapDataToFeatureCollection } from "@/src/hooks/useMapStreamParser";
 import { useGetAgentList, useGetIncidentList } from "@/src/apis/agent/hooks";
 import { useGetIceServerList } from "@/src/apis/camera/hooks";
 import type { IceServerInfo } from "@/src/apis/camera/types";
 import WebRTCVideo from "@/components/common/WebRTCVideo";
 import proj4 from "proj4";
-import { KOREA_BOUNDS } from "@/src/const/const";
+import { KOREA_BOUNDS, SAFEMAP_WMS_ENDPOINT, SAFEMAP_LAYER } from "@/src/const/const";
 import { getCCTVPanelLayout } from "@/lib/dashboard-cctv-layout";
 
 // EPSG:5181 (한국 중부원점 TM) 좌표계 정의
@@ -43,7 +43,10 @@ type StreamDetailRow = { label: string; value: string };
 
 /** JSON/스트림에서 실제 줄바꿈 대신 문자열 "\\n" 이 올 때 처리 */
 const normalizeStreamDescriptionNewlines = (description: string): string => {
-    return description.replace(/\r\n/g, "\n").replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+    return description
+        .replace(/\r\n/g, "\n")
+        .replace(/\\r\\n/g, "\n")
+        .replace(/\\n/g, "\n");
 };
 
 /** "ID 값"(공백 구분) / "ID: 값" / "상태: 값" 등 한 줄 파싱 */
@@ -97,7 +100,7 @@ const buildNonTrafficDetailRowsHtml = (description: string): string => {
                         <span style="font-weight: 500; color: rgb(197, 206, 221); text-align: right; max-width: 180px; line-height: 1.4;">
                             ${escapeHtml(row.value)}
                         </span>
-                    </div>`
+                    </div>`,
                         )
                         .join("")}
                 </div>
@@ -198,9 +201,7 @@ const StreamCctvPopupView = ({ fields, mediaAgentUrl, iceServerList }: StreamCct
                         padding: "10px 12px",
                         marginBottom: 10,
                     }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#ffffff", lineHeight: 1.4 }}>
-                        {hasTitle ? title : "정보 없음"}
-                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#ffffff", lineHeight: 1.4 }}>{hasTitle ? title : "정보 없음"}</div>
                 </div>
                 <div
                     style={{
@@ -214,27 +215,12 @@ const StreamCctvPopupView = ({ fields, mediaAgentUrl, iceServerList }: StreamCct
                         overflow: "hidden",
                         marginBottom: videoBlockMarginBottom,
                     }}>
-                    <WebRTCVideo
-                        iceServerList={iceServerList}
-                        mediaAgentUrl={mediaAgentUrl}
-                        rtspUrl={rtsp || undefined}
-                        fallbackVideoSrc={streamCctvFallbackSrc}
-                        className="h-full w-full min-h-[128px]"
-                        autoConnect={true}
-                        hideFallbackDisclaimer={true}
-                        onFallbackPlaybackChange={setIsFallbackCctvVideo}
-                    />
+                    <WebRTCVideo iceServerList={iceServerList} mediaAgentUrl={mediaAgentUrl} rtspUrl={rtsp || undefined} fallbackVideoSrc={streamCctvFallbackSrc} className="h-full w-full min-h-[128px]" autoConnect={true} hideFallbackDisclaimer={true} onFallbackPlaybackChange={setIsFallbackCctvVideo} />
                 </div>
                 {isFallbackCctvVideo ? (
-                    <div
-                        className="mt-2 flex items-center"
-                        style={{ marginBottom: fallbackCaptionMarginBottom }}
-                        role="note"
-                        aria-live="polite">
+                    <div className="mt-2 flex items-center" style={{ marginBottom: fallbackCaptionMarginBottom }} role="note" aria-live="polite">
                         <span className="mr-1 h-2 w-2 rounded-full bg-amber-400 inline-block" aria-hidden="true" />
-                        <p className="text-center text-[11px] font-semibold leading-snug tracking-wide text-amber-100 sm:text-xs m-0 p-0">
-                            해당 영상은 실제 교통상황과 다를 수 있습니다
-                        </p>
+                        <p className="text-center text-[11px] font-semibold leading-snug tracking-wide text-amber-100 sm:text-xs m-0 p-0">해당 영상은 실제 교통상황과 다를 수 있습니다</p>
                     </div>
                 ) : null}
                 {hasDesc ? (
@@ -365,6 +351,69 @@ const createStreamMarkerPopupContent = (marker: StreamMarkerPopupFields): string
     `;
 };
 
+/** 커스텀 클러스터용 원+텍스트 HTMLImageElement — 캐싱 */
+const clusterHtmlImageCache = new Map<string, HTMLImageElement>();
+
+const createClusterCircleImageAsync = (title: string, damageCount: number, radius: number, color: string): Promise<HTMLImageElement> => {
+    const cacheKey = `${title}|${damageCount}|${radius}|${color}`;
+    const cached = clusterHtmlImageCache.get(cacheKey);
+    if (cached) return Promise.resolve(cached);
+
+    const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 2;
+    const cssSize = radius * 2 + 6;
+    const pxSize = cssSize * dpr;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = pxSize;
+    canvas.height = pxSize;
+    const ctx = canvas.getContext("2d")!;
+    ctx.scale(dpr, dpr);
+
+    const cx = cssSize / 2;
+    const cy = cssSize / 2;
+
+    // 원 그리기
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 텍스트 (검정 outline + 흰색 글자)
+    const titleFontSize = 12;
+    const countFontSize = 11;
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+
+    // 지역명
+    ctx.font = `bold ${titleFontSize}px "Pretendard", -apple-system, sans-serif`;
+    ctx.strokeText(title, cx, cy - countFontSize * 0.4);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(title, cx, cy - countFontSize * 0.4);
+
+    // 피해 인원
+    ctx.font = `bold ${countFontSize}px "Pretendard", -apple-system, sans-serif`;
+    ctx.strokeText(`${damageCount}명`, cx, cy + titleFontSize * 0.55);
+    ctx.fillText(`${damageCount}명`, cx, cy + titleFontSize * 0.55);
+
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            clusterHtmlImageCache.set(cacheKey, img);
+            resolve(img);
+        };
+        img.src = canvas.toDataURL();
+    });
+};
+
 const createStreamMarkerImage = (): { width: number; height: number; data: Uint8ClampedArray } => {
     const canvas = document.createElement("canvas");
     canvas.width = MARKER_SIZE;
@@ -378,25 +427,25 @@ const createStreamMarkerImage = (): { width: number; height: number; data: Uint8
 
     ctx.clearRect(0, 0, MARKER_SIZE, MARKER_SIZE);
 
-    ctx.shadowColor = "rgba(239, 68, 68, 0.5)";
+    ctx.shadowColor = "rgba(37, 99, 235, 0.5)";
     ctx.shadowBlur = 20 * PIXEL_RATIO;
     ctx.beginPath();
     ctx.roundRect(pad, pad, MARKER_SIZE - pad * 2, MARKER_SIZE - pad * 2, r);
     const gradient = ctx.createLinearGradient(0, 0, MARKER_SIZE, MARKER_SIZE);
-    gradient.addColorStop(0, "rgba(220, 38, 38, 0.2)");
+    gradient.addColorStop(0, "rgba(37, 99, 235, 0.2)");
     gradient.addColorStop(0.5, "rgb(26, 26, 26)");
     gradient.addColorStop(1, "rgb(15, 15, 15)");
     ctx.fillStyle = gradient;
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    ctx.strokeStyle = "#ef4444";
+    ctx.strokeStyle = "#2563eb";
     ctx.lineWidth = pad;
     ctx.stroke();
 
     ctx.beginPath();
     ctx.roundRect(0, 0, MARKER_SIZE, MARKER_SIZE, ringR);
-    ctx.strokeStyle = "rgba(239, 68, 68, 0.3)";
+    ctx.strokeStyle = "rgba(37, 99, 235, 0.3)";
     ctx.stroke();
 
     const pinPath = new Path2D("M12,11.5A2.5,2.5 0 0,1 9.5,9A2.5,2.5 0 0,1 12,6.5A2.5,2.5 0 0,1 14.5,9A2.5,2.5 0 0,1 12,11.5M12,2A7,7 0 0,0 5,9C5,14.25 12,22 12,22C12,22 19,14.25 19,9A7,7 0 0,0 12,2Z");
@@ -407,7 +456,7 @@ const createStreamMarkerImage = (): { width: number; height: number; data: Uint8
     ctx.save();
     ctx.translate(pinX, pinY);
     ctx.scale(pinScale, pinScale);
-    ctx.fillStyle = "#f87171";
+    ctx.fillStyle = "#60a5fa";
     ctx.fill(pinPath);
     ctx.restore();
 
@@ -561,6 +610,10 @@ const MapView = ({
     const [showTrafficLayer, setShowTrafficLayer] = useState(false);
     const [isTrafficLayerLoading, setIsTrafficLayerLoading] = useState(false);
     const showTrafficLayerRef = useRef(false);
+    const [showFludMarks, setShowFludMarks] = useState(false);
+    const [showUrbanFlood, setShowUrbanFlood] = useState(false);
+    const [showFloodDiff, setShowFloodDiff] = useState(false);
+    const [showFloodOverlap, setShowFloodOverlap] = useState(false);
 
     // 도로 돌발 상황 API 조회 (토글 ON 시에만 20초마다 갱신)
     const { data: incidentData, isFetching: isIncidentFetching } = useGetIncidentList(showTrafficLayer);
@@ -569,20 +622,12 @@ const MapView = ({
 
     const { data: mediaAgentList } = useGetAgentList(-1, 100, "agent_type:1", "");
     const mediaAgent = mediaAgentList?.page_data?.[0];
-    const mediaAgentUrl = useMemo(
-        () => (mediaAgent ? `ws://${mediaAgent.agent_ip}:${mediaAgent.agent_port}/v1/media-agent/camera/stream` : undefined),
-        [mediaAgent?.agent_ip, mediaAgent?.agent_port]
-    );
+    const mediaAgentUrl = useMemo(() => (mediaAgent ? `ws://${mediaAgent.agent_ip}:${mediaAgent.agent_port}/v1/media-agent/camera/stream` : undefined), [mediaAgent?.agent_ip, mediaAgent?.agent_port]);
     const { data: iceServerListResponse } = useGetIceServerList();
     const iceServers = useMemo(() => iceServerListResponse?.ice_servers ?? [], [iceServerListResponse?.ice_servers]);
 
     const openStreamMarkerPopup = useCallback(
-        (
-            map: maplibregl.Map,
-            coords: [number, number],
-            fields: StreamMarkerPopupFields,
-            popupOptions?: { offset?: maplibregl.Offset; maxWidth?: string }
-        ) => {
+        (map: maplibregl.Map, coords: [number, number], fields: StreamMarkerPopupFields, popupOptions?: { offset?: maplibregl.Offset; maxWidth?: string }) => {
             const existingPopup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
             if (existingPopup) {
                 existingPopup.remove();
@@ -590,10 +635,7 @@ const MapView = ({
 
             const rtspTrim = (fields.rtsp_url ?? "").trim();
             const streamMapType = streamMapData?.type;
-            const isCctvContext =
-                streamMapType === "cctv" ||
-                fields.markerType.toLowerCase() === "cctv" ||
-                (fields.category ?? "").toLowerCase() === "cctv";
+            const isCctvContext = streamMapType === "cctv" || fields.markerType.toLowerCase() === "cctv" || (fields.category ?? "").toLowerCase() === "cctv";
             const useCctvPopup = Boolean(rtspTrim) || isCctvContext;
 
             if (!useCctvPopup) {
@@ -639,7 +681,7 @@ const MapView = ({
 
             (map as any)._streamMarkerPopup = popup;
         },
-        [streamMapData?.type, mediaAgentUrl, iceServers]
+        [streamMapData?.type, mediaAgentUrl, iceServers],
     );
 
     useEffect(() => {
@@ -827,7 +869,7 @@ const MapView = ({
             style: "https://api.maptiler.com/maps/019cd585-7992-7faa-9a87-243ab5ce8247/style.json?key=WPWmpNf4y5nzKDA7mQXe",
             center: INITIAL_MAP_CENTER,
             zoom: 15,
-            minZoom: 9,
+            minZoom: -1000,
             maxZoom: 18,
             maxBounds: KOREA_BOUNDS, // 한국 범위로 이동 제한
             pitch: 45,
@@ -1097,17 +1139,17 @@ const MapView = ({
                 const to5181 = proj4("EPSG:3857", "EPSG:5181");
 
                 maplibregl.addProtocol("gitsmap-wms", (params, abortController) => {
-                    const [z, x, y] = params.url.replace("gitsmap-wms://", "").split("/").map((s) => parseInt(s, 10));
+                    const [z, x, y] = params.url
+                        .replace("gitsmap-wms://", "")
+                        .split("/")
+                        .map((s) => parseInt(s, 10));
                     const tileSize = (WEB_MERCATOR_HALF * 2) / Math.pow(2, z);
                     const minX3857 = x * tileSize - WEB_MERCATOR_HALF;
                     const maxX3857 = (x + 1) * tileSize - WEB_MERCATOR_HALF;
                     const minY3857 = WEB_MERCATOR_HALF - (y + 1) * tileSize;
                     const maxY3857 = WEB_MERCATOR_HALF - y * tileSize;
 
-                    const [min5181, max5181] = [
-                        to5181.forward([minX3857, minY3857]),
-                        to5181.forward([maxX3857, maxY3857]),
-                    ];
+                    const [min5181, max5181] = [to5181.forward([minX3857, minY3857]), to5181.forward([maxX3857, maxY3857])];
                     const bbox5181 = `${min5181[0]},${min5181[1]},${max5181[0]},${max5181[1]}`;
                     const level = getLevelFromZoom(z);
                     const layerName = `UTIS:vi_2022_p_lv${level}_d`;
@@ -1130,10 +1172,14 @@ const MapView = ({
 
                     const delayWithAbort = new Promise<void>((resolve, reject) => {
                         const t = setTimeout(resolve, GITSMAP_WMS_TILE_DELAY_MS);
-                        abortController.signal.addEventListener("abort", () => {
-                            clearTimeout(t);
-                            reject(new DOMException("Aborted", "AbortError"));
-                        }, { once: true });
+                        abortController.signal.addEventListener(
+                            "abort",
+                            () => {
+                                clearTimeout(t);
+                                reject(new DOMException("Aborted", "AbortError"));
+                            },
+                            { once: true },
+                        );
                     });
 
                     const doFetch = () => {
@@ -1151,7 +1197,10 @@ const MapView = ({
                         .then((blob) => blob.arrayBuffer())
                         .then((data) => ({ data }));
 
-                    gitsmapWmsQueueTail = gitsmapWmsQueueTail.then(() => delayWithAbort).then(() => {}).catch(() => {});
+                    gitsmapWmsQueueTail = gitsmapWmsQueueTail
+                        .then(() => delayWithAbort)
+                        .then(() => {})
+                        .catch(() => {});
 
                     return thisRequest;
                 });
@@ -1498,7 +1547,7 @@ const MapView = ({
                 const iconWrapper = document.createElement("div");
                 iconWrapper.style.cssText = `
                     width: 28px; height: 28px;
-                    background: #e85c2a; border-radius: 6px;
+                    background: #2563eb; border-radius: 6px;
                     display: flex; align-items: center; justify-content: center;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 44;
                     transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -1526,7 +1575,7 @@ const MapView = ({
                 // 호버 효과
                 container.addEventListener("mouseenter", () => {
                     iconWrapper.style.transform = "scale(1.1)";
-                    iconWrapper.style.boxShadow = "0 2px 8px rgba(232, 92, 42, 0.5)";
+                    iconWrapper.style.boxShadow = "0 2px 8px rgba(37, 99, 235, 0.5)";
                 });
                 container.addEventListener("mouseleave", () => {
                     iconWrapper.style.transform = "scale(1)";
@@ -1578,6 +1627,283 @@ const MapView = ({
         }
     }, [showTrafficLayer, incidentData]);
 
+    // 생활안전지도 WMS 침수 레이어 (침수흔적도 / 도시침수지도)
+    // 두 토글을 하나의 effect에서 관리. 각 레이어는 독립 source/layer로 add/remove.
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const buildTileUrl = (layerName: string) => `${SAFEMAP_WMS_ENDPOINT}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=${layerName}&STYLES=&TILED=true&WIDTH=256&HEIGHT=256&CRS=EPSG:3857&BBOX={bbox-epsg-3857}`;
+
+        const configs = [
+            {
+                enabled: showFludMarks,
+                layerName: SAFEMAP_LAYER.FLUDMARKS,
+                sourceId: "safemap-fludmarks-source",
+                layerId: "safemap-fludmarks-layer",
+            },
+            {
+                enabled: showUrbanFlood,
+                layerName: SAFEMAP_LAYER.FLOODDAMAGE,
+                sourceId: "safemap-flooddamage-source",
+                layerId: "safemap-flooddamage-layer",
+            },
+        ];
+
+        // 에이전트 응답 stream 마커/클러스터(canvas 내부 레이어)보다 침수 레이어가 항상 아래에 깔리도록,
+        // 현재 레이어 스택에서 가장 아래에 있는 stream 관련 레이어를 beforeId로 사용한다.
+        const STREAM_LAYER_IDS = new Set(["stream-marker-layer", "stream-marker-cluster", "stream-marker-cluster-count", "stream-marker-heatmap"]);
+        const findStreamBeforeId = (): string | undefined => {
+            const layers = map.getStyle().layers ?? [];
+            for (const layer of layers) {
+                if (STREAM_LAYER_IDS.has(layer.id)) return layer.id;
+            }
+            return undefined;
+        };
+
+        const addLayer = (cfg: (typeof configs)[number]) => {
+            if (map.getSource(cfg.sourceId)) return;
+            map.addSource(cfg.sourceId, {
+                type: "raster",
+                tiles: [buildTileUrl(cfg.layerName)],
+                tileSize: 256,
+            });
+            map.addLayer(
+                {
+                    id: cfg.layerId,
+                    type: "raster",
+                    source: cfg.sourceId,
+                    paint: { "raster-opacity": 0.7 },
+                },
+                findStreamBeforeId(),
+            );
+        };
+
+        const removeLayer = (cfg: (typeof configs)[number]) => {
+            try {
+                if (map.getLayer(cfg.layerId)) map.removeLayer(cfg.layerId);
+                if (map.getSource(cfg.sourceId)) map.removeSource(cfg.sourceId);
+            } catch {
+                // map이 이미 제거된 경우 무시
+            }
+        };
+
+        const apply = () => {
+            configs.forEach((cfg) => (cfg.enabled ? addLayer(cfg) : removeLayer(cfg)));
+        };
+
+        if (map.isStyleLoaded()) {
+            apply();
+        } else {
+            map.once("load", apply);
+        }
+    }, [showFludMarks, showUrbanFlood]);
+
+    // 침수 레이어 비교 분석 (겹침 / 비겹침 영역)
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        const DIFF_SOURCE_ID = "flood-diff-source";
+        const DIFF_LAYER_FLUDMARKS_ONLY = "flood-diff-fludmarks-only";
+        const DIFF_LAYER_URBAN_ONLY = "flood-diff-urban-only";
+        const DIFF_LAYER_OVERLAP = "flood-diff-overlap";
+
+        const removeAnalysisLayers = () => {
+            try {
+                if (map.getLayer(DIFF_LAYER_FLUDMARKS_ONLY)) map.removeLayer(DIFF_LAYER_FLUDMARKS_ONLY);
+                if (map.getLayer(DIFF_LAYER_URBAN_ONLY)) map.removeLayer(DIFF_LAYER_URBAN_ONLY);
+                if (map.getLayer(DIFF_LAYER_OVERLAP)) map.removeLayer(DIFF_LAYER_OVERLAP);
+                if (map.getSource(DIFF_SOURCE_ID)) map.removeSource(DIFF_SOURCE_ID);
+            } catch {
+                /* map already removed */
+            }
+        };
+
+        const needsAnalysis = (showFloodDiff || showFloodOverlap) && showFludMarks && showUrbanFlood;
+        if (!needsAnalysis) {
+            removeAnalysisLayers();
+            return;
+        }
+
+        const analyzeViewport = async () => {
+            const bounds = map.getBounds();
+            const sw = map.project(bounds.getSouthWest());
+            const ne = map.project(bounds.getNorthEast());
+            const width = Math.round(Math.abs(ne.x - sw.x));
+            const height = Math.round(Math.abs(ne.y - sw.y));
+
+            const maxDim = 512;
+            const scale = Math.min(1, maxDim / Math.max(width, height));
+            const w = Math.round(width * scale);
+            const h = Math.round(height * scale);
+            if (w < 1 || h < 1) return;
+
+            const bbox = `${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
+            const baseParams = `SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&WIDTH=${w}&HEIGHT=${h}&SRS=EPSG:4326&BBOX=${bbox}`;
+
+            const url1 = `${SAFEMAP_WMS_ENDPOINT}?${baseParams}&LAYERS=${SAFEMAP_LAYER.FLUDMARKS}&STYLES=`;
+            const url2 = `${SAFEMAP_WMS_ENDPOINT}?${baseParams}&LAYERS=${SAFEMAP_LAYER.FLOODDAMAGE}&STYLES=`;
+
+            try {
+                const [img1, img2] = await Promise.all([loadImage(url1), loadImage(url2)]);
+
+                const canvas1 = document.createElement("canvas");
+                const canvas2 = document.createElement("canvas");
+                canvas1.width = canvas2.width = w;
+                canvas1.height = canvas2.height = h;
+
+                const ctx1 = canvas1.getContext("2d")!;
+                const ctx2 = canvas2.getContext("2d")!;
+                ctx1.drawImage(img1, 0, 0, w, h);
+                ctx2.drawImage(img2, 0, 0, w, h);
+
+                const data1 = ctx1.getImageData(0, 0, w, h).data;
+                const data2 = ctx2.getImageData(0, 0, w, h).data;
+
+                const fludOnlyCoords: [number, number][] = [];
+                const urbanOnlyCoords: [number, number][] = [];
+                const overlapCoords: [number, number][] = [];
+
+                const west = bounds.getWest();
+                const north = bounds.getNorth();
+                const lngPerPx = (bounds.getEast() - west) / w;
+                const latPerPx = (bounds.getNorth() - bounds.getSouth()) / h;
+
+                const step = 1;
+                const ALPHA_THRESHOLD = 30;
+
+                for (let y = 0; y < h; y += step) {
+                    for (let x = 0; x < w; x += step) {
+                        const idx = (y * w + x) * 4;
+                        const has1 = data1[idx + 3] > ALPHA_THRESHOLD;
+                        const has2 = data2[idx + 3] > ALPHA_THRESHOLD;
+
+                        const coord: [number, number] = [west + x * lngPerPx, north - y * latPerPx];
+                        if (has1 && has2) {
+                            overlapCoords.push(coord);
+                        } else if (has1) {
+                            fludOnlyCoords.push(coord);
+                        } else if (has2) {
+                            urbanOnlyCoords.push(coord);
+                        }
+                    }
+                }
+
+                const features: GeoJSON.Feature[] = [];
+                const cellLng = step * lngPerPx;
+                const cellLat = step * latPerPx;
+
+                const pushCell = (lng: number, lat: number, type: string) => {
+                    features.push({
+                        type: "Feature",
+                        properties: { type },
+                        geometry: {
+                            type: "Polygon",
+                            coordinates: [
+                                [
+                                    [lng, lat],
+                                    [lng + cellLng, lat],
+                                    [lng + cellLng, lat - cellLat],
+                                    [lng, lat - cellLat],
+                                    [lng, lat],
+                                ],
+                            ],
+                        },
+                    });
+                };
+
+                if (showFloodDiff) {
+                    for (const [lng, lat] of fludOnlyCoords) pushCell(lng, lat, "fludmarks-only");
+                    for (const [lng, lat] of urbanOnlyCoords) pushCell(lng, lat, "urban-only");
+                }
+                if (showFloodOverlap) {
+                    for (const [lng, lat] of overlapCoords) pushCell(lng, lat, "overlap");
+                }
+
+                removeAnalysisLayers();
+
+                if (features.length === 0) return;
+
+                map.addSource(DIFF_SOURCE_ID, {
+                    type: "geojson",
+                    data: { type: "FeatureCollection", features },
+                });
+
+                // stream marker 레이어보다 아래에 배치
+                const STREAM_LAYER_IDS_DIFF = ["stream-marker-layer", "stream-marker-cluster", "stream-marker-cluster-count", "stream-marker-heatmap"];
+                const diffBeforeId = STREAM_LAYER_IDS_DIFF.find((id) => map.getLayer(id));
+
+                if (showFloodDiff) {
+                    map.addLayer(
+                        {
+                            id: DIFF_LAYER_FLUDMARKS_ONLY,
+                            type: "fill",
+                            source: DIFF_SOURCE_ID,
+                            filter: ["==", ["get", "type"], "fludmarks-only"],
+                            paint: { "fill-color": "#f97316", "fill-opacity": 0.6 },
+                        },
+                        diffBeforeId,
+                    );
+                    map.addLayer(
+                        {
+                            id: DIFF_LAYER_URBAN_ONLY,
+                            type: "fill",
+                            source: DIFF_SOURCE_ID,
+                            filter: ["==", ["get", "type"], "urban-only"],
+                            paint: { "fill-color": "#a855f7", "fill-opacity": 0.6 },
+                        },
+                        diffBeforeId,
+                    );
+                }
+
+                if (showFloodOverlap) {
+                    map.addLayer(
+                        {
+                            id: DIFF_LAYER_OVERLAP,
+                            type: "fill",
+                            source: DIFF_SOURCE_ID,
+                            filter: ["==", ["get", "type"], "overlap"],
+                            paint: { "fill-color": "#ef4444", "fill-opacity": 0.4 },
+                        },
+                        diffBeforeId,
+                    );
+                }
+            } catch (err) {
+                console.warn("[FloodAnalysis] 분석 실패:", err);
+            }
+        };
+
+        const loadImage = (url: string): Promise<HTMLImageElement> =>
+            new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = url;
+            });
+
+        let debounceTimer: ReturnType<typeof setTimeout>;
+        const debouncedAnalyze = () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(analyzeViewport, 500);
+        };
+
+        if (map.isStyleLoaded()) {
+            analyzeViewport();
+        } else {
+            map.once("load", analyzeViewport);
+        }
+
+        map.on("moveend", debouncedAnalyze);
+
+        return () => {
+            clearTimeout(debounceTimer);
+            map.off("moveend", debouncedAnalyze);
+            removeAnalysisLayers();
+        };
+    }, [showFloodDiff, showFloodOverlap, showFludMarks, showUrbanFlood]);
+
     // streamMapData가 변경되면 마커와 WMS 레이어 업데이트
     useEffect(() => {
         const map = mapRef.current;
@@ -1604,38 +1930,100 @@ const MapView = ({
                 }
             }
             // 스트림 마커 관련 레이어 모두 제거
-            if (map.getLayer(streamClusterCountLayerId)) {
-                map.removeLayer(streamClusterCountLayerId);
-            }
-            if (map.getLayer(streamClusterLayerId)) {
-                map.removeLayer(streamClusterLayerId);
-            }
-            if (map.getLayer(streamHeatmapLayerId)) {
-                map.removeLayer(streamHeatmapLayerId);
-            }
-            if (map.getLayer(streamLayerId)) {
-                map.removeLayer(streamLayerId);
-            }
-            if (map.getSource(streamSourceId)) {
-                map.removeSource(streamSourceId);
-            }
+            if (map.getLayer(streamClusterCountLayerId)) map.removeLayer(streamClusterCountLayerId);
+            if (map.getLayer(streamClusterLayerId)) map.removeLayer(streamClusterLayerId);
+            if (map.getLayer(streamHeatmapLayerId)) map.removeLayer(streamHeatmapLayerId);
+            if (map.getLayer(streamLayerId)) map.removeLayer(streamLayerId);
+            if (map.getSource(streamSourceId)) map.removeSource(streamSourceId);
+            // damage 커스텀 클러스터 레이어/소스 제거
+            if (map.getLayer("stream-custom-cluster-text")) map.removeLayer("stream-custom-cluster-text");
+            if (map.getLayer("stream-custom-cluster-circle")) map.removeLayer("stream-custom-cluster-circle");
+            if (map.getSource("stream-damage-marker")) map.removeSource("stream-damage-marker");
         };
+
+        /** 줌 레벨에 따라 sido/sgg/dong 기준으로 피처를 그룹핑한 FeatureCollection 반환 */
+        const clusterFeaturesByZoom = (features: GeoJsonFeature[], zoom: number): GeoJsonFeatureCollection => {
+            // ~7: sido, 8~10: sgg, 10+: emd
+            const groupKey = zoom >= 12 ? "emd" : zoom >= 10 ? "sgg" : "sido";
+
+            const groups = new Map<string, { features: GeoJsonFeature[]; sumLat: number; sumLng: number; count: number; damageSum: number }>();
+
+            for (const feature of features) {
+                const key = (feature.properties[groupKey] as string) || "기타";
+                if (!groups.has(key)) {
+                    groups.set(key, { features: [], sumLat: 0, sumLng: 0, count: 0, damageSum: 0 });
+                }
+                const group = groups.get(key)!;
+                group.features.push(feature);
+                group.sumLat += feature.geometry.coordinates[1];
+                group.sumLng += feature.geometry.coordinates[0];
+                group.count += 1;
+                const dp = feature.properties.damage_persons;
+                if (dp != null) {
+                    group.damageSum += typeof dp === "string" ? parseInt(dp, 10) || 0 : Number(dp) || 0;
+                }
+            }
+
+            const clusteredFeatures: GeoJsonFeature[] = [];
+            groups.forEach((group, key) => {
+                // 동 단위일 때 피해 0명은 제외
+                if (groupKey === "emd" && group.damageSum === 0) return;
+                const firstFeature = group.features[0];
+                let lat: number;
+                let lng: number;
+
+                if (groupKey === "sido" && firstFeature.properties.sido_rep_lat != null && firstFeature.properties.sido_rep_lng != null) {
+                    lat = firstFeature.properties.sido_rep_lat;
+                    lng = firstFeature.properties.sido_rep_lng;
+                } else {
+                    lat = group.sumLat / group.count;
+                    lng = group.sumLng / group.count;
+                }
+
+                clusteredFeatures.push({
+                    type: "Feature",
+                    geometry: { type: "Point", coordinates: [lng, lat] },
+                    properties: {
+                        ...firstFeature.properties,
+                        id: `cluster-${groupKey}-${key}`,
+                        title: key,
+                        title_length: key.length,
+                        description: `${group.count}건`,
+                        cluster_count: group.count,
+                        damage_persons_sum: group.damageSum,
+                        _is_custom_cluster: true,
+                    } as GeoJsonFeatureProperties & { cluster_count: number; title_length: number; _is_custom_cluster: boolean },
+                });
+            });
+
+            return { type: "FeatureCollection", features: clusteredFeatures };
+        };
+
+        // damage_persons 커스텀 클러스터 전용 소스/레이어 ID
+        const damageSourceId = "stream-damage-marker";
+        const customClusterCircleLayerId = "stream-custom-cluster-circle";
+        const customClusterTextLayerId = "stream-custom-cluster-text";
 
         const addStreamMarkers = (data: MapStreamData, viewType: "individual" | "cluster" | "heatmap") => {
             const featureCollection = mapDataToFeatureCollection(data);
+            const allFeatures = featureCollection.features as GeoJsonFeature[];
 
-            // 소스 옵션: cluster 모드일 때만 클러스터링 활성화
+            // damage_persons가 있는 마커와 없는 마커 분리
+            const damageFeatures = allFeatures.filter((f) => f.properties.damage_persons != null);
+            const normalFeatures = allFeatures.filter((f) => f.properties.damage_persons == null);
+
+            // === 일반 마커 소스 (기존 MapLibre 클러스터링 유지) ===
+            const normalCollection: GeoJsonFeatureCollection = { type: "FeatureCollection", features: normalFeatures };
             const sourceOptions: maplibregl.GeoJSONSourceSpecification = {
                 type: "geojson",
-                data: featureCollection,
+                data: normalCollection,
                 cluster: viewType === "cluster",
                 clusterMaxZoom: 18,
                 clusterRadius: 50,
             };
 
-            // 기존 소스가 있으면 제거 후 다시 추가 (클러스터 옵션 변경을 위해)
+            // 기존 소스 제거
             if (map.getSource(streamSourceId)) {
-                // 레이어들 먼저 제거
                 if (map.getLayer(streamClusterCountLayerId)) map.removeLayer(streamClusterCountLayerId);
                 if (map.getLayer(streamClusterLayerId)) map.removeLayer(streamClusterLayerId);
                 if (map.getLayer(streamHeatmapLayerId)) map.removeLayer(streamHeatmapLayerId);
@@ -1643,8 +2031,20 @@ const MapView = ({
                 map.removeSource(streamSourceId);
             }
 
-            // 새 소스 추가
+            // damage 소스 제거
+            if (map.getSource(damageSourceId)) {
+                if (map.getLayer(customClusterTextLayerId)) map.removeLayer(customClusterTextLayerId);
+                if (map.getLayer(customClusterCircleLayerId)) map.removeLayer(customClusterCircleLayerId);
+                map.removeSource(damageSourceId);
+            }
+
+            // 일반 마커 소스 추가
             map.addSource(streamSourceId, sourceOptions);
+
+            // damage 마커 소스 추가 (커스텀 클러스터링 적용)
+            const currentZoom = map.getZoom();
+            const clusteredDamage = clusterFeaturesByZoom(damageFeatures, currentZoom);
+            map.addSource(damageSourceId, { type: "geojson", data: clusteredDamage });
 
             // 마커 아이콘 이미지 추가 (일반 + CCTV)
             if (!map.hasImage(streamMarkerIconId)) {
@@ -1656,10 +2056,9 @@ const MapView = ({
                 map.addImage(streamCctvMarkerIconId, cctvImg, { pixelRatio: PIXEL_RATIO });
             }
 
-            // markerType에 따라 아이콘 선택: 'cctv'면 CCTV 마커, 그 외는 기본 마커
             const iconImageExpression = ["match", ["get", "markerType"], "cctv", streamCctvMarkerIconId, streamMarkerIconId] as ["match", ["get", string], string, string, string];
 
-            // 뷰 타입별 레이어 추가
+            // === 일반 마커 레이어 (기존 로직 유지) ===
             if (viewType === "individual") {
                 map.addLayer({
                     id: streamLayerId,
@@ -1674,21 +2073,21 @@ const MapView = ({
                     },
                 });
             } else if (viewType === "cluster") {
-                // 클러스터 원 레이어
+                // MapLibre 클러스터 원
                 map.addLayer({
                     id: streamClusterLayerId,
                     type: "circle",
                     source: streamSourceId,
                     filter: ["has", "point_count"],
                     paint: {
-                        "circle-color": ["step", ["get", "point_count"], "#ef4444", 10, "#dc2626", 50, "#b91c1c", 100, "#991b1b"],
+                        "circle-color": ["step", ["get", "point_count"], "#bae6fd", 10, "#7dd3fc", 50, "#38bdf8", 100, "#0ea5e9"],
                         "circle-radius": ["step", ["get", "point_count"], 20, 10, 25, 50, 30, 100, 40],
                         "circle-stroke-width": 2,
-                        "circle-stroke-color": "rgba(255, 255, 255, 0.5)",
+                        "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
                     },
                 });
 
-                // 클러스터 카운트 텍스트 레이어
+                // MapLibre 클러스터 카운트
                 map.addLayer({
                     id: streamClusterCountLayerId,
                     type: "symbol",
@@ -1700,11 +2099,11 @@ const MapView = ({
                         "text-size": 14,
                     },
                     paint: {
-                        "text-color": "#ffffff",
+                        "text-color": ["step", ["get", "point_count"], "#0c4a6e", 50, "#ffffff"],
                     },
                 });
 
-                // 클러스터 해제된 개별 마커 레이어
+                // 클러스터 해제된 개별 마커
                 map.addLayer({
                     id: streamLayerId,
                     type: "symbol",
@@ -1731,6 +2130,45 @@ const MapView = ({
                         "heatmap-opacity": 0.8,
                     },
                 });
+            }
+
+            // === damage 커스텀 클러스터 레이어 (원+텍스트를 단일 symbol로 통합) ===
+            if (damageFeatures.length > 0) {
+                const sourceData = clusteredDamage.features as GeoJsonFeature[];
+                const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 2;
+
+                // 모든 클러스터 이미지를 비동기 생성 후 등록
+                const registerImages = async () => {
+                    await Promise.all(
+                        sourceData.map(async (feature) => {
+                            const props = feature.properties;
+                            const title = (props.title as string) || "";
+                            const damageSum = (props.damage_persons_sum as number) || 0;
+                            const titleLen = title.length;
+                            const radius = titleLen >= 8 ? 44 : titleLen >= 6 ? 38 : titleLen >= 4 ? 32 : 28;
+                            const color = damageSum >= 1 ? "#ef4444" : "#f9a8d4";
+                            const imageId = `cluster-img-${props.id}`;
+
+                            const img = await createClusterCircleImageAsync(title, damageSum, radius, color);
+                            if (map.hasImage(imageId)) map.removeImage(imageId);
+                            map.addImage(imageId, img, { pixelRatio: dpr });
+                        })
+                    );
+
+                    if (!map.getLayer(customClusterCircleLayerId)) {
+                        map.addLayer({
+                            id: customClusterCircleLayerId,
+                            type: "symbol",
+                            source: damageSourceId,
+                            layout: {
+                                "icon-image": ["concat", "cluster-img-", ["get", "id"]],
+                                "icon-allow-overlap": true,
+                                "icon-ignore-placement": true,
+                            },
+                        });
+                    }
+                };
+                registerImages();
             }
         };
 
@@ -1959,6 +2397,46 @@ const MapView = ({
             map.getCanvas().style.cursor = "";
         };
 
+        // 줌 변경 시 커스텀 클러스터링 재적용
+        let prevClusterZoomBand = -1;
+        const getZoomBand = (z: number) => (z >= 12 ? 2 : z >= 10 ? 1 : 0);
+
+        const handleZoomEnd = () => {
+            console.log("[MapView] zoomend — zoom:", map.getZoom(), "band:", getZoomBand(map.getZoom()));
+            if (!streamMapData?.markers?.length) return;
+            const currentBand = getZoomBand(map.getZoom());
+            if (currentBand === prevClusterZoomBand) return;
+            prevClusterZoomBand = currentBand;
+
+            // damage 소스 데이터만 교체 (커스텀 클러스터링 재적용)
+            const featureCollection = mapDataToFeatureCollection(streamMapData);
+            const damageFeatures = (featureCollection.features as GeoJsonFeature[]).filter((f) => f.properties.damage_persons != null);
+            const clustered = clusterFeaturesByZoom(damageFeatures, map.getZoom());
+            const source = map.getSource(damageSourceId) as maplibregl.GeoJSONSource | undefined;
+            if (source) {
+                const dpr = typeof window !== "undefined" ? window.devicePixelRatio : 2;
+                const registerAndUpdate = async () => {
+                    await Promise.all(
+                        (clustered.features as GeoJsonFeature[]).map(async (feature) => {
+                            const props = feature.properties;
+                            const title = (props.title as string) || "";
+                            const damageSum = (props.damage_persons_sum as number) || 0;
+                            const titleLen = title.length;
+                            const radius = titleLen >= 8 ? 44 : titleLen >= 6 ? 38 : titleLen >= 4 ? 32 : 28;
+                            const color = damageSum >= 1 ? "#ef4444" : "#f9a8d4";
+                            const imageId = `cluster-img-${props.id}`;
+
+                            const img = await createClusterCircleImageAsync(title, damageSum, radius, color);
+                            if (map.hasImage(imageId)) map.removeImage(imageId);
+                            map.addImage(imageId, img, { pixelRatio: dpr });
+                        })
+                    );
+                    source.setData(clustered);
+                };
+                registerAndUpdate();
+            }
+        };
+
         // 맵이 로드된 후 실행
         const registerStreamMarkerListeners = () => {
             if (streamMarkerViewType === "cluster") {
@@ -1969,14 +2447,17 @@ const MapView = ({
                 map.on("mouseenter", streamLayerId, handleStreamMarkerMouseEnter);
                 map.on("mouseleave", streamLayerId, handleStreamMarkerMouseLeave);
             }
+            map.on("zoomend", handleZoomEnd);
         };
 
         if (map.loaded()) {
             updateStreamData();
+            prevClusterZoomBand = getZoomBand(map.getZoom());
             registerStreamMarkerListeners();
         } else {
             map.once("load", () => {
                 updateStreamData();
+                prevClusterZoomBand = getZoomBand(map.getZoom());
                 registerStreamMarkerListeners();
             });
         }
@@ -1986,6 +2467,7 @@ const MapView = ({
             map.off("click", streamLayerId, handleStreamMarkerClick);
             map.off("mouseenter", streamLayerId, handleStreamMarkerMouseEnter);
             map.off("mouseleave", streamLayerId, handleStreamMarkerMouseLeave);
+            map.off("zoomend", handleZoomEnd);
             const popup = (map as any)._streamMarkerPopup as maplibregl.Popup | undefined;
             if (popup) {
                 popup.remove();
@@ -2277,7 +2759,7 @@ const MapView = ({
             { id: "fire-2", name: "평촌소방서", left: 75, top: 25 },
             { id: "fire-3", name: "만안소방서", left: 30, top: 80 },
         ],
-        []
+        [],
     );
 
     // 경찰서 고정 위치 (5개) - 더 분산
@@ -2289,7 +2771,7 @@ const MapView = ({
             { id: "police-4", name: "비산파출소", left: 60, top: 60 },
             { id: "police-5", name: "석수파출소", left: 10, top: 20 },
         ],
-        []
+        [],
     );
 
     // 두 점 사이의 거리 계산 (퍼센트 기반)
@@ -2601,6 +3083,87 @@ const MapView = ({
                                 </div>
                             </div>
                         </div>
+                        {/* 침수흔적도 토글 */}
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowFludMarks((prev) => !prev);
+                                }}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showFludMarks ? "bg-[#0ea5e9] hover:bg-[#0284c7] text-white border border-[#0284c7]/50 shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                aria-label="침수흔적도"
+                                aria-pressed={showFludMarks}
+                                tabIndex={0}>
+                                <Icon icon="mdi:waves" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    침수흔적도
+                                </div>
+                            </div>
+                        </div>
+                        {/* 도시침수지도 토글 */}
+                        <div className="relative group">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowUrbanFlood((prev) => !prev);
+                                }}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showUrbanFlood ? "bg-[#6366f1] hover:bg-[#4f46e5] text-white border border-[#4f46e5]/50 shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                aria-label="도시침수지도"
+                                aria-pressed={showUrbanFlood}
+                                tabIndex={0}>
+                                <Icon icon="mdi:home-flood" className="w-5 h-5" />
+                            </button>
+                            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                    도시침수지도
+                                </div>
+                            </div>
+                        </div>
+                        {/* 침수 레이어 비교 분석 - 두 침수 레이어 모두 켜져 있을 때만 표시 */}
+                        {showFludMarks && showUrbanFlood && (
+                            <>
+                                {/* 겹치는 영역 */}
+                                <div className="relative group">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowFloodOverlap((prev) => !prev);
+                                        }}
+                                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showFloodOverlap ? "bg-[#ef4444] hover:bg-[#dc2626] text-white border border-[#dc2626]/50 shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                        aria-label="겹치는 영역"
+                                        aria-pressed={showFloodOverlap}
+                                        tabIndex={0}>
+                                        <Icon icon="mdi:set-center" className="w-5 h-5" />
+                                    </button>
+                                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                        <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                            겹치는 영역
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* 겹치지 않는 영역 */}
+                                <div className="relative group">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShowFloodDiff((prev) => !prev);
+                                        }}
+                                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${showFloodDiff ? "bg-[#f97316] hover:bg-[#ea580c] text-white border border-[#ea580c]/50 shadow-sm" : "bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 hover:border-gray-400 shadow-sm"}`}
+                                        aria-label="겹치지 않는 영역"
+                                        aria-pressed={showFloodDiff}
+                                        tabIndex={0}>
+                                        <Icon icon="mdi:set-none" className="w-5 h-5" />
+                                    </button>
+                                    <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50" role="tooltip">
+                                        <div className="px-2.5 py-1.5 rounded-md text-xs font-medium text-white" style={{ background: "rgba(15, 15, 15, 0.95)", border: "1px solid #31353a" }}>
+                                            겹치지 않는 영역
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                         {/* 스트림 마커 뷰 타입 전환 버튼 - 스트림 마커가 있을 때만 표시 */}
                         {streamMapData?.markers && streamMapData.markers.length > 0 && (
                             <>
@@ -2677,8 +3240,34 @@ const MapView = ({
                         willChange: "transform",
                         transition: "transform 0.5s ease-out, width 0.5s ease-out, left 0.5s ease-out",
                     }}>
-                    <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }} />
-                    <div className="absolute inset-0 bg-black/5 pointer-events-none" style={{ zIndex: 2 }}></div>
+                    <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" style={{ zIndex: 10 }} />
+                    {/* 오버레이를 맵 핀 아래로 유지: pointer-events-none + z-index 제거 */}
+                    <div className="absolute inset-0 bg-black/5 pointer-events-none" style={{ zIndex: -1 }}></div>
+
+                    {/* 침수 레이어 비교 분석 범례 */}
+                    {(showFloodDiff || showFloodOverlap) && showFludMarks && showUrbanFlood && (
+                        <div className="absolute bottom-4 left-4 px-3 py-2.5 rounded-lg text-xs space-y-1.5" style={{ zIndex: 10, background: "rgba(15, 15, 15, 0.9)", border: "1px solid #31353a" }}>
+                            <div className="text-white font-medium mb-1">침수 레이어 비교</div>
+                            {showFloodOverlap && (
+                                <div className="flex items-center gap-2">
+                                    <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#ef4444" }} />
+                                    <span className="text-gray-300">두 레이어 겹침</span>
+                                </div>
+                            )}
+                            {showFloodDiff && (
+                                <>
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#f97316" }} />
+                                        <span className="text-gray-300">침수흔적도에만 존재</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="inline-block w-3 h-3 rounded-sm" style={{ background: "#a855f7" }} />
+                                        <span className="text-gray-300">도시침수지도에만 존재</span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
 
                     {/* 화각 펼쳐지는 애니메이션 스타일 */}
                     <style>{`

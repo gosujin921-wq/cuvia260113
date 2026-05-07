@@ -87,6 +87,20 @@ export interface MapStreamMarker {
     est_end_time?: string;
     /** 스트림 맵 CCTV 마커 등에서 미디어 에이전트(WebRTC) 재생용 RTSP URL */
     rtsp_url?: string | null;
+    /** 피해 인원 수 */
+    damage_persons_sum?: number | null;
+    /** 피해 인원 수 (문자열) */
+    damage_persons?: string | null;
+    /** 시/도 */
+    sido?: string | null;
+    /** 시/군/구 */
+    sgg?: string | null;
+    /** 시/도 대표 위도 */
+    sido_rep_lat?: number | null;
+    /** 시/도 대표 경도 */
+    sido_rep_lng?: number | null;
+    /** 읍/면/동 */
+    emd?: string | null;
 }
 
 export interface MapStreamCenter {
@@ -197,6 +211,13 @@ export interface GeoJsonFeatureProperties {
     start_time?: string;
     est_end_time?: string;
     rtsp_url?: string | null;
+    damage_persons_sum?: number | null;
+    damage_persons?: string | null;
+    sido?: string | null;
+    sgg?: string | null;
+    sido_rep_lat?: number | null;
+    sido_rep_lng?: number | null;
+    emd?: string | null;
 }
 
 export interface GeoJsonFeature {

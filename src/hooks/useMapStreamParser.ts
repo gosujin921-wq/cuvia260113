@@ -43,6 +43,13 @@ const markerToFeature = (marker: MapStreamMarker): GeoJsonFeature => ({
         start_time: marker.start_time,
         est_end_time: marker.est_end_time,
         rtsp_url: marker.rtsp_url ?? null,
+        damage_persons_sum: marker.damage_persons_sum ?? null,
+        damage_persons: marker.damage_persons ?? null,
+        sido: marker.sido ?? null,
+        sgg: marker.sgg ?? null,
+        sido_rep_lat: marker.sido_rep_lat ?? null,
+        sido_rep_lng: marker.sido_rep_lng ?? null,
+        emd: marker.emd ?? null,
     },
 });
 
