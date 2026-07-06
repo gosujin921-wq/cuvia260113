@@ -866,7 +866,7 @@ const MapView = ({
         if (!mapContainerRef.current || mapRef.current) return;
         const map = new maplibregl.Map({
             container: mapContainerRef.current,
-            style: "https://api.maptiler.com/maps/019cd585-7992-7faa-9a87-243ab5ce8247/style.json?key=WPWmpNf4y5nzKDA7mQXe",
+            style: "http://112.216.247.186:18080/styles/cuvia/style.json",
             center: INITIAL_MAP_CENTER,
             zoom: 15,
             minZoom: -1000,

@@ -329,7 +329,7 @@ const MapView = ({ events, highlightedEventId, onEventClick, selectedEventId, ai
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: 'https://api.maptiler.com/maps/019cd585-7992-7faa-9a87-243ab5ce8247/style.json?key=WPWmpNf4y5nzKDA7mQXe',
+      style: 'http://112.216.247.186:18080/styles/cuvia/style.json',
       center: showInitialCCTVClusters ? [126.98946, 37.42822] : [126.9913292, 37.4262026],
       zoom: 15,
       minZoom: 9,
