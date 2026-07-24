@@ -21,12 +21,12 @@ export default defineConfig({
         },
         proxy: {
             "/api": {
-                target: "http://192.168.102.101:9090",
+                target: "http://192.168.102.103:9090",
                 changeOrigin: true,
                 secure: false,
             },
             "/v1": {
-                target: "http://192.168.102.102:16000/v1",
+                target: "http://192.168.102.103:16000/v1",
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/v1/, ""),
